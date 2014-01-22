@@ -20,24 +20,20 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-// stdafx.h : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
-//
-
+#ifndef __STDAFX_H_
+#define __STDAFX_H_
 #pragma once
 
-#include "targetver.h"
+//---------------------------------------------------------------------------
+// Win32 Declarations
 
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-// Windows Header Files:
-#include <windows.h>
+#define WINVER				_WIN32_WINNT_WIN8
+#define	_WIN32_WINNT		_WIN32_WINNT_WIN8
+#define	_WIN32_IE			_WIN32_IE_IE80
 
-// C RunTime Header Files
-#include <stdlib.h>
-#include <malloc.h>
-#include <memory.h>
-#include <tchar.h>
+#include <windows.h>				// Include main Windows declarations
+#include <tchar.h>					// Include generic text mappings
 
+//---------------------------------------------------------------------------
 
-// TODO: reference additional headers your program requires here
+#endif	// __STDAFX_H_
