@@ -20,21 +20,25 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
+#include "stdafx.h"
 
-//---------------------------------------------------------------------------
-// Win32 Declarations
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
-#define WINVER				_WIN32_WINNT_WIN8
-#define	_WIN32_WINNT		_WIN32_WINNT_WIN8
-#define	_WIN32_IE			_WIN32_IE_IE80
+//-----------------------------------------------------------------------------
+// bz_internal_error
+//
+// Invoked by BZIP2 library when an assertion is raised, this is required when
+// BZ_NO_STDIO has been defined
+//
+// Arguments:
+//
+//	error		- BZIP2 internal error code
 
-#include <windows.h>				// Include main Windows declarations
-#include <tchar.h>					// Include generic text mappings
-#include <bzlib.h>					// Include BZIP2 declarations
+extern "C" void bz_internal_error(int error)
+{
+	UNREFERENCED_PARAMETER(error);
+}
 
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)

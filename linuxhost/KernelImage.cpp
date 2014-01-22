@@ -20,21 +20,12 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "KernelImage.h"				// Include KernelImage decls
 
-//---------------------------------------------------------------------------
-// Win32 Declarations
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#define WINVER				_WIN32_WINNT_WIN8
-#define	_WIN32_WINNT		_WIN32_WINNT_WIN8
-#define	_WIN32_IE			_WIN32_IE_IE80
+//-----------------------------------------------------------------------------
 
-#include <windows.h>				// Include main Windows declarations
-#include <tchar.h>					// Include generic text mappings
-#include <bzlib.h>					// Include BZIP2 declarations
+#pragma warning(pop)
 
-//---------------------------------------------------------------------------
-
-#endif	// __STDAFX_H_

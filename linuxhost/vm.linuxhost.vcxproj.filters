@@ -13,10 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="bzip2">
+      <UniqueIdentifier>{6469a781-1e84-4cb1-bce1-7f7973859d42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bzip2\Source Files">
+      <UniqueIdentifier>{3070493b-33a2-4a27-93bf-84574f261d58}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="bzip2\Header Files">
+      <UniqueIdentifier>{a7b73b38-57ee-482c-a83e-aaccc22bf494}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KernelImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\bzip2\bzlib.h">
+      <Filter>bzip2\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -24,6 +41,33 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KernelImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\blocksort.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\bzlib.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\compress.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\crctable.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\decompress.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\huffman.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\randtable.c">
+      <Filter>bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bz_internal_error.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

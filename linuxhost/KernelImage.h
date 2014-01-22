@@ -20,21 +20,29 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __KERNELIMAGE_H_
+#define __KERNELIMAGE_H_
 #pragma once
 
-//---------------------------------------------------------------------------
-// Win32 Declarations
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#define WINVER				_WIN32_WINNT_WIN8
-#define	_WIN32_WINNT		_WIN32_WINNT_WIN8
-#define	_WIN32_IE			_WIN32_IE_IE80
+//-----------------------------------------------------------------------------
+// KernelImage
+//
+// Loads the Linux system kernel image
 
-#include <windows.h>				// Include main Windows declarations
-#include <tchar.h>					// Include generic text mappings
-#include <bzlib.h>					// Include BZIP2 declarations
+class KernelImage
+{
+public:
 
-//---------------------------------------------------------------------------
+private:
+	
+	//-------------------------------------------------------------------------
+	// Member Variables
+};
 
-#endif	// __STDAFX_H_
+//-----------------------------------------------------------------------------
+
+#pragma warning(pop)
+
+#endif	// __KERNELIMAGE_H_
