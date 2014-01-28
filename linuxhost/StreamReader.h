@@ -20,42 +20,33 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Exception.h"
-#include "KernelImage.h"
+#ifndef __STREAMREADER_H_
+#define __STREAMREADER_H_
+#pragma once
 
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+//-----------------------------------------------------------------------------
+// StreamReader
+//
+// Implements a forward-only byte stream reader interface
+
+class StreamReader
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+public:
 
-	KernelImage* p;
-	try {
-		
-		p = KernelImage::Load(_T("D:\\bzImage"));
-	}
-	catch(Exception&) {
-		MessageBox(NULL, _T("Exception"), _T("Exception"), MB_OK | MB_ICONHAND);
-		return (int)E_TEST;
-	}
+	// Destructor
+	//
+	virtual ~StreamReader() {}
 
-	delete p;
+	// Read
+	//
+	// Reads the specified number of bytes from the underlying stream
+	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+};
 
-	bz_stream bz;
-	ZeroMemory(&bz, sizeof(bz_stream));
-	int result;
+//-----------------------------------------------------------------------------
 
-	result = BZ2_bzDecompressInit(&bz, 0, 0);
-	if(result == BZ_OK) {
+#pragma warning(pop)
 
-		int x = 123;
-		BZ2_bzDecompressEnd(&bz);
-	}
-
-	return 0;
-}
-
+#endif	// __STREAMREADER_H_

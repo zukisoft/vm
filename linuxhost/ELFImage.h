@@ -20,42 +20,50 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Exception.h"
-#include "KernelImage.h"
+#ifndef __ELFIMAGE_H_
+#define __ELFIMAGE_H_
+#pragma once
 
+#include "StreamReader.h"				// Include StreamReader declarations
 
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+#pragma warning(push, 4)				// Enable maximum compiler warnings
+
+//-----------------------------------------------------------------------------
+// ELFImage
+//
+// Wraps parsing of an ELF binary image
+
+class ELFImage
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+public:
 
-	KernelImage* p;
-	try {
-		
-		p = KernelImage::Load(_T("D:\\bzImage"));
-	}
-	catch(Exception&) {
-		MessageBox(NULL, _T("Exception"), _T("Exception"), MB_OK | MB_ICONHAND);
-		return (int)E_TEST;
-	}
+	// Instance Constructors
+	//
+	ELFImage(const void* base, size_t length);
+	ELFImage(std::unique_ptr<StreamReader>& reader) {}
 
-	delete p;
+	// IsValid
+	//
+	// Determines if the specified address points to a valid ELF binary
+	static bool IsValid(const void* base, size_t length);
 
-	bz_stream bz;
-	ZeroMemory(&bz, sizeof(bz_stream));
-	int result;
+private:
 
-	result = BZ2_bzDecompressInit(&bz, 0, 0);
-	if(result == BZ_OK) {
+	ELFImage(const ELFImage&);
+	ELFImage& operator=(const ELFImage&);
 
-		int x = 123;
-		BZ2_bzDecompressEnd(&bz);
-	}
+	//-------------------------------------------------------------------------
+	// Private Member Functions
 
-	return 0;
-}
+	//-------------------------------------------------------------------------
+	// Member Variables
 
+	const void*			m_base;					// Image base address
+	size_t				m_length;				// Length of the image
+};
+
+//-----------------------------------------------------------------------------
+
+#pragma warning(pop)
+
+#endif	// __ELFIMAGE_H_

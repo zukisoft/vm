@@ -13,16 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="bzip2">
+    <Filter Include="External Libraries">
+      <UniqueIdentifier>{facc9006-5116-45a8-9ee3-d2daa444ceda}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External Libraries\bzip2">
       <UniqueIdentifier>{6469a781-1e84-4cb1-bce1-7f7973859d42}</UniqueIdentifier>
     </Filter>
-    <Filter Include="bzip2\Source Files">
+    <Filter Include="External Libraries\bzip2\Source Files">
       <UniqueIdentifier>{3070493b-33a2-4a27-93bf-84574f261d58}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="bzip2\Header Files">
+    <Filter Include="External Libraries\bzip2\Header Files">
       <UniqueIdentifier>{a7b73b38-57ee-482c-a83e-aaccc22bf494}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="External Libraries\zlib">
+      <UniqueIdentifier>{f2f126dc-f584-404e-9c34-2632a16eb371}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External Libraries\zlib\Header Files">
+      <UniqueIdentifier>{37889815-e5a7-4678-9399-42101e021956}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="External Libraries\zlib\Source Files">
+      <UniqueIdentifier>{4f85f651-c5f0-4794-acfb-29704ff62079}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -33,7 +47,31 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\external\bzip2\bzlib.h">
-      <Filter>bzip2\Header Files</Filter>
+      <Filter>External Libraries\bzip2\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BoyerMoore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ELFImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\zlib\zconf.h">
+      <Filter>External Libraries\zlib\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\zlib\zlib.h">
+      <Filter>External Libraries\zlib\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="elf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GZipStreamReader.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -47,27 +85,66 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\bzip2\blocksort.c">
-      <Filter>bzip2\Source Files</Filter>
+      <Filter>External Libraries\bzip2\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\bzip2\bzlib.c">
-      <Filter>bzip2\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\bzip2\compress.c">
-      <Filter>bzip2\Source Files</Filter>
+      <Filter>External Libraries\bzip2\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\bzip2\crctable.c">
-      <Filter>bzip2\Source Files</Filter>
+      <Filter>External Libraries\bzip2\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\bzip2\decompress.c">
-      <Filter>bzip2\Source Files</Filter>
+      <Filter>External Libraries\bzip2\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\bzip2\huffman.c">
-      <Filter>bzip2\Source Files</Filter>
+      <Filter>External Libraries\bzip2\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\bzip2\randtable.c">
-      <Filter>bzip2\Source Files</Filter>
+      <Filter>External Libraries\bzip2\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bz_internal_error.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BoyerMoore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\adler32.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\deflate.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\inffast.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\inflate.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\inftrees.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\trees.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\uncompr.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\zutil.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\crc32.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\bzcompress.c">
+      <Filter>External Libraries\bzip2\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\zlib\compress.c">
+      <Filter>External Libraries\zlib\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ELFImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GZipStreamReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

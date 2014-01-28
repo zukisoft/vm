@@ -20,42 +20,46 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Exception.h"
-#include "KernelImage.h"
+#ifndef __GZIPSTREAMREADER_H_
+#define __GZIPSTREAMREADER_H_
+#pragma once
 
+#include "StreamReader.h"				// Include StreamReader declarations
 
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+#pragma warning(push, 4)				// Enable maximum compiler warnings
+
+//-----------------------------------------------------------------------------
+// GZipStreamReader
+//
+// GZIP-based decompression stream reader implementation
+
+class GZipStreamReader : public StreamReader
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+public:
 
-	KernelImage* p;
-	try {
-		
-		p = KernelImage::Load(_T("D:\\bzImage"));
-	}
-	catch(Exception&) {
-		MessageBox(NULL, _T("Exception"), _T("Exception"), MB_OK | MB_ICONHAND);
-		return (int)E_TEST;
-	}
+	// Constructors / Destructor
+	//
+	GZipStreamReader(const void* base, size_t length);
+	virtual ~GZipStreamReader();
 
-	delete p;
+	// ByteReader::Read
+	//
+	// Reads the specified number of bytes from the underlying stream
+	virtual uint32_t Read(void* buffer, uint32_t length);
 
-	bz_stream bz;
-	ZeroMemory(&bz, sizeof(bz_stream));
-	int result;
+private:
 
-	result = BZ2_bzDecompressInit(&bz, 0, 0);
-	if(result == BZ_OK) {
+	GZipStreamReader(const GZipStreamReader&);
+	GZipStreamReader& operator=(const GZipStreamReader&);
 
-		int x = 123;
-		BZ2_bzDecompressEnd(&bz);
-	}
+	//-------------------------------------------------------------------------
+	// Member Variables
 
-	return 0;
-}
+	z_stream				m_stream;			// GZIP decompression stream
+};
 
+//-----------------------------------------------------------------------------
+
+#pragma warning(pop)
+
+#endif	// __GZIPSTREAMREADER_H_

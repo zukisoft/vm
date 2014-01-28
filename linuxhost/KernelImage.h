@@ -24,6 +24,9 @@
 #define __KERNELIMAGE_H_
 #pragma once
 
+#include "ELFImage.h"					// Include ELFImage declarations
+#include "StreamReader.h"				// Include StreamReader declarations
+
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
@@ -31,14 +34,82 @@
 //
 // Loads the Linux system kernel image
 
-class KernelImage
+class KernelImage : public ELFImage
 {
 public:
 
+	// Load
+	//
+	// Loads the specified Linux kernel image file
+	static KernelImage* Load(LPCTSTR path);
+
 private:
-	
+
+#pragma region Private Class MappedImage
+
+	// MappedImage
+	//
+	// Creates a read-only sequential scan mapping of the file
+	class MappedImage
+	{
+	public:
+
+		// Destructor
+		//
+		~MappedImage();
+
+		//-------------------------------------------------------------------------
+		// Member Functions
+
+		// Load (static)
+		//
+		// Creates a read-only memory mapping against the raw kernel image file
+		static MappedImage* Load(LPCTSTR path);
+
+		//-------------------------------------------------------------------------
+		// Properties
+
+		// Length
+		//
+		// Gets the length of the memory mapped file
+		__declspec(property(get=getLength)) size_t Length;
+		size_t getLength(void) const;
+
+		// Pointer
+		//
+		// Gets the base pointer for the created memory mapping
+		__declspec(property(get=getPointer)) void* Pointer;
+		void* getPointer(void) const { return m_pvMapping; }
+
+	private:
+
+		// Instance Consructor
+		//
+		MappedImage(HANDLE hFile, HANDLE hMapping, void *pvMapping) :
+			m_hFile(hFile), m_hMapping(hMapping), m_pvMapping(pvMapping) {}
+
+		//-------------------------------------------------------------------------
+		// Member Variables
+
+		HANDLE				m_hFile;			// Underlying file handle
+		HANDLE				m_hMapping;			// File mapping handle
+		void*				m_pvMapping;		// Base address of memory mapped file
+	};
+
+// endregion: Priavte Class MappedImage
+#pragma endregion 
+
+	// Instance Constructors
+	//
+	KernelImage(void* base, size_t length) : ELFImage(base, length) {}
+	explicit KernelImage(std::unique_ptr<StreamReader>& reader) : ELFImage(reader) {}
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
 	//-------------------------------------------------------------------------
 	// Member Variables
+
 };
 
 //-----------------------------------------------------------------------------

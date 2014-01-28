@@ -20,42 +20,39 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Exception.h"
-#include "KernelImage.h"
+#ifndef __EXCEPTION_H_
+#define __EXCEPTION_H_
+#pragma once
 
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+//-----------------------------------------------------------------------------
+// Exception
+//
+// Exception class
+
+class Exception
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+public:
 
-	KernelImage* p;
-	try {
-		
-		p = KernelImage::Load(_T("D:\\bzImage"));
-	}
-	catch(Exception&) {
-		MessageBox(NULL, _T("Exception"), _T("Exception"), MB_OK | MB_ICONHAND);
-		return (int)E_TEST;
-	}
+	// Instance Constructors
+	Exception() : m_hResult(HRESULT_FROM_WIN32(GetLastError())) {}
+	Exception(DWORD dwResult) : m_hResult(HRESULT_FROM_WIN32(dwResult)) {}
+	Exception(HRESULT hResult) : m_hResult(hResult) {}
 
-	delete p;
+	Exception(DWORD dwResult, LPCTSTR message) { }
+	Exception(HRESULT hResult, LPCTSTR message) {  }
 
-	bz_stream bz;
-	ZeroMemory(&bz, sizeof(bz_stream));
-	int result;
+private:
 
-	result = BZ2_bzDecompressInit(&bz, 0, 0);
-	if(result == BZ_OK) {
+	//-------------------------------------------------------------------------
+	// Member Variables
 
-		int x = 123;
-		BZ2_bzDecompressEnd(&bz);
-	}
+	HRESULT					m_hResult;				// Error HRESULT code
+};
 
-	return 0;
-}
+//-----------------------------------------------------------------------------
 
+#pragma warning(pop)
+
+#endif	// __EXCEPTION_H_
