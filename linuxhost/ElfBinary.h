@@ -20,55 +20,53 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __ELFBINARY_H_
+#define __ELFBINARY_H_
 #pragma once
+
+#include "elf.h"						// Include ELF file format decls
+#include "ElfSegment.h"					// Include ElfSegment declarations
+#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// ElfBinary
 //
-// Implements a forward-only byte stream reader interface
+// Base class representing an ELF binary image
 
-class StreamReader
+class ElfBinary
 {
 public:
 
 	// Destructor
 	//
-	virtual ~StreamReader() {}
+	virtual ~ElfBinary() {}
 
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// Read
+	// IsElfBinary
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	// Checks the specified address for the ELF magic number
+	static bool ElfBinary::IsElfBinary(const void* base, size_t length);
 
-	// Reset
+	// Load
 	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
+	// Parses and loads the specified ELF image into virtual memory
+	static ElfBinary* Load(std::unique_ptr<StreamReader>& reader);
 
-	// Seek
+protected:
+
+	// Instance Constructor
 	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+	ElfBinary() {}
 
-	//-------------------------------------------------------------------------
-	// Properties
+private:
 
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	ElfBinary(const ElfBinary&);
+	ElfBinary& operator=(const ElfBinary&);
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __ELFBINARY_H_

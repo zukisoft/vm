@@ -99,14 +99,70 @@ Language=English
 .
 
 ;//--------------------------------------------------------------------------
-;// LINUXHOST Error Codes (0x100-0x1FF)
+;// LINUXHOST Error Codes (0x010-0x1FF)
 
-MessageId=0x100
+MessageId=0x010
 Severity=Informational
 Facility=LinuxHost
 SymbolicName=S_TEST
 Language=English
 Test Informational Message
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_INVALIDELFMAGIC
+Language=English
+The specified image does not contain the ELF header magic number and is invalid
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_UNEXPECTEDELFCLASS
+Language=English
+An unexpected ELF file class code of %d was detected in the ELF binary file header
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_UNEXPECTEDELFENCODING
+Language=English
+An unexpected ELF data encoding value was detected in the ELF binary file header
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_TRUNCATEDELFHEADER
+Language=English
+The ELF binary file header has been truncated and is invalid
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_UNKNOWNELFVERSION
+Language=English
+The ELF binary file header contains an unexpected version code or is of an unexpected length
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_INVALIDELFPROGRAMTABLE
+Language=English
+The ELF binary file header contains an invalid or corrupted program header table
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_INVALIDELFSECTIONTABLE
+Language=English
+The ELF binary file header contains an invalid or corrupted section header table
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_ELFSEGMENTFILEORDER
+Language=English
+The ELF binary file header lists segments in a non-sequential order
 .
 
 MessageId=0x101

@@ -36,7 +36,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	KernelImage* p;
 	try {
 		
-		p = KernelImage::Load(_T("D:\\bzImage"));
+		p = KernelImage::Load(_T("D:\\bzImage.gzip"));
 	}
 	catch(Exception&) {
 		MessageBox(NULL, _T("Exception"), _T("Exception"), MB_OK | MB_ICONHAND);

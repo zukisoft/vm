@@ -37,8 +37,8 @@ public:
 
 	// Instance Constructors
 	Exception() : m_hResult(HRESULT_FROM_WIN32(GetLastError())) {}
-	Exception(DWORD dwResult) : m_hResult(HRESULT_FROM_WIN32(dwResult)) {}
-	Exception(HRESULT hResult) : m_hResult(hResult) {}
+	Exception(DWORD dwResult, ...) : m_hResult(HRESULT_FROM_WIN32(dwResult)) {}
+	Exception(HRESULT hResult, ...) : m_hResult(hResult) {}
 
 	Exception(DWORD dwResult, LPCTSTR message) { }
 	Exception(HRESULT hResult, LPCTSTR message) {  }

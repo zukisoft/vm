@@ -20,55 +20,55 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __TRACE_H_
+#define __TRACE_H_
 #pragma once
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// Trace
 //
-// Implements a forward-only byte stream reader interface
+// Tracing class
 
-class StreamReader
+class Trace
 {
 public:
 
-	// Destructor
+	// I
 	//
-	virtual ~StreamReader() {}
+	// Informational message
+	static void I(LPCTSTR format, ...) {}
+
+	// W
+	//
+	// Warning message
+	static void W(LPCTSTR format, ...) {}
+
+	// E
+	//
+	// Error message
+	static void E(LPCTSTR format, ...) {}
+
+	// D
+	//
+	// Debug message
+	static void D(LPCTSTR format, ...) {}
+
+private:
+
+	Trace();
+	Trace(const Trace&);
+	Trace& operator=(const Trace&);
 
 	//-------------------------------------------------------------------------
-	// Member Functions
+	// Private Member Functions
 
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
 
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __TRACE_H_

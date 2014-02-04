@@ -20,50 +20,58 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ELFIMAGE_H_
-#define __ELFIMAGE_H_
+#ifndef __MAPPEDFILEVIEW_H_
+#define __MAPPEDFILEVIEW_H_
 #pragma once
-
-#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-//-----------------------------------------------------------------------------
-// ELFImage
-//
-// Wraps parsing of an ELF binary image
+class MappedFile;
 
-class ELFImage
+//-----------------------------------------------------------------------------
+// MappedFileView
+//
+// Wrapper around the MapViewOfFile API that can be used with std::unique_ptr
+
+class MappedFileView
 {
 public:
 
-	// Instance Constructors
+	// Constructors / Destructor
 	//
-	ELFImage(const void* base, size_t length);
-	ELFImage(std::unique_ptr<StreamReader>& reader) {}
+	MappedFileView(std::shared_ptr<MappedFile> mapping, DWORD access, size_t offset, size_t length);
+	~MappedFileView();
 
-	// IsValid
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// Length
 	//
-	// Determines if the specified address points to a valid ELF binary
-	static bool IsValid(const void* base, size_t length);
+	// Gets the length of the memory mapped file
+	__declspec(property(get=getLength)) size_t Length;
+	size_t getLength(void) const { return m_length; }
+
+	// Pointer
+	//
+	// Gets the base pointer for the created memory mapping
+	__declspec(property(get=getPointer)) void* Pointer;
+	void* getPointer(void) const { return m_view; }
 
 private:
 
-	ELFImage(const ELFImage&);
-	ELFImage& operator=(const ELFImage&);
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
+	MappedFileView(const MappedFileView&);
+	MappedFileView& operator=(const MappedFileView&);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const void*			m_base;					// Image base address
-	size_t				m_length;				// Length of the image
+	std::shared_ptr<MappedFile>	m_mapping;		// Contained file mapping
+	void*						m_view;			// Base pointer of the view
+	size_t						m_length;		// Length of the view
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __ELFIMAGE_H_
+#endif	// __MAPPEDFILEVIEW_H_

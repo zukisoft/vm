@@ -20,55 +20,70 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __BZIP2STREAMREADER_H_
+#define __BZIP2STREAMREADER_H_
 #pragma once
+
+#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// BZip2StreamReader
 //
-// Implements a forward-only byte stream reader interface
+// BZIP2-based decompression stream reader implementation
 
-class StreamReader
+class BZip2StreamReader : public StreamReader
 {
 public:
 
-	// Destructor
+	// Constructors / Destructor
 	//
-	virtual ~StreamReader() {}
+	BZip2StreamReader(const void* base, size_t length);
+	virtual ~BZip2StreamReader();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Read
+	// StreamReader::Read
 	//
 	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	virtual uint32_t Read(void* buffer, uint32_t length);
 
-	// Reset
+	// StreamReader::Reset
 	//
 	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
+	virtual void Reset(void);
 
-	// Seek
+	// StreamReader::Seek
 	//
 	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+	virtual void Seek(uint32_t position);
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Position
+	// StreamReader::getPosition
 	//
 	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	virtual uint32_t getPosition(void) { return m_position; }
+
+private:
+
+	BZip2StreamReader(const BZip2StreamReader&);
+	BZip2StreamReader& operator=(const BZip2StreamReader&);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	bz_stream				m_stream;			// BZIP2 decompression stream
+	char*					m_base;				// Base memory address
+	uint32_t				m_length;			// Length of memory buffer
+	uint32_t				m_position;			// Current position in the stream
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __BZIP2STREAMREADER_H_

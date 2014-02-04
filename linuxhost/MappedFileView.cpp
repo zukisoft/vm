@@ -21,56 +21,47 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "ELFImage.h"					// Include ELFImage declarations
+#include "MappedFileView.h"				// Include MappedFileView declarations
 
-#include "elf.h"						// Include ELF format declarations
-#include "Exception.h"					// Include Exception declarations
+#include "Exception.h"					// Include Exception class declarations
+#include "MappedFile.h"					// Include MappedFile declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// ELFImage Constructor
+// MappedFileView Constructor
 //
 // Arguments:
 //
-//	base		- Base address of the loaded ELF image
-//	length		- Length of the loaded ELF image
+//	mapping		- Shared MappedFile instance
+//	access		- Access flags for MapViewOfFile()
+//	offset		- Offset into the file mapping to begin the view
+//	length		- Length of the view to create
 
-ELFImage::ELFImage(const void* base, size_t length)
+MappedFileView::MappedFileView(std::shared_ptr<MappedFile> mapping, DWORD access, size_t offset, size_t length)
 {
-	if(!base) throw Exception(E_POINTER);
-	if(length == 0) throw Exception(E_INVALIDARG);
-	if(!IsValid(base, length)) throw Exception(E_INVALIDARG, _T("ELF header validation failed"));
+	ULARGE_INTEGER		uloffset;				// Offset as a ULARGE_INTEGER
 
-	m_base = base;
-	m_length = length;
+	if(length == 0) throw Exception(E_INVALIDARG);
+
+	m_mapping = mapping;						// Store the shared_ptr object
+
+	// Process the offset as a ULARGE_INTEGER to more easily deal with varying size_t
+	uloffset.QuadPart = offset;
+
+	// Attempt to map the specified region of the file into this process
+	m_view = MapViewOfFile(m_mapping->Handle, access, uloffset.HighPart, uloffset.LowPart, length);
+	if(!m_view) throw Exception(GetLastError());
+
+	m_length = length;						// Record the length for convenience
 }
 
 //-----------------------------------------------------------------------------
-// ELFImage::IsValid (static)
-//
-// Validates that the specified address points to an ELF header
-//
-// Arguments:
-//
-//	base		- ELF image base address
-//	length		- Length of the provided image
+// MappedFileView Destructor
 
-bool ELFImage::IsValid(const void* base, size_t length)
+MappedFileView::~MappedFileView()
 {
-	if(!base) return false;
-
-	// Verify that the length is at least large enough for the smaller 32-bit header
-	if(length < sizeof(elf32_hdr)) return false;
-
-	// Verify the ELF header magic number
-	if(memcmp(base, ELFMAG, SELFMAG) != 0) return false;
-
-	//
-	// TODO: Should perform more than just magic number validation
-	//
-
-	return true;
+	if(m_view) UnmapViewOfFile(m_view);
 }
 
 //-----------------------------------------------------------------------------

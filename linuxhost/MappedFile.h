@@ -20,55 +20,55 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __MAPPEDFILE_H_
+#define __MAPPEDFILE_H_
 #pragma once
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// MappedFile
 //
-// Implements a forward-only byte stream reader interface
+// Creates a memory-mapped file
 
-class StreamReader
+class MappedFile
 {
 public:
 
-	// Destructor
+	// Constructors / Destructor
 	//
-	virtual ~StreamReader() {}
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
-
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+	MappedFile(HANDLE file, DWORD protect, size_t length);
+	~MappedFile();
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Position
+	// Handle
 	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	// Gets the underlying handle for the mapped file
+	__declspec(property(get=getHandle)) HANDLE Handle;
+	void* getHandle(void) const { return m_handle; }
+
+	// Length
+	//
+	// Gets the length of the memory mapped file
+	__declspec(property(get=getLength)) size_t Length;
+	size_t getLength(void) const { return m_length; }
+
+private:
+
+	MappedFile(const MappedFile&);
+	MappedFile& operator=(const MappedFile&);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	HANDLE				m_handle;			// File mapping handle
+	size_t				m_length;			// Length of the file mapping
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __MAPPEDFILE_H_

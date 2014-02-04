@@ -20,55 +20,11 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "ElfSegment.h"					// Include ELFSegment declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
-//
-// Implements a forward-only byte stream reader interface
-
-class StreamReader
-{
-public:
-
-	// Destructor
-	//
-	virtual ~StreamReader() {}
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
-
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
-};
-
-//-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __STREAMREADER_H_

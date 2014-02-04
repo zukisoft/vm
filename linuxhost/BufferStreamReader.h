@@ -20,55 +20,69 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef _BUFFERSTREAMREADER_H_
+#define _BUFFERSTREAMREADER_H_
 #pragma once
+
+#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// BufferStreamReader
 //
-// Implements a forward-only byte stream reader interface
+// Memory buffer stream reader implementation
 
-class StreamReader
+class BufferStreamReader : public StreamReader
 {
 public:
 
-	// Destructor
+	// Constructors / Destructor
 	//
-	virtual ~StreamReader() {}
+	BufferStreamReader(const void* base, size_t length);
+	virtual ~BufferStreamReader() {}
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Read
+	// StreamReader::Read
 	//
 	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	virtual uint32_t Read(void* buffer, uint32_t length);
 
-	// Reset
+	// StreamReader::Reset
 	//
 	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
+	virtual void Reset(void);
 
-	// Seek
+	// StreamReader::Seek
 	//
 	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+	virtual void Seek(uint32_t position);
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Position
+	// StreamReader::getPosition
 	//
 	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	virtual uint32_t getPosition(void) { return m_offset; }
+
+private:
+
+	BufferStreamReader(const BufferStreamReader&);
+	BufferStreamReader& operator=(const BufferStreamReader&);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	const void*				m_base;				// Base memory address
+	uint32_t				m_length;			// Length of memory buffer
+	uint32_t				m_offset;			// Offset into the memory buffer
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// _BUFFERSTREAMREADER_H_

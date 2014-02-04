@@ -20,55 +20,54 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __ELFBINARY64_H_
+#define __ELFBINARY64_H_
 #pragma once
+
+#include "elf.h"						// Include ELF file format decls
+#include "ElfBinary.h"					// Include ElfBinary declarations
+//#include "MappedFileView.h"				// Include MappedFileView declarations
+
+class MappedFileView;
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// ElfBinary64
 //
-// Implements a forward-only byte stream reader interface
+// Specialization of the ElfBinary class for a 64-bit image
 
-class StreamReader
+class ElfBinary64 : public ElfBinary
 {
 public:
 
 	// Destructor
 	//
-	virtual ~StreamReader() {}
+	virtual ~ElfBinary64() {}
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Read
+	// Load
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	// Parses and loads the specified ELF image into virtual memory
+	static ElfBinary64* Load(std::unique_ptr<StreamReader>& reader);
 
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
+private:
 
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+	ElfBinary64(std::unique_ptr<MappedFileView>& view);
+	ElfBinary64(const ElfBinary64&);
+	ElfBinary64& operator=(const ElfBinary64&);
 
 	//-------------------------------------------------------------------------
-	// Properties
+	// Member Variables
 
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	HANDLE					m_mapping;			// Memory mapped binary image
+	Elf64_Ehdr				m_header;			// ELF64 header data
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __ELFBINARY64_H_

@@ -21,21 +21,21 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "GZipStreamReader.h"			// Include GZipStreamReader declarations
+#include "BZip2StreamReader.h"			// Include BZip2StreamReader declarations
 
 #include "Exception.h"					// Include Exception class declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader Constructor
+// BZip2StreamReader Constructor
 //
 // Arguments:
 //
 //	base		- Pointer to the start of the GZIP stream
 //	length		- Length of the input stream, in bytes
 
-GZipStreamReader::GZipStreamReader(const void* base, size_t length)
+BZip2StreamReader::BZip2StreamReader(const void* base, size_t length)
 {
 	if(!base) throw Exception(E_POINTER);
 	if(length == 0) throw Exception(E_INVALIDARG);
@@ -45,30 +45,29 @@ GZipStreamReader::GZipStreamReader(const void* base, size_t length)
 #endif
 
 	// Maintain the original information for Reset() capability
-	m_base = reinterpret_cast<uint8_t*>(const_cast<void*>(base));;
+	m_base = reinterpret_cast<char*>(const_cast<void*>(base));
 	m_length = static_cast<uint32_t>(length);
 	m_position = 0;
 
-	// Initialize the zlib stream structure
-	memset(&m_stream, 0, sizeof(z_stream));
+	// Initialize the bzlib stream structure
+	memset(&m_stream, 0, sizeof(bz_stream));
 	m_stream.avail_in = m_length;
 	m_stream.next_in  = m_base;
 
-	// inflateInit2() must be used when working with a GZIP stream
-	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_FAIL, _T("Unable to initialize GZIP inflation stream"));
+	int result = BZ2_bzDecompressInit(&m_stream, 0, 0);
+	if(result != BZ_OK) throw Exception(E_FAIL, _T("Unable to initialize BZIP2 inflation stream"));
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader Destructor
+// BZip2StreamReader Destructor
 
-GZipStreamReader::~GZipStreamReader()
+BZip2StreamReader::~BZip2StreamReader()
 {
-	inflateEnd(&m_stream);
+	BZ2_bzDecompressEnd(&m_stream);
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader::Read (StreamReader)
+// BZip2StreamReader::Read (StreamReader)
 //
 // Reads the specified number of bytes from the input stream into the output buffer
 //
@@ -77,10 +76,10 @@ GZipStreamReader::~GZipStreamReader()
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
+uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
 {
-	bool freemem = false;					// Flag to free buffer
-	uint32_t out = m_stream.total_out;		// Save the current total
+	bool freemem = false;						// Flag to free buffer
+	uint32_t out = m_stream.total_out_lo32;		// Save the current total
 
 	if(length == 0) return 0;				// Nothing to do
 
@@ -94,24 +93,24 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 	}
 
 	// Set the output buffer pointer and length for zlib
-	m_stream.next_out = reinterpret_cast<uint8_t*>(buffer);
+	m_stream.next_out = reinterpret_cast<char*>(buffer);
 	m_stream.avail_out = length;
 
 	// Inflate up to the requested number of bytes from the compressed stream
-	int result = inflate(&m_stream, Z_SYNC_FLUSH);
+	int result = BZ2_bzDecompress(&m_stream);
 	if(freemem) free(buffer);
 
-	if((result != Z_OK) && (result != Z_STREAM_END))
-		throw Exception(E_FAIL, _T("Unable to inflate GZIP stream data"));
+	if((result != BZ_OK) && (result != BZ_STREAM_END))
+		throw Exception(E_FAIL, _T("Unable to inflate BZIP2 stream data"));
 
-	out = (m_stream.total_out - out);			// Update output count
+	out = (m_stream.total_out_lo32 - out);		// Update output count
 	m_position += out;							// Update stream position
 	
 	return out;
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader::Reset (StreamReader)
+// BZip2StreamReader::Reset (StreamReader)
 //
 // Resets the stream back to the beginning
 //
@@ -119,24 +118,24 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 //
 //	NONE
 
-void GZipStreamReader::Reset(void)
+void BZip2StreamReader::Reset(void)
 {
 	// Finish the existing decompression stream operations
-	inflateEnd(&m_stream);
+	BZ2_bzDecompressEnd(&m_stream);
 
 	// Reinitialize the decompression stream
-	memset(&m_stream, 0, sizeof(z_stream));
+	memset(&m_stream, 0, sizeof(bz_stream));
 	m_stream.avail_in = m_length;
 	m_stream.next_in  = m_base;
 
-	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_FAIL, _T("Unable to initialize GZIP inflation stream"));
+	int result = BZ2_bzDecompressInit(&m_stream, 0, 0);
+	if(result != BZ_OK) throw Exception(E_FAIL, _T("Unable to initialize BZIP2 inflation stream"));
 
 	m_position = 0;				// Reset position back to zero
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader::Seek (StreamReader)
+// BZip2StreamReader::Seek (StreamReader)
 //
 // Advances the stream to the specified position
 //
@@ -144,7 +143,7 @@ void GZipStreamReader::Reset(void)
 //
 //	position		- Position to advance the input stream to
 
-void GZipStreamReader::Seek(uint32_t position)
+void BZip2StreamReader::Seek(uint32_t position)
 {
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	

@@ -20,55 +20,46 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __ELFBINARY32_H_
+#define __ELFBINARY32_H_
 #pragma once
+
+#include "elf.h"						// Include ELF file format decls
+#include "ElfBinary.h"					// Include ElfBinary declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// ElfBinary32
 //
-// Implements a forward-only byte stream reader interface
+// Specialization of the ElfBinary class for a 32-bit image
 
-class StreamReader
+class ElfBinary32 : public ElfBinary
 {
 public:
 
+	// Instance Constructors
+	//
+	ElfBinary32(const void* base, size_t length);
+	ElfBinary32(const uint8_t* ident, size_t identlen, std::unique_ptr<StreamReader>& reader);
+
 	// Destructor
 	//
-	virtual ~StreamReader() {}
+	virtual ~ElfBinary32() {}
+
+private:
+
+	ElfBinary32(const ElfBinary32&);
+	ElfBinary32& operator=(const ElfBinary32&);
 
 	//-------------------------------------------------------------------------
-	// Member Functions
+	// Member Variables
 
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
-
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	Elf32_Ehdr				m_header;			// ELF32 header data
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __ELFBINARY32_H_

@@ -52,9 +52,6 @@
     <ClInclude Include="BoyerMoore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ELFImage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\external\zlib\zconf.h">
       <Filter>External Libraries\zlib\Header Files</Filter>
     </ClInclude>
@@ -71,6 +68,36 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GZipStreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BZip2StreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfBinary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfBinary32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfBinary64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BufferStreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfSegment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfSegment64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MappedFileView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MappedFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -141,10 +168,34 @@
     <ClCompile Include="..\..\external\zlib\compress.c">
       <Filter>External Libraries\zlib\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ELFImage.cpp">
+    <ClCompile Include="GZipStreamReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GZipStreamReader.cpp">
+    <ClCompile Include="BZip2StreamReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfBinary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfBinary32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfBinary64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferStreamReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfSegment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfSegment64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MappedFileView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MappedFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

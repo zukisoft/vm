@@ -21,21 +21,21 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "GZipStreamReader.h"			// Include GZipStreamReader declarations
+#include "BufferStreamReader.h"			// Include BufferStreamReader declarations
 
 #include "Exception.h"					// Include Exception class declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader Constructor
+// BufferStreamReader Constructor
 //
 // Arguments:
 //
 //	base		- Pointer to the start of the GZIP stream
 //	length		- Length of the input stream, in bytes
 
-GZipStreamReader::GZipStreamReader(const void* base, size_t length)
+BufferStreamReader::BufferStreamReader(const void* base, size_t length)
 {
 	if(!base) throw Exception(E_POINTER);
 	if(length == 0) throw Exception(E_INVALIDARG);
@@ -44,31 +44,13 @@ GZipStreamReader::GZipStreamReader(const void* base, size_t length)
 	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
 #endif
 
-	// Maintain the original information for Reset() capability
-	m_base = reinterpret_cast<uint8_t*>(const_cast<void*>(base));;
+	m_base = base;
 	m_length = static_cast<uint32_t>(length);
-	m_position = 0;
-
-	// Initialize the zlib stream structure
-	memset(&m_stream, 0, sizeof(z_stream));
-	m_stream.avail_in = m_length;
-	m_stream.next_in  = m_base;
-
-	// inflateInit2() must be used when working with a GZIP stream
-	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_FAIL, _T("Unable to initialize GZIP inflation stream"));
+	m_offset = 0;
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader Destructor
-
-GZipStreamReader::~GZipStreamReader()
-{
-	inflateEnd(&m_stream);
-}
-
-//-----------------------------------------------------------------------------
-// GZipStreamReader::Read (StreamReader)
+// BufferStreamReader::Read (StreamReader)
 //
 // Reads the specified number of bytes from the input stream into the output buffer
 //
@@ -77,41 +59,24 @@ GZipStreamReader::~GZipStreamReader()
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
+uint32_t BufferStreamReader::Read(void* buffer, uint32_t length)
 {
-	bool freemem = false;					// Flag to free buffer
-	uint32_t out = m_stream.total_out;		// Save the current total
-
 	if(length == 0) return 0;				// Nothing to do
 
-	// The caller can specify NULL if the output data is irrelevant, but zlib
-	// expects to be able to write the decompressed data somewhere ...
-	if(!buffer) {
+	// Calulate the number of output bytes that can be returned
+	uint32_t out = min(length, m_length - m_offset);
 
-		buffer = malloc(length);
-		if(!buffer) throw Exception(E_OUTOFMEMORY);
-		freemem = true;
-	}
+	// Copy the memory from the source buffer into the output buffer.  The caller
+	// can provide NULL if they just want to skip over some bytes ...
+	if((buffer) && (out > 0)) memcpy(buffer, reinterpret_cast<const uint8_t*>(m_base) + m_offset, out);
 
-	// Set the output buffer pointer and length for zlib
-	m_stream.next_out = reinterpret_cast<uint8_t*>(buffer);
-	m_stream.avail_out = length;
-
-	// Inflate up to the requested number of bytes from the compressed stream
-	int result = inflate(&m_stream, Z_SYNC_FLUSH);
-	if(freemem) free(buffer);
-
-	if((result != Z_OK) && (result != Z_STREAM_END))
-		throw Exception(E_FAIL, _T("Unable to inflate GZIP stream data"));
-
-	out = (m_stream.total_out - out);			// Update output count
-	m_position += out;							// Update stream position
-	
-	return out;
+	// Move the current offset and return the number of bytes copied
+	m_offset += out;
+	return static_cast<uint32_t>(out);
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader::Reset (StreamReader)
+// BufferStreamReader::Reset (StreamReader)
 //
 // Resets the stream back to the beginning
 //
@@ -119,24 +84,13 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 //
 //	NONE
 
-void GZipStreamReader::Reset(void)
+void BufferStreamReader::Reset(void)
 {
-	// Finish the existing decompression stream operations
-	inflateEnd(&m_stream);
-
-	// Reinitialize the decompression stream
-	memset(&m_stream, 0, sizeof(z_stream));
-	m_stream.avail_in = m_length;
-	m_stream.next_in  = m_base;
-
-	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_FAIL, _T("Unable to initialize GZIP inflation stream"));
-
-	m_position = 0;				// Reset position back to zero
+	m_offset = 0;
 }
 
 //-----------------------------------------------------------------------------
-// GZipStreamReader::Seek (StreamReader)
+// BufferStreamReader::Seek (StreamReader)
 //
 // Advances the stream to the specified position
 //
@@ -144,13 +98,11 @@ void GZipStreamReader::Reset(void)
 //
 //	position		- Position to advance the input stream to
 
-void GZipStreamReader::Seek(uint32_t position)
+void BufferStreamReader::Seek(uint32_t position)
 {
-	if(position < m_position) throw Exception(E_INVALIDARG);
-	
-	// Use Read() to decompress and advance the stream
-	Read(NULL, position - m_position);
-	if(m_position != position) throw Exception(E_ABORT);
+	// For consistency with the compressed streams, this is a forward-only operation
+	if((position < m_offset) || (position >= m_length)) throw Exception(E_INVALIDARG);
+	m_offset = position;
 }
 
 //-----------------------------------------------------------------------------

@@ -20,55 +20,42 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __ELFSEGMENT_H_
+#define __ELFSEGMENT_H_
 #pragma once
+
+#include "elf.h"						// Include ELF file format decls
+#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// ElfSegment
 //
-// Implements a forward-only byte stream reader interface
+// Base class representing an ELF binary image segment
 
-class StreamReader
+class ElfSegment
 {
 public:
 
 	// Destructor
 	//
-	virtual ~StreamReader() {}
+	virtual ~ElfSegment() {}
 
-	//-------------------------------------------------------------------------
-	// Member Functions
+protected:
 
-	// Read
+	// Instance Constructor
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	ElfSegment() {}
 
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
+private:
 
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	ElfSegment(const ElfSegment&);
+	ElfSegment& operator=(const ElfSegment&);
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __ELFSEGMENT_H_

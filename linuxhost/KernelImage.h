@@ -24,7 +24,7 @@
 #define __KERNELIMAGE_H_
 #pragma once
 
-#include "ELFImage.h"					// Include ELFImage declarations
+#include "ElfBinary.h"					// Include ElfBinary declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
@@ -34,7 +34,7 @@
 //
 // Loads the Linux system kernel image
 
-class KernelImage : public ELFImage
+class KernelImage
 {
 public:
 
@@ -101,8 +101,7 @@ private:
 
 	// Instance Constructors
 	//
-	KernelImage(void* base, size_t length) : ELFImage(base, length) {}
-	explicit KernelImage(std::unique_ptr<StreamReader>& reader) : ELFImage(reader) {}
+	explicit KernelImage(ElfBinary* binary) {}
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

@@ -20,55 +20,46 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "MappedFile.h"					// Include MappedFile declarations
+
+#include "Exception.h"					// Include Exception class declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// MappedFile Constructor
 //
-// Implements a forward-only byte stream reader interface
+// Arguments:
+//
+//	handle		- Handle from CreateFile() or NULL
+//	protect		- Mapping protection flags
+//	length		- Length of the file mapping to create
 
-class StreamReader
+MappedFile::MappedFile(HANDLE file, DWORD protect, size_t length)
 {
-public:
+	ULARGE_INTEGER		ullength;			// Length as a ULARGE_INTEGER
 
-	// Destructor
-	//
-	virtual ~StreamReader() {}
+	if(length == 0) throw Exception(E_INVALIDARG);
 
-	//-------------------------------------------------------------------------
-	// Member Functions
+	// Process the length as a ULARGE_INTEGER to more easily deal with varying size_t
+	ullength.QuadPart = length;
 
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	// Attempt to create the file mapping with the specified parameters
+	m_handle = CreateFileMapping(file, NULL, protect, ullength.HighPart, ullength.LowPart, NULL);
+	if(!m_handle) throw Exception(GetLastError());
 
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
+	m_length = length;						// Record the length for convenience
+}
 
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+//-----------------------------------------------------------------------------
+// MappedFileView Destructor
 
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
-};
+MappedFile::~MappedFile()
+{
+	if(m_handle) CloseHandle(m_handle);
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __STREAMREADER_H_

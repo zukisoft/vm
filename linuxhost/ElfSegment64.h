@@ -20,55 +20,42 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
+#ifndef __ELFSEGMENT64_H_
+#define __ELFSEGMENT64_H_
 #pragma once
+
+#include "ElfSegment.h"					// Include ElfSegment declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// ElfSegment64
 //
-// Implements a forward-only byte stream reader interface
+// Specialization of the ElfSegment class for a 64-bit image
 
-class StreamReader
+class ElfSegment64 : public ElfSegment
 {
 public:
 
-	// Destructor
+	// Constructor / Destructor
 	//
-	virtual ~StreamReader() {}
+	ElfSegment64(const Elf64_Phdr* header, std::unique_ptr<StreamReader>& reader);
+	virtual ~ElfSegment64();
+
+private:
+
+	ElfSegment64(const ElfSegment64&);
+	ElfSegment64& operator=(const ElfSegment64&);
 
 	//-------------------------------------------------------------------------
-	// Member Functions
+	// Member Variables
 
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
-
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	Elf64_Phdr				m_header;				// Segment header
+	void*					m_base;					// Allocated base address
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __STREAMREADER_H_
+#endif	// __ELFSEGMENT64_H_

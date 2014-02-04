@@ -42,10 +42,31 @@ public:
 	GZipStreamReader(const void* base, size_t length);
 	virtual ~GZipStreamReader();
 
-	// ByteReader::Read
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// StreamReader::Read
 	//
 	// Reads the specified number of bytes from the underlying stream
 	virtual uint32_t Read(void* buffer, uint32_t length);
+
+	// StreamReader::Reset
+	//
+	// Resets the stream back to the beginning
+	virtual void Reset(void);
+
+	// StreamReader::Seek
+	//
+	// Advances the stream to the specified position
+	virtual void Seek(uint32_t position);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// StreamReader::getPosition
+	//
+	// Gets the current position within the stream
+	virtual uint32_t getPosition(void) { return m_position; }
 
 private:
 
@@ -56,6 +77,9 @@ private:
 	// Member Variables
 
 	z_stream				m_stream;			// GZIP decompression stream
+	uint8_t*				m_base;				// Base memory address
+	uint32_t				m_length;			// Length of memory buffer
+	uint32_t				m_position;			// Current stream position
 };
 
 //-----------------------------------------------------------------------------
