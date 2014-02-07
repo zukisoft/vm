@@ -64,7 +64,7 @@ Linux Host
 ;// Error Definitions
 ;//--------------------------------------------------------------------------
 
-MessageIdTypedef=DWORD
+MessageIdTypedef=HRESULT
 
 ;//--------------------------------------------------------------------------
 ;// GENERIC Error Codes (0x001-0x0FF)

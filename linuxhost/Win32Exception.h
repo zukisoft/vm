@@ -20,54 +20,31 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ELFBINARY64_H_
-#define __ELFBINARY64_H_
+#ifndef __WIN32EXCEPTION_H_
+#define __WIN32EXCEPTION_H_
 #pragma once
 
-#include "elf.h"						// Include ELF file format decls
-#include "ElfBinary.h"					// Include ElfBinary declarations
-//#include "MappedFileView.h"				// Include MappedFileView declarations
-
-class MappedFileView;
+#include "Exception.h"					// Include Exception declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// ElfBinary64
+// Win32Exception
 //
-// Specialization of the ElfBinary class for a 64-bit image
+// Exception class for Windows system error codes
 
-class ElfBinary64 : public ElfBinary
+class Win32Exception : public Exception
 {
 public:
 
-	// Destructor
+	// Constructors
 	//
-	virtual ~ElfBinary64() {}
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// Load
-	//
-	// Parses and loads the specified ELF image into virtual memory
-	static ElfBinary64* Load(std::unique_ptr<StreamReader>& reader);
-
-private:
-
-	ElfBinary64(std::unique_ptr<MappedFileView>& view);
-	ElfBinary64(const ElfBinary64&);
-	ElfBinary64& operator=(const ElfBinary64&);
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	HANDLE					m_mapping;			// Memory mapped binary image
-	Elf64_Ehdr				m_header;			// ELF64 header data
+	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
+	explicit Win32Exception(DWORD result) : Exception(HRESULT_FROM_WIN32(result)) {}
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __ELFBINARY64_H_
+#endif	// __WIN32EXCEPTION_H_

@@ -22,7 +22,6 @@
 
 #include "stdafx.h"					// Include project pre-compiled headers
 #include "BoyerMoore.h"				// Include BoyerMoore class declarations
-#include "Exception.h"				// Include Exception declarations
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 

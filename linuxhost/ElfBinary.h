@@ -26,44 +26,72 @@
 
 #include "elf.h"						// Include ELF file format decls
 #include "ElfSegment.h"					// Include ElfSegment declarations
+#include "Exception.h"					// Include Exception declarations
+#include "MappedFile.h"					// Include MappedFile declarations
+#include "MappedFileView.h"				// Include MappedFileView declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// ElfBinary
+// ElfBinaryT
 //
-// Base class representing an ELF binary image
+// Represents a loaded ELF binary image
+//
+//	ehdr_t		- ELF header structure type
+//	phdr_t		- ELF program header structure type
+//	shdr_t		- ELF section header structure type
 
-class ElfBinary
+template <class ehdr_t, class phdr_t, class shdr_t>
+class ElfBinaryT
 {
 public:
 
-	// Destructor
-	//
-	virtual ~ElfBinary() {}
-
-	// IsElfBinary
-	//
-	// Checks the specified address for the ELF magic number
-	static bool ElfBinary::IsElfBinary(const void* base, size_t length);
+	//-------------------------------------------------------------------------
+	// Member Functions
 
 	// Load
 	//
 	// Parses and loads the specified ELF image into virtual memory
-	static ElfBinary* Load(std::unique_ptr<StreamReader>& reader);
+	static ElfBinaryT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile> mapping);
+	static ElfBinaryT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<StreamReader>& reader);
 
-protected:
-
-	// Instance Constructor
+	// TryValidateHeader
 	//
-	ElfBinary() {}
+	// Validates an ELF binary header; does not throw an exception
+	static bool TryValidateHeader(const void* base, size_t length);
+
+	// ValidateHeader
+	//
+	// Validates an ELF binary header; throws an exception
+	static void ValidateHeader(const void* base, size_t length);
 
 private:
 
-	ElfBinary(const ElfBinary&);
-	ElfBinary& operator=(const ElfBinary&);
+	ElfBinaryT(const ElfBinaryT&);
+	ElfBinaryT& operator=(const ElfBinaryT&);
+
+	// Instance Constructor
+	//
+	ElfBinaryT(std::shared_ptr<MappedFile> mapping);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	ehdr_t										m_header;		// ELF header
+	std::vector<std::unique_ptr<ElfSegment>>	m_segments;		// Segments
 };
+
+//-----------------------------------------------------------------------------
+// ElfBinary
+//
+// Typedef of ElfBinaryT<> based on build configuration
+
+#ifdef _M_X64
+typedef ElfBinaryT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>	ElfBinary;
+#else
+typedef ElfBinaryT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>	ElfBinary;
+#endif
 
 //-----------------------------------------------------------------------------
 

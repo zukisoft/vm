@@ -24,8 +24,14 @@
 #define __KERNELIMAGE_H_
 #pragma once
 
+#include "BoyerMoore.h"					// Include BoyerMoore declarations
+#include "BufferStreamReader.h"			// Include BufferStreamReader decls
+#include "BZip2StreamReader.h"			// Include BZip2StreamReader decls
 #include "ElfBinary.h"					// Include ElfBinary declarations
+#include "Exception.h"					// Include Exception declarations
+#include "GZipStreamReader.h"			// Include GZipStreamReader declarations
 #include "StreamReader.h"				// Include StreamReader declarations
+#include "Win32Exception.h"				// Include Win32Exception declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -101,7 +107,7 @@ private:
 
 	// Instance Constructors
 	//
-	explicit KernelImage(ElfBinary* binary) {}
+	explicit KernelImage(ElfBinary* binary) { delete binary; }
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

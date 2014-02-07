@@ -35,20 +35,27 @@ class Exception
 {
 public:
 
-	// Instance Constructors
-	Exception() : m_hResult(HRESULT_FROM_WIN32(GetLastError())) {}
-	Exception(DWORD dwResult, ...) : m_hResult(HRESULT_FROM_WIN32(dwResult)) {}
-	Exception(HRESULT hResult, ...) : m_hResult(hResult) {}
+	// Constructor
+	//
+	explicit Exception(HRESULT hResult, ...);
 
-	Exception(DWORD dwResult, LPCTSTR message) { }
-	Exception(HRESULT hResult, LPCTSTR message) {  }
+	// Copy Constructor
+	//
+	Exception(const Exception& rhs) : m_hResult(rhs.m_hResult), m_message(rhs.m_message) {}
+
+	//-------------------------------------------------------------------------
+	// Overloaded Operators
+
+	operator LPCTSTR() const { return m_message.c_str(); }
+	Exception& operator=(const Exception& rhs);
 
 private:
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HRESULT					m_hResult;				// Error HRESULT code
+	HRESULT					m_hResult;			// Error HRESULT code
+	std::tstring			m_message;			// Formatted message string
 };
 
 //-----------------------------------------------------------------------------

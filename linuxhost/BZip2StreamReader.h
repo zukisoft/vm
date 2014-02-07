@@ -24,6 +24,7 @@
 #define __BZIP2STREAMREADER_H_
 #pragma once
 
+#include "Exception.h"					// Include Exception class declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings

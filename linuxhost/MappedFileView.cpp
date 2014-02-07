@@ -23,9 +23,6 @@
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "MappedFileView.h"				// Include MappedFileView declarations
 
-#include "Exception.h"					// Include Exception class declarations
-#include "MappedFile.h"					// Include MappedFile declarations
-
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
@@ -42,8 +39,6 @@ MappedFileView::MappedFileView(std::shared_ptr<MappedFile> mapping, DWORD access
 {
 	ULARGE_INTEGER		uloffset;				// Offset as a ULARGE_INTEGER
 
-	if(length == 0) throw Exception(E_INVALIDARG);
-
 	m_mapping = mapping;						// Store the shared_ptr object
 
 	// Process the offset as a ULARGE_INTEGER to more easily deal with varying size_t
@@ -51,9 +46,10 @@ MappedFileView::MappedFileView(std::shared_ptr<MappedFile> mapping, DWORD access
 
 	// Attempt to map the specified region of the file into this process
 	m_view = MapViewOfFile(m_mapping->Handle, access, uloffset.HighPart, uloffset.LowPart, length);
-	if(!m_view) throw Exception(GetLastError());
+	if(!m_view) throw Win32Exception();
 
-	m_length = length;						// Record the length for convenience
+	// If the specified length was zero, the view encompasses the entire mapped file
+	m_length = (length) ? length : mapping->Length;
 }
 
 //-----------------------------------------------------------------------------

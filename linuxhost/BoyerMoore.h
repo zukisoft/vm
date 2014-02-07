@@ -24,7 +24,9 @@
 #define __BOYERMOORE_H_
 #pragma once
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#include "Exception.h"				// Include Exception declarations
+
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
 // BoyerMoore

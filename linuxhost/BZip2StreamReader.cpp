@@ -23,8 +23,6 @@
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "BZip2StreamReader.h"			// Include BZip2StreamReader declarations
 
-#include "Exception.h"					// Include Exception class declarations
-
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------

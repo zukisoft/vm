@@ -24,9 +24,11 @@
 #define __MAPPEDFILEVIEW_H_
 #pragma once
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#include "Exception.h"					// Include Exception class declarations
+#include "MappedFile.h"					// Include MappedFile declarations
+#include "Win32Exception.h"				// Include Win32Exception declarations
 
-class MappedFile;
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
 // MappedFileView

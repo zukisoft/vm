@@ -20,42 +20,48 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ELFSEGMENT64_H_
-#define __ELFSEGMENT64_H_
-#pragma once
-
-#include "ElfSegment.h"					// Include ElfSegment declarations
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "Exception.h"					// Include Exception declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// ElfSegment64
+// Exception Constructor
 //
-// Specialization of the ElfSegment class for a 64-bit image
+// Arguments:
+//
+//	hResult			- HRESULT code
+//	...				- Variable arguments to be passed to FormatMessage
 
-class ElfSegment64 : public ElfSegment
+Exception::Exception(HRESULT hResult, ...) : m_hResult(hResult)
 {
-public:
+	LPTSTR			formatted;				// Formatted message
 
-	// Constructor / Destructor
-	//
-	ElfSegment64(const Elf64_Phdr* header, std::unique_ptr<StreamReader>& reader);
-	virtual ~ElfSegment64();
+	// Initialize the variable argument list for FormatMessage()
+	va_list	args;
+	va_start(args, hResult);
 
-private:
+	// Invoke FormatMessage to convert the HRESULT and the variable arguments into a message,
+	// either from the system or the message resources in this module
+	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM, 
+		GetModuleHandle(NULL), static_cast<DWORD>(hResult), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
+		reinterpret_cast<LPTSTR>(&formatted), 0, &args) == 0) return;
 
-	ElfSegment64(const ElfSegment64&);
-	ElfSegment64& operator=(const ElfSegment64&);
+	m_message = formatted;					// Convert into an std::string/wstring
+	LocalFree(formatted);					// Release the allocated buffer
+}
 
-	//-------------------------------------------------------------------------
-	// Member Variables
+//-----------------------------------------------------------------------------
+// Exception::operator=
 
-	Elf64_Phdr				m_header;				// Segment header
-	void*					m_base;					// Allocated base address
-};
+Exception& Exception::operator=(const Exception& rhs)
+{
+	m_hResult = rhs.m_hResult;
+	m_message = rhs.m_message;
+
+	return *this;
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __ELFSEGMENT64_H_

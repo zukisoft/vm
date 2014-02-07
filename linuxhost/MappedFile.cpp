@@ -23,8 +23,6 @@
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "MappedFile.h"					// Include MappedFile declarations
 
-#include "Exception.h"					// Include Exception class declarations
-
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
@@ -47,7 +45,7 @@ MappedFile::MappedFile(HANDLE file, DWORD protect, size_t length)
 
 	// Attempt to create the file mapping with the specified parameters
 	m_handle = CreateFileMapping(file, NULL, protect, ullength.HighPart, ullength.LowPart, NULL);
-	if(!m_handle) throw Exception(GetLastError());
+	if(!m_handle) throw Win32Exception();
 
 	m_length = length;						// Record the length for convenience
 }

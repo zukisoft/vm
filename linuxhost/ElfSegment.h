@@ -24,35 +24,60 @@
 #define __ELFSEGMENT_H_
 #pragma once
 
-#include "elf.h"						// Include ELF file format decls
-#include "StreamReader.h"				// Include StreamReader declarations
+#include "elf.h"						// Include ELF format declarations
+#include "Exception.h"					// Include Exception declarations
+#include "MappedFileView.h"				// Include MappedFileView declarations
+#include "Win32Exception.h"				// Include Win32Exception declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// ElfSegment
+// ElfSegmentT
 //
-// Base class representing an ELF binary image segment
+// Represents a single loaded segment of an ELF binary image
+//
+//	phdr_t		- ELF program header structure type
 
-class ElfSegment
+template <class phdr_t>
+class ElfSegmentT
 {
 public:
 
-	// Destructor
+	// Constructor / Destructor
 	//
-	virtual ~ElfSegment() {}
-
-protected:
-
-	// Instance Constructor
-	//
-	ElfSegment() {}
+	ElfSegmentT(const phdr_t* header, std::unique_ptr<MappedFileView>& view);
+	~ElfSegmentT();
 
 private:
 
-	ElfSegment(const ElfSegment&);
-	ElfSegment& operator=(const ElfSegment&);
+	ElfSegmentT(const ElfSegmentT&);
+	ElfSegmentT& operator=(const ElfSegmentT&);
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// FlagsToProtection
+	//
+	// Converts the ELF p_flags into VirtualAlloc protection flags
+	static DWORD FlagsToProtection(uint32_t flags);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	phdr_t					m_header;				// Segment header
+	void*					m_base;					// Allocated base address
 };
+
+//-----------------------------------------------------------------------------
+// ElfSegment
+//
+// Typedef of ElfSegmentT<> based on build configuration
+
+#ifdef _M_X64
+typedef ElfSegmentT<Elf64_Phdr>		ElfSegment;
+#else
+typedef ElfSegmentT<Elf32_Phdr>		ElfSegment;
+#endif
 
 //-----------------------------------------------------------------------------
 

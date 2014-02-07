@@ -35,11 +35,22 @@
 // Windows / CRT
 #include <windows.h>			// Include main Windows declarations
 #include <tchar.h>				// Include generic text mappings
+#include <stdarg.h>				// Include standard argument decls (va_list)
 #include <stdint.h>				// Include standard integer declarations
 #include <stdlib.h>				// Include standard library declarations
 
 // STL
-#include <memory>				// unique_ptr<>, among other things
+#include <memory>				// unique_ptr<>, shared_ptr<>, etc.
+#include <string>				// string<>, wstring<>, etc.
+#include <vector>				// vector<> template declarations
+
+namespace std {
+#ifdef _UNICODE
+	typedef wstring tstring;
+#else
+	typedef string tstring;
+#endif
+}
 
 // zlib
 #include <zlib.h>				// Include ZLIB declarations

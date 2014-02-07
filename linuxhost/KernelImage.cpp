@@ -23,14 +23,6 @@
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "KernelImage.h"				// Include KernelImage decls
 
-#include "BoyerMoore.h"					// Include BoyerMoore declarations
-#include "BufferStreamReader.h"			// Include BufferStreamReader decls
-#include "BZip2StreamReader.h"			// Include BZip2StreamReader decls
-#include "Exception.h"					// Include Exception declarations
-#include "GZipStreamReader.h"			// Include GZipStreamReader declarations
-
-#include "ElfBinary.h"
-
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
@@ -54,7 +46,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	// moving on to the next potential compression algorithm
 
 	// UNCOMPRESSED -----
-	if(ElfBinary::IsElfBinary(mapping->Pointer, mapping->Length)) {
+	if(ElfBinary::TryValidateHeader(mapping->Pointer, mapping->Length)) {
 
 		std::unique_ptr<StreamReader> reader(new BufferStreamReader(mapping->Pointer, mapping->Length));
 
@@ -119,7 +111,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	}
 
 	// UNKNOWN ----------
-	throw Exception(E_LOADIMAGE_DECOMPRESS, _T("bad juju"));
+	throw Exception(E_LOADIMAGE_DECOMPRESS, path);
 }
 
 //-----------------------------------------------------------------------------
@@ -151,15 +143,15 @@ KernelImage::MappedImage* KernelImage::MappedImage::Load(LPCTSTR path)
 
 	// Open the input file in read-only sequential scan mode
 	hFile = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-	if(hFile == INVALID_HANDLE_VALUE) throw Exception(GetLastError());
+	if(hFile == INVALID_HANDLE_VALUE) throw Win32Exception();
 
 	// Create a file mapping for the entire input file
 	hMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-	if(hMapping == NULL) { DWORD dwResult = GetLastError(); CloseHandle(hFile); throw Exception(dwResult); }
+	if(hMapping == NULL) { DWORD dwResult = GetLastError(); CloseHandle(hFile); throw Win32Exception(dwResult); }
 
 	// Map the input file as read-only memory
 	pvMapping = MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
-	if(pvMapping == NULL) { DWORD dwResult = GetLastError(); CloseHandle(hMapping); CloseHandle(hFile); throw Exception(dwResult); }
+	if(pvMapping == NULL) { DWORD dwResult = GetLastError(); CloseHandle(hMapping); CloseHandle(hFile); throw Win32Exception(dwResult); }
 
 	return new KernelImage::MappedImage(hFile, hMapping, pvMapping);
 }
