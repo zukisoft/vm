@@ -75,7 +75,7 @@ ElfSegmentT<phdr_t>::ElfSegmentT(const phdr_t* header, std::unique_ptr<MappedFil
 		memset(reinterpret_cast<void*>(intptr_t(m_base) + m_header.p_filesz), 0, m_header.p_memsz - m_header.p_filesz);
 
 		// Apply the proper virtual memory protection flags to the segment
-		if(VirtualProtect(m_base, m_header.p_memsz, FlagsToProtection(m_header.p_flags), &result)) {
+		if(!VirtualProtect(m_base, m_header.p_memsz, FlagsToProtection(m_header.p_flags), &result)) {
 
 			result = GetLastError();
 			VirtualFree(m_base, m_header.p_memsz, MEM_RELEASE);

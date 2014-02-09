@@ -58,6 +58,9 @@ namespace std {
 // bzip2
 #include <bzlib.h>				// Include BZIP2 declarations
 
+// lzo
+#include <minilzo.h>			// Include MINILZO declarations
+
 // zuki.vm.messages
 #include <messages.h>			// Include message compiler output header
 

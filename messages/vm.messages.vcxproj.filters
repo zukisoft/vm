@@ -7,6 +7,7 @@
     </Filter>
     <Filter Include="Generated Files">
       <UniqueIdentifier>{40eba3db-258a-4504-9a54-ab96349f7e31}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
     </Filter>
   </ItemGroup>
   <ItemGroup>

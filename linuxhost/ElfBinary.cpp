@@ -204,8 +204,9 @@ void ElfBinaryT<ehdr_t, phdr_t, shdr_t>::ValidateHeader(const void* base, size_t
 	// Check the ELF header magic number
 	if(memcmp(&header->e_ident[EI_MAG0], ELFMAG, SELFMAG) != 0) throw Exception(E_INVALIDELFMAGIC);
 
-	// Verify that a 64-bit ELF binary is being processed by the class
-	if(header->e_ident[EI_CLASS] != ELFCLASS64) throw Exception(E_UNEXPECTEDELFCLASS, header->e_ident[EI_CLASS]);
+	// Verify the ELF class matches the build configuration (32-bit vs. 64-bit)
+	int elfclass = (sizeof(ehdr_t) == sizeof(Elf32_Ehdr)) ? ELFCLASS32 : ELFCLASS64;
+	if(header->e_ident[EI_CLASS] != elfclass) throw Exception(E_UNEXPECTEDELFCLASS, header->e_ident[EI_CLASS]);
 
 	// Verify the endianness and version of the ELF binary
 	if(header->e_ident[EI_DATA] != ELFDATA2LSB) throw Exception(E_UNEXPECTEDELFENCODING);

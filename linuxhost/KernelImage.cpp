@@ -94,12 +94,16 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 	}
 	
-	// LZO --------------
-	uint8_t lzoMagic[] = { 'L', 'Z', 'O', 0x00 };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lzoMagic, sizeof(lzoMagic));
+	// LZOP --------------
+	uint8_t lzopMagic[] = { 0x89, 'L', 'Z', 'O', 0x00, 0x0D, 0x0A, 0x1A, 0x0A };
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lzopMagic, sizeof(lzopMagic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		std::unique_ptr<StreamReader> reader(new LzopStreamReader(vmlinuz, length));
+
+		try { return new KernelImage(ElfBinary::Load(reader)); }
+		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_LZOP */ }
 	}
 
 	// LZ4 --------------
