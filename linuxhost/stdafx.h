@@ -52,14 +52,11 @@ namespace std {
 #endif
 }
 
-// zlib
-#include <zlib.h>				// Include ZLIB declarations
-
-// bzip2
-#include <bzlib.h>				// Include BZIP2 declarations
-
-// lzo
-#include <minilzo.h>			// Include MINILZO declarations
+// Compression Libraries
+#include <zlib.h>
+#include <bzlib.h>
+#include <minilzo.h>
+#include <lz4.h>
 
 // zuki.vm.messages
 #include <messages.h>			// Include message compiler output header

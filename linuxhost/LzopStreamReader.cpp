@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// COMPRESSION_METHOD
+//
+// Used when generating decompression exceptions
+const TCHAR COMPRESSION_METHOD[] = _T("lzop");
+
 //-----------------------------------------------------------------------------
 // LZOP DECLARATIONS
 //-----------------------------------------------------------------------------
@@ -98,7 +103,7 @@ typedef struct {
 static intptr_t ReadBE8(intptr_t base, size_t* length, uint8_t* value)
 {
 	if((!length) | (!value)) throw Exception(E_POINTER);
-	if(*length < sizeof(uint8_t)) throw Exception(E_ABORT);
+	if(*length < sizeof(uint8_t)) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 
 	// Of course, there is no difference in endianness of a single byte,
 	// this function is for consistency with ReadBE16() and ReadBE32()
@@ -122,10 +127,9 @@ static intptr_t ReadBE8(intptr_t base, size_t* length, uint8_t* value)
 static intptr_t ReadBE16(intptr_t base, size_t* length, uint16_t* value)
 {
 	if((!length) | (!value)) throw Exception(E_POINTER);
-	if(*length < sizeof(uint16_t)) throw Exception(E_ABORT);
+	if(*length < sizeof(uint16_t)) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 
-	uint16_t raw = *reinterpret_cast<uint16_t*>(base);
-	*value = ((raw & 0x00FF) << 8) | ((raw & 0xFF00) >> 8);
+	*value = _byteswap_ushort(*reinterpret_cast<uint16_t*>(base));
 
 	*length -= sizeof(uint16_t);
 	return base + sizeof(uint16_t);
@@ -145,11 +149,9 @@ static intptr_t ReadBE16(intptr_t base, size_t* length, uint16_t* value)
 static intptr_t ReadBE32(intptr_t base, size_t* length, uint32_t* value)
 {
 	if((!length) | (!value)) throw Exception(E_POINTER);
-	if(*length < sizeof(uint32_t)) throw Exception(E_ABORT);
+	if(*length < sizeof(uint32_t)) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 
-	uint32_t raw = *reinterpret_cast<uint32_t*>(base);
-	*value = ((raw & 0x000000FF) << 24) | ((raw & 0x0000FF00) << 8) | 
-		((raw & 0x00FF0000) >> 8) | ((raw & 0xFF000000) >> 24);
+	*value = _byteswap_ulong(*reinterpret_cast<uint32_t*>(base));
 
 	*length -= sizeof(uint32_t);
 	return base + sizeof(uint32_t);
@@ -178,7 +180,7 @@ static intptr_t ReadHeader(intptr_t base, size_t *length, header_t* header)
 
 	// version
 	base = ReadBE16(base, length, &header->version);
-	if(header->version < 0x0900) throw Exception(E_UNEXPECTED);		// TODO EXCEPTION
+	if(header->version < 0x0900) throw Exception(E_DECOMPRESS_BADHEADER, COMPRESSION_METHOD);
 
 	// lib_version
 	base = ReadBE16(base, length, &header->lib_version);
@@ -187,8 +189,8 @@ static intptr_t ReadHeader(intptr_t base, size_t *length, header_t* header)
 	if(header->version >= 0x0940) {
 		
 		base = ReadBE16(base, length, &header->version_needed_to_extract);
-		if(header->version_needed_to_extract > version) throw Exception(E_UNEXPECTED); // TODO EXCEPTION
-		if(header->version_needed_to_extract < 0x0900) throw Exception(E_UNEXPECTED);		// TODO EXCEPTION
+		if(header->version_needed_to_extract > version) throw Exception(E_DECOMPRESS_BADHEADER, COMPRESSION_METHOD);
+		if(header->version_needed_to_extract < 0x0900) throw Exception(E_DECOMPRESS_BADHEADER, COMPRESSION_METHOD);
 	}
 
 	// method
@@ -255,11 +257,11 @@ static intptr_t ReadHeader(intptr_t base, size_t *length, header_t* header)
 static intptr_t ReadMagic(intptr_t base, size_t* length)
 {
 	if(!length) return E_POINTER;
-	if(*length < sizeof(lzopMagic)) throw Exception(E_ABORT);
+	if(*length < sizeof(lzopMagic)) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 
 	// Verify the magic number
 	if(memcmp(reinterpret_cast<const void*>(base), &lzopMagic[0], sizeof(lzopMagic)) != 0)
-		throw Exception(E_UNEXPECTED);		// TODO E_INVALIDLZOPHEADER or something
+		throw Exception(E_DECOMPRESS_BADMAGIC, COMPRESSION_METHOD);
 
 	// Reduce the available length by magic number size and return adjusted pointer
 	*length -= sizeof(lzopMagic);
@@ -285,14 +287,13 @@ LzopStreamReader::LzopStreamReader(const void* base, size_t length)
 	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
 #endif
 
-	intptr_t baseptr = intptr_t(base);
+	m_base = intptr_t(base);
 
 	// Verify the magic number and read the LZOP header information
-	baseptr = ReadMagic(baseptr, &length);
-	baseptr = ReadHeader(baseptr, &length, &header);
+	m_base = ReadMagic(m_base, &length);
+	m_base = ReadHeader(m_base, &length, &header);
 
 	// Maintain the original information for Reset() capability
-	m_base = reinterpret_cast<uint8_t*>(baseptr);
 	m_length = static_cast<uint32_t>(length);
 	m_position = 0;
 
@@ -302,7 +303,7 @@ LzopStreamReader::LzopStreamReader(const void* base, size_t length)
 	m_blockremain = 0;
 
 	// Initialize the LZO input stream member variables
-	m_lzopos = baseptr;
+	m_lzopos = m_base;
 	m_lzoremain = length;
 	m_lzoflags = header.flags;
 }
@@ -357,8 +358,8 @@ uint32_t LzopStreamReader::ReadNextBlock(void)
 	if(m_lzoflags & F_CRC32_C) m_lzopos = ReadBE32(m_lzopos, &m_lzoremain, &crc32_checksum_c);
 
 	// Sanity checks
-	if(uncompressed > MAX_BLOCK_SIZE) throw Exception(E_UNEXPECTED);	// TODO: EXCEPTION
-	if(compressed > m_lzoremain) throw Exception(E_ABORT);
+	if(uncompressed > MAX_BLOCK_SIZE) throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
+	if(compressed > m_lzoremain) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 
 	// Reallocate the block buffer if the current one is not large enough
 	if(uncompressed > m_blocklen) {
@@ -378,7 +379,7 @@ uint32_t LzopStreamReader::ReadNextBlock(void)
 
 		lzo_uint out = uncompressed;
 		lzo1x_decompress(reinterpret_cast<const lzo_bytep>(m_lzopos), static_cast<lzo_uint>(compressed), m_block, &out, LZO1X_MEM_DECOMPRESS);
-		if(out != uncompressed) throw Exception(E_ABORT);
+		if(out != uncompressed) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 	}
 
 #ifdef _DEBUG
@@ -386,9 +387,7 @@ uint32_t LzopStreamReader::ReadNextBlock(void)
 	if(m_lzoflags & F_ADLER32_D) {
 
 		uint32_t adler = lzo_adler32(ADLER32_INIT_VALUE, m_block, uncompressed);
-		if(adler != adler_checksum_d) {
-			throw Exception(E_UNEXPECTED);		// TODO: EXCEPTION
-		}
+		if(adler != adler_checksum_d) throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
 	}
 #endif
 
@@ -462,7 +461,7 @@ uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
 void LzopStreamReader::Reset(void)
 {
 	// Reset the LZO stream pointers back to the first data block
-	m_lzopos = intptr_t(m_base);
+	m_lzopos = m_base;
 	m_lzoremain = m_length;
 
 	// Reset the block buffer pointer and remaining length
@@ -487,7 +486,7 @@ void LzopStreamReader::Seek(uint32_t position)
 	
 	// Use Read() to decompress and advance the stream
 	Read(NULL, position - m_position);
-	if(m_position != position) throw Exception(E_ABORT);
+	if(m_position != position) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 }
 
 //-----------------------------------------------------------------------------

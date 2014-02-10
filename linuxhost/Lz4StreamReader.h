@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __LZOPSTREAMREADER_H_
-#define __LZOPSTREAMREADER_H_
+#ifndef __LZ4STREAMREADER_H_
+#define __LZ4STREAMREADER_H_
 #pragma once
 
 #include "Exception.h"					// Include Exception class declarations
@@ -30,18 +30,18 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// LzopStreamReader
+// Lz4StreamReader
 //
-// LZO-based decompression stream reader implementation
+// LZ4-based decompression stream reader implementation
 
-class LzopStreamReader : public StreamReader
+class Lz4StreamReader : public StreamReader
 {
 public:
 
 	// Constructors / Destructor
 	//
-	LzopStreamReader(const void* base, size_t length);
-	virtual ~LzopStreamReader();
+	Lz4StreamReader(const void* base, size_t length);
+	virtual ~Lz4StreamReader();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -71,8 +71,8 @@ public:
 
 private:
 
-	LzopStreamReader(const LzopStreamReader&);
-	LzopStreamReader& operator=(const LzopStreamReader&);
+	Lz4StreamReader(const Lz4StreamReader&);
+	Lz4StreamReader& operator=(const Lz4StreamReader&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -90,17 +90,15 @@ private:
 	uint32_t				m_position;			// Current stream position
 
 	uint8_t*				m_block;			// Decompressed block data
-	size_t					m_blocklen;			// Block data buffer size
 	uint8_t*				m_blockcurrent;		// Pointer into block data
 	uint32_t				m_blockremain;		// Remaining block data
 
-	uint32_t				m_lzoflags;			// LZOP header flags
-	intptr_t				m_lzopos;			// Position in LZO stream
-	size_t					m_lzoremain;		// Remaining LZOP data
+	intptr_t				m_lz4pos;			// Position in LZ4 stream
+	size_t					m_lz4remain;		// Remaining LZ4 data
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __LZOPSTREAMREADER_H_
+#endif	// __LZ4STREAMREADER_H_

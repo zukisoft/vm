@@ -111,9 +111,51 @@ Test Informational Message
 
 MessageId=
 Severity=Error
+SymbolicName=E_DECOMPRESS_INIT
+Language=English
+The decompression stream cannot be initialized (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_BADMAGIC
+Language=English
+The decompression stream magic number is invalid (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_BADHEADER
+Language=English
+The decompression stream header is corrupt (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_TRUNCATED
+Language=English
+The decompression stream ended prematurely (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_CORRUPT
+Language=English
+The decompression stream data is corrupt (method: %1)
+.
+
+MessageId=
+Severity=Error
 SymbolicName=E_INVALIDELFMAGIC
 Language=English
 The specified image does not contain the ELF header magic number and is invalid
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_ELF_TRUNCATED
+Language=English
+The ELF binary data ended prematurely
 .
 
 MessageId=

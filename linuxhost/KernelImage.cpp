@@ -71,7 +71,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, xzMagic, sizeof(xzMagic));
 	if(vmlinuz != NULL) {
 
-		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		//size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 	}
 	
 	// BZIP2 ------------
@@ -91,7 +91,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lzmaMagic, sizeof(lzmaMagic));
 	if(vmlinuz != NULL) {
 
-		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		//size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 	}
 	
 	// LZOP --------------
@@ -107,11 +107,15 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	}
 
 	// LZ4 --------------
-	uint8_t lz4Magic[] = { 0x04, 0x22, 0x4D, 0x18 };
+	uint8_t lz4Magic[] = { 0x02, 0x21, 0x4C, 0x18 };
 	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lz4Magic, sizeof(lz4Magic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		std::unique_ptr<StreamReader> reader(new Lz4StreamReader(vmlinuz, length));
+
+		try { return new KernelImage(ElfBinary::Load(reader)); }
+		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_LZ4 */ }
 	}
 
 	// UNKNOWN ----------

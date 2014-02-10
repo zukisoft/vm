@@ -25,6 +25,10 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// TODO: Load can be done with a StreamReader to avoid decompressing the 
+// image first.  Just detect overlapping segments and read the overlap from
+// the previously loaded segment.  They are presented in order.
+
 //-----------------------------------------------------------------------------
 // Explicit Instantiations
 
@@ -157,7 +161,7 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std
 	// Decompress the ELF image into the memory mapped file
 	std::unique_ptr<MappedFileView> view(new MappedFileView(mapping, FILE_MAP_WRITE, 0, length));
 	out = reader->Read(view->Pointer, static_cast<uint32_t>(length));
-	if(out != length) throw Exception(E_ABORT);
+	if(out != length) throw Exception(E_ELF_TRUNCATED);
 	view.release();
 
 	return new ElfBinaryT<ehdr_t, phdr_t, shdr_t>(mapping);

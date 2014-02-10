@@ -30,6 +30,7 @@
 #include "ElfBinary.h"					// Include ElfBinary declarations
 #include "Exception.h"					// Include Exception declarations
 #include "GZipStreamReader.h"			// Include GZipStreamReader declarations
+#include "Lz4StreamReader.h"			// Include Lz4StreamReader declarations
 #include "LzopStreamReader.h"			// Include LzopStreamReader declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 #include "Win32Exception.h"				// Include Win32Exception declarations

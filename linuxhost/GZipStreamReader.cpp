@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// COMPRESSION_METHOD
+//
+// Used when generating decompression exceptions
+const TCHAR COMPRESSION_METHOD[] = _T("gzip");
+
 //-----------------------------------------------------------------------------
 // GZipStreamReader Constructor
 //
@@ -54,7 +59,7 @@ GZipStreamReader::GZipStreamReader(const void* base, size_t length)
 
 	// inflateInit2() must be used when working with a GZIP stream
 	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_FAIL, _T("Unable to initialize GZIP inflation stream"));
+	if(result != Z_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
 }
 
 //-----------------------------------------------------------------------------
@@ -100,7 +105,7 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 	if(freemem) free(buffer);
 
 	if((result != Z_OK) && (result != Z_STREAM_END))
-		throw Exception(E_FAIL, _T("Unable to inflate GZIP stream data"));
+		throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
 
 	out = (m_stream.total_out - out);			// Update output count
 	m_position += out;							// Update stream position
@@ -128,7 +133,7 @@ void GZipStreamReader::Reset(void)
 	m_stream.next_in  = m_base;
 
 	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_FAIL, _T("Unable to initialize GZIP inflation stream"));
+	if(result != Z_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
 
 	m_position = 0;				// Reset position back to zero
 }
@@ -148,7 +153,7 @@ void GZipStreamReader::Seek(uint32_t position)
 	
 	// Use Read() to decompress and advance the stream
 	Read(NULL, position - m_position);
-	if(m_position != position) throw Exception(E_ABORT);
+	if(m_position != position) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 }
 
 //-----------------------------------------------------------------------------

@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// COMPRESSION_METHOD
+//
+// Used when generating decompression exceptions
+const TCHAR COMPRESSION_METHOD[] = _T("bzip2");
+
 //-----------------------------------------------------------------------------
 // BZip2StreamReader Constructor
 //
@@ -53,7 +58,7 @@ BZip2StreamReader::BZip2StreamReader(const void* base, size_t length)
 	m_stream.next_in  = m_base;
 
 	int result = BZ2_bzDecompressInit(&m_stream, 0, 0);
-	if(result != BZ_OK) throw Exception(E_FAIL, _T("Unable to initialize BZIP2 inflation stream"));
+	if(result != BZ_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
 }
 
 //-----------------------------------------------------------------------------
@@ -99,7 +104,7 @@ uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
 	if(freemem) free(buffer);
 
 	if((result != BZ_OK) && (result != BZ_STREAM_END))
-		throw Exception(E_FAIL, _T("Unable to inflate BZIP2 stream data"));
+		throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
 
 	out = (m_stream.total_out_lo32 - out);		// Update output count
 	m_position += out;							// Update stream position
@@ -127,7 +132,7 @@ void BZip2StreamReader::Reset(void)
 	m_stream.next_in  = m_base;
 
 	int result = BZ2_bzDecompressInit(&m_stream, 0, 0);
-	if(result != BZ_OK) throw Exception(E_FAIL, _T("Unable to initialize BZIP2 inflation stream"));
+	if(result != BZ_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
 
 	m_position = 0;				// Reset position back to zero
 }
@@ -147,7 +152,7 @@ void BZip2StreamReader::Seek(uint32_t position)
 	
 	// Use Read() to decompress and advance the stream
 	Read(NULL, position - m_position);
-	if(m_position != position) throw Exception(E_ABORT);
+	if(m_position != position) throw Exception(E_DECOMPRESS_TRUNCATED, COMPRESSION_METHOD);
 }
 
 //-----------------------------------------------------------------------------
