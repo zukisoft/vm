@@ -71,7 +71,11 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, xzMagic, sizeof(xzMagic));
 	if(vmlinuz != NULL) {
 
-		//size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		std::unique_ptr<StreamReader> reader(new XzStreamReader(vmlinuz, length));
+
+		try { return new KernelImage(ElfBinary::Load(reader)); }
+		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_XZ */ }
 	}
 	
 	// BZIP2 ------------

@@ -36,6 +36,9 @@
     <Filter Include="External Libraries\lz4">
       <UniqueIdentifier>{6f291bae-f5c1-4b3f-82f5-664399bffae2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\xz-embedded">
+      <UniqueIdentifier>{6998b8e8-3b80-4348-b84a-dd53cf339ae5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -112,6 +115,12 @@
     </ClInclude>
     <ClInclude Include="Lz4StreamReader.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XzStreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h">
+      <Filter>External Libraries\xz-embedded</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -204,6 +213,21 @@
     </ClCompile>
     <ClCompile Include="Lz4StreamReader.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="XzStreamReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_crc32.c">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_lzma2.c">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_stream.c">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_bcj.c">
+      <Filter>External Libraries\xz-embedded</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

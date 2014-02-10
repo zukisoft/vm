@@ -34,6 +34,7 @@
 #include "LzopStreamReader.h"			// Include LzopStreamReader declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 #include "Win32Exception.h"				// Include Win32Exception declarations
+#include "XzStreamReader.h"				// Include XzStreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

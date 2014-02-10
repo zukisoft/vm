@@ -94,7 +94,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,7 +108,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -124,7 +124,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,7 +142,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -157,6 +157,7 @@
     <ClInclude Include="..\..\external\minilzo\lzoconf.h" />
     <ClInclude Include="..\..\external\minilzo\lzodefs.h" />
     <ClInclude Include="..\..\external\minilzo\minilzo.h" />
+    <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h" />
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
     <ClInclude Include="..\tmp\messages\messages.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Trace.h" />
     <ClInclude Include="Win32Exception.h" />
+    <ClInclude Include="XzStreamReader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\bzip2\blocksort.c">
@@ -261,6 +263,62 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_crc32.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4267</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_bcj.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4267</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_lzma2.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4267</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_stream.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">XZ_DEC_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4267</DisableSpecificWarnings>
+    </ClCompile>
     <ClCompile Include="..\..\external\zlib\adler32.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -341,6 +399,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="XzStreamReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\messages\messages.rc" />

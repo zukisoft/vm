@@ -57,6 +57,7 @@ namespace std {
 #include <bzlib.h>
 #include <minilzo.h>
 #include <lz4.h>
+#include <xz.h>
 
 // zuki.vm.messages
 #include <messages.h>			// Include message compiler output header
