@@ -34,26 +34,18 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	KernelImage* p;
-	try {
-		
-		p = KernelImage::Load(_T("D:\\bzImage.xz"));
+	try { 
+		p = KernelImage::Load(_T("D:\\bzImage.gzip"));  delete p;
+		//p = KernelImage::Load(_T("D:\\bzImage.bzip2")); delete p;
+		//p = KernelImage::Load(_T("D:\\bzImage.xz")); delete p;
+		//p = KernelImage::Load(_T("D:\\bzImage.lzo")); delete p;
+		//p = KernelImage::Load(_T("D:\\bzImage.lz4")); delete p;
+		//p = KernelImage::Load(_T("D:\\bzImage.i386")); delete p;
+		//p = KernelImage::Load(_T("D:\\vmlinux")); delete p;
 	}
 	catch(Exception& ex) {
 		MessageBox(NULL, ex, _T("Exception"), MB_OK | MB_ICONHAND);
-		return (int)E_TEST;
-	}
-
-	delete p;
-
-	bz_stream bz;
-	ZeroMemory(&bz, sizeof(bz_stream));
-	int result;
-
-	result = BZ2_bzDecompressInit(&bz, 0, 0);
-	if(result == BZ_OK) {
-
-		int x = 123;
-		BZ2_bzDecompressEnd(&bz);
+		return (int)E_FAIL;
 	}
 
 	return 0;

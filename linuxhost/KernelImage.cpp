@@ -25,6 +25,9 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+#define KiB		*(1 << 10)				// KiB multiplier
+#define MiB		*(1 << 20)				// MiB multiplier
+
 //-----------------------------------------------------------------------------
 // KernelImage::Load (static)
 //
@@ -43,87 +46,78 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 	// Test for magic numbers in the memory mapped file in the same order as extract-vmlinux.
 	// When a magic number is found, attempt to decompress and test the image successfully before 
-	// moving on to the next potential compression algorithm
+	// moving on to the next potential compression algorithm.  Limit searches to the first 512KiB
+	// of the file to try and avoid false positives
 
 	// UNCOMPRESSED -----
 	if(ElfBinary::TryValidateHeader(mapping->Pointer, mapping->Length)) {
 
 		std::unique_ptr<StreamReader> reader(new BufferStreamReader(mapping->Pointer, mapping->Length));
-
-		try { return new KernelImage(ElfBinary::Load(reader)); }
-		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_ELF*/ }
+		return new KernelImage(ElfBinary::Load(reader));
 	}
 
 	// GZIP -------------
 	uint8_t gzipMagic[] = { 0x1F, 0x8B, 0x08, 0x00 };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, gzipMagic, sizeof(gzipMagic));
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, min(512 KiB, mapping->Length), gzipMagic, sizeof(gzipMagic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new GZipStreamReader(vmlinuz, length));
-
-		try { return new KernelImage(ElfBinary::Load(reader)); }
-		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_GZIP */ }
+		return new KernelImage(ElfBinary::Load(reader));
 	}
 
 	// XZ ---------------
 	uint8_t xzMagic[] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, xzMagic, sizeof(xzMagic));
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, min(512 KiB, mapping->Length), xzMagic, sizeof(xzMagic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new XzStreamReader(vmlinuz, length));
-
-		try { return new KernelImage(ElfBinary::Load(reader)); }
-		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_XZ */ }
+		return new KernelImage(ElfBinary::Load(reader));
 	}
 	
 	// BZIP2 ------------
 	uint8_t bzip2Magic[] = { 'B', 'Z', 'h' };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, bzip2Magic, sizeof(bzip2Magic));
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, min(512 KiB, mapping->Length), bzip2Magic, sizeof(bzip2Magic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new BZip2StreamReader(vmlinuz, length));
-
-		try { return new KernelImage(ElfBinary::Load(reader)); }
-		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_BZIP2 */ }
+		return new KernelImage(ElfBinary::Load(reader));
 	}
 
 	// LZMA -------------
 	uint8_t lzmaMagic[] = { 0x5D, 0x00, 0x00, 0x00 };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lzmaMagic, sizeof(lzmaMagic));
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, min(512 KiB, mapping->Length), lzmaMagic, sizeof(lzmaMagic));
 	if(vmlinuz != NULL) {
 
-		//size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
+		//
+		// TODO: Not sure I even want to support LZMA, but I did all the others ...
+		//
 	}
 	
 	// LZOP --------------
 	uint8_t lzopMagic[] = { 0x89, 'L', 'Z', 'O', 0x00, 0x0D, 0x0A, 0x1A, 0x0A };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lzopMagic, sizeof(lzopMagic));
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, min(512 KiB, mapping->Length), lzopMagic, sizeof(lzopMagic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new LzopStreamReader(vmlinuz, length));
-
-		try { return new KernelImage(ElfBinary::Load(reader)); }
-		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_LZOP */ }
+		return new KernelImage(ElfBinary::Load(reader));
 	}
 
 	// LZ4 --------------
 	uint8_t lz4Magic[] = { 0x02, 0x21, 0x4C, 0x18 };
-	vmlinuz = BoyerMoore::Search(mapping->Pointer, mapping->Length, lz4Magic, sizeof(lz4Magic));
+	vmlinuz = BoyerMoore::Search(mapping->Pointer, min(512 KiB, mapping->Length), lz4Magic, sizeof(lz4Magic));
 	if(vmlinuz != NULL) {
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new Lz4StreamReader(vmlinuz, length));
-
-		try { return new KernelImage(ElfBinary::Load(reader)); }
-		catch(Exception&) { /* TODO: LOG ME - W_LOADIMAGE_DECOMPRESS_LZ4 */ }
+		return new KernelImage(ElfBinary::Load(reader));
 	}
 
 	// UNKNOWN ----------
-	throw Exception(E_LOADIMAGE_DECOMPRESS, path);
+	throw Exception(E_KERNELIMAGE_UNKNOWNFORMAT);
 }
 
 //-----------------------------------------------------------------------------

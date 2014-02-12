@@ -144,6 +144,15 @@ Language=English
 The decompression stream data is corrupt (method: %1)
 .
 
+;// KernelImage Errors
+
+MessageId=
+Severity=Error
+SymbolicName=E_KERNELIMAGE_UNKNOWNFORMAT
+Language=English
+The kernel image file format cannot be determined or is not supported
+.
+
 MessageId=
 Severity=Error
 SymbolicName=E_INVALIDELFMAGIC
@@ -162,7 +171,7 @@ MessageId=
 Severity=Error
 SymbolicName=E_UNEXPECTEDELFCLASS
 Language=English
-An unexpected ELF file class code of %d was detected in the ELF binary file header
+An unexpected ELF file class code of %1!d! was detected in the ELF binary file header
 .
 
 MessageId=
@@ -207,52 +216,4 @@ Language=English
 The ELF binary file header lists segments in a non-sequential order
 .
 
-MessageId=0x101
-Severity=Warning
-SymbolicName=W_TEST
-Language=English
-Test Warning Message
-.
-
-MessageId=0x102
-Severity=Error
-SymbolicName=E_TEST
-Language=English
-Test Error Message
-.
-
-MessageId=0x105
-Severity=Error
-SymbolicName=E_ZLIB
-Language=English
-ZLIB DECOMPRESSION ERROR
-.
-
-MessageId=0x106
-Severity=Error
-SymbolicName=E_BZIP2
-Language=English
-BZIP2 DECOMPRESSION ERROR
-.
-
-MessageId=0x110
-Severity=Warning
-SymbolicName=W_LOADIMAGE_DECOMPRESS_ELF
-Language=English
-words here - Bad thing happened processing ELF image - attempting more methods
-.
-
-MessageId=0x111
-Severity=Warning
-SymbolicName=W_LOADIMAGE_DECOMPRESS_GZIP
-Language=English
-words here - Bad thing happened processing GZIP image - attempting more methods
-.
-
-MessageId=0x120
-Severity=Error
-SymbolicName=E_LOADIMAGE_DECOMPRESS
-Language=English
-Linux kernel image %1 could not be decompressed. More words here.
-.
 
