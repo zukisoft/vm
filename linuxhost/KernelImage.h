@@ -27,7 +27,7 @@
 #include "BoyerMoore.h"					// Include BoyerMoore declarations
 #include "BufferStreamReader.h"			// Include BufferStreamReader decls
 #include "BZip2StreamReader.h"			// Include BZip2StreamReader decls
-#include "ElfBinary.h"					// Include ElfBinary declarations
+#include "ElfImage.h"					// Include ElfImage declarations
 #include "Exception.h"					// Include Exception declarations
 #include "GZipStreamReader.h"			// Include GZipStreamReader declarations
 #include "Lz4StreamReader.h"			// Include Lz4StreamReader declarations
@@ -110,7 +110,7 @@ private:
 
 	// Instance Constructors
 	//
-	explicit KernelImage(ElfBinary* binary) { delete binary; }
+	explicit KernelImage(ElfImage* image) { delete image; }
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

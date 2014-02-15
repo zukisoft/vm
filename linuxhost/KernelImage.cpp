@@ -50,10 +50,10 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	// of the file to try and avoid false positives
 
 	// UNCOMPRESSED -----
-	if(ElfBinary::TryValidateHeader(mapping->Pointer, mapping->Length)) {
+	if(ElfImage::TryValidateHeader(mapping->Pointer, mapping->Length)) {
 
 		std::unique_ptr<StreamReader> reader(new BufferStreamReader(mapping->Pointer, mapping->Length));
-		return new KernelImage(ElfBinary::Load(reader));
+		return new KernelImage(ElfImage::Load(reader));
 	}
 
 	// GZIP -------------
@@ -63,7 +63,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new GZipStreamReader(vmlinuz, length));
-		return new KernelImage(ElfBinary::Load(reader));
+		return new KernelImage(ElfImage::Load(reader));
 	}
 
 	// XZ ---------------
@@ -73,7 +73,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new XzStreamReader(vmlinuz, length));
-		return new KernelImage(ElfBinary::Load(reader));
+		return new KernelImage(ElfImage::Load(reader));
 	}
 	
 	// BZIP2 ------------
@@ -83,7 +83,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new BZip2StreamReader(vmlinuz, length));
-		return new KernelImage(ElfBinary::Load(reader));
+		return new KernelImage(ElfImage::Load(reader));
 	}
 
 	// LZMA -------------
@@ -103,7 +103,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new LzopStreamReader(vmlinuz, length));
-		return new KernelImage(ElfBinary::Load(reader));
+		return new KernelImage(ElfImage::Load(reader));
 	}
 
 	// LZ4 --------------
@@ -113,7 +113,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = mapping->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(mapping->Pointer));
 		std::unique_ptr<StreamReader> reader(new Lz4StreamReader(vmlinuz, length));
-		return new KernelImage(ElfBinary::Load(reader));
+		return new KernelImage(ElfImage::Load(reader));
 	}
 
 	// UNKNOWN ----------

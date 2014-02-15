@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ELFBINARY_H_
-#define __ELFBINARY_H_
+#ifndef __ELFIMAGE_H_
+#define __ELFIMAGE_H_
 #pragma once
 
 #include "elf.h"						// Include ELF file format decls
@@ -34,16 +34,16 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// ElfBinaryT
+// ElfImageT
 //
-// Represents a loaded ELF binary image
+// Represents a loaded ELF image
 //
 //	ehdr_t		- ELF header structure type
 //	phdr_t		- ELF program header structure type
 //	shdr_t		- ELF section header structure type
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-class ElfBinaryT
+class ElfImageT
 {
 public:
 
@@ -53,8 +53,8 @@ public:
 	// Load
 	//
 	// Parses and loads the specified ELF image into virtual memory
-	static ElfBinaryT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile> mapping);
-	static ElfBinaryT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<StreamReader>& reader);
+	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile> mapping);
+	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<StreamReader>& reader);
 
 	// TryValidateHeader
 	//
@@ -68,12 +68,12 @@ public:
 
 private:
 
-	ElfBinaryT(const ElfBinaryT&);
-	ElfBinaryT& operator=(const ElfBinaryT&);
+	ElfImageT(const ElfImageT&);
+	ElfImageT& operator=(const ElfImageT&);
 
 	// Instance Constructor
 	//
-	ElfBinaryT(std::shared_ptr<MappedFile> mapping);
+	ElfImageT(std::shared_ptr<MappedFile> mapping);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -83,18 +83,18 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// ElfBinary
+// ElfImage
 //
-// Typedef of ElfBinaryT<> based on build configuration
+// Typedef of ElfImageT<> based on build configuration
 
 #ifdef _M_X64
-typedef ElfBinaryT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>	ElfBinary;
+typedef ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>	ElfImage;
 #else
-typedef ElfBinaryT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>	ElfBinary;
+typedef ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>	ElfImage;
 #endif
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __ELFBINARY_H_
+#endif	// __ELFIMAGE_H_

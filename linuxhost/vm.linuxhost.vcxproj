@@ -164,7 +164,7 @@
     <ClInclude Include="BoyerMoore.h" />
     <ClInclude Include="BufferStreamReader.h" />
     <ClInclude Include="BZip2StreamReader.h" />
-    <ClInclude Include="ElfBinary.h" />
+    <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ElfSegment.h" />
     <ClInclude Include="Lz4StreamReader.h" />
     <ClInclude Include="LzopStreamReader.h" />
@@ -383,7 +383,7 @@
     <ClCompile Include="BufferStreamReader.cpp" />
     <ClCompile Include="BZip2StreamReader.cpp" />
     <ClCompile Include="bz_internal_error.cpp" />
-    <ClCompile Include="ElfBinary.cpp" />
+    <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="ElfSegment.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="GZipStreamReader.cpp" />

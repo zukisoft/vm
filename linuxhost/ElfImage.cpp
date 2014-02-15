@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "ElfBinary.h"					// Include ELFBinary declarations
+#include "ElfImage.h"					// Include ELFImage declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -33,20 +33,20 @@
 // Explicit Instantiations
 
 #ifdef _M_X64
-template ElfBinaryT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>;
+template ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>;
 #else
-template ElfBinaryT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
+template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
 #endif
 
 //-----------------------------------------------------------------------------
-// ElfBinaryT Constructor (private)
+// ElfImageT Constructor (private)
 //
 // Arguments:
 //
 //	mapping			- Memory-mapped binary image file
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfBinaryT<ehdr_t, phdr_t, shdr_t>::ElfBinaryT(std::shared_ptr<MappedFile> mapping)
+ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile> mapping)
 {
 	// Map a read-only view of the entire image file so that it can be processed
 	std::unique_ptr<MappedFileView> view(new MappedFileView(mapping, FILE_MAP_READ, 0, 0));
@@ -71,7 +71,7 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>::ElfBinaryT(std::shared_ptr<MappedFile> mappi
 }
 
 //-----------------------------------------------------------------------------
-// ElfBinaryT::Load (static)
+// ElfImageT::Load (static)
 //
 // Parses and loads the specified ELF image into virtual memory
 //
@@ -80,7 +80,7 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>::ElfBinaryT(std::shared_ptr<MappedFile> mappi
 //	mapping			- Memory-mapped image file
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std::shared_ptr<MappedFile> mapping)
+ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::shared_ptr<MappedFile> mapping)
 {
 
 #ifdef _M_X64
@@ -92,12 +92,12 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std
 	ValidateHeader(view->Pointer, view->Length);
 	view.release();
 
-	// Create a new ElfBinaryT instance fron the provided view
-	return new ElfBinaryT<ehdr_t, phdr_t, shdr_t>(mapping);
+	// Create a new ElfImageT instance fron the provided view
+	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping);
 }
 
 //-----------------------------------------------------------------------------
-// ElfBinaryT::Load (static)
+// ElfImageT::Load (static)
 //
 // Parses and loads the specified ELF image into virtual memory
 //
@@ -106,7 +106,7 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std
 //	reader		- Pointer to a StreamReader used to access the raw image
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std::unique_ptr<StreamReader>& reader)
+ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::unique_ptr<StreamReader>& reader)
 {
 	ehdr_t				header;					// ELF header structure
 	uint32_t			out;					// Bytes read from the input stream
@@ -164,11 +164,11 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std
 	if(out != length) throw Exception(E_ELF_TRUNCATED);
 	view.release();
 
-	return new ElfBinaryT<ehdr_t, phdr_t, shdr_t>(mapping);
+	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping);
 }
 
 //-----------------------------------------------------------------------------
-// ElfBinaryT::TryValidateHeader
+// ElfImageT::TryValidateHeader
 //
 // Validates that the provided pointer points to a 64-bit ELF binary header --
 // returns a boolean flag rather than throwing an exception
@@ -179,7 +179,7 @@ ElfBinaryT<ehdr_t, phdr_t, shdr_t>* ElfBinaryT<ehdr_t, phdr_t, shdr_t>::Load(std
 //	length		- Length of the buffer pointed to by base
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-bool ElfBinaryT<ehdr_t, phdr_t, shdr_t>::TryValidateHeader(const void* base, size_t length)
+bool ElfImageT<ehdr_t, phdr_t, shdr_t>::TryValidateHeader(const void* base, size_t length)
 {
 	// Invoke the version that throws exceptions and just eat them
 	try { ValidateHeader(base, length); return true; }
@@ -187,7 +187,7 @@ bool ElfBinaryT<ehdr_t, phdr_t, shdr_t>::TryValidateHeader(const void* base, siz
 }
 
 //-----------------------------------------------------------------------------
-// ElfBinaryT::ValidateHeader
+// ElfImageT::ValidateHeader
 //
 // Validates that the provided pointer points to a 64-bit ELF binary header
 //
@@ -197,7 +197,7 @@ bool ElfBinaryT<ehdr_t, phdr_t, shdr_t>::TryValidateHeader(const void* base, siz
 //	length		- Length of the buffer pointed to by base
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-void ElfBinaryT<ehdr_t, phdr_t, shdr_t>::ValidateHeader(const void* base, size_t length)
+void ElfImageT<ehdr_t, phdr_t, shdr_t>::ValidateHeader(const void* base, size_t length)
 {
 	const ehdr_t*				header;					// ELF header structure
 

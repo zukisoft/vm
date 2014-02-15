@@ -80,9 +80,6 @@
     <ClInclude Include="ElfSegment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ElfBinary.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Win32Exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -122,6 +119,9 @@
     <ClInclude Include="..\tmp\vm.linuxhost\messages\messages.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="ElfImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -155,9 +155,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ElfSegment.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ElfBinary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Exception.cpp">
@@ -228,6 +225,9 @@
     </ClCompile>
     <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_bcj.c">
       <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfImage.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
