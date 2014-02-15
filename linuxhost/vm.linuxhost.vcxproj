@@ -94,7 +94,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,7 +108,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -124,7 +124,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,7 +142,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -160,7 +160,7 @@
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h" />
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
-    <ClInclude Include="..\tmp\messages\messages.h" />
+    <ClInclude Include="..\tmp\vm.linuxhost\messages\messages.h" />
     <ClInclude Include="BoyerMoore.h" />
     <ClInclude Include="BufferStreamReader.h" />
     <ClInclude Include="BZip2StreamReader.h" />
@@ -402,8 +402,37 @@
     <ClCompile Include="XzStreamReader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\tmp\messages\messages.rc" />
     <ResourceCompile Include="..\tmp\version\version.rc" />
+    <ResourceCompile Include="..\tmp\vm.linuxhost\messages\messages.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="messages.mc">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+
+</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Executing Message Compiler</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Executing Message Compiler</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Executing Message Compiler</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

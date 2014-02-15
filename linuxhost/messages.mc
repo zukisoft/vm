@@ -22,10 +22,6 @@
 
 ;//--------------------------------------------------------------------------
 ;// Facility Codes
-;//
-;// The custom event logging code uses the error code's facility information
-;// to determine the category of the event. Do not exceed 0xFF
-
 FacilityNames=(
 			Generic=0x00:FACILITY_GENERIC
 			LinuxHost=0x01:FACILITY_LINUX_HOST
@@ -33,32 +29,7 @@ FacilityNames=(
 
 ;//--------------------------------------------------------------------------
 ;// Language Codes
-
 LanguageNames=(English=0x0409:MSG00409)
-
-;//--------------------------------------------------------------------------
-;// Category Definitions
-;//
-;// These must match up to the facility codes defined above, if you want the
-;// strings to show up in event viewer properly
-;
-;// #define your number of implemented categories here
-;#define EVENTLOG_CATEGORY_COUNT		1
-;
-
-MessageIdTypedef=WORD
-
-MessageId=0x00
-SymbolicName=EVENTLOG_NAME
-Language=English
-ZukiSoft Virtual Machine Services
-.
-
-MessageId=0x01
-SymbolicName=CATEGORY_LINUXHOST
-Language=English
-Linux Host
-.
 
 ;//--------------------------------------------------------------------------
 ;// Error Definitions
