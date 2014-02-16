@@ -20,28 +20,27 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __MAPPEDFILE_H_
-#define __MAPPEDFILE_H_
+#ifndef __FILE_H_
+#define __FILE_H_
 #pragma once
 
 #include "Exception.h"					// Include Exception declarations
-#include "File.h"						// Include File declarations
 #include "Win32Exception.h"				// Include Win32Exception decls
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// MappedFile
+// File
 //
-// Creates a memory-mapped file
+// Wrapper around a windows file handle
 
-class MappedFile
+class File
 {
 public:
 
 	// Destructor
 	//
-	~MappedFile();
+	~File();
 
 	//-------------------------------------------------------------------------
 	// Overloaded Operators
@@ -53,56 +52,53 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// CreateFromFile
+	// OpenExisting
 	//
-	// Creates a mapping against an existing file handle
-	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, DWORD protect)
-		{ return new MappedFile(file, protect, 0, NULL); }
+	// Opens an existing file
+	static File* OpenExisting(LPCTSTR path)
+		{ return new File(path, GENERIC_READ | GENERIC_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
 
-	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, DWORD protect, size_t capacity)
-		{ return new MappedFile(file, protect, capacity, NULL); }
+	static File* OpenExisting(LPCTSTR path, DWORD access)
+		{ return new File(path, access, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
 	
-	// CreateNew
-	//
-	// Creates a mapping against the system page file
-	static MappedFile* CreateNew(DWORD protect, size_t capacity)
-		{ return new MappedFile(s_nullptr, protect, capacity, NULL); }
+	static File* OpenExisting(LPCTSTR path, DWORD access, DWORD share)
+		{ return new File(path, access, share, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
+
+	static File* OpenExisting(LPCTSTR path, DWORD access, DWORD share, DWORD flags)
+		{ return new File(path, access, share, OPEN_EXISTING, flags); }
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Capacity
-	//
-	// Gets the capacity of the memory mapped file
-	__declspec(property(get=getCapacity)) size_t Capacity;
-	size_t getCapacity(void) const { return m_capacity; }
-
 	// Handle
 	//
-	// Gets the underlying handle for the mapped file
+	// Gets the underlying handle for the file
 	__declspec(property(get=getHandle)) HANDLE Handle;
 	void* getHandle(void) const { return m_handle; }
 
+	// Size
+	//
+	// Gets the size of the file
+	__declspec(property(get=getSize)) size_t Size;
+	size_t getSize(void) const;
+
 private:
 
-	MappedFile(const MappedFile&);
-	MappedFile& operator=(const MappedFile&);
+	File(const File&);
+	File& operator=(const File&);
 
 	// Instance Constructor
 	//
-	MappedFile(std::shared_ptr<File>& file, DWORD protect, size_t capacity, LPCTSTR name);
+	File(LPCTSTR path, DWORD access, DWORD share, DWORD disposition, DWORD flags);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<File>			m_file;			// File handle
-	HANDLE							m_handle;		// File mapping handle
-	size_t							m_capacity;		// Capacity of the file mapping
-	static std::shared_ptr<File>	s_nullptr;		// INVALID_HANDLE_VALUE file
+	HANDLE				m_handle;			// Contained file handle
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __MAPPEDFILE_H_
+#endif	// __FILE_H_

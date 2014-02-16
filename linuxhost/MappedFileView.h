@@ -33,16 +33,30 @@
 //-----------------------------------------------------------------------------
 // MappedFileView
 //
-// Wrapper around the MapViewOfFile API that can be used with std::unique_ptr
+// Creates a view of a memory-mapped file
 
 class MappedFileView
 {
 public:
 
-	// Constructors / Destructor
+	// Destructor
 	//
-	MappedFileView(std::shared_ptr<MappedFile> mapping, DWORD access, size_t offset, size_t length);
 	~MappedFileView();
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Create
+	//
+	// Creates a view of the specified memory mapped file
+	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, DWORD access)
+		{ return new MappedFileView(mapping, access, 0, 0); }
+
+	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset)
+		{ return new MappedFileView(mapping, access, offset, 0); }
+
+	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset, size_t length)
+		{ return new MappedFileView(mapping, access, offset, length); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -64,12 +78,16 @@ private:
 	MappedFileView(const MappedFileView&);
 	MappedFileView& operator=(const MappedFileView&);
 
+	// Instance Constructor
+	//
+	MappedFileView(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset, size_t length);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<MappedFile>	m_mapping;		// Contained file mapping
-	void*						m_view;			// Base pointer of the view
-	size_t						m_length;		// Length of the view
+	std::shared_ptr<MappedFile>		m_mapping;		// Contained file mapping
+	void*							m_view;			// Base pointer of the view
+	size_t							m_length;		// Length of the view
 };
 
 //-----------------------------------------------------------------------------

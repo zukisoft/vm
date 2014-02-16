@@ -53,7 +53,7 @@ public:
 	// Load
 	//
 	// Parses and loads the specified ELF image into virtual memory
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile> mapping);
+	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile>& mapping);
 	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<StreamReader>& reader);
 
 	// TryValidateHeader
@@ -73,7 +73,7 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImageT(std::shared_ptr<MappedFile> mapping);
+	ElfImageT(std::shared_ptr<MappedFile>& mapping);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

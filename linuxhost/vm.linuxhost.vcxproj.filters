@@ -122,6 +122,9 @@
     <ClInclude Include="ElfImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="File.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -227,6 +230,9 @@
       <Filter>External Libraries\xz-embedded</Filter>
     </ClCompile>
     <ClCompile Include="ElfImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="File.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

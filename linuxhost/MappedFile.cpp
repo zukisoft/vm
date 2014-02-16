@@ -26,32 +26,44 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// MappedFile Constructor
+// Static Initializers
+
+std::shared_ptr<File> MappedFile::s_nullptr(nullptr);
+
+//-----------------------------------------------------------------------------
+// MappedFile Constructor (private)
 //
 // Arguments:
 //
-//	handle		- Handle from CreateFile() or NULL
+//	file		- File to create mapping against or nullptr
 //	protect		- Mapping protection flags
-//	length		- Length of the file mapping to create
+//	capacity	- Capacity of the file mapping to create
+//	name		- Mapping name
 
-MappedFile::MappedFile(HANDLE file, DWORD protect, size_t length)
+MappedFile::MappedFile(std::shared_ptr<File>& file, DWORD protect, size_t capacity, LPCTSTR name)
 {
-	ULARGE_INTEGER		ullength;			// Length as a ULARGE_INTEGER
+	ULARGE_INTEGER		ulcapacity;			// Capacity as a ULARGE_INTEGER
 
-	if(length == 0) throw Exception(E_INVALIDARG);
+	// A pagefile-backed mapping requires a capacity be specified
+	if((file == nullptr) && (capacity == 0)) throw Exception(E_INVALIDARG);
 
-	// Process the length as a ULARGE_INTEGER to more easily deal with varying size_t
-	ullength.QuadPart = length;
+	// Process the capacity as a ULARGE_INTEGER to more easily handle varying size_t
+	ulcapacity.QuadPart = capacity;
 
-	// Attempt to create the file mapping with the specified parameters
-	m_handle = CreateFileMapping(file, NULL, protect, ullength.HighPart, ullength.LowPart, NULL);
+	// Attempt to create the file mapping with the provided parameters
+	m_handle = CreateFileMapping((file == nullptr) ? INVALID_HANDLE_VALUE : file->Handle, NULL, protect,
+		ulcapacity.HighPart, ulcapacity.LowPart, name);
 	if(!m_handle) throw Win32Exception();
 
-	m_length = length;						// Record the length for convenience
+	// If a file-based mapping was created with a zero capacity, use the file size
+	if((file != nullptr) && (capacity == 0)) capacity = file->Size;
+	
+	m_file = file;							// Maintain strong reference to file handle
+	m_capacity = capacity;					// Store requested capacity
 }
 
 //-----------------------------------------------------------------------------
-// MappedFileView Destructor
+// MappedFile Destructor
 
 MappedFile::~MappedFile()
 {

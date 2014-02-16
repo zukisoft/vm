@@ -166,6 +166,7 @@
     <ClInclude Include="BZip2StreamReader.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ElfSegment.h" />
+    <ClInclude Include="File.h" />
     <ClInclude Include="Lz4StreamReader.h" />
     <ClInclude Include="LzopStreamReader.h" />
     <ClInclude Include="MappedFile.h" />
@@ -386,6 +387,7 @@
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="ElfSegment.cpp" />
     <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="File.cpp" />
     <ClCompile Include="GZipStreamReader.cpp" />
     <ClCompile Include="KernelImage.cpp" />
     <ClCompile Include="Lz4StreamReader.cpp" />

@@ -21,43 +21,55 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "MappedFileView.h"				// Include MappedFileView declarations
+#include "File.h"						// Include File declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// MappedFileView Constructor (private)
+// File Constructor (private)
 //
 // Arguments:
 //
-//	mapping		- Shared MappedFile instance
-//	access		- Access flags for MapViewOfFile()
-//	offset		- Offset into the file mapping to begin the view
-//	length		- Length of the view to create
+//	path			- Path to the file
+//	access			- File access mask
+//	share			- File sharing flags
+//	disposition		- File creation disposition
+//	flags			- File flags and attributes
 
-MappedFileView::MappedFileView(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset, size_t length)
+File::File(LPCTSTR path, DWORD access, DWORD share, DWORD disposition, DWORD flags)
 {
-	ULARGE_INTEGER		uloffset;				// Offset as a ULARGE_INTEGER
+	if(!path || !(*path)) throw Exception(E_INVALIDARG);
 
-	// Process the offset as a ULARGE_INTEGER to deal with varying width of size_t
-	uloffset.QuadPart = offset;
-
-	// Attempt to map the specified region of the file into this process
-	m_view = MapViewOfFile(mapping->Handle, access, uloffset.HighPart, uloffset.LowPart, length);
-	if(!m_view) throw Win32Exception();
-
-	m_mapping = mapping;						// Store the shared_ptr object
-
-	// If the specified length was zero, the view encompasses the entire mapped file
-	m_length = (length) ? length : mapping->Capacity;
+	m_handle = CreateFile(path, access, share, NULL, disposition, flags, NULL);
+	if(m_handle == INVALID_HANDLE_VALUE) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
-// MappedFileView Destructor
+// File Destructor
 
-MappedFileView::~MappedFileView()
+File::~File()
 {
-	if(m_view) UnmapViewOfFile(m_view);
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+}
+
+//-----------------------------------------------------------------------------
+// File::getSize
+//
+// Gets the size of the file
+
+size_t File::getSize(void) const
+{
+	LARGE_INTEGER			size;				// Size of the file
+
+	// Attempt to get the size of the file as a LARGE_INTEGER
+	if(!GetFileSizeEx(m_handle, &size)) throw Win32Exception();
+
+#ifdef _M_X64
+	return static_cast<size_t>(size.QuadPart);
+#else
+	// Can only return up to INT32_MAX with a 32-bit size_t
+	return (size.HighPart) ? INT32_MAX : static_cast<size_t>(size.LowPart);
+#endif
 }
 
 //-----------------------------------------------------------------------------

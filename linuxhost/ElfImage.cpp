@@ -46,10 +46,10 @@ template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
 //	mapping			- Memory-mapped binary image file
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile> mapping)
+ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mapping)
 {
 	// Map a read-only view of the entire image file so that it can be processed
-	std::unique_ptr<MappedFileView> view(new MappedFileView(mapping, FILE_MAP_READ, 0, 0));
+	std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ));
 
 	// The header has already been validated by this point, just copy it out
 	memcpy(&m_header, view->Pointer, sizeof(ehdr_t));
@@ -80,17 +80,17 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile> mapping
 //	mapping			- Memory-mapped image file
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::shared_ptr<MappedFile> mapping)
+ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::shared_ptr<MappedFile>& mapping)
 {
 
 #ifdef _M_X64
-	if(mapping->Length > UINT32_MAX) throw Exception(E_UNEXPECTED);					// <-- TODO: better error
+	if(mapping->Capacity > UINT32_MAX) throw Exception(E_UNEXPECTED);					// <-- TODO: better error
 #endif
 
 	// Validate the header that should be at the view base address
-	std::unique_ptr<MappedFileView> view(new MappedFileView(mapping, FILE_MAP_READ, 0, sizeof(ehdr_t)));
+	std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ, 0, sizeof(ehdr_t)));
 	ValidateHeader(view->Pointer, view->Length);
-	view.release();
+	view.reset();
 
 	// Create a new ElfImageT instance fron the provided view
 	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping);
@@ -155,14 +155,13 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::
 	reader->Reset();
 
 	// Create a pagefile-backed memory mapped file view to hold the uncompressed binary image
-	std::shared_ptr<MappedFile> mapping = 
-		std::make_shared<MappedFile>(INVALID_HANDLE_VALUE, PAGE_EXECUTE_READWRITE | SEC_COMMIT, length);
+	std::shared_ptr<MappedFile> mapping(MappedFile::CreateNew(PAGE_EXECUTE_READWRITE | SEC_COMMIT, length));
 
 	// Decompress the ELF image into the memory mapped file
-	std::unique_ptr<MappedFileView> view(new MappedFileView(mapping, FILE_MAP_WRITE, 0, length));
+	std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_WRITE, 0, length));
 	out = reader->Read(view->Pointer, static_cast<uint32_t>(length));
 	if(out != length) throw Exception(E_ELF_TRUNCATED);
-	view.release();
+	view.reset();
 
 	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping);
 }
@@ -216,7 +215,7 @@ void ElfImageT<ehdr_t, phdr_t, shdr_t>::ValidateHeader(const void* base, size_t 
 	if(header->e_ident[EI_DATA] != ELFDATA2LSB) throw Exception(E_UNEXPECTEDELFENCODING);
 	if(header->e_ident[EI_VERSION] != EV_CURRENT) throw Exception(E_UNKNOWNELFVERSION);
 
-	// TODO: Verify x86_64 machine
+	// TODO: Verify x86 / x86_64 machine - check size of ehdr_t to know which
 	// TODO: Verify object file type
 
 	// Verify that the length of the header is the same size as the Elfxx_Ehdr struct
