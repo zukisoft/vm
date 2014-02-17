@@ -165,12 +165,12 @@
     <ClInclude Include="BufferStreamReader.h" />
     <ClInclude Include="BZip2StreamReader.h" />
     <ClInclude Include="ElfImage.h" />
-    <ClInclude Include="ElfSegment.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="Lz4StreamReader.h" />
     <ClInclude Include="LzopStreamReader.h" />
     <ClInclude Include="MappedFile.h" />
     <ClInclude Include="MappedFileView.h" />
+    <ClInclude Include="MemoryRegion.h" />
     <ClInclude Include="StreamReader.h" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="Exception.h" />
@@ -385,7 +385,6 @@
     <ClCompile Include="BZip2StreamReader.cpp" />
     <ClCompile Include="bz_internal_error.cpp" />
     <ClCompile Include="ElfImage.cpp" />
-    <ClCompile Include="ElfSegment.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="GZipStreamReader.cpp" />
@@ -394,6 +393,7 @@
     <ClCompile Include="LzopStreamReader.cpp" />
     <ClCompile Include="MappedFile.cpp" />
     <ClCompile Include="MappedFileView.cpp" />
+    <ClCompile Include="MemoryRegion.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -401,6 +401,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="StreamReader.cpp" />
     <ClCompile Include="XzStreamReader.cpp" />
   </ItemGroup>
   <ItemGroup>
