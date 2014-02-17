@@ -40,7 +40,9 @@ public:
 	// Constructors
 	//
 	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
-	explicit Win32Exception(DWORD result) : Exception(HRESULT_FROM_WIN32(result)) {}
+	Win32Exception(DWORD result) : Exception(HRESULT_FROM_WIN32(result)) {}
+	Win32Exception(Exception& inner) : Exception(inner, HRESULT_FROM_WIN32(GetLastError())) {}
+	Win32Exception(Exception& inner, DWORD result) : Exception(inner, HRESULT_FROM_WIN32(result)) {}
 };
 
 //-----------------------------------------------------------------------------

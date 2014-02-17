@@ -35,19 +35,27 @@ class Exception
 {
 public:
 
-	// Constructor
+	// Constructors / Destructor
 	//
-	explicit Exception(HRESULT hResult, ...);
+	Exception(HRESULT hResult, ...);
+	Exception(Exception& inner, HRESULT hResult, ...);
+	virtual ~Exception();
 
 	// Copy Constructor
 	//
-	Exception(const Exception& rhs) : m_hResult(rhs.m_hResult), m_message(rhs.m_message) {}
+	Exception(const Exception& rhs);
 
 	//-------------------------------------------------------------------------
 	// Overloaded Operators
 
 	operator LPCTSTR() const { return m_message.c_str(); }
 	Exception& operator=(const Exception& rhs);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	__declspec(property(get=getInnerException)) Exception* InnerException;
+	Exception* getInnerException() const { return m_inner; }
 
 private:
 
@@ -56,6 +64,7 @@ private:
 
 	HRESULT					m_hResult;			// Error HRESULT code
 	std::tstring			m_message;			// Formatted message string
+	Exception*				m_inner;			// Inner exception object
 };
 
 //-----------------------------------------------------------------------------
