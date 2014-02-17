@@ -74,7 +74,7 @@ public:
 	//
 	// Gets the underlying handle for the file
 	__declspec(property(get=getHandle)) HANDLE Handle;
-	void* getHandle(void) const { return m_handle; }
+	HANDLE getHandle(void) const { return m_handle; }
 
 	// Size
 	//
