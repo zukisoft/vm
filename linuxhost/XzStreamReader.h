@@ -83,6 +83,7 @@ private:
 	uint8_t*				m_base;				// Base memory address
 	uint32_t				m_length;			// Length of memory buffer
 	uint32_t				m_position;			// Current position in the stream
+	bool					m_finished;			// Flag for end of stream
 };
 
 //-----------------------------------------------------------------------------

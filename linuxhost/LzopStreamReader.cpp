@@ -399,7 +399,6 @@ uint32_t LzopStreamReader::ReadNextBlock(void)
 	m_blockcurrent = m_block;
 	m_blockremain = uncompressed;
 
-	m_position += uncompressed;
 	return uncompressed;
 }
 
@@ -435,7 +434,7 @@ uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
 			m_blockremain -= next;
 		
 			// Move the output buffer pointer
-			buffer = reinterpret_cast<uint8_t*>(buffer) + next;
+			if(buffer) buffer = reinterpret_cast<uint8_t*>(buffer) + next;
 			length -= next;
 
 			out += next;			// Wrote this many output bytes
@@ -446,6 +445,7 @@ uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
 		if((m_blockremain == 0) && (ReadNextBlock() == 0)) break;
 	}
 
+	m_position += out;			// Increment the current stream position
 	return out;					// Return number of bytes written
 }
 

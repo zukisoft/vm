@@ -51,6 +51,7 @@ BZip2StreamReader::BZip2StreamReader(const void* base, size_t length)
 	m_base = reinterpret_cast<char*>(const_cast<void*>(base));
 	m_length = static_cast<uint32_t>(length);
 	m_position = 0;
+	m_finished = false;
 
 	// Initialize the bzlib stream structure
 	memset(&m_stream, 0, sizeof(bz_stream));
@@ -81,10 +82,10 @@ BZip2StreamReader::~BZip2StreamReader()
 
 uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
 {
-	bool freemem = false;						// Flag to free buffer
-	uint32_t out = m_stream.total_out_lo32;		// Save the current total
+	bool freemem = false;							// Flag to free buffer
+	uint32_t out = m_stream.total_out_lo32;			// Save the current total
 
-	if(length == 0) return 0;				// Nothing to do
+	if((length == 0) || (m_finished)) return 0;		// Nothing to do
 
 	// The caller can specify NULL if the output data is irrelevant, but zlib
 	// expects to be able to write the decompressed data somewhere ...
@@ -105,6 +106,9 @@ uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
 
 	if((result != BZ_OK) && (result != BZ_STREAM_END))
 		throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
+
+	// Prevent reading from beyond the end of the stream
+	if(result == BZ_STREAM_END) m_finished = true;
 
 	out = (m_stream.total_out_lo32 - out);		// Update output count
 	m_position += out;							// Update stream position
@@ -134,7 +138,8 @@ void BZip2StreamReader::Reset(void)
 	int result = BZ2_bzDecompressInit(&m_stream, 0, 0);
 	if(result != BZ_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
 
-	m_position = 0;				// Reset position back to zero
+	m_position = 0;
+	m_finished = false;
 }
 
 //-----------------------------------------------------------------------------

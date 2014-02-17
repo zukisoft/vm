@@ -51,6 +51,7 @@ XzStreamReader::XzStreamReader(const void* base, size_t length)
 	m_base = reinterpret_cast<uint8_t*>(const_cast<void*>(base));
 	m_length = static_cast<uint32_t>(length);
 	m_position = 0;
+	m_finished = false;
 
 	// Initialize the XZ CRC32 checksum generator
 	xz_crc32_init();
@@ -86,9 +87,9 @@ XzStreamReader::~XzStreamReader()
 
 uint32_t XzStreamReader::Read(void* buffer, uint32_t length)
 {
-	bool freemem = false;						// Flag to free buffer
+	bool freemem = false;							// Flag to free buffer
 
-	if(length == 0) return 0;				// Nothing to do
+	if((length == 0) || (m_finished)) return 0;		// Nothing to do
 
 	// The caller can specify NULL if the output data is irrelevant, but xz
 	// expects to be able to write the decompressed data somewhere ...
@@ -116,6 +117,9 @@ uint32_t XzStreamReader::Read(void* buffer, uint32_t length)
 	if((result != XZ_OK) && (result != XZ_STREAM_END)) 
 		throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
 
+	// XZ will raise an error on an attempt to read beyond the end
+	if(result == XZ_STREAM_END) m_finished = true;
+
 	m_position += static_cast<uint32_t>(m_buffer.out_pos);
 	return static_cast<uint32_t>(m_buffer.out_pos);
 }
@@ -140,6 +144,7 @@ void XzStreamReader::Reset(void)
 	m_buffer.in_size = m_length;
 
 	m_position = 0;
+	m_finished = false;
 }
 
 //-----------------------------------------------------------------------------
