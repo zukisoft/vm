@@ -40,6 +40,7 @@
 #include <stdlib.h>				// Include standard library declarations
 
 // STL
+#include <algorithm>			// for_each()
 #include <memory>				// unique_ptr<>, shared_ptr<>, etc.
 #include <string>				// string<>, wstring<>, etc.
 #include <vector>				// vector<> template declarations

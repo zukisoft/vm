@@ -25,10 +25,10 @@
 #pragma once
 
 #include "elf.h"						// Include ELF file format decls
-#include "ElfSegment.h"					// Include ElfSegment declarations
 #include "Exception.h"					// Include Exception declarations
 #include "MappedFile.h"					// Include MappedFile declarations
 #include "MappedFileView.h"				// Include MappedFileView declarations
+#include "MemoryRegion.h"				// Include MemoryRegion declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
@@ -73,13 +73,20 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImageT(std::shared_ptr<MappedFile>& mapping);
+	ElfImageT(std::unique_ptr<StreamReader>& reader);
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// FlagsToProtection
+	//
+	// Converts the ELF p_flags into VirtualAlloc protection flags
+	static DWORD FlagsToProtection(uint32_t flags);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	ehdr_t										m_header;		// ELF header
-	std::vector<std::unique_ptr<ElfSegment>>	m_segments;		// Segments
+	std::unique_ptr<MemoryRegion>	m_memory;		// Allocated virtual memory
 };
 
 //-----------------------------------------------------------------------------
