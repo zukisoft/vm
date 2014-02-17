@@ -20,69 +20,47 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STREAMREADER_H_
-#define __STREAMREADER_H_
-#pragma once
-
-#include "Exception.h"					// Include Exception declarations
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// StreamReader
+// StreamReader::TryRead
 //
-// Implements a forward-only byte stream reader interface
+// Reads the specified number of bytes from the input stream into the output buffer.
+// Returns a boolean success/failure value rather than throwing an exception
+//
+// Arguments:
+//
+//	buffer			- Output buffer
+//	length			- Length of the output buffer, in bytes
+//	out				- Number of bytes written to the buffer
 
-class StreamReader
+bool StreamReader::TryRead(void* buffer, uint32_t length, uint32_t* out)
 {
-public:
+	if(!out) return false;					// Invalid [out] pointer
 
-	// Destructor
-	//
-	virtual ~StreamReader() {}
+	try { *out = Read(buffer, length); return true; }
+	catch(Exception&) { return false; }
+}
 
-	//-------------------------------------------------------------------------
-	// Member Functions
+//-----------------------------------------------------------------------------
+// StreamReader::TrySeek
+//
+// Advances the stream to the specified position.  Returns a boolean value
+// rather than throwing an exception
+//
+// Arguments:
+//
+//	position		- Position to advance the stream pointer to
 
-	// Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
-
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
-	// Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
-
-	// TryRead
-	//
-	// Reads the specified number of bytes from the underlying stream
-	// Returns boolean success/failure rather than throwing an exception
-	virtual bool TryRead(void* buffer, uint32_t length, uint32_t* out);
-
-	// TrySeek
-	//
-	// Advances the stream to the specified position, returns a boolean
-	// success/failure rather than throwing an exception
-	virtual bool TrySeek(uint32_t position);
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Position
-	//
-	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
-};
+bool StreamReader::TrySeek(uint32_t position)
+{
+	try { Seek(position); return true; }
+	catch(Exception&) { return false; }
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __STREAMREADER_H_
