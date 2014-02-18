@@ -187,4 +187,20 @@ Language=English
 The ELF binary file header lists segments in a non-sequential order
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_ELFSEGMENTPAGEBOUNDARY
+Language=English
+A loadable segment specified in the ELF image begins on an unsupported memory page boundary
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_ELFSEGMENTPROTECTION
+Language=English
+An error occurred when applying the protection flags to a loadable segment
+.
+
+
+
 

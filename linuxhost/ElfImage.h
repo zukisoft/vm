@@ -53,8 +53,8 @@ public:
 	// Load
 	//
 	// Parses and loads the specified ELF image into virtual memory
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile>& mapping);
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<StreamReader>& reader);
+	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile>& mapping) { return Load(mapping, 0); }
+	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile>& mapping, size_t length);
 
 	// TryValidateHeader
 	//
@@ -73,7 +73,12 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImageT(std::unique_ptr<StreamReader>& reader);
+	ElfImageT(std::shared_ptr<MappedFile>& mapping, size_t length);
+
+	// EntryPoint
+	//
+	// ELF entry function pointer
+	typedef void(*EntryPoint)(void);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -86,7 +91,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<MemoryRegion>	m_memory;		// Allocated virtual memory
+	std::unique_ptr<MemoryRegion>	m_region;		// Allocated virtual memory
+	EntryPoint						m_entry;		// Entry point
 };
 
 //-----------------------------------------------------------------------------

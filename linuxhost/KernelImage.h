@@ -35,6 +35,7 @@
 #include "LzopStreamReader.h"			// Include LzopStreamReader declarations
 #include "MappedFile.h"					// Include MappedFile declarations
 #include "MappedFileView.h"				// Include MappedFileView declarations
+#include "MemoryRegion.h"				// Include MemoryRegion declarations
 #include "StreamReader.h"				// Include StreamReader declarations
 #include "Win32Exception.h"				// Include Win32Exception declarations
 #include "XzStreamReader.h"				// Include XzStreamReader declarations
@@ -63,6 +64,8 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
+
+	static KernelImage* LoadCompressed(std::unique_ptr<StreamReader>& reader);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

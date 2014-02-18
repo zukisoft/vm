@@ -61,6 +61,30 @@ public:
 	static MemoryRegion* Allocate(size_t length, DWORD protect, DWORD flags, void* base)
 		{ return new MemoryRegion(base, length, MEM_RESERVE | MEM_COMMIT | flags, protect); }
 
+	// Protect
+	//
+	// Applies protection flags to page(s) within the region
+	void Protect(size_t offset, size_t length, DWORD protect)
+		{ return Protect(intptr_t(m_base) + offset, length, protect); }
+
+	void Protect(void* address, size_t length, DWORD protect)
+		{ return Protect(intptr_t(address), length, protect); }
+	
+	void Protect(intptr_t address, size_t length, DWORD protect);
+
+	//-------------------------------------------------------------------------
+	// Fields
+
+	// AllocationGranularity
+	//
+	// Exposes the system allocation granularity
+	static const size_t AllocationGranularity;
+
+	// PageSize
+	//
+	// Exposes the system page size
+	static const size_t PageSize;
+
 	//-------------------------------------------------------------------------
 	// Properties
 
@@ -85,11 +109,20 @@ private:
 	//
 	MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect);
 
+	// SystemInfo
+	//
+	// Used to initialize a static SYSTEM_INFO structure
+	struct SystemInfo : public SYSTEM_INFO
+	{
+		SystemInfo() { GetNativeSystemInfo(static_cast<SYSTEM_INFO*>(this)); }
+	};
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	void*				m_base;				// Base pointer for the memory region
 	size_t				m_length;			// Length of the memory region
+	static SystemInfo	s_sysinfo;			// System information class
 };
 
 //-----------------------------------------------------------------------------

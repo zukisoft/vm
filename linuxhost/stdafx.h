@@ -45,6 +45,12 @@
 #include <string>				// string<>, wstring<>, etc.
 #include <vector>				// vector<> template declarations
 
+// KiB / MiB / GiB
+
+#define KiB		*(1 << 10)				// KiB multiplier
+#define MiB		*(1 << 20)				// MiB multiplier
+#define GiB		*(1 << 30)				// GiB multiplier
+
 namespace std {
 #ifdef _UNICODE
 	typedef wstring tstring;

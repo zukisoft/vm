@@ -26,6 +26,13 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// Static Initializers
+
+MemoryRegion::SystemInfo MemoryRegion::s_sysinfo;
+size_t const MemoryRegion::AllocationGranularity = MemoryRegion::s_sysinfo.dwAllocationGranularity;
+size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
+
+//-----------------------------------------------------------------------------
 // MemoryRegion Constructor (private)
 //
 // Arguments:
@@ -37,7 +44,10 @@
 
 MemoryRegion::MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect)
 {
-	// Just pass the arguments onto VirtualAlloc()
+	// Verify that the specified address aligns with the allocation granularity
+	if(base && (intptr_t(base) % AllocationGranularity)) throw Win32Exception(ERROR_MAPPED_ALIGNMENT);
+
+	// Pass the arguments onto VirtualAlloc() and just throw any resultant error
 	m_base = VirtualAlloc(base, length, flags, protect);
 	if(!m_base) throw Win32Exception();
 
@@ -50,6 +60,32 @@ MemoryRegion::MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect
 MemoryRegion::~MemoryRegion()
 {
 	if(m_base) VirtualFree(m_base, m_length, MEM_RELEASE);
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::Protect
+//
+// Applies new protection flags to page(s) within the allocated region
+//
+// Arguments:
+//
+//	address		- Base address to apply the protection
+//	length		- Length of the memory to apply the protection to
+//	protect		- Virtual memory protection flags
+
+void MemoryRegion::Protect(intptr_t address, size_t length, DWORD protect)
+{
+	DWORD		oldprotect;					// Old protection flags
+
+	intptr_t base = intptr_t(m_base);
+	if((address < base) || (address > (base + intptr_t(m_length)))) throw Exception(E_BOUNDS);
+
+	// Verify that the specified address aligns to a page boundary
+	if(address % s_sysinfo.dwPageSize) throw Win32Exception(ERROR_MAPPED_ALIGNMENT);
+
+	// Apply the requested protection flags; throw away the rest
+	if(!VirtualProtect(reinterpret_cast<void*>(address), length, protect, &oldprotect))
+		throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------

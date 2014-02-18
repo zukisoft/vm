@@ -25,10 +25,6 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// TODO: Load can be done with a StreamReader to avoid decompressing the 
-// image first.  Just detect overlapping segments and read the overlap from
-// the previously loaded segment.  They are presented in order.
-
 //-----------------------------------------------------------------------------
 // Explicit Instantiations
 
@@ -43,44 +39,30 @@ template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
 //
 // Arguments:
 //
-//	reader		- StreamReader open against the ELF image to load
+//	mapping		- Memory-mapped ELF image file to load
+//	length		- Optional length to use from mapping
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::unique_ptr<StreamReader>& reader)
+ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mapping, size_t length)
 {
-	uint32_t				out;				// Number of bytes read from the stream
-	DWORD					result;				// Result from function call
+	// Create a read-only view of the memory-mapped ELF image
+	std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ, 0, length));
+	intptr_t viewptr = intptr_t(view->Pointer);
 
-	// Query the host system information so the page boundaries can be validated
-	SYSTEM_INFO sysinfo;
-	GetNativeSystemInfo(&sysinfo);
+	// Validate the ELF header that should be at the start of the view
+	ValidateHeader(view->Pointer, view->Length);
+	ehdr_t*	elfheader = reinterpret_cast<ehdr_t*>(view->Pointer);
 
-	// Read and validate the ELF header from the beginning of the stream
-	ehdr_t	elfheader;
-	if(!reader->TryRead(&elfheader, sizeof(ehdr_t), &out)) throw Exception(E_TRUNCATEDELFHEADER);
-	ValidateHeader(&elfheader, out);
-	
-	// Make sure there is at least one program header in the ELF image
-	if(elfheader.e_phnum == 0) throw Exception(E_INVALIDELFPROGRAMTABLE);
-
-#ifdef _M_X64
-	if(elfheader.e_phoff > UINT32_MAX) throw Exception(E_INVALIDELFPROGRAMTABLE);
-#endif
-	
 	// Create a collection of all the ELF program headers
 	std::vector<phdr_t>	progheaders;
-	for(int index = 0; index < elfheader.e_phnum; index++) {
+	for(int index = 0; index < elfheader->e_phnum; index++) {
 
-		// Move the input stream to the location of the next section header
-		if(!reader->TrySeek(static_cast<uint32_t>(elfheader.e_phoff + (index * elfheader.e_phentsize))))
-			throw Exception(E_INVALIDELFPROGRAMTABLE);
+		// Get the offset into the file for the next program header and check it
+		intptr_t offset = elfheader->e_phoff + (index * elfheader->e_phentsize);
+		if(view->Length < (offset + sizeof(phdr_t))) throw Exception(E_ELF_TRUNCATED);
 
-		// Attept to read the program header structure from the input stream
-		phdr_t progheader;
-		if((!reader->TryRead(&progheader, sizeof(phdr_t), &out)) || (out != sizeof(phdr_t)))
-			throw Exception(E_INVALIDELFPROGRAMTABLE);
-
-		progheaders.push_back(progheader);			// Insert into the collection
+		// Insert the program header into the collection
+		progheaders.push_back(*reinterpret_cast<phdr_t*>(viewptr + offset));
 	}
 
 	// Determine the memory requirements of the loaded image
@@ -90,7 +72,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::unique_ptr<StreamReader>& read
 		if(phdr.p_type == PT_LOAD) {
 
 			// The segment must start on a host system page boundary
-			if((phdr.p_paddr % sysinfo.dwPageSize) != 0) throw Exception(E_UNEXPECTED);	// <--- TODO: exception
+			if((phdr.p_paddr % MemoryRegion::PageSize) != 0) throw Exception(E_ELFSEGMENTPAGEBOUNDARY);
 			
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
@@ -104,53 +86,42 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::unique_ptr<StreamReader>& read
 
 	// Attempt to allocate the virtual memory for the image.  First try to use the physical address specified
 	// by the image to avoid relocations, but go ahead and put it anywhere if that doesn't work
-	try { m_memory.reset(MemoryRegion::Allocate(maxaddress - minaddress, PAGE_READWRITE, reinterpret_cast<void*>(minaddress))); }
-	catch(Exception&) { m_memory.reset(MemoryRegion::Allocate(maxaddress - minaddress, PAGE_READWRITE, MEM_TOP_DOWN)); }
+	try { m_region.reset(MemoryRegion::Allocate(maxaddress - minaddress, PAGE_READWRITE, reinterpret_cast<void*>(minaddress))); }
+	catch(Exception&) { m_region.reset(MemoryRegion::Allocate(maxaddress - minaddress, PAGE_READWRITE, MEM_TOP_DOWN)); }
+	intptr_t regionptr = intptr_t(m_region->Pointer);
 
 #ifdef _DEBUG
 	// Fill the memory with some junk bytes in DEBUG builds to better detect uninitialized memory
-	memset(m_memory->Pointer, 0xCD, maxaddress - minaddress);
+	memset(m_region->Pointer, 0xCD, maxaddress - minaddress);
 #endif
 	
-	// Load the program segments into memory
-	intptr_t baseptr = intptr_t(m_memory->Pointer);
+	// Load the PT_LOAD segments into virtual memory
 	for_each(progheaders.begin(), progheaders.end(), [&](phdr_t& phdr) {
-
-		//
-		// NEED TO DEAL WITH PT_PHDR TYPE HERE
 
 		if((phdr.p_type == PT_LOAD) && (phdr.p_memsz)) {
 
-			intptr_t segbase = baseptr + (phdr.p_paddr - minaddress);
+			// Get the base address of the loadable segment
+			intptr_t segbase = regionptr + (phdr.p_paddr - minaddress);
 
+			// Not all segments contain data that needs to be copied from the source image
 			if(phdr.p_filesz) {
 
-				//
-				// NEED TO DEAL WITH OVERLAPPING OFFSETS HERE
-				//
-
-#ifdef _M_X64
-				// TODO: Make special program table exceptions like the elf header
-				if(phdr.p_offset > UINT32_MAX) throw Exception(E_INVALIDELFPROGRAMTABLE);
-				if(phdr.p_filesz > UINT32_MAX) throw Exception(E_INVALIDELFPROGRAMTABLE);
-				if(phdr.p_memsz > UINT32_MAX) throw Exception(E_INVALIDELFPROGRAMTABLE);
-#endif
-				reader->Seek(static_cast<uint32_t>(phdr.p_offset));
-				out = reader->Read(reinterpret_cast<void*>(segbase), static_cast<uint32_t>(phdr.p_filesz));
-				if(out != phdr.p_filesz) throw Exception(E_ELF_TRUNCATED);
+				// Ensure that there is enough source data to copy and copy it into the segment region
+				if(view->Length < (phdr.p_offset + phdr.p_filesz)) throw Exception(E_ELF_TRUNCATED);
+				memcpy(reinterpret_cast<void*>(segbase), reinterpret_cast<void*>(viewptr + phdr.p_offset), phdr.p_filesz);
 			}
 
 			// Memory that was not loaded from the ELF image must be initialized to zero
-			memset(reinterpret_cast<void*>(intptr_t(segbase) + phdr.p_filesz), 0, phdr.p_memsz - phdr.p_filesz);
+			memset(reinterpret_cast<void*>(segbase + phdr.p_filesz), 0, phdr.p_memsz - phdr.p_filesz);
 
 			// Attempt to apply the proper virtual memory protection flags to the segment
-			if(!VirtualProtect(reinterpret_cast<void*>(segbase), phdr.p_memsz, FlagsToProtection(phdr.p_flags), &result))
-				throw Win32Exception();		// <--- make custom exception here
+			try { m_region->Protect(segbase, phdr.p_memsz, FlagsToProtection(phdr.p_flags)); }
+			catch(Exception& ex) { throw Exception(ex, E_ELFSEGMENTPROTECTION); }
 		}
 	});
 
-	// Calculate entry point
-	// Handle relocations
+	// Calculate the address of the image entry point, if one has been specified in the header
+	m_entry = (elfheader->e_entry) ? reinterpret_cast<EntryPoint>(regionptr + (elfheader->e_entry - minaddress)) : nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -187,101 +158,17 @@ DWORD ElfImageT<ehdr_t, phdr_t, shdr_t>::FlagsToProtection(uint32_t flags)
 // Arguments:
 //
 //	mapping			- Memory-mapped image file
+//	length			- Optional length of mapping to use
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::shared_ptr<MappedFile>& mapping)
+ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::shared_ptr<MappedFile>& mapping, size_t length)
 {
-	(mapping);
-	throw Exception(E_NOTIMPL);
-//
-//#ifdef _M_X64
-//	if(mapping->Capacity > UINT32_MAX) throw Exception(E_UNEXPECTED);					// <-- TODO: better error
-//#endif
-//
-//	// Validate the header that should be at the view base address
-//	std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ, 0, sizeof(ehdr_t)));
-//	ValidateHeader(view->Pointer, view->Length);
-//	view.reset();
-//
-//	// Create a new ElfImageT instance fron the provided view
-//	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping);
+	// All the validation code has been moved into the constructor
+	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping, length);
 }
 
 //-----------------------------------------------------------------------------
-// ElfImageT::Load (static)
-//
-// Parses and loads the specified ELF image into virtual memory
-//
-// Arguments:
-//
-//	reader		- Pointer to a StreamReader used to access the raw image
-
-template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(std::unique_ptr<StreamReader>& reader)
-{
-	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(reader);
-
-//	ehdr_t				header;					// ELF header structure
-//	uint32_t			out;					// Bytes read from the input stream
-//	size_t				length;					// Length of the uncompressed image
-//
-//	// Read the ELF header from the beginning of the stream
-//	out = reader->Read(&header, sizeof(ehdr_t));
-//	if(out != sizeof(ehdr_t)) throw Exception(E_TRUNCATEDELFHEADER);
-//
-//	// Validate the contents of the header data
-//	ValidateHeader(&header, out);
-//
-//	// Determine the length of the uncompressed image.  If there is a section header table, use
-//	// that since it's at the end of the file, otherwise the program header table has to be 
-//	// examined to calculate the length of the available segments
-//	length = sizeof(ehdr_t);
-//	if(header.e_shnum) length = header.e_shoff + (header.e_shnum * header.e_shentsize);
-//	else if(header.e_phnum) {
-//
-//		// Skip to the beginning of the program header table in the input stream
-//#ifdef _M_X64
-//		if(header.e_phoff > UINT32_MAX) throw Exception(E_UNEXPECTED);	// <-- TODO: better error
-//#endif
-//		reader->Seek(static_cast<uint32_t>(header.e_phoff));
-//
-//		std::unique_ptr<uint8_t[]> buffer(new uint8_t[header.e_phentsize]);
-//		for(int index = 0; index < header.e_phnum; index++) {
-//
-//			// Read in the next program header table entry
-//			out = reader->Read(&buffer[0], header.e_phentsize);
-//			if(out != header.e_phentsize) throw Exception(E_INVALIDELFPROGRAMTABLE);
-//
-//			// Cast a pointer to the ELF program header table structure
-//			phdr_t* phdr = reinterpret_cast<phdr_t*>(&buffer[0]);
-//			
-//			// Check this segment offset + length against the current known length
-//			size_t max = phdr->p_offset + phdr->p_filesz;
-//			if(max > length) length = max;
-//		}
-//	}
-//
-//	// Ensure the length does not exceed UINT32_MAX and reset the stream
-//#ifdef _M_X64
-//	if(length > UINT32_MAX) throw Exception(E_UNEXPECTED);					// <-- TODO: better error
-//#endif
-//
-//	reader->Reset();
-//
-//	// Create a pagefile-backed memory mapped file view to hold the uncompressed binary image
-//	std::shared_ptr<MappedFile> mapping(MappedFile::CreateNew(PAGE_EXECUTE_READWRITE | SEC_COMMIT, length));
-//
-//	// Decompress the ELF image into the memory mapped file
-//	std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_WRITE, 0, length));
-//	out = reader->Read(view->Pointer, static_cast<uint32_t>(length));
-//	if(out != length) throw Exception(E_ELF_TRUNCATED);
-//	view.reset();
-//
-//	return new ElfImageT<ehdr_t, phdr_t, shdr_t>(mapping);
-}
-
-//-----------------------------------------------------------------------------
-// ElfImageT::TryValidateHeader
+// ElfImageT::TryValidateHeader (static)
 //
 // Validates that the provided pointer points to a 64-bit ELF binary header --
 // returns a boolean flag rather than throwing an exception
@@ -300,7 +187,7 @@ bool ElfImageT<ehdr_t, phdr_t, shdr_t>::TryValidateHeader(const void* base, size
 }
 
 //-----------------------------------------------------------------------------
-// ElfImageT::ValidateHeader
+// ElfImageT::ValidateHeader (static)
 //
 // Validates that the provided pointer points to a 64-bit ELF binary header
 //

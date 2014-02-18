@@ -25,9 +25,6 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#define KiB		*(1 << 10)				// KiB multiplier
-#define MiB		*(1 << 20)				// MiB multiplier
-
 //-----------------------------------------------------------------------------
 // KernelImage::Load (static)
 //
@@ -54,11 +51,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 	// of the file to try and avoid false positives
 
 	// UNCOMPRESSED -----
-	if(ElfImage::TryValidateHeader(view->Pointer, view->Length)) {
-
-		std::unique_ptr<StreamReader> reader(new BufferStreamReader(view->Pointer, view->Length));
-		return new KernelImage(ElfImage::Load(reader));
-	}
+	if(ElfImage::TryValidateHeader(view->Pointer, view->Length)) return new KernelImage(ElfImage::Load(mapping));
 
 	// GZIP -------------
 	uint8_t gzipMagic[] = { 0x1F, 0x8B, 0x08, 0x00 };
@@ -67,7 +60,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = view->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(view->Pointer));
 		std::unique_ptr<StreamReader> reader(new GZipStreamReader(vmlinuz, length));
-		return new KernelImage(ElfImage::Load(reader));
+		return LoadCompressed(reader);
 	}
 
 	// XZ ---------------
@@ -77,7 +70,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = view->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(view->Pointer));
 		std::unique_ptr<StreamReader> reader(new XzStreamReader(vmlinuz, length));
-		return new KernelImage(ElfImage::Load(reader));
+		return LoadCompressed(reader);
 	}
 	
 	// BZIP2 ------------
@@ -87,7 +80,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = view->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(view->Pointer));
 		std::unique_ptr<StreamReader> reader(new BZip2StreamReader(vmlinuz, length));
-		return new KernelImage(ElfImage::Load(reader));
+		return LoadCompressed(reader);
 	}
 
 	// LZMA -------------
@@ -107,7 +100,7 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = view->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(view->Pointer));
 		std::unique_ptr<StreamReader> reader(new LzopStreamReader(vmlinuz, length));
-		return new KernelImage(ElfImage::Load(reader));
+		return LoadCompressed(reader);
 	}
 
 	// LZ4 --------------
@@ -117,11 +110,45 @@ KernelImage* KernelImage::Load(LPCTSTR path)
 
 		size_t length = view->Length - (reinterpret_cast<intptr_t>(vmlinuz) - reinterpret_cast<intptr_t>(view->Pointer));
 		std::unique_ptr<StreamReader> reader(new Lz4StreamReader(vmlinuz, length));
-		return new KernelImage(ElfImage::Load(reader));
+		return LoadCompressed(reader);
 	}
 
 	// UNKNOWN ----------
 	throw Exception(E_KERNELIMAGE_UNKNOWNFORMAT);
+}
+
+//-----------------------------------------------------------------------------
+// KernelImage::LoadCompressed (private, static)
+//
+// Loads a kernel image that has been compressed
+//
+// Arguments:
+//
+//	reader			- Decompression stream reader
+
+KernelImage* KernelImage::LoadCompressed(std::unique_ptr<StreamReader>& reader)
+{
+	uint32_t			out;					// Bytes decompressed from the image
+	size_t				length = 0;				// Length of decompressed image
+
+	// Allow for an uncompressed kernel of up to 128MB (actual Linux size limit is 512MB)
+	std::shared_ptr<MappedFile> mapping(MappedFile::CreateNew(PAGE_READWRITE | SEC_COMMIT, 128 MiB));
+
+	do {
+
+		// Decompress the image 8MB at a time into the memory mapped file
+		std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_WRITE, length, 8 MiB));
+
+		// Read up to the next 8MB of data from the decompression stream
+		out = reader->Read(view->Pointer, 8 MiB);
+		length += out;
+
+		view.reset();							// Force call to UnmapViewOfFile
+
+	} while(out == 8 MiB);
+
+	// Attempt to load the kernel ELF binary image using only decompressed length
+	return new KernelImage(ElfImage::Load(mapping, length));
 }
 
 //-----------------------------------------------------------------------------
