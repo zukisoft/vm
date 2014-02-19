@@ -83,7 +83,13 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// FlagsToProtection
+	// AlignDown/AlignUp
+	//
+	// Address alignment helper functions
+	static uintptr_t AlignDown(uintptr_t address, size_t alignment);
+	static uintptr_t AlignUp(uintptr_t address, size_t alignment);
+	
+	// FlagsToProtectio
 	//
 	// Converts the ELF p_flags into VirtualAlloc protection flags
 	static DWORD FlagsToProtection(uint32_t flags);

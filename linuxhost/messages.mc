@@ -69,6 +69,13 @@ Language=English
 %1.  Error Code %2 - %3
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_ARGUMENTOUTOFRANGE
+Language=English
+Argument %1 is out of range
+.
+
 ;//--------------------------------------------------------------------------
 ;// LINUXHOST Error Codes (0x010-0x1FF)
 

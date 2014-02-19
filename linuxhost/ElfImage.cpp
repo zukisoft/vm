@@ -66,18 +66,18 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 	}
 
 	// Determine the memory requirements of the loaded image
-	intptr_t minaddress = 0, maxaddress = 0;
+	uintptr_t minaddress = 0, maxaddress = 0;
 	for_each(progheaders.begin(), progheaders.end(), [&](phdr_t& phdr) {
 
 		if(phdr.p_type == PT_LOAD) {
 
-			// The segment must start on a host system page boundary
-			if((phdr.p_paddr % MemoryRegion::PageSize) != 0) throw Exception(E_ELFSEGMENTPAGEBOUNDARY);
+			// The segment must align on the host system
+			if((phdr.p_align % MemoryRegion::PageSize) != 0) throw Exception(E_ELFSEGMENTPAGEBOUNDARY);
 			
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
-			intptr_t minsegaddr(phdr.p_paddr);
-			intptr_t maxsegaddr(phdr.p_paddr + phdr.p_memsz);
+			uintptr_t minsegaddr(phdr.p_paddr);
+			uintptr_t maxsegaddr(phdr.p_paddr + phdr.p_memsz);
 
 			minaddress = (minaddress == 0) ? minsegaddr : min(minsegaddr, minaddress);
 			maxaddress = (maxaddress == 0) ? maxsegaddr : max(maxsegaddr, maxaddress);
@@ -122,6 +122,44 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	m_entry = (elfheader->e_entry) ? reinterpret_cast<EntryPoint>(regionptr + (elfheader->e_entry - minaddress)) : nullptr;
+}
+
+//---------------------------------------------------------------------------
+// ElfImageT::AlignDown (private, static)
+//
+// Aligns an offset down to the specified alignment
+//
+// Arguments:
+//
+//	address		- Address to be aligned
+//	alignment	- Alignment
+
+template <class ehdr_t, class phdr_t, class shdr_t>
+uintptr_t ElfImageT<ehdr_t, phdr_t, shdr_t>::AlignDown(uintptr_t address, size_t alignment)
+{
+	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
+
+	if(address < alignment) return 0;
+	else return AlignUp(address - (alignment - 1), alignment);
+}
+
+//---------------------------------------------------------------------------
+// ElfImageT::AlignUp (private, static)
+//
+// Aligns an offset up to the specified alignment
+//
+// Arguments:
+//
+//	address		- Address to be aligned
+//	alignment	- Alignment
+
+template <class ehdr_t, class phdr_t, class shdr_t>
+uintptr_t ElfImageT<ehdr_t, phdr_t, shdr_t>::AlignUp(uintptr_t address, size_t alignment)
+{
+	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
+
+	if(address == 0) return 0;
+	else return address + ((alignment - (address % alignment)) % alignment);
 }
 
 //-----------------------------------------------------------------------------
