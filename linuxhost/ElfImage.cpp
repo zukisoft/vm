@@ -73,11 +73,8 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
-			intptr_t minsegaddr(phdr.p_paddr);
-			intptr_t maxsegaddr(phdr.p_paddr + phdr.p_memsz);
-
-			minpaddr = (minpaddr == 0) ? minsegaddr : min(minsegaddr, minpaddr);
-			maxpaddr = (maxpaddr == 0) ? maxsegaddr : max(maxsegaddr, maxpaddr);
+			minpaddr = min(intptr_t(phdr.p_paddr), minpaddr);
+			maxpaddr = max(intptr_t(phdr.p_paddr + phdr.p_memsz), maxpaddr);
 		}
 	});
 
