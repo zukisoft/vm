@@ -44,8 +44,9 @@ size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 
 MemoryRegion::MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect)
 {
-	// Verify that the specified address aligns with the allocation granularity
-	if(base && (intptr_t(base) % AllocationGranularity)) throw Win32Exception(ERROR_MAPPED_ALIGNMENT);
+	// Verify that the specified address aligns with the allocation granularity.
+	// Unlike Commit/Protect/etc, do not automatically adjust this before reserving
+	if(base && (uintptr_t(base) % AllocationGranularity)) throw Win32Exception(ERROR_MAPPED_ALIGNMENT);
 
 	// Pass the arguments onto VirtualAlloc() and just throw any resultant error
 	m_base = VirtualAlloc(base, length, flags, protect);
@@ -63,6 +64,149 @@ MemoryRegion::~MemoryRegion()
 }
 
 //-----------------------------------------------------------------------------
+// MemoryRegion::AlignToAllocationGranularity (static)
+//
+// Aligns an address down to the system allocation granularity
+//
+// Arguments:
+//
+//	address		- Address to be aligned
+
+void* MemoryRegion::AlignToAllocationGranularity(void* address)
+{
+	return reinterpret_cast<void*>(AlignDown(uintptr_t(address), MemoryRegion::AllocationGranularity));
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::AlignToPageSize (static)
+//
+// Aligns an address down to the system page size
+//
+// Arguments:
+//
+//	address		- Address to be aligned
+
+void* MemoryRegion::AlignToPageSize(void* address)
+{
+	return reinterpret_cast<void*>(AlignDown(uintptr_t(address), MemoryRegion::PageSize));
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::AlignDown (private, static)
+//
+// Aligns an offset down to the specified alignment
+//
+// Arguments:
+//
+//	address		- Address to be aligned
+//	alignment	- Alignment
+
+uintptr_t MemoryRegion::AlignDown(uintptr_t address, size_t alignment)
+{
+	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
+
+	if(address < alignment) return 0;
+	else return AlignUp(address - (alignment - 1), alignment);
+}
+
+//---------------------------------------------------------------------------
+// MemoryRegion::AlignUp (private, static)
+//
+// Aligns an offset up to the specified alignment
+//
+// Arguments:
+//
+//	address		- Address to be aligned
+//	alignment	- Alignment
+
+uintptr_t MemoryRegion::AlignUp(uintptr_t address, size_t alignment)
+{
+	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
+
+	if(address == 0) return 0;
+	else return address + ((alignment - (address % alignment)) % alignment);
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::Commit
+//
+// Commits page(s) of memory within the region using the specified protection
+// attributes.  If address does not align on a page boundary it will be aligned
+// down and returned as the result from this function
+//
+// Arguments:
+//
+//	address		- Base address to be committed
+//	length		- Length of the region to be committed
+//	protect		- Protection flags to be applied to the committed region
+
+void* MemoryRegion::Commit(void* address, size_t length, DWORD protect)
+{
+	uintptr_t base = uintptr_t(m_base);
+	uintptr_t requested = uintptr_t(address);
+	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+
+	// Verify the requested address space is not outside of the region
+	length += requested - aligned;
+	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
+
+	// Use VirtualAlloc() to commit the page(s) within the region
+	return VirtualAlloc(reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect);
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::Decommit
+//
+// Decommits page(s) of memory from within the region 
+//
+// Arguments:
+//
+//	address		- Base address to be decommitted
+//	length		- Length of the region to be decommitted
+
+void* MemoryRegion::Decommit(void* address, size_t length)
+{
+	uintptr_t base = uintptr_t(m_base);
+	uintptr_t requested = uintptr_t(address);
+	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+
+	// Verify the requested address space is not outside of the region
+	length += requested - aligned;
+	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
+
+	// Use VirtualFree() to decommit the page(s) from within the region
+	if(!VirtualFree(reinterpret_cast<void*>(aligned), length, MEM_DECOMMIT)) throw Win32Exception();
+
+	return reinterpret_cast<void*>(aligned);
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::Lock
+//
+// Locks page(s) of the region into physical memory
+//
+// Arguments:
+//
+//	address		- Base address to be locked
+//	length		- Length of the region to be locked
+
+void* MemoryRegion::Lock(void* address, size_t length)
+{
+	uintptr_t base = uintptr_t(m_base);
+	uintptr_t requested = uintptr_t(address);
+	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+
+	// Verify the requested address space is not outside of the region
+	length += requested - aligned;
+	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
+
+	// Use VirtualLock() to lock the page(s) into physical memory
+	if(!VirtualLock(reinterpret_cast<void*>(aligned), length)) throw Win32Exception();
+
+	return reinterpret_cast<void*>(aligned);
+}
+
+//-----------------------------------------------------------------------------
 // MemoryRegion::Protect
 //
 // Applies new protection flags to page(s) within the allocated region
@@ -73,19 +217,48 @@ MemoryRegion::~MemoryRegion()
 //	length		- Length of the memory to apply the protection to
 //	protect		- Virtual memory protection flags
 
-void MemoryRegion::Protect(intptr_t address, size_t length, DWORD protect)
+void* MemoryRegion::Protect(void* address, size_t length, DWORD protect)
 {
 	DWORD		oldprotect;					// Old protection flags
 
-	intptr_t base = intptr_t(m_base);
-	if((address < base) || (address > (base + intptr_t(m_length)))) throw Exception(E_BOUNDS);
+	uintptr_t base = uintptr_t(m_base);
+	uintptr_t requested = uintptr_t(address);
+	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
 
-	// Verify that the specified address aligns to a page boundary
-	if(address % s_sysinfo.dwPageSize) throw Win32Exception(ERROR_MAPPED_ALIGNMENT);
+	// Verify the requested address space is not outside of the region
+	length += requested - aligned;
+	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
 	// Apply the requested protection flags; throw away the rest
-	if(!VirtualProtect(reinterpret_cast<void*>(address), length, protect, &oldprotect))
-		throw Win32Exception();
+	if(!VirtualProtect(reinterpret_cast<void*>(aligned), length, protect, &oldprotect)) throw Win32Exception();
+
+	return reinterpret_cast<void*>(aligned);
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::Unlock
+//
+// Unlocks page(s) of the region from physical memory
+//
+// Arguments:
+//
+//	address		- Base address to be unlocked
+//	length		- Length of the region to be unlocked
+
+void* MemoryRegion::Unlock(void* address, size_t length)
+{
+	uintptr_t base = uintptr_t(m_base);
+	uintptr_t requested = uintptr_t(address);
+	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+
+	// Verify the requested address space is not outside of the region
+	length += requested - aligned;
+	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
+
+	// Use VirtualUnlock() to unlock the page(s) from physical memory
+	if(!VirtualUnlock(reinterpret_cast<void*>(aligned), length)) throw Win32Exception();
+
+	return reinterpret_cast<void*>(aligned);
 }
 
 //-----------------------------------------------------------------------------

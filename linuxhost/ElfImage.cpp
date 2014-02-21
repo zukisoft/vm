@@ -66,42 +66,38 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 	}
 
 	// Determine the memory requirements of the loaded image
-	uintptr_t minaddress = 0, maxaddress = 0;
+	intptr_t minpaddr = 0, maxpaddr = 0;
 	for_each(progheaders.begin(), progheaders.end(), [&](phdr_t& phdr) {
 
 		if(phdr.p_type == PT_LOAD) {
 
-			// The segment must align on the host system
-			if((phdr.p_align % MemoryRegion::PageSize) != 0) throw Exception(E_ELFSEGMENTPAGEBOUNDARY);
-			
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
-			uintptr_t minsegaddr(phdr.p_paddr);
-			uintptr_t maxsegaddr(phdr.p_paddr + phdr.p_memsz);
+			intptr_t minsegaddr(phdr.p_paddr);
+			intptr_t maxsegaddr(phdr.p_paddr + phdr.p_memsz);
 
-			minaddress = (minaddress == 0) ? minsegaddr : min(minsegaddr, minaddress);
-			maxaddress = (maxaddress == 0) ? maxsegaddr : max(maxsegaddr, maxaddress);
+			minpaddr = (minpaddr == 0) ? minsegaddr : min(minsegaddr, minpaddr);
+			maxpaddr = (maxpaddr == 0) ? maxsegaddr : max(maxsegaddr, maxpaddr);
 		}
 	});
 
-	// Attempt to allocate the virtual memory for the image.  First try to use the physical address specified
+	// Attempt to reserve the virtual memory for the image.  First try to use the physical address specified
 	// by the image to avoid relocations, but go ahead and put it anywhere if that doesn't work
-	try { m_region.reset(MemoryRegion::Allocate(maxaddress - minaddress, PAGE_READWRITE, reinterpret_cast<void*>(minaddress))); }
-	catch(Exception&) { m_region.reset(MemoryRegion::Allocate(maxaddress - minaddress, PAGE_READWRITE, MEM_TOP_DOWN)); }
-	intptr_t regionptr = intptr_t(m_region->Pointer);
+	try { m_region.reset(MemoryRegion::Reserve(reinterpret_cast<void*>(minpaddr), maxpaddr - minpaddr)); }
+	catch(Exception&) { m_region.reset(MemoryRegion::Reserve(maxpaddr - minpaddr, MEM_TOP_DOWN)); }
 
-#ifdef _DEBUG
-	// Fill the memory with some junk bytes in DEBUG builds to better detect uninitialized memory
-	memset(m_region->Pointer, 0xCD, maxaddress - minaddress);
-#endif
-	
+	// Determine the delta between the allocated region and the original base physical address
+	intptr_t regionbase = intptr_t(m_region->Pointer);
+	intptr_t paddrdelta = minpaddr - regionbase; 
+
 	// Load the PT_LOAD segments into virtual memory
 	for_each(progheaders.begin(), progheaders.end(), [&](phdr_t& phdr) {
 
 		if((phdr.p_type == PT_LOAD) && (phdr.p_memsz)) {
 
-			// Get the base address of the loadable segment
-			intptr_t segbase = regionptr + (phdr.p_paddr - minaddress);
+			// Get the base address of the loadable segment and commit the virtual memory
+			intptr_t segbase = phdr.p_paddr - paddrdelta;
+			m_region->Commit(reinterpret_cast<void*>(segbase), phdr.p_memsz, PAGE_READWRITE);
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(phdr.p_filesz) {
@@ -115,13 +111,13 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 			memset(reinterpret_cast<void*>(segbase + phdr.p_filesz), 0, phdr.p_memsz - phdr.p_filesz);
 
 			// Attempt to apply the proper virtual memory protection flags to the segment
-			try { m_region->Protect(segbase, phdr.p_memsz, FlagsToProtection(phdr.p_flags)); }
+			try { m_region->Protect(reinterpret_cast<void*>(segbase), phdr.p_memsz, FlagsToProtection(phdr.p_flags)); }
 			catch(Exception& ex) { throw Exception(ex, E_ELFSEGMENTPROTECTION); }
 		}
 	});
 
 	// Calculate the address of the image entry point, if one has been specified in the header
-	m_entry = (elfheader->e_entry) ? reinterpret_cast<EntryPoint>(regionptr + (elfheader->e_entry - minaddress)) : nullptr;
+	m_entry = (elfheader->e_entry) ? reinterpret_cast<EntryPoint>(elfheader->e_entry - paddrdelta) : nullptr;
 }
 
 //---------------------------------------------------------------------------

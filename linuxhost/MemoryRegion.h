@@ -46,31 +46,55 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Allocate
+	// AlignToAllocationGranularity
 	//
-	// Allocates the memory region
-	static MemoryRegion* Allocate(size_t length, DWORD protect)
-		{ return new MemoryRegion(NULL, length, MEM_RESERVE | MEM_COMMIT, protect); }
+	// Aligns an address down to the allocation granularity
+	static void* AlignToAllocationGranularity(void* address);
 
-	static MemoryRegion* Allocate(size_t length, DWORD protect, void* base)
-		{ return new MemoryRegion(base, length, MEM_RESERVE | MEM_COMMIT, protect); }
+	// AlignToPageSize
+	//
+	// Aligns an address down to the system page size
+	static void* AlignToPageSize(void* address);
 
-	static MemoryRegion* Allocate(size_t length, DWORD protect, DWORD flags)
-		{ return new MemoryRegion(NULL, length, MEM_RESERVE | MEM_COMMIT | flags, protect); }
+	// Commit
+	//
+	// Commits page(s) within the region
+	void* Commit(void* address, size_t length, DWORD protect);
 
-	static MemoryRegion* Allocate(size_t length, DWORD protect, DWORD flags, void* base)
-		{ return new MemoryRegion(base, length, MEM_RESERVE | MEM_COMMIT | flags, protect); }
+	// Decommit
+	//
+	// Decommits page(s) within the region
+	void* Decommit(void* address, size_t length);
+
+	// Lock
+	//
+	// Locks page(s) within the region into physical memory
+	void* Lock(void* address, size_t length);
 
 	// Protect
 	//
 	// Applies protection flags to page(s) within the region
-	void Protect(size_t offset, size_t length, DWORD protect)
-		{ return Protect(intptr_t(m_base) + offset, length, protect); }
+	void* Protect(void* address, size_t length, DWORD protect);
 
-	void Protect(void* address, size_t length, DWORD protect)
-		{ return Protect(intptr_t(address), length, protect); }
-	
-	void Protect(intptr_t address, size_t length, DWORD protect);
+	// Reserve
+	//
+	// Reserves a range of virtual memory
+	static MemoryRegion* Reserve(size_t length)
+		{ return new MemoryRegion(NULL, length, MEM_RESERVE, PAGE_NOACCESS); }
+
+	static MemoryRegion* Reserve(size_t length, DWORD flags)
+		{ return new MemoryRegion(NULL, length, MEM_RESERVE | flags, PAGE_NOACCESS); }
+
+	static MemoryRegion* Reserve(void* address, size_t length)
+		{ return new MemoryRegion(address, length, MEM_RESERVE, PAGE_NOACCESS); }
+
+	static MemoryRegion* Reserve(void* address, size_t length, DWORD flags)
+		{ return new MemoryRegion(address, length, MEM_RESERVE | flags, PAGE_NOACCESS); }
+
+	// Unlock
+	//
+	// Unlocks page(s) within the region so that they can be swapped out
+	void* Unlock(void* address, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Fields
@@ -116,6 +140,15 @@ private:
 	{
 		SystemInfo() { GetNativeSystemInfo(static_cast<SYSTEM_INFO*>(this)); }
 	};
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// AlignDown/AlignUp
+	//
+	// Address alignment helper functions
+	static uintptr_t AlignDown(uintptr_t address, size_t alignment);
+	static uintptr_t AlignUp(uintptr_t address, size_t alignment);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
