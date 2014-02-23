@@ -66,15 +66,15 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 	}
 
 	// Determine the memory requirements of the loaded image
-	intptr_t minpaddr = 0, maxpaddr = 0;
+	uintptr_t minpaddr = UINTPTR_MAX, maxpaddr = 0;
 	for_each(progheaders.begin(), progheaders.end(), [&](phdr_t& phdr) {
 
 		if(phdr.p_type == PT_LOAD) {
 
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
-			minpaddr = min(intptr_t(phdr.p_paddr), minpaddr);
-			maxpaddr = max(intptr_t(phdr.p_paddr + phdr.p_memsz), maxpaddr);
+			minpaddr = min(uintptr_t(phdr.p_paddr), minpaddr);
+			maxpaddr = max(uintptr_t(phdr.p_paddr + phdr.p_memsz), maxpaddr);
 		}
 	});
 
@@ -84,7 +84,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 	catch(Exception&) { m_region.reset(MemoryRegion::Reserve(maxpaddr - minpaddr, MEM_TOP_DOWN)); }
 
 	// Determine the delta between the allocated region and the original base physical address
-	intptr_t regionbase = intptr_t(m_region->Pointer);
+	uintptr_t regionbase = uintptr_t(m_region->Pointer);
 	intptr_t paddrdelta = minpaddr - regionbase; 
 
 	// Load the PT_LOAD segments into virtual memory
@@ -93,7 +93,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(std::shared_ptr<MappedFile>& mappin
 		if((phdr.p_type == PT_LOAD) && (phdr.p_memsz)) {
 
 			// Get the base address of the loadable segment and commit the virtual memory
-			intptr_t segbase = phdr.p_paddr - paddrdelta;
+			uintptr_t segbase = phdr.p_paddr - paddrdelta;
 			m_region->Commit(reinterpret_cast<void*>(segbase), phdr.p_memsz, PAGE_READWRITE);
 
 			// Not all segments contain data that needs to be copied from the source image
@@ -249,6 +249,7 @@ void ElfImageT<ehdr_t, phdr_t, shdr_t>::ValidateHeader(const void* base, size_t 
 
 	// TODO: Verify x86 / x86_64 machine - check size of ehdr_t to know which
 	// TODO: Verify object file type
+	// TODO: ET_NONE, ET_CORE, other e_type flags we can't load
 
 	// Verify that the length of the header is the same size as the Elfxx_Ehdr struct
 	// and that the header entries are at least as big as the known structures

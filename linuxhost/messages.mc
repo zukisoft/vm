@@ -208,6 +208,20 @@ Language=English
 An error occurred when applying the protection flags to a loadable segment
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_ELFNOTRELOCATABLE
+Language=English
+The ELF image is not marked as relocatable and the required base memory address could not be reserved
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_ELFNULLBASEADDRESS
+Language=English
+The ELF image is not marked as relocatable and the calculated base address is NULL
+.
+
 
 
 

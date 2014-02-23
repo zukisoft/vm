@@ -89,7 +89,7 @@ private:
 	static uintptr_t AlignDown(uintptr_t address, size_t alignment);
 	static uintptr_t AlignUp(uintptr_t address, size_t alignment);
 	
-	// FlagsToProtectio
+	// FlagsToProtection
 	//
 	// Converts the ELF p_flags into VirtualAlloc protection flags
 	static DWORD FlagsToProtection(uint32_t flags);

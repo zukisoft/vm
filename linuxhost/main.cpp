@@ -41,7 +41,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		//p = KernelImage::Load(_T("D:\\bzImage.lzo")); delete p;
 		//p = KernelImage::Load(_T("D:\\bzImage.lz4")); delete p;
 		//p = KernelImage::Load(_T("D:\\bzImage.i386")); delete p;
-		p = KernelImage::Load(_T("D:\\busybox_unstripped")); delete p;
+		p = KernelImage::Load(_T("D:\\busybox")); delete p;
 		//p = KernelImage::Load(_T("D:\\bzImage")); delete p;
 	}
 	catch(Exception& ex) {
