@@ -44,9 +44,11 @@ size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 
 MemoryRegion::MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect)
 {
-	// Verify that the specified address aligns with the allocation granularity.
-	// Unlike Commit/Protect/etc, do not automatically adjust this before reserving
-	if(base && (uintptr_t(base) % AllocationGranularity)) throw Win32Exception(ERROR_MAPPED_ALIGNMENT);
+	uintptr_t requested = uintptr_t(base);
+	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(base));
+
+	// Adjust the requested length to accomodate any downward alignment
+	length += requested - aligned;
 
 	// Pass the arguments onto VirtualAlloc() and just throw any resultant error
 	m_base = VirtualAlloc(base, length, flags, protect);
