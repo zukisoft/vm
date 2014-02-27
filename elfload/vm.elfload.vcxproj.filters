@@ -52,6 +52,12 @@
     <ClInclude Include="MemoryRegion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="elf_em.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfArguments.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

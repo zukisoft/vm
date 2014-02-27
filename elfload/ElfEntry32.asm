@@ -25,11 +25,11 @@
 
 .code
 
-elf_entry PROC
+ElfEntry proc stdcall args:dword
 
-	mov eax, 123
+	mov eax, args
 	ret
 
-elf_entry ENDP
+ElfEntry endp
 
 end

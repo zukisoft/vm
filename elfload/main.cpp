@@ -24,7 +24,6 @@
 #include "Exception.h"
 #include "ElfImage.h"
 
-
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPTSTR    lpCmdLine,
@@ -32,18 +31,29 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+	
+	//DWORD result;
+	//HANDLE h = CreateThread(NULL, 0, ElfEntry, (void*)0xFEEDFEEDFEEDFEED, 0, NULL);
+	//WaitForSingleObject(h, INFINITE);
+	//GetExitCodeThread(h, &result);
+	//CloseHandle(h);
+
+	//return 0;
 
 	ElfImage* p;
+	ElfImage* pinterp;
 	try { 
-		p = ElfImage::Load(_T("D:\\generic_x86\\system\\bin\\bootanimation")); delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage.gzip"));  delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage.bzip2")); delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage.xz")); delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage.lzo")); delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage.lz4")); delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage.i386")); delete p;
-		//p = KernelImage::Load(_T("D:\\busybox")); delete p;
-		//p = KernelImage::Load(_T("D:\\bzImage")); delete p;
+		
+		// note: would use a while loop to iterate over interpreters, they could be chained
+		p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
+		pinterp = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		
+		LPCTSTR interp = p->Interpreter;
+
+		uint32_t result = pinterp->Execute(nullptr);
+
+		delete p;
+		delete pinterp;
 	}
 	catch(Exception& ex) {
 		MessageBox(NULL, ex, _T("Exception"), MB_OK | MB_ICONHAND);

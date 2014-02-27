@@ -8,6 +8,7 @@
 #pragma once
 
 #include <stdint.h>						// Include standard integer declarations
+#include "elf_em.h"						// Include ELF target machine declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

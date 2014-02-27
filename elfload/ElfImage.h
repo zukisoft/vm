@@ -25,6 +25,7 @@
 #pragma once
 
 #include "elf.h"						// Include ELF file format decls
+#include "ElfArguments.h"				// Include ElfArguments declarations
 #include "Exception.h"					// Include Exception declarations
 #include "MappedFile.h"					// Include MappedFile declarations
 #include "MappedFileView.h"				// Include MappedFileView declarations
@@ -32,12 +33,10 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-extern "C" void elf_entry(void);
-
 //-----------------------------------------------------------------------------
 // ElfImageT
 //
-// Represents a loaded ELF image
+// Loads an ELF image into virtual memory
 //
 //	ehdr_t		- ELF header structure type
 //	phdr_t		- ELF program header structure type
@@ -51,24 +50,35 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Execute
+	//
+	// Executes the ELF image by jumping to the entry point
+	uint32_t Execute(ElfArguments* args);
+
 	// Load
 	//
 	// Parses and loads the specified ELF image into virtual memory
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(LPCTSTR path);
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile>& mapping) { return Load(mapping, 0); }
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::shared_ptr<MappedFile>& mapping, size_t length);
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<MappedFileView>& view) { return Load(view, view->Length); }
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(std::unique_ptr<MappedFileView>& view, size_t length);
-
-	// TryValidateHeader
-	//
-	// Validates an ELF binary header; does not throw an exception
-	static bool TryValidateHeader(const void* base, size_t length);
+	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(const tchar_t* path);
 
 	// ValidateHeader
 	//
-	// Validates an ELF binary header; throws an exception
-	static void ValidateHeader(const void* base, size_t length);
+	// Validates an ELF image header and checks for platform compatibility
+	static const ehdr_t* ValidateHeader(const void* base, size_t length);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// BaseAddress
+	//
+	// Gets the aligned virtual memory base address of the loaded image
+	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
+	const void* getBaseAddress(void) const { return (m_region == nullptr) ? nullptr : m_region->Pointer; }
+
+	// Interpreter
+	//
+	// Indicates the path to the program interpreter, if one is present
+	__declspec(property(get=getInterpreter)) const tchar_t* Interpreter;
+	const tchar_t* getInterpreter(void) const { return (m_interpreter.size() == 0) ? nullptr : m_interpreter.c_str(); }
 
 private:
 
@@ -77,22 +87,11 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImageT(std::shared_ptr<MappedFile>& mapping, size_t length);
-
-	// EntryPoint
-	//
-	// ELF entry function pointer
-	typedef void(*EntryPoint)(void);
+	ElfImageT(const void* base, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// AlignDown/AlignUp
-	//
-	// Address alignment helper functions
-	static uintptr_t AlignDown(uintptr_t address, size_t alignment);
-	static uintptr_t AlignUp(uintptr_t address, size_t alignment);
-	
 	// FlagsToProtection
 	//
 	// Converts the ELF p_flags into VirtualAlloc protection flags
@@ -102,7 +101,8 @@ private:
 	// Member Variables
 
 	std::unique_ptr<MemoryRegion>	m_region;		// Allocated virtual memory
-	EntryPoint						m_entry;		// Entry point
+	std::tstring					m_interpreter;	// Program interpreter
+	void*							m_entry;		// Calculated image entry point
 };
 
 //-----------------------------------------------------------------------------

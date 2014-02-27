@@ -22,11 +22,11 @@
 
 .code
 
-elf_entry PROC
+ElfEntry proc
 
-	mov rax, 123
+	mov rax, rcx
 	ret
 
-elf_entry ENDP
+ElfEntry endp
 
 end

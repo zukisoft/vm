@@ -154,7 +154,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\tmp\vm.elfload\messages\messages.h" />
+    <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
+    <ClInclude Include="elf_em.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="MappedFile.h" />
     <ClInclude Include="MappedFileView.h" />

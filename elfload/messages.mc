@@ -24,7 +24,8 @@
 ;// Facility Codes
 FacilityNames=(
 			Generic=0x00:FACILITY_GENERIC
-			LinuxHost=0x01:FACILITY_LINUX_HOST
+			ElfImage=0x01:FACILITY_ELFIMAGE
+			ElfLoader=0x02:FACILITY_ELF_LOADER
 			)
 
 ;//--------------------------------------------------------------------------
@@ -71,157 +72,139 @@ Language=English
 
 MessageId=
 Severity=Error
+SymbolicName=E_ARGUMENTNULL
+Language=English
+Parameter %1 value cannot be null.
+.
+
+MessageId=
+Severity=Error
 SymbolicName=E_ARGUMENTOUTOFRANGE
 Language=English
-Argument %1 is out of range
+Parameter %1 was out of the range of valid values.
 .
 
-;//--------------------------------------------------------------------------
-;// LINUXHOST Error Codes (0x010-0x1FF)
+;//----------------------------------------------------------------------------
+;// ElfImage
+;//
+;// Messages specific to the parsing and loading of an ELF image
 
-MessageId=0x010
-Severity=Informational
-Facility=LinuxHost
-SymbolicName=S_TEST
-Language=English
-Test Informational Message
-.
-
-MessageId=
+MessageId=0x100
 Severity=Error
-SymbolicName=E_DECOMPRESS_INIT
+Facility=ElfImage
+SymbolicName=E_TRUNCATEDELFHEADER
 Language=English
-The decompression stream cannot be initialized (method: %1)
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_DECOMPRESS_BADMAGIC
-Language=English
-The decompression stream magic number is invalid (method: %1)
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_DECOMPRESS_BADHEADER
-Language=English
-The decompression stream header is corrupt (method: %1)
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_DECOMPRESS_TRUNCATED
-Language=English
-The decompression stream ended prematurely (method: %1)
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_DECOMPRESS_CORRUPT
-Language=English
-The decompression stream data is corrupt (method: %1)
-.
-
-;// KernelImage Errors
-
-MessageId=
-Severity=Error
-SymbolicName=E_KERNELIMAGE_UNKNOWNFORMAT
-Language=English
-The kernel image file format cannot be determined or is not supported
+ELF image header has been truncated.
 .
 
 MessageId=
 Severity=Error
 SymbolicName=E_INVALIDELFMAGIC
 Language=English
-The specified image does not contain the ELF header magic number and is invalid
+ELF image header does not contain the required magic number.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ELF_TRUNCATED
+SymbolicName=E_INVALIDELFCLASS
 Language=English
-The ELF binary data ended prematurely
+ELF image class %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_UNEXPECTEDELFCLASS
+SymbolicName=E_INVALIDELFENCODING
 Language=English
-An unexpected ELF file class code of %1!d! was detected in the ELF binary file header
+ELF image encoding %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_UNEXPECTEDELFENCODING
+SymbolicName=E_INVALIDELFVERSION
 Language=English
-An unexpected ELF data encoding value was detected in the ELF binary file header
+ELF image format version %1!d! is not supported.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_TRUNCATEDELFHEADER
+SymbolicName=E_INVALIDELFTYPE
 Language=English
-The ELF binary file header has been truncated and is invalid
+Elf image type %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_UNKNOWNELFVERSION
+SymbolicName=E_INVALIDELFMACHINETYPE
 Language=English
-The ELF binary file header contains an unexpected version code or is of an unexpected length
+Elf image machine type %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFPROGRAMTABLE
+SymbolicName=E_ELFHEADERFORMAT
 Language=English
-The ELF binary file header contains an invalid or corrupted program header table
+ELF image header format is not supported.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFSECTIONTABLE
+SymbolicName=E_ELFPROGHEADERFORMAT
 Language=English
-The ELF binary file header contains an invalid or corrupted section header table
+ELF image program header format is not supported.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ELFSEGMENTFILEORDER
+SymbolicName=E_ELFSECTHEADERFORMAT
 Language=English
-The ELF binary file header lists segments in a non-sequential order
+ELF image section header format is not supported.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ELFSEGMENTPAGEBOUNDARY
+SymbolicName=E_ELFIMAGETRUNCATED
 Language=English
-A loadable segment specified in the ELF image begins on an unsupported memory page boundary
+ELF image indicates a source data offset that lies beyond the end of the file.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ELFSEGMENTPROTECTION
+SymbolicName=E_INVALIDINTERPRETER
 Language=English
-An error occurred when applying the protection flags to a loadable segment
+ELF image interpreter path is invalid or corrupt.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ELFNOTRELOCATABLE
+SymbolicName=E_EXECUTABLESTACKFLAG
 Language=English
-The ELF image is not marked as relocatable and the required base memory address could not be reserved
+ELF image specifies that the stack must be executable, which is not valid for this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ELFNULLBASEADDRESS
+SymbolicName=E_RESERVEIMAGEREGION
 Language=English
-The ELF image is not marked as relocatable and the calculated base address is NULL
+Unable to reserve the virtual memory region required to load the ELF image.
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_COMMITIMAGESEGMENT
+Language=English
+Unable to commit the virtual memory required to load an ELF image segment.
+.
 
+MessageId=
+Severity=Error
+SymbolicName=E_PROTECTIMAGESEGMENT
+Language=English
+Unable to set protection attributes on loaded ELF image segment.
+.
 
-
+MessageId=
+Severity=Error
+SymbolicName=E_LOADELFIMAGEFAILED
+Language=English
+Cannot load ELF image %1.
+.

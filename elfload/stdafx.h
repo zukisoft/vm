@@ -59,6 +59,12 @@ namespace std {
 #endif
 }
 
+#ifdef _UNICODE
+typedef wchar_t tchar_t;
+#else
+typedef char tchar_t;
+#endif
+
 // Message Resources
 #include <messages.h>
 
