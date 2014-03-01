@@ -83,13 +83,13 @@ public:
 		{ return new MemoryRegion(NULL, length, MEM_RESERVE, PAGE_NOACCESS); }
 
 	static MemoryRegion* Reserve(size_t length, DWORD flags)
-		{ return new MemoryRegion(NULL, length, MEM_RESERVE | flags, PAGE_NOACCESS); }
+		{ return new MemoryRegion(NULL, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	static MemoryRegion* Reserve(void* address, size_t length)
 		{ return new MemoryRegion(address, length, MEM_RESERVE, PAGE_NOACCESS); }
 
 	static MemoryRegion* Reserve(void* address, size_t length, DWORD flags)
-		{ return new MemoryRegion(address, length, MEM_RESERVE | flags, PAGE_NOACCESS); }
+		{ return new MemoryRegion(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	// Unlock
 	//
