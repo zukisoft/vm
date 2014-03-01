@@ -24,6 +24,15 @@
 #include "Exception.h"
 #include "ElfImage.h"
 
+DWORD WINAPI ThreadProc(void* args)
+{
+	memset(_alloca(64), 0xDD, 64);
+	return 0xBB;
+}
+
+extern "C" DWORD __stdcall ElfEntry(void* args);
+//LPTHREAD_START_ROUTINE
+
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPTSTR    lpCmdLine,
@@ -32,16 +41,29 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	
-	//DWORD result;
-	//HANDLE h = CreateThread(NULL, 0, ElfEntry, (void*)0xFEEDFEEDFEEDFEED, 0, NULL);
+	////DWORD result;
+	//HANDLE h = CreateThread(NULL, 0, ElfEntry, (void*)0xFFFFEEEE, 0, NULL);
 	//WaitForSingleObject(h, INFINITE);
-	//GetExitCodeThread(h, &result);
+	////GetExitCodeThread(h, &result);
 	//CloseHandle(h);
 
 	//return 0;
 
 	ElfImage* p;
 	ElfImage* pinterp;
+	ElfArguments builder;
+	builder.AppendArgument(L"hello world 123");
+	builder.AppendArgument("hello world 456");
+
+	builder.AppendEnvironmentVariable(L"hello", L"world");
+	builder.AppendEnvironmentVariable(L"mike", nullptr);
+	builder.AppendEnvironmentVariable(L"reeve", L"skye");
+
+	builder.AppendAuxiliaryVector(AT_PLATFORM, L"i686");
+
+	Elf32_Addr* args;
+	size_t count = builder.CreateArgumentStack(&args);
+
 	try { 
 		
 		// note: would use a while loop to iterate over interpreters, they could be chained
@@ -50,7 +72,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		
 		LPCTSTR interp = p->Interpreter;
 
-		uint32_t result = pinterp->Execute(nullptr);
+		uint32_t result = pinterp->Execute();
 
 		delete p;
 		delete pinterp;
@@ -59,6 +81,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		MessageBox(NULL, ex, _T("Exception"), MB_OK | MB_ICONHAND);
 		return (int)E_FAIL;
 	}
+
+	ElfArguments::ReleaseArgumentStack(args);
 
 	return 0;
 }

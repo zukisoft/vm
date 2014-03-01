@@ -154,6 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\tmp\vm.elfload\messages\messages.h" />
+    <ClInclude Include="auxvec.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="elf_em.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="File.cpp" />

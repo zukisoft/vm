@@ -76,7 +76,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 #ifdef _UNICODE
 			// UNICODE - The string needs to be converted from ANSI
 			wchar_t* winterpreter = reinterpret_cast<wchar_t*>(_alloca(progheader->p_filesz * sizeof(wchar_t)));
-			if(MultiByteToWideChar(CP_ACP, 0, interpreter, static_cast<int>(progheader->p_filesz), 
+			if(MultiByteToWideChar(CP_UTF8, 0, interpreter, static_cast<int>(progheader->p_filesz), 
 				winterpreter, static_cast<int>(progheader->p_filesz)) == 0) throw Exception(E_INVALIDINTERPRETER);
 			m_interpreter = winterpreter;
 #else
@@ -160,14 +160,15 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 //	args			- ELF entry point arguments
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-uint32_t ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments* args)
+uint32_t ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(void)
 {
-	if(!args) throw Exception(E_ARGUMENTNULL, _T("args"));
+	//if(!args) throw Exception(E_ARGUMENTNULL, _T("args"));
 	if(m_entry == nullptr) throw Exception(E_UNEXPECTED);	// <--- TODO
 	
-	uint32_t result = ElfEntry(/* m_entry, */ args->Vectors);
+	//uint32_t result = ElfEntry(/* m_entry, */ args->Vectors);
 	
-	return result;
+	//return result;
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
