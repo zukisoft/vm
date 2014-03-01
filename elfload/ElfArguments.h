@@ -36,30 +36,40 @@
 // ElfArgumentsT
 //
 // ELF arguments on the x86/x64 platform are provided by pushing a vector of
-// values/pointers onto the stack prior to jumping to the entry point
+// values/pointers onto the stack prior to jumping to the entry point.  The
+// typical memory format is as follows:
 //
-// !!STACK MUST BE 16-BYTE ALIGNED!!
+//  STACK POINTER -->   argc          number of arguments
+//                      argv[0-n]     pointers to command line arguments
+//                      NULL          separator
+//                      env[0-n]      pointers to environment variables
+//                      NULL          separator
+//                      auxv[0-n]     auxiliary vectors
+//                      AT_NULL       separator
+//                      NULL          terminator
+//                      zero[0-15]    16-byte alignment
+//  INFO BLOCK ----->   [auxv]        packed auxiliary vector data
+//                      [env]         packed environment strings
+//                      [argv]        packed command line argument strings
+//  STACK BOTTOM ---->  NULL          terminator
 //
-//	STACK POINTER ----->	argc				number of arguments
-//							argv[0]				first command line argument
-//							argv[n]				last command line argument
-//							NULL				separator
-//							env[0]				first environment variable
-//							env[n]				last environment variable
-//							NULL				separator
-//							auxv[0]				first auxiliary vector
-//							auxv[n]				last auxiliary vector
-//							AT_NULL				separator
-//							zero[0-15]			padding to provide 16-byte alignment
-//							[auxv]				packed auxiliary vector data
-//							[env]				packed environment strings
-//							[argv]				packed command line argument strings
-//	BOTTOM OF STACK ---->	NULL				terminator
+// ElfArgumentsT does things differently since we want to use the existing stack
+// space of the process/thread.  A single chunk of virtual memory (64KiB) is
+// allocated, and the arguments/variables/aux vectors are appended it to it.
+// When complete, the ELF arguments are allocated in the same chunk of memory.
+// The arguments can then be copied into the process/thread stack for execution:
 //
-// After loading the values into the builder, the CreateVector() function
-// is called to allocate and initialize the arguments vector.  The vector
-// will be returned in the reverse of the stack order so that the values
-// can be easily iterated and pushed onto the program stack
+//  BASE ADDRESS --->   [info]         packed information block  <--+
+//                      zero[0-15]     16-byte alignment            |
+//  ARGUMENTS ------>   argc           number of arguments          |
+//                      argv           argument pointers -----------+ 
+//                      NULL           separator                    |
+//                      env[0-n]       environment pointers --------+
+//                      NULL           separators                   |
+//                      auxv[0-n]      auxliliary vectors ----------+
+//                      AT_NULL        separator                          
+//                      NULL           terminator
+//                      zero[0-15]     16-byte alignment
 
 template <class addr_t, class auxv_t>
 class ElfArgumentsT
@@ -93,15 +103,10 @@ public:
 	void AppendEnvironmentVariable(const char* key, const char* value);
 	void AppendEnvironmentVariable(const wchar_t* key, const wchar_t* value);
 
-	// CreateArgumentStack
+	// CreateArgumentVector
 	//
-	// Creates the bottom-up block of data to be pushed onto the stack
-	size_t CreateArgumentStack(addr_t** stack);
-
-	// ReleaseArgumentStack
-	//
-	// Releases memory allocated with CreateArgumentStack()
-	static addr_t* ReleaseArgumentStack(addr_t* stack);
+	// Creates the argument vector
+	const void* CreateArgumentVector(size_t* length);
 
 private:
 
@@ -119,6 +124,8 @@ private:
 	// AppendInfo
 	//
 	// Appends data to the information block
+	addr_t AppendInfo(addr_t value);
+	addr_t AppendInfo(auxv_t value);
 	addr_t AppendInfo(const void* buffer, size_t length);
 
 	//-------------------------------------------------------------------------

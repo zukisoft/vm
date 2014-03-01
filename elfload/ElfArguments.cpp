@@ -122,8 +122,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendArgument(const wchar_t* value)
 template <class addr_t, class auxv_t>
 void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, addr_t value)
 {
-	auxv_t vector = { type, value };
-	m_auxv.push_back(vector);
+	m_auxv.push_back(auxv_t(type, value));
 }
 
 //-----------------------------------------------------------------------------
@@ -139,7 +138,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, addr_t va
 template <class addr_t, class auxv_t>
 void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const char* value)
 {
-	auxv_t vector = { type, 0 };				// Initialize with a NULL/zero value
+	auxv_t vector(type);				// Initialize with a NULL/zero value
 
 	if(value) vector.a_val = AppendInfo(value, strlen(value) + 1); 
 	m_auxv.push_back(vector);
@@ -158,7 +157,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const cha
 template <class addr_t, class auxv_t>
 void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const wchar_t* value)
 {
-	auxv_t vector = { type, 0 };				// Initialize with a NULL/zero value
+	auxv_t vector(type);				// Initialize with a NULL/zero value
 
 	if(value) {
 	
@@ -188,7 +187,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const wch
 template <class addr_t, class auxv_t>
 void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const void* buffer, size_t length)
 {
-	auxv_t vector = { type, 0 };				// Initialize with a NULL/zero value
+	auxv_t vector(type);				// Initialize with a NULL/zero value
 
 	if(buffer) vector.a_val = AppendInfo(buffer, length);
 	m_auxv.push_back(vector);
@@ -267,6 +266,48 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* key
 //
 // Arguments:
 //
+//	value		- addr_t value to be appended
+
+template <class addr_t, class auxv_t>
+addr_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(addr_t value)
+{
+	if((m_offset + sizeof(addr_t)) > m_info->Length) throw Exception(E_OUTOFMEMORY);
+
+	addr_t destination = static_cast<addr_t>(uintptr_t(m_info->Pointer) + m_offset);
+	*reinterpret_cast<addr_t*>(destination) = value;
+
+	m_offset += sizeof(addr_t);
+	return destination;
+}
+
+//-----------------------------------------------------------------------------
+// ElfArgumentsT::AppendInfo (private)
+//
+// Appends data to the information block
+//
+// Arguments:
+//
+//	value		- auxv_t value to be appended
+
+template <class addr_t, class auxv_t>
+addr_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(auxv_t value)
+{
+	if((m_offset + sizeof(auxv_t)) > m_info->Length) throw Exception(E_OUTOFMEMORY);
+
+	addr_t destination = static_cast<addr_t>(uintptr_t(m_info->Pointer) + m_offset);
+	*reinterpret_cast<auxv_t*>(destination) = value;
+
+	m_offset += sizeof(auxv_t);
+	return destination;
+}
+
+//-----------------------------------------------------------------------------
+// ElfArgumentsT::AppendInfo (private)
+//
+// Appends data to the information block
+//
+// Arguments:
+//
 //	buffer		- Buffer with data to be appended or NULL to reserve
 //	length		- Length of the data to be appended
 
@@ -284,114 +325,49 @@ addr_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(const void* buffer, size_t leng
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::CreateArgumentStack
+// ElfArgumentsT::CreateArgumentVector
 //
-// Creates the vector of values that can be pushed onto the stack prior to
-// jumping into an ELF entry point.  Values will be returned in the order
-// they should be pushed onto the stack.
+// Creates the vector of values that can be copied onto the stack prior to
+// jumping into an ELF entry point
 //
 // Arguments:
 //
-//	stack		- Pointer to receive the vector
+//	length		- Receives the length of the vector, in bytes
 
 template <class addr_t, class auxv_t>
-size_t ElfArgumentsT<addr_t, auxv_t>::CreateArgumentStack(addr_t** stack)
+const void* ElfArgumentsT<addr_t, auxv_t>::CreateArgumentVector(size_t* length)
 {
-	if(!stack) throw Exception(E_ARGUMENTNULL, _T("stack"));
+	if(!length) throw Exception(E_ARGUMENTNULL, _T("length"));
 
-	// TODO: verify 16 bytes is a multiple of addr_t
-	///if(sizeof(
+	// ALIGNMENT
+	m_offset = AlignUp(m_offset, 16);
+	if(m_offset > m_info->Length) throw Exception(E_OUTOFMEMORY);
 
-	// Calculate size of pointer data to be pushed on the stack
-	size_t alloc = 
-		sizeof(addr_t) +						// argc
-		(sizeof(addr_t) * m_argv.size()) + 		// argv pointers
-		sizeof(addr_t) +						// NULL
-		(sizeof(addr_t) * m_env.size()) +		// env pointers
-		sizeof(addr_t) +						// NULL
-		(sizeof(auxv_t) * m_auxv.size()) +		// auxiliary vectors
-		sizeof(auxv_t) +						// AT_NULL
-		sizeof(addr_t);							// NULL
-
-	// The stack must be aligned on 16-byte boundaries
-	size_t alignedalloc = AlignUp(alloc, 16);
-
-	// Allocate the memory for the entire block off the process heap
-	uint8_t* block = new uint8_t[alignedalloc];
-	if(!block) throw Exception(E_OUTOFMEMORY);
-
-	memset(block, 0, alignedalloc);				// Initialize to all NULLs
-
-	// Work backwards to load all the data into the buffer so that when
-	// it's pushed onto the stack it's in the correct order
-
-	// PADDING
-	size_t offset = alignedalloc - alloc;
-
-	// NULL
-	offset += sizeof(addr_t);
-
-	// NULL AUXILIARY VECTOR
-	auxv_t auxvterm = { AT_NULL, 0 };
-	*reinterpret_cast<auxv_t*>(block + offset) = auxvterm;
-	offset += sizeof(auxv_t);
-
-	// AUXILIARY VECTORS
-	for_each(m_auxv.rbegin(), m_auxv.rend(), [&](auxv_t& auxv) {
-
-		*reinterpret_cast<auxv_t*>(block + offset) = auxv;
-		offset += sizeof(auxv_t);
-	});
-
-	// NULL
-	offset += sizeof(addr_t);
+	// ARGC / ARGV
+	uintptr_t begin = uintptr_t(AppendInfo(static_cast<addr_t>(m_argv.size())));
+	for_each(m_argv.begin(), m_argv.end(), [&](addr_t& addr) { AppendInfo(addr); });
+	AppendInfo(static_cast<addr_t>(NULL));
 
 	// ENVIRONMENT VARIABLES
-	for_each(m_env.rbegin(), m_env.rend(), [&](addr_t& env) {
+	for_each(m_env.begin(), m_env.end(), [&](addr_t addr) { AppendInfo(addr); });
+	AppendInfo(static_cast<addr_t>(NULL));
 
-		*reinterpret_cast<addr_t*>(block + offset) = env;
-		offset += sizeof(addr_t);
-	});
+	// AUXILIARY VECTORS
+	for_each(m_auxv.begin(), m_auxv.end(), [&](auxv_t auxv) { AppendInfo(auxv); });
+	AppendInfo(auxv_t(AT_NULL, 0));
 
-	// NULL
-	offset += sizeof(addr_t);
+	// TERMINATOR
+	AppendInfo(static_cast<addr_t>(NULL));
 
-	// COMMAND LINE ARGUMENTS
-	for_each(m_argv.rbegin(), m_argv.rend(), [&](addr_t& arg) {
+	// ALIGNMENT
+	m_offset = AlignUp(m_offset, 16);
+	if(m_offset > m_info->Length) throw Exception(E_OUTOFMEMORY);
 
-		*reinterpret_cast<addr_t*>(block + offset) = arg;
-		offset += sizeof(addr_t);
-	});
-	
+	// Calculate the end address and the overall length
+	uintptr_t end = uintptr_t(m_info->Pointer) + m_offset;
+	*length = (end - begin);
 
-	// NUMBER OF COMMAND LINE ARGUMENTS
-	*reinterpret_cast<addr_t*>(block + offset) = m_argv.size();
-	offset += sizeof(addr_t);
-
-	// Verify that the exact end of the allocated memory has been reached
-	if(offset != alignedalloc) throw Exception(E_UNEXPECTED);	// <--- TODO
-
-	// The first values to pe pushed onto the stack are at the base pointer
-	*stack = reinterpret_cast<addr_t*>(block);
-
-	// Return the number of values that need to be pushed onto the stack
-	return (alignedalloc / sizeof(addr_t));
-}
-
-//-----------------------------------------------------------------------------
-// ElfArgumentsT::ReleaseArgumentStack (static)
-//
-// Releases the memory allocated from CreateArgumentStack
-//
-// Arguments:
-//
-//	stack		- Pointer allocated by CreateVector()
-
-template <class addr_t, class auxv_t>
-addr_t* ElfArgumentsT<addr_t, auxv_t>::ReleaseArgumentStack(addr_t* stack)
-{
-	if(stack) delete[] reinterpret_cast<uint8_t*>(stack);
-	return nullptr;
+	return reinterpret_cast<const void*>(begin);
 }
 
 //-----------------------------------------------------------------------------

@@ -65,7 +65,10 @@
 //////////
 
 // Elf32_auxv_t
-typedef struct { 
+typedef struct _auxv_32 { 
+
+	_auxv_32(Elf32_Addr type) : a_type(type), a_val(0) {}
+	_auxv_32(Elf32_Addr type, Elf32_Addr val) : a_type(type), a_val(val) {}
 
 	Elf32_Addr		a_type;
 	Elf32_Addr		a_val;
@@ -73,7 +76,10 @@ typedef struct {
 } Elf32_auxv_t; 
  
 // Elf64_auxv_t
-typedef struct {
+typedef struct _auxv_64 {
+
+	_auxv_64(Elf64_Addr type) : a_type(type), a_val(0) {}
+	_auxv_64(Elf64_Addr type, Elf64_Addr val) : a_type(type), a_val(val) {}
 
 	Elf64_Addr		a_type;
 	Elf64_Addr		a_val;
