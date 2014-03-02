@@ -48,7 +48,8 @@ extern "C" uint32_t __stdcall ElfEntry(void* address, const void* args, size_t a
 //	length		- Optional length to use from mapping
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
+ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length) : 
+	m_base(nullptr), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0)
 {
 	if(!base) throw Exception(E_ARGUMENTNULL, _T("base"));
 
@@ -112,7 +113,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
 	intptr_t vaddrdelta = (elfheader->e_type == ET_EXEC) ? 0 : uintptr_t(m_region->Pointer) - minvaddr;
 
-	// Load the PT_LOAD segments into virtual memory
+	// Second pass over the program headers to load, commit and protect the program segments
 	for(int index = 0; index < elfheader->e_phnum; index++) {
 
 		// Get a pointer to the program header and verify that it won't go beyond the end of the data
@@ -120,8 +121,17 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 		const phdr_t* progheader = reinterpret_cast<const phdr_t*>(baseptr + offset);
 		if(length < (offset + elfheader->e_phentsize)) throw Exception(E_ELFIMAGETRUNCATED);
 
-		// Only care about segments that have a non-zero memory footprint
-		if((progheader->p_type == PT_LOAD) && (progheader->p_memsz)) {
+		// PT_PHDR - if it falls within the boundaries of the loadable segments, set this so that
+		// it can be added to the ELF arguments as an auxiliary vector.  It would be a simple task
+		// to just copy it from the header, but I think this is more how it was intended to be used
+		if((progheader->p_type == PT_PHDR) && (progheader->p_vaddr >= minvaddr) && ((progheader->p_vaddr + progheader->p_memsz) <= maxvaddr)) {
+
+			 m_phdrs = reinterpret_cast<const phdr_t*>(uintptr_t(progheader->p_vaddr) + vaddrdelta);
+			 m_phdrents = progheader->p_memsz / sizeof(phdr_t);
+		}
+
+		// PT_LOAD - only load segments that have a non-zero memory footprint defined
+		else if((progheader->p_type == PT_LOAD) && (progheader->p_memsz)) {
 
 			// Get the base address of the loadable segment and commit the virtual memory
 			uintptr_t segbase = progheader->p_vaddr + vaddrdelta;
@@ -144,6 +154,9 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 			catch(Exception& ex) { throw Exception(ex, E_PROTECTIMAGESEGMENT); }
 		}
 	}
+
+	// Base address of the image is the original minimum virtual address, adjusted for load delta
+	m_base = reinterpret_cast<void*>(minvaddr + vaddrdelta);
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	m_entry = (elfheader->e_entry) ? reinterpret_cast<void*>(elfheader->e_entry + vaddrdelta) : nullptr;

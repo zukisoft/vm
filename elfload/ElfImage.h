@@ -70,15 +70,32 @@ public:
 
 	// BaseAddress
 	//
-	// Gets the aligned virtual memory base address of the loaded image
+	// Gets the virtual memory base address of the loaded image
 	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-	const void* getBaseAddress(void) const { return (m_region == nullptr) ? nullptr : m_region->Pointer; }
+	const void* getBaseAddress(void) const { return m_base; }
+
+	// EntryPoint
+	//
+	// Gets the entry point for the image
+	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
+	const void* getEntryPoint(void) const { return m_entry; }
 
 	// Interpreter
 	//
 	// Indicates the path to the program interpreter, if one is present
 	__declspec(property(get=getInterpreter)) const tchar_t* Interpreter;
 	const tchar_t* getInterpreter(void) const { return (m_interpreter.size() == 0) ? nullptr : m_interpreter.c_str(); }
+
+	// NumProgramHeaders
+	//
+	// Number of program headers defines as part of the loaded image
+	__declspec(property(get=getNumProgramHeaders)) size_t NumProgramHeaders;
+	size_t getNumProgramHeaders(void) const { return m_phdrents; }
+	// ProgramHeaders
+	//
+	// Pointer to program headers that were defined as part of the loaded image
+	__declspec(property(get=getProgramHeaders)) const phdr_t* ProgramHeaders;
+	const phdr_t* getProgramHeaders(void) const { return m_phdrs; }
 
 private:
 
@@ -102,7 +119,10 @@ private:
 
 	std::unique_ptr<MemoryRegion>	m_region;		// Allocated virtual memory
 	std::tstring					m_interpreter;	// Program interpreter
+	void*							m_base;			// Loaded image base address
 	void*							m_entry;		// Calculated image entry point
+	const phdr_t*					m_phdrs;		// Program header (in image)
+	size_t							m_phdrents;		// Program header entries
 };
 
 //-----------------------------------------------------------------------------
