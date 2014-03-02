@@ -96,6 +96,9 @@ public:
 	void AppendAuxiliaryVector(addr_t type, const char* value);
 	void AppendAuxiliaryVector(addr_t type, const wchar_t* value);
 	void AppendAuxiliaryVector(addr_t type, const void* buffer, size_t length);
+	void AppendAuxiliaryVector(addr_t type, int value) { AppendAuxiliaryVector(type, static_cast<addr_t>(value)); }
+	void AppendAuxiliaryVector(addr_t type, const void* value) { AppendAuxiliaryVector(type, reinterpret_cast<addr_t>(value)); }
+
 
 	// AppendEnvironmentVariable
 	//
