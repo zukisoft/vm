@@ -53,7 +53,7 @@ public:
 	// Execute
 	//
 	// Executes the ELF image by jumping to the entry point
-	uint32_t Execute(void);
+	uint32_t Execute(ElfArguments& args);
 
 	// Load
 	//

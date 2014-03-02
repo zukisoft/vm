@@ -25,10 +25,52 @@
 
 .code
 
-ElfEntry proc stdcall args:dword
+;
+; TODO: Optimize this - accept number of DWORDs and use REP MOVSD (or something)
+;
 
-	mov eax, args
-	ret
+;------------------------------------------------------------------------------
+; ElfEntry
+;
+; Invokes an ELF image entry point
+;
+;	Arguments:
+;
+;		address			- ELF image entry point
+;		argvector		- ELF argument vector to copy onto stack
+;		argvectorlen	- Length of ELF argument vector
+;
+;	Function Prototype:
+;
+;		uint32_t ElfEntry(void* address, const void* argvector, size_t argvectorlen);
+;
+ElfEntry proc stdcall address:ptr dword, argvector:ptr dword, argvectorlen:dword
+
+	; copy the argument vector into the thread stack space
+	mov esi, argvector
+	mov edi, esp
+	sub edi, argvectorlen
+	mov ecx, argvectorlen
+
+copy_args:
+	mov eax, [esi]
+	mov [edi], eax
+	add esi, 4
+	add edi, 4
+	sub ecx, 4
+	cmp ecx, 0
+	jne	copy_args
+
+	; move the stack pointer to the top of the argument vector
+	sub esp, argvectorlen
+
+	; invoke the ELF entry point
+	jmp address
+
+	; restore the stack pointer and return
+	; add esp, argvectorlen
+	; mov eax, 0
+	; ret
 
 ElfEntry endp
 

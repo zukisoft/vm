@@ -61,28 +61,29 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	builder.AppendAuxiliaryVector(AT_PLATFORM, L"i686");
 
-	Elf32_Addr* args;
-	size_t count = builder.CreateArgumentStack(&args);
+	//Elf32_Addr* args;
+	//size_t count = builder.CreateArgumentStack(&args);
 
 	try { 
 		
 		// note: would use a while loop to iterate over interpreters, they could be chained
-		p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
-		pinterp = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
+		p = ElfImage::Load(_T("D:\\test"));
+		///pinterp = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
 		
-		LPCTSTR interp = p->Interpreter;
+		//LPCTSTR interp = p->Interpreter;
 
-		uint32_t result = pinterp->Execute();
+		uint32_t result = p->Execute(builder);
 
 		delete p;
-		delete pinterp;
+		//delete pinterp;
 	}
 	catch(Exception& ex) {
 		MessageBox(NULL, ex, _T("Exception"), MB_OK | MB_ICONHAND);
 		return (int)E_FAIL;
 	}
 
-	ElfArguments::ReleaseArgumentStack(args);
+	//ElfArguments::ReleaseArgumentStack(args);
 
 	return 0;
 }

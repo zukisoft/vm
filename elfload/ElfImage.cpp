@@ -37,7 +37,7 @@ template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
 //-----------------------------------------------------------------------------
 // Function Prototypes
 
-extern "C" uint32_t __stdcall ElfEntry(void* args);
+extern "C" uint32_t __stdcall ElfEntry(void* address, const void* args, size_t argslen);
 
 //-----------------------------------------------------------------------------
 // ElfImageT Constructor (private)
@@ -160,15 +160,22 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 //	args			- ELF entry point arguments
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-uint32_t ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(void)
+uint32_t ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments& args)
 {
-	//if(!args) throw Exception(E_ARGUMENTNULL, _T("args"));
-	if(m_entry == nullptr) throw Exception(E_UNEXPECTED);	// <--- TODO
-	
-	//uint32_t result = ElfEntry(/* m_entry, */ args->Vectors);
-	
-	//return result;
-	return 0;
+	const void*		argvector;					// Arguments vector data
+	size_t			argvectorlen;				// Arguments vector length
+
+	// Gotta have an entry point
+	if(m_entry == nullptr) throw Exception(E_NULLELFENTRYPOINT);
+
+	// Create an argument vector to push onto the stack
+	argvector = args.CreateArgumentVector(&argvectorlen);
+
+	// Ensure the length is aligned to a 16-byte boundary
+	if(argvectorlen & 15) throw Exception(E_ARGUMENTVECTORALIGNMENT);
+
+	// Invoke the entry point assembly helper function
+	return ElfEntry(m_entry, argvector, argvectorlen);
 }
 
 //-----------------------------------------------------------------------------

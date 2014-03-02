@@ -208,3 +208,18 @@ SymbolicName=E_LOADELFIMAGEFAILED
 Language=English
 Cannot load ELF image %1.
 .
+
+MessageId=
+Severity=Error
+SymbolicName=E_NULLELFENTRYPOINT
+Language=English
+ELF image cannot be executed as no entry point has been specified
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_ARGUMENTVECTORALIGNMENT
+Language=English
+Internal Error: The ELF argument vector has not been aligned properly for the stack
+.
+
