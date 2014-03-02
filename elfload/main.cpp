@@ -68,8 +68,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		
 		// note: would use a while loop to iterate over interpreters, they could be chained
 		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
-		p = ElfImage::Load(_T("D:\\test"));
-		///pinterp = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::Load(_T("D:\\test"));
+		p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
 		
 		//LPCTSTR interp = p->Interpreter;
 

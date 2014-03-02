@@ -109,9 +109,8 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 
 	} catch(Exception& ex) { throw Exception(ex, E_RESERVEIMAGEREGION); }
 
-	// Determine the delta between the reserved region and the original base virtual address
-	uintptr_t regionbase = uintptr_t(m_region->Pointer);
-	intptr_t vaddrdelta = minvaddr - regionbase; 
+	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
+	intptr_t vaddrdelta = (elfheader->e_type == ET_EXEC) ? 0 : uintptr_t(m_region->Pointer) - minvaddr;
 
 	// Load the PT_LOAD segments into virtual memory
 	for(int index = 0; index < elfheader->e_phnum; index++) {
@@ -125,7 +124,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 		if((progheader->p_type == PT_LOAD) && (progheader->p_memsz)) {
 
 			// Get the base address of the loadable segment and commit the virtual memory
-			uintptr_t segbase = progheader->p_vaddr - vaddrdelta;
+			uintptr_t segbase = progheader->p_vaddr + vaddrdelta;
 			try { m_region->Commit(reinterpret_cast<void*>(segbase), progheader->p_memsz, PAGE_READWRITE); }
 			catch(Exception& ex) { throw Exception(ex, E_COMMITIMAGESEGMENT); }
 
@@ -147,7 +146,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length)
 	}
 
 	// Calculate the address of the image entry point, if one has been specified in the header
-	m_entry = (elfheader->e_entry) ? reinterpret_cast<void*>(elfheader->e_entry - vaddrdelta) : nullptr;
+	m_entry = (elfheader->e_entry) ? reinterpret_cast<void*>(elfheader->e_entry + vaddrdelta) : nullptr;
 }
 
 //-----------------------------------------------------------------------------
