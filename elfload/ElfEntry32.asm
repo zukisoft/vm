@@ -25,10 +25,6 @@
 
 .code
 
-;
-; TODO: Optimize this - accept number of DWORDs and use REP MOVSD (or something)
-;
-
 ;------------------------------------------------------------------------------
 ; ElfEntry
 ;
@@ -38,39 +34,35 @@
 ;
 ;		address			- ELF image entry point
 ;		argvector		- ELF argument vector to copy onto stack
-;		argvectorlen	- Length of ELF argument vector
+;		argvectorlen	- Length of ELF argument vector in bytes
 ;
 ;	Function Prototype:
 ;
-;		uint32_t ElfEntry(void* address, const void* argvector, size_t argvectorlen);
-;
+;		void ElfEntry(void* address, const void* argvector, size_t argvectorlen);
+
 ElfEntry proc stdcall address:ptr dword, argvector:ptr dword, argvectorlen:dword
 
 	; copy the argument vector into the thread stack space
 	mov esi, argvector
+	sub rsp, argvectorlen
 	mov edi, esp
-	sub edi, argvectorlen
 	mov ecx, argvectorlen
+	shr ecx, 2
+	rep movsd
 
-copy_args:
-	mov eax, [esi]
-	mov [edi], eax
-	add esi, 4
-	add edi, 4
-	sub ecx, 4
-	cmp ecx, 0
-	jne	copy_args
+	; zero out the general purpose registers
+	xor eax, eax
+	xor ebx, ebx
+	xor ecx, ecx
+	xor edx, edx
+	xor esi, esi
+	xor edi, edi
 
-	; move the stack pointer to the top of the argument vector
-	sub esp, argvectorlen
-
-	; invoke the ELF entry point
+	; jump into the ELF image entry point
 	jmp address
 
-	; restore the stack pointer and return
-	; add esp, argvectorlen
-	; mov eax, 0
-	; ret
+	; suppress A6001 warning
+	ret
 
 ElfEntry endp
 

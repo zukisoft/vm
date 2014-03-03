@@ -37,7 +37,7 @@ template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
 //-----------------------------------------------------------------------------
 // Function Prototypes
 
-extern "C" uint32_t __stdcall ElfEntry(void* address, const void* args, size_t argslen);
+extern "C" void __stdcall ElfEntry(void* address, const void* args, size_t argslen);
 
 //-----------------------------------------------------------------------------
 // ElfImageT Constructor (private)
@@ -72,7 +72,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length) :
 			
 			if(length < (progheader->p_offset + progheader->p_filesz)) throw Exception(E_ELFIMAGETRUNCATED);
 			char* interpreter = reinterpret_cast<char*>(baseptr + progheader->p_offset);
-			if(interpreter[progheader->p_filesz] != 0) throw Exception(E_INVALIDINTERPRETER);
+			if(interpreter[progheader->p_filesz - 1] != 0) throw Exception(E_INVALIDINTERPRETER);
 
 #ifdef _UNICODE
 			// UNICODE - The string needs to be converted from ANSI
@@ -172,7 +172,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length) :
 //	args			- ELF entry point arguments
 
 template <class ehdr_t, class phdr_t, class shdr_t>
-uint32_t ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments& args)
+void ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments& args)
 {
 	const void*		argvector;					// Arguments vector data
 	size_t			argvectorlen;				// Arguments vector length
@@ -187,7 +187,7 @@ uint32_t ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments& args)
 	if(argvectorlen & 15) throw Exception(E_ARGUMENTVECTORALIGNMENT);
 
 	// Invoke the entry point assembly helper function
-	return ElfEntry(m_entry, argvector, argvectorlen);
+	ElfEntry(m_entry, argvector, argvectorlen);
 }
 
 //-----------------------------------------------------------------------------
