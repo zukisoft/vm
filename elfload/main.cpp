@@ -59,7 +59,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	builder.AppendEnvironmentVariable(L"mike", nullptr);
 	builder.AppendEnvironmentVariable(L"reeve", L"skye");
 
-	builder.AppendAuxiliaryVector(AT_PLATFORM, L"i686");
+
+	GUID pseudorandom;
+	CoCreateGuid(&pseudorandom);
 
 	//Elf32_Addr* args;
 	//size_t count = builder.CreateArgumentStack(&args);
@@ -69,11 +71,46 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// note: would use a while loop to iterate over interpreters, they could be chained
 		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::Load(_T("D:\\test"));
-		p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"));
 		
 		//LPCTSTR interp = p->Interpreter;
 
-		uint32_t result = p->Execute(builder);
+		//
+		// AUXILIARY VECTORS
+		//
+
+		(AT_EXECFD);		// 2
+		
+		if(p->ProgramHeaders) {
+
+			builder.AppendAuxiliaryVector(AT_PHDR, p->ProgramHeaders);				// 3
+			builder.AppendAuxiliaryVector(AT_PHENT, sizeof(Elf32_Phdr));			// 4
+			builder.AppendAuxiliaryVector(AT_PHNUM, p->NumProgramHeaders);			// 5
+		}
+
+		builder.AppendAuxiliaryVector(AT_PAGESZ, MemoryRegion::PageSize);			// 6
+		builder.AppendAuxiliaryVector(AT_BASE, p->BaseAddress);						// 7
+		(AT_FLAGS);			// 8
+		builder.AppendAuxiliaryVector(AT_ENTRY, p->EntryPoint);						// 9
+		// 10
+		(AT_UID);			// 11
+		(AT_EUID);			// 12
+		(AT_GID);			// 13
+		(AT_EGID);			// 14
+		builder.AppendAuxiliaryVector(AT_PLATFORM, "i686");							// 15
+		(AT_HWCAP);			// 16
+		(AT_CLKTCK);		// 17
+		builder.AppendAuxiliaryVector(AT_SECURE, 0);								// 23
+		(AT_BASE_PLATFORM);	// 24
+		builder.AppendAuxiliaryVector(AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
+		(AT_HWCAP2);		// 26
+		(AT_EXECFN);		// 31
+		(AT_SYSINFO);		// 32
+		(AT_SYSINFO_EHDR);	// 33
+
+
+		p->Execute(builder);
 
 		delete p;
 		//delete pinterp;

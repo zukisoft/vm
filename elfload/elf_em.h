@@ -1,8 +1,3 @@
-//
-// TODO: Provide a proper copyright and license notice for this file; it is
-// derived from external sources.
-//
-
 #ifndef __ELF_EM_H_
 #define __ELF_EM_H_
 #pragma once
