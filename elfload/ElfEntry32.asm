@@ -44,7 +44,7 @@ ElfEntry proc stdcall address:ptr dword, argvector:ptr dword, argvectorlen:dword
 
 	; copy the argument vector into the thread stack space
 	mov esi, argvector
-	sub rsp, argvectorlen
+	sub esp, argvectorlen
 	mov edi, esp
 	mov ecx, argvectorlen
 	shr ecx, 2
