@@ -30,8 +30,48 @@ DWORD WINAPI ThreadProc(void* args)
 	return 0xBB;
 }
 
+#define LINUX_ENOSYS		38
+
+static HMODULE syscalls;
+
+typedef void (*syscall_fn)(PCONTEXT context);
+
+//-----------------------------------------------------------------------------
+// SysCallHandler
+//
+// Intercepts and processes a 32-bit Linux system call using a vectored exception
+// handler.  Technique is based on a sample presented by proog128 available at:
+// http://0xef.wordpress.com/2012/11/17/emulate-linux-system-calls-on-windows/
+//
+// Arguments:
+//
+//	exception		- Exception information
+
+LONG CALLBACK SysCallHandler(PEXCEPTION_POINTERS exception)
+{
+	// INT 0x80 instruction should cause an access violation
+	if(exception->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	// EIP --> 0xCD, 0x80		; INT 0x80
+	if(*reinterpret_cast<uint16_t*>(exception->ContextRecord->Eip) != 0x80CD)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	// CALL # = eax
+	//uint32_t syscall = exception->ContextRecord->Eax;
+
+	syscall_fn syscall = reinterpret_cast<syscall_fn>(GetProcAddress(syscalls, reinterpret_cast<LPCSTR>(exception->ContextRecord->Eax)));
+	if(!syscall) exception->ContextRecord->Eax = LINUX_ENOSYS;
+	else syscall(exception->ContextRecord);
+
+	exception->ContextRecord->Eip += 2;
+	return EXCEPTION_CONTINUE_EXECUTION;
+}
+
 extern "C" DWORD __stdcall ElfEntry(void* args);
 //LPTHREAD_START_ROUTINE
+
+
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -40,6 +80,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	syscalls = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
 	
 	////DWORD result;
 	//HANDLE h = CreateThread(NULL, 0, ElfEntry, (void*)0xFFFFEEEE, 0, NULL);
@@ -109,7 +151,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		(AT_SYSINFO);		// 32
 		(AT_SYSINFO_EHDR);	// 33
 
-
+		AddVectoredExceptionHandler(1, SysCallHandler);
 		p->Execute(builder);
 
 		delete p;
