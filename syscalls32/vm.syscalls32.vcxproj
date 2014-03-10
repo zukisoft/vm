@@ -105,6 +105,7 @@
     <ClCompile Include="sys_mprotect.cpp" />
     <ClCompile Include="sys_noentry.cpp" />
     <ClCompile Include="sys_newuname.cpp" />
+    <ClCompile Include="sys_set_thread_area.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="syscalls32.def" />

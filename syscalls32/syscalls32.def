@@ -263,7 +263,7 @@ EXPORTS
 	__NR_futex=sys_noentry @240
 	__NR_sched_setaffinity=sys_noentry @241
 	__NR_sched_getaffinity=sys_noentry @242
-	__NR_set_thread_area=sys_noentry @243
+	__NR_set_thread_area=sys_set_thread_area	@243
 	__NR_get_thread_area=sys_noentry @244
 	__NR_io_setup=sys_noentry @245
 	__NR_io_destroy=sys_noentry @246

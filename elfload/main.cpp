@@ -24,17 +24,13 @@
 #include "Exception.h"
 #include "ElfImage.h"
 
-DWORD WINAPI ThreadProc(void* args)
-{
-	memset(_alloca(64), 0xDD, 64);
-	return 0xBB;
-}
-
 #define LINUX_ENOSYS		38
 
 static HMODULE syscalls;
 
 typedef void (*syscall_fn)(PCONTEXT context);
+
+void InitializeThreadLocalStorage(void);
 
 //-----------------------------------------------------------------------------
 // SysCallHandler
@@ -81,6 +77,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
+	InitializeThreadLocalStorage();
+
 	syscalls = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
 	
 	////DWORD result;
@@ -98,12 +96,20 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	builder.AppendArgument("hello world 456");
 
 	builder.AppendEnvironmentVariable(L"hello", L"world");
-	builder.AppendEnvironmentVariable(L"mike", nullptr);
+	builder.AppendEnvironmentVariable(L"mike", L"brehm");
 	builder.AppendEnvironmentVariable(L"reeve", L"skye");
 
 
 	GUID pseudorandom;
 	CoCreateGuid(&pseudorandom);
+
+	LDT_ENTRY ldtEntry;
+	DWORD selector = 0;
+	GetThreadSelectorEntry(GetCurrentThread(), selector, &ldtEntry);
+
+	uintptr_t fsVA = (ldtEntry.HighWord.Bytes.BaseHi) << 24 | (ldtEntry.HighWord.Bytes.BaseMid) << 16 | (ldtEntry.BaseLow);
+ 
+
 
 	//Elf32_Addr* args;
 	//size_t count = builder.CreateArgumentStack(&args);
@@ -113,8 +119,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// note: would use a while loop to iterate over interpreters, they could be chained
 		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::Load(_T("D:\\test"));
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-		p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"));
+		p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"));
 		
 		//LPCTSTR interp = p->Interpreter;
 
@@ -122,7 +128,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// AUXILIARY VECTORS
 		//
 
-		(AT_EXECFD);		// 2
+		(AT_EXECFD);		// 2 - DO NOT IMPLEMENT
 		
 		if(p->ProgramHeaders) {
 
@@ -133,9 +139,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 		builder.AppendAuxiliaryVector(AT_PAGESZ, MemoryRegion::PageSize);			// 6
 		builder.AppendAuxiliaryVector(AT_BASE, p->BaseAddress);						// 7
-		(AT_FLAGS);			// 8
+		builder.AppendAuxiliaryVector(AT_FLAGS, 0);									// 8
 		builder.AppendAuxiliaryVector(AT_ENTRY, p->EntryPoint);						// 9
-		// 10
+		(AT_NOTELF);		// 10 - DO NOT IMPLEMENT
 		(AT_UID);			// 11
 		(AT_EUID);			// 12
 		(AT_GID);			// 13
@@ -144,9 +150,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		(AT_HWCAP);			// 16
 		(AT_CLKTCK);		// 17
 		builder.AppendAuxiliaryVector(AT_SECURE, 0);								// 23
-		(AT_BASE_PLATFORM);	// 24
+		(AT_BASE_PLATFORM);	// 24 - DO NOT IMPLEMENT
 		builder.AppendAuxiliaryVector(AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
-		(AT_HWCAP2);		// 26
+		(AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
 		(AT_EXECFN);		// 31
 		(AT_SYSINFO);		// 32
 		(AT_SYSINFO_EHDR);	// 33

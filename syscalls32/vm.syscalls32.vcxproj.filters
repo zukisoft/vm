@@ -39,6 +39,9 @@
     <ClCompile Include="sys_newuname.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sys_set_thread_area.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="syscalls32.def">

@@ -155,6 +155,7 @@
   <ItemGroup>
     <ClInclude Include="..\tmp\vm.elfload\messages\messages.h" />
     <ClInclude Include="auxvec.h" />
+    <ClInclude Include="ContextRecord.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="elf_em.h" />
@@ -169,6 +170,7 @@
     <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ContextRecord.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="Exception.cpp" />
@@ -183,6 +185,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ThreadLocalStorage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
