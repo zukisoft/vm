@@ -25,64 +25,6 @@
 #pragma once
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
-#pragma warning(disable:4201)			// Nameless struct/union
-
-//-----------------------------------------------------------------------------
-// Type Declarations
-
-// opcode_t
-//
-// Defines an opcode
-struct opcode_t {
-
-	uint8_t		b0;						// instruction byte 0
-	uint8_t		b1;						// instruction byte 1
-	uint8_t		b2;						// instruction byte 2
-	uint8_t		b3;						// instruction byte 3
-	uint8_t		b4;						// instruction byte 4
-	uint8_t		b5;						// instruction byte 5
-	uint8_t		b6;						// instruction byte 6
-	uint8_t		modrmmask;				// optional mask for modr/m byte (also set modrm to 1)
-	uint8_t		numprefixes : 3;		// 0 - 4; number of prefix bytes
-	uint8_t		numopcodes: 2;			// 0 - 3; number of opcode bytes
-	uint8_t		modrm : 1;				// 0 - 1; flag if modr/m byte required
-	uint8_t		displacement: 1;		// 0 - 1; flag if displacement bytes required
-	uint8_t		immediate: 1;			// 0 - 1; flag if immediate bytes required
-};
-
-// modrm_t
-//
-// Union that defines the individual values within a ModR/M byte
-union modrm_t {
-	
-	modrm_t(uint8_t val) : value(val) {}
-
-	struct {
-
-		uint8_t		rm:3;
-		uint8_t		reg:3;
-		uint8_t		mod:2;
-	};
-
-	uint8_t			value;
-};
-
-// sib_t
-//
-// Union that defines the individual values within a SIB Byte
-union sib_t {
-	
-	sib_t(uint8_t val) : value(val) {}
-
-	struct {
-
-		uint8_t		base:3;
-		uint8_t		index:3;
-		uint8_t		scale:2;
-	};
-
-	uint8_t			value;
-};
 
 //-----------------------------------------------------------------------------
 // ContextRecordFlags
@@ -196,47 +138,47 @@ public:
 	// AH Register
 	__declspec(property(get=getAH, put=putAH)) uint8_t AH;
 	uint8_t getAH(void) const { return (m_context->Eax & 0x0000FF00) >> 8; }
-	void putAH(uint8_t value) const { m_context->Eax &= 0xFFFF00FF; m_context->Eax |= (static_cast<uint16_t>(value) << 8); }
+	void putAH(uint8_t value) { m_context->Eax &= 0xFFFF00FF; m_context->Eax |= (static_cast<uint16_t>(value) << 8); }
 
 	// AL Register
 	__declspec(property(get=getAL, put=putAL)) uint8_t AL;
 	uint8_t getAL(void) const { return m_context->Eax & 0x000000FF; }
-	void putAL(uint8_t value) const { m_context->Eax &= 0xFFFFFF00; m_context->Eax |= value; }
+	void putAL(uint8_t value) { m_context->Eax &= 0xFFFFFF00; m_context->Eax |= value; }
 
 	// AX Register
 	__declspec(property(get=getAX, put=putAX)) uint16_t AX;
 	uint16_t getAX(void) const { return m_context->Eax & 0x0000FFFF; }
-	void putAX(uint16_t value) const { m_context->Eax &= 0xFFFF0000; m_context->Eax |= value; }
+	void putAX(uint16_t value) { m_context->Eax &= 0xFFFF0000; m_context->Eax |= value; }
 
 	// BH Register
 	__declspec(property(get=getBH, put=putBH)) uint8_t BH;
 	uint8_t getBH(void) const { return (m_context->Ebx & 0x0000FF00) >> 8; }
-	void putBH(uint8_t value) const { m_context->Ebx &= 0xFFFF00FF; m_context->Ebx |= (static_cast<uint16_t>(value) << 8); }
+	void putBH(uint8_t value) { m_context->Ebx &= 0xFFFF00FF; m_context->Ebx |= (static_cast<uint16_t>(value) << 8); }
 
 	// BL Register
 	__declspec(property(get=getBL, put=putBL)) uint8_t BL;
 	uint8_t getBL(void) const { return m_context->Ebx & 0x000000FF; }
-	void putBL(uint8_t value) const { m_context->Ebx &= 0xFFFFFF00; m_context->Ebx |= value; }
+	void putBL(uint8_t value) { m_context->Ebx &= 0xFFFFFF00; m_context->Ebx |= value; }
 
 	// BP Register
 	__declspec(property(get=getBP, put=putBP)) uint16_t BP;
 	uint16_t getBP(void) const { return m_context->Ebp & 0x0000FFFF; }
-	void putBP(uint16_t value) const { m_context->Ebp &= 0xFFFF0000; m_context->Ebp |= value; }
+	void putBP(uint16_t value) { m_context->Ebp &= 0xFFFF0000; m_context->Ebp |= value; }
 
 	// BX Register
 	__declspec(property(get=getBX, put=putBX)) uint16_t BX;
 	uint16_t getBX(void) const { return m_context->Ebx & 0x0000FFFF; }
-	void putBX(uint16_t value) const { m_context->Ebx &= 0xFFFF0000; m_context->Ebx |= value; }
+	void putBX(uint16_t value) { m_context->Ebx &= 0xFFFF0000; m_context->Ebx |= value; }
 
 	// CH Register
 	__declspec(property(get=getCH, put=putCH)) uint8_t CH;
 	uint8_t getCH(void) const { return (m_context->Ecx & 0x0000FF00) >> 8; }
-	void putCH(uint8_t value) const { m_context->Ecx &= 0xFFFF00FF; m_context->Ecx |= (static_cast<uint16_t>(value) << 8); }
+	void putCH(uint8_t value) { m_context->Ecx &= 0xFFFF00FF; m_context->Ecx |= (static_cast<uint16_t>(value) << 8); }
 
 	// CL Register
 	__declspec(property(get=getCL, put=putCL)) uint8_t CL;
 	uint8_t getCL(void) const { return m_context->Ecx & 0x000000FF; }
-	void putCL(uint8_t value) const { m_context->Ecx &= 0xFFFFFF00; m_context->Ecx |= value; }
+	void putCL(uint8_t value) { m_context->Ecx &= 0xFFFFFF00; m_context->Ecx |= value; }
 
 	// CS Register
 	__declspec(property(get=getCS)) uint16_t CS;
@@ -245,86 +187,87 @@ public:
 	// CX Register
 	__declspec(property(get=getCX, put=putCX)) uint16_t CX;
 	uint16_t getCX(void) const { return m_context->Ecx & 0x0000FFFF; }
-	void putCX(uint16_t value) const { m_context->Ecx &= 0xFFFF0000; m_context->Ecx |= value; }
+	void putCX(uint16_t value) { m_context->Ecx &= 0xFFFF0000; m_context->Ecx |= value; }
 
 	// DH Register
 	__declspec(property(get=getDH, put=putDH)) uint8_t DH;
 	uint8_t getDH(void) const { return (m_context->Edx & 0x0000FF00) >> 8; }
-	void putDH(uint8_t value) const { m_context->Edx &= 0xFFFF00FF; m_context->Edx |= (static_cast<uint16_t>(value) << 8); }
+	void putDH(uint8_t value) { m_context->Edx &= 0xFFFF00FF; m_context->Edx |= (static_cast<uint16_t>(value) << 8); }
 
 	// DI Register
 	__declspec(property(get=getDI, put=putDI)) uint16_t DI;
 	uint16_t getDI(void) const { return m_context->Edi & 0x0000FFFF; }
-	void putDI(uint16_t value) const { m_context->Edi &= 0xFFFF0000; m_context->Edi |= value; }
+	void putDI(uint16_t value) { m_context->Edi &= 0xFFFF0000; m_context->Edi |= value; }
 
 	// DL Register
 	__declspec(property(get=getDL, put=putDL)) uint8_t DL;
 	uint8_t getDL(void) const { return m_context->Edx & 0x000000FF; }
-	void putDL(uint8_t value) const { m_context->Edx &= 0xFFFFFF00; m_context->Edx |= value; }
+	void putDL(uint8_t value) { m_context->Edx &= 0xFFFFFF00; m_context->Edx |= value; }
 
 	// DS Register
-	__declspec(property(get=getDS)) uint16_t CS;
+	__declspec(property(get=getDS)) uint16_t DS;
 	uint16_t getDS(void) const { return static_cast<uint16_t>(m_context->SegDs); }
 
 	// DX Register
 	__declspec(property(get=getDX, put=putDX)) uint16_t DX;
 	uint16_t getDX(void) const { return m_context->Edx & 0x0000FFFF; }
-	void putDX(uint16_t value) const { m_context->Edx &= 0xFFFF0000; m_context->Edx |= value; }
+	void putDX(uint16_t value) { m_context->Edx &= 0xFFFF0000; m_context->Edx |= value; }
 
 	// EAX Register
 	__declspec(property(get=getEAX, put=putEAX)) uint32_t EAX;
 	uint32_t getEAX(void) const { return m_context->Eax; }
-	void putEAX(uint32_t value) const { m_context->Eax = value; }
+	void putEAX(uint32_t value) { m_context->Eax = value; }
 	
 	// EBP Register
 	__declspec(property(get=getEBP, put=putEBP)) uint32_t EBP;
 	uint32_t getEBP(void) const { return m_context->Ebp; }
-	void putEBP(uint32_t value) const { m_context->Ebp = value; }
+	void putEBP(uint32_t value) { m_context->Ebp = value; }
 
 	// EBX Register
 	__declspec(property(get=getEBX, put=putEBX)) uint32_t EBX;
 	uint32_t getEBX(void) const { return m_context->Ebx; }
-	void putEBX(uint32_t value) const { m_context->Ebx = value; }
+	void putEBX(uint32_t value) { m_context->Ebx = value; }
 	
 	// ECX Register
 	__declspec(property(get=getECX, put=putECX)) uint32_t ECX;
 	uint32_t getECX(void) const { return m_context->Ecx; }
-	void putECX(uint32_t value) const { m_context->Ecx = value; }
+	void putECX(uint32_t value) { m_context->Ecx = value; }
 	
 	// EDI Register
 	__declspec(property(get=getEDI, put=putEDI)) uint32_t EDI;
 	uint32_t getEDI(void) const { return m_context->Edi; }
-	void putEDI(uint32_t value) const { m_context->Edi = value; }
+	void putEDI(uint32_t value) { m_context->Edi = value; }
 
 	// EDX Register
 	__declspec(property(get=getEDX, put=putEDX)) uint32_t EDX;
 	uint32_t getEDX(void) const { return m_context->Edx; }
-	void putEDX(uint32_t value) const { m_context->Edx = value; }
+	void putEDX(uint32_t value) { m_context->Edx = value; }
 
 	// EIP Register
-	__declspec(property(get=getEIP)) uint32_t EIP;
+	__declspec(property(get=getEIP, put=putEIP)) uint32_t EIP;
 	uint32_t getEIP(void) const { return m_context->Eip; }
+	void putEIP(uint32_t value) { m_context->Eip = value; }
 
 	// ES Register
-	__declspec(property(get=getES)) uint16_t CS;
+	__declspec(property(get=getES)) uint16_t ES;
 	uint16_t getES(void) const { return static_cast<uint16_t>(m_context->SegEs); }
 
 	// ESI Register
 	__declspec(property(get=getESI, put=putESI)) uint32_t ESI;
 	uint32_t getESI(void) const { return m_context->Esi; }
-	void putESI(uint32_t value) const { m_context->Esi = value; }
+	void putESI(uint32_t value) { m_context->Esi = value; }
 
 	// ESP Register
 	__declspec(property(get=getESP, put=putESP)) uint32_t ESP;
 	uint32_t getESP(void) const { return m_context->Esp; }
-	void putESP(uint32_t value) const { m_context->Esp = value; }
+	void putESP(uint32_t value) { m_context->Esp = value; }
 
 	// FS Register
-	__declspec(property(get=getFS)) uint16_t CS;
+	__declspec(property(get=getFS)) uint16_t FS;
 	uint16_t getFS(void) const { return static_cast<uint16_t>(m_context->SegFs); }
 
 	// GS Register
-	__declspec(property(get=getGS)) uint16_t CS;
+	__declspec(property(get=getGS)) uint16_t GS;
 	uint16_t getGS(void) const { return static_cast<uint16_t>(m_context->SegGs); }
 
 	// SI Register
@@ -335,7 +278,7 @@ public:
 	// SP Register
 	__declspec(property(get=getSP, put=putSP)) uint16_t SP;
 	uint16_t getSP(void) const { return m_context->Esp & 0x0000FFFF; }
-	void putSP(uint16_t value) const { m_context->Esp &= 0xFFFF0000; m_context->Esp |= value; }
+	void putSP(uint16_t value) { m_context->Esp &= 0xFFFF0000; m_context->Esp |= value; }
 
 	// SS Register
 	__declspec(property(get=getSS)) uint16_t SS;
@@ -370,22 +313,22 @@ public:
 		m_registers(context) {}
 
 	//-------------------------------------------------------------------------
+	// Overloaded Operators
+
+	operator PCONTEXT() const { return m_context; }
+
+	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// AtInstruction
+	// PopInstruction<T>
 	//
-	// Determines if the context instruction pointer indicates the instruction
-	bool AtInstruction(const opcode_t& opcode) const;
-
-	// EatInstruction
-	//
-	// "Eats" the instruction by advancing the EIP register
-	void EatInstruction(const opcode_t& opcode) { EatInstruction(opcode, 0); }
-	void EatInstruction(const opcode_t& opcode, size_t extra);
-
-	uint8_t GetOperand8(const opcode_t& opcode);
-	uint16_t GetOperand16(const opcode_t& opcode);
-	uint32_t GetOperand32(const opcode_t& opcode);
+	// Pulls the next value from the instruction pointer and increments EIP
+	template<typename T> T PopInstruction(void)
+	{
+		T value = *reinterpret_cast<T*>(m_context->Eip);
+		m_context->Eip += sizeof(T);
+		return value;
+	}
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -393,14 +336,14 @@ public:
 	// Flags
 	//
 	// Accesses the contained ContextRecordFlags instance
-	__declspec(property(get=getFlags)) const ContextRecordFlags& Flags;
-	const ContextRecordFlags& getFlags(void) const { return m_flags; }
+	__declspec(property(get=getFlags)) ContextRecordFlags& Flags;
+	ContextRecordFlags& getFlags(void) { return m_flags; }
 
 	// Registers
 	//
 	// Accesses the contained ContextRecordRegisters instance
-	__declspec(property(get=getRegisters)) const ContextRecordRegisters& Registers;
-	const ContextRecordRegisters& getRegisters(void) const { return m_registers; }
+	__declspec(property(get=getRegisters)) ContextRecordRegisters& Registers;
+	ContextRecordRegisters& getRegisters(void) { return m_registers; }
 
 private:
 

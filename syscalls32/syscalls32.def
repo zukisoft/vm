@@ -146,7 +146,7 @@ EXPORTS
 	__NR_uname=sys_newuname						@122
 	__NR_modify_ldt=sys_noentry @123
 	__NR_adjtimex=sys_noentry @124
-	__NR_mprotect=sys_mprotect					@125
+	__NR_mprotect=sys125_mprotect				@125
 	__NR_sigprocmask=sys_noentry @126
 	__NR_create_module=sys_noentry @127
 	__NR_init_module=sys_noentry @128
@@ -212,7 +212,7 @@ EXPORTS
 	__NR_getpmsg=sys_noentry @188
 	__NR_putpmsg=sys_noentry @189
 	__NR_vfork=sys_noentry @190
-	__NR_ugetrlimit=sys_noentry @191
+	__NR_ugetrlimit=sys191_ugetrlimit			@191
 	__NR_mmap2=sys_noentry @192
 	__NR_truncate64=sys_noentry @193
 	__NR_ftruncate64=sys_noentry @194

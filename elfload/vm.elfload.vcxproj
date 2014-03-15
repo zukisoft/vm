@@ -160,24 +160,27 @@
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="elf_em.h" />
     <ClInclude Include="File.h" />
+    <ClInclude Include="Instruction.h" />
     <ClInclude Include="MappedFile.h" />
     <ClInclude Include="MappedFileView.h" />
     <ClInclude Include="MemoryRegion.h" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="Exception.h" />
+    <ClInclude Include="ModRM.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Trace.h" />
     <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ContextRecord.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="File.cpp" />
+    <ClCompile Include="Instruction.cpp" />
     <ClCompile Include="MappedFile.cpp" />
     <ClCompile Include="MappedFileView.cpp" />
     <ClCompile Include="MemoryRegion.cpp" />
+    <ClCompile Include="ModRM.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

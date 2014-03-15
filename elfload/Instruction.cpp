@@ -20,55 +20,45 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "Instruction.h"				// Include Instruction declarations
+
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// Win32 Declarations
+// Instruction::Execute
+//
+// Executes the instruction by invoking the defined lambda function
+//
+// Arguments:
+//
+//	context			- Execution context record
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+bool Instruction::Execute(ContextRecord& context)
+{
+	uint8_t* eip = reinterpret_cast<uint8_t*>(context.Registers.EIP);
 
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <tchar.h>				// Include generic text mappings
-#include <stdarg.h>				// Include standard argument decls (va_list)
-#include <stdint.h>				// Include standard integer declarations
-#include <stdlib.h>				// Include standard library declarations
+	// This should work better than a loop; each case falls through
+	switch(m_opcount) {
 
-// STL
-#include <algorithm>			// for_each()
-#include <functional>			// lambdas
-#include <memory>				// unique_ptr<>, shared_ptr<>, etc.
-#include <string>				// string<>, wstring<>, etc.
-#include <vector>				// vector<> template declarations
+		case 7: if(m_opcode6 != eip[6]) return false;	// fall through
+		case 6: if(m_opcode5 != eip[5]) return false;	// fall through
+		case 5: if(m_opcode4 != eip[4]) return false;	// fall through
+		case 4: if(m_opcode3 != eip[3]) return false;	// fall through
+		case 3: if(m_opcode2 != eip[2]) return false;	// fall through
+		case 2: if(m_opcode1 != eip[1]) return false;	// fall through
+		case 1: if(m_opcode0 != eip[0]) return false;	break;
+		default: return false;
+	}
 
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-namespace std {
-#ifdef _UNICODE
-	typedef wstring tstring;
-#else
-	typedef string tstring;
-#endif
+	// Move the instruction pointer to the first byte after the opcodes
+	context.Registers.EIP += m_opcount;
+	
+	// If execution of the instruction fails, restore the instruction pointer
+	if(m_executor(context)) return true;
+	else { context.Registers.EIP = reinterpret_cast<uint32_t>(eip); return false; }
 }
 
-#ifdef _UNICODE
-typedef wchar_t tchar_t;
-#else
-typedef char tchar_t;
-#endif
-
-// Message Resources
-#include <messages.h>
-
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)

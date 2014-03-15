@@ -23,6 +23,8 @@
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "ContextRecord.h"				// Include ContextRecord declarations
 #include "Exception.h"					// Include Exception declarations
+#include "Instruction.h"				// Include Instruction declarations
+#include "ModRM.h"						// Include ModRM declarations
 #include "Win32Exception.h"				// Include Win32Exception delcarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
@@ -35,6 +37,8 @@ static uint8_t			ReadTls8(uint32_t offset);
 static uint16_t			ReadTls16(uint32_t offset);
 static uint32_t			ReadTls32(uint32_t offset);
 
+static uint16_t		g_test;
+
 //-----------------------------------------------------------------------------
 // Global Variables
 
@@ -42,20 +46,33 @@ static uint32_t			ReadTls32(uint32_t offset);
 static DWORD g_gs = TLS_OUT_OF_INDEXES;
 
 //-----------------------------------------------------------------------------
-// OPCODES
-//
-// B0, B1, B2, B3, B4, B5, B6, MODR/M MASK, NUMPREFIXES, NUMOPCODES, MODR/M, DISPLACEMENT, IMMEDIATE
+// Instructions
 
 // 8E/r : MOV Sreg,r/m16
-// modrm mask (5 << 3) = GS target register
-opcode_t MOV32_GS_RM16 = { 0x8E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (5 << 3), 0, 1, 1, 1, 0 };
+Instruction MOV_SREG_RM16(0x8E, [](ContextRecord& context) -> bool {
+
+	// Grab the ModR/M byte and verify that the target register is GS
+	ModRM modrm(context.PopInstruction<uint8_t>());
+	if(modrm.reg != 0x05) return false;
+
+	// The segment register value is 16-bit, but is stored as a 32-bit in TLS
+	uint32_t value = *modrm.GetEffectiveAddress<uint16_t>(context);
+	TlsSetValue(g_gs, reinterpret_cast<void*>(value));
+	return true;
+});
 
 // 66 8E/r : MOV Sreg,r/m16 (operand size override)
-// modrm mask (5 << 3) = GS target register
-opcode_t MOV16_GS_RM16 = { 0x66, 0x8E, 0x00, 0x00, 0x00, 0x00, 0x00, (5 << 3), 1, 1, 1, 1, 0 };
+Instruction MOV16_SREG_RM16(0x66, 0x8E, [](ContextRecord& context) -> bool {
 
+	// Grab the ModR/M byte and verify that the target register is GS
+	ModRM modrm(context.PopInstruction<uint8_t>());
+	if(modrm.reg != 0x05) return false;
 
-
+	// The segment register value is 16-bit, but is stored as a 32-bit in TLS
+	uint32_t value = *modrm.GetEffectiveAddress<uint16_t>(context);
+	TlsSetValue(g_gs, reinterpret_cast<void*>(value));
+	return true;
+});
 
 //-----------------------------------------------------------------------------
 // InitializeThreadLocalStorage
@@ -150,10 +167,18 @@ LONG CALLBACK GSSegmentExceptionHandler(PEXCEPTION_POINTERS exception)
 	if(exception->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	ContextRecord context(exception->ContextRecord);
+	ContextRecord	context(exception->ContextRecord);		// Context helper
 
 	// Cast the instruction pointer as a byte pointer to make life easier
 	uint8_t* eip = reinterpret_cast<uint8_t*>(exception->ContextRecord->Eip);
+
+
+	if(
+		
+		// MOV Sreg, r/m16
+		MOV_SREG_RM16.Execute(context) || MOV16_SREG_RM16.Execute(context)
+		
+		) return EXCEPTION_CONTINUE_EXECUTION;
 
 	// EIP --> 0x65				; GS Segment Override Prefix
 	if(eip[0] == 0x65) {
@@ -324,16 +349,6 @@ LONG CALLBACK GSSegmentExceptionHandler(PEXCEPTION_POINTERS exception)
 			return EXCEPTION_CONTINUE_EXECUTION;
 		}
 	}
-
-	// MOV GS, R/M16
-	if(context.AtInstruction(MOV32_GS_RM16)) {
-
-		uint32_t operand = context.GetOperand16(MOV32_GS_RM16);
-		TlsSetValue(g_gs, reinterpret_cast<void*>(context.Registers.AX));
-		context.EatInstruction(MOV32_GS_RM16);
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
-
 
 	// EIP --> 0x8E, 0xE8		; MOV GS, AX
 	if((eip[0] == 0x8E) && (eip[1] == 0xE8)) {

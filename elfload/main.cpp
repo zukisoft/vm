@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "Exception.h"
 #include "ElfImage.h"
+#include "Instruction.h"
 
 #define LINUX_ENOSYS		38
 
@@ -31,6 +32,18 @@ static HMODULE syscalls;
 typedef void (*syscall_fn)(PCONTEXT context);
 
 void InitializeThreadLocalStorage(void);
+
+// CD/b 80 : INT 80
+Instruction INT_80H(0xCD, 0x80, [](ContextRecord& context) -> bool {
+
+	// The system call number is stored in the EAX register on entry
+	syscall_fn syscall = reinterpret_cast<syscall_fn>(GetProcAddress(syscalls, reinterpret_cast<LPCSTR>(context.Registers.EAX)));
+	if(!syscall) context.Registers.EAX = LINUX_ENOSYS;
+	else syscall(context);
+
+	return true;						// Always considered successful
+});
+
 
 //-----------------------------------------------------------------------------
 // SysCallHandler
@@ -49,19 +62,10 @@ LONG CALLBACK SysCallHandler(PEXCEPTION_POINTERS exception)
 	if(exception->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	// EIP --> 0xCD, 0x80		; INT 0x80
-	if(*reinterpret_cast<uint16_t*>(exception->ContextRecord->Eip) != 0x80CD)
-		return EXCEPTION_CONTINUE_SEARCH;
+	ContextRecord context(exception->ContextRecord);
 
-	// CALL # = eax
-	//uint32_t syscall = exception->ContextRecord->Eax;
-
-	syscall_fn syscall = reinterpret_cast<syscall_fn>(GetProcAddress(syscalls, reinterpret_cast<LPCSTR>(exception->ContextRecord->Eax)));
-	if(!syscall) exception->ContextRecord->Eax = LINUX_ENOSYS;
-	else syscall(exception->ContextRecord);
-
-	exception->ContextRecord->Eip += 2;
-	return EXCEPTION_CONTINUE_EXECUTION;
+	if(INT_80H.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
+	else return EXCEPTION_CONTINUE_SEARCH;
 }
 
 extern "C" DWORD __stdcall ElfEntry(void* args);
@@ -78,6 +82,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	InitializeThreadLocalStorage();
+
+	int8_t x = -120;
+	uintptr_t y = uintptr_t(x);
+	// z = static_cast<uint32_t>(y);
 
 	syscalls = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
 	

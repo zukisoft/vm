@@ -20,55 +20,16 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "linux_errno.h"				// Include Linux errno declarations
 
-//-----------------------------------------------------------------------------
-// Win32 Declarations
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
-
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <tchar.h>				// Include generic text mappings
-#include <stdarg.h>				// Include standard argument decls (va_list)
-#include <stdint.h>				// Include standard integer declarations
-#include <stdlib.h>				// Include standard library declarations
-
-// STL
-#include <algorithm>			// for_each()
-#include <functional>			// lambdas
-#include <memory>				// unique_ptr<>, shared_ptr<>, etc.
-#include <string>				// string<>, wstring<>, etc.
-#include <vector>				// vector<> template declarations
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-namespace std {
-#ifdef _UNICODE
-	typedef wstring tstring;
-#else
-	typedef string tstring;
-#endif
+void sys191_ugetrlimit(PCONTEXT context)
+{
+	context->Eax = LINUX_ENOSYS;
 }
 
-#ifdef _UNICODE
-typedef wchar_t tchar_t;
-#else
-typedef char tchar_t;
-#endif
-
-// Message Resources
-#include <messages.h>
-
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)

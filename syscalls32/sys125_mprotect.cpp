@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
+#include "linux_errno.h"				// Include Linux errno declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -44,16 +45,18 @@ inline static DWORD FlagsToProtection(DWORD flags)
 	return PAGE_NOACCESS;
 }
 
-void sys_mprotect(PCONTEXT context)
+void sys125_mprotect(PCONTEXT context)
 {
-	if(!VirtualProtect(reinterpret_cast<void*>(context->Ebx), 
-		static_cast<size_t>(context->Ecx), 
-		FlagsToProtection(context->Edx), 
-		&context->Edx)) context->Eax = static_cast<DWORD>(-1);
+	if(VirtualProtect(reinterpret_cast<void*>(context->Ebx), 
+		static_cast<size_t>(context->Ecx), FlagsToProtection(context->Edx), 
+		&context->Edx)) context->Eax = 0;
 
-	// TODO: NEED ERRNO CODES NOT -1 !!!!!!!!
+	else switch(GetLastError()) {
 
-	else context->Eax = 0;
+		case ERROR_INVALID_ADDRESS: context->Eax = LINUX_EINVAL;
+		case ERROR_INVALID_PARAMETER: context->Eax = LINUX_EACCES;
+		default: context->Eax = LINUX_EACCES;
+	}
 }
 
 //-----------------------------------------------------------------------------

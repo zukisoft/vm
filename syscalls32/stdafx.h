@@ -35,6 +35,7 @@
 // Windows / CRT
 #include <windows.h>			// Include main Windows declarations
 #include <stdint.h>				// Include standard integer declarations
+#include "errno.h"				// Include Linux error code declarations
 
 //-----------------------------------------------------------------------------
 
