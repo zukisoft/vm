@@ -25,6 +25,10 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+#define PROT_READ       0x1             // page can be read
+#define PROT_WRITE      0x2             // page can be written
+#define PROT_EXEC       0x4             // page can be executed
+
 inline static DWORD FlagsToProtection(DWORD flags)
 {
 	switch(flags) {
@@ -41,27 +45,45 @@ inline static DWORD FlagsToProtection(DWORD flags)
 	return PAGE_NOACCESS;
 }
 
-// int mprotect(void *addr, size_t len, int prot);
+// void* mmap2(void *addr, size_t length, int prot, int flags, int fd, off_t pgoffset);
 //
 // EBX	- void*		addr
-// ECX	- size_t	len
+// ECX	- size_t	length
 // EDX	- int		prot
-// ESI
-// EDI
-// EBP
+// ESI	- int		flags
+// EDI	- int		fd
+// EBP	- off_t		pgoffset
 //
-int sys125_mprotect(PCONTEXT context)
+int sys192_mmap2(PCONTEXT context)
 {
-	if(VirtualProtect(reinterpret_cast<void*>(context->Ebx), 
-		static_cast<size_t>(context->Ecx), FlagsToProtection(context->Edx), 
-		&context->Edx)) return 0;
+	uint32_t flags = static_cast<uint32_t>(context->Esi);
 
-	else switch(GetLastError()) {
+	// Offset is specified as 4096-byte pages to allow for offsets greater than 2GiB on 32-bit systems
+	ULARGE_INTEGER offset;
+	offset.QuadPart = (context->Ebp * 4096);
 
-		case ERROR_INVALID_ADDRESS: return LINUX_EINVAL;
-		case ERROR_INVALID_PARAMETER: return LINUX_EACCES;
-		default: return LINUX_EACCES;
+	// Attempt to create the file mapping using the arguments provided by the caller
+	HANDLE mapping = CreateFileMapping((flags & MAP_ANONYMOUS) ? INVALID_HANDLE_VALUE : reinterpret_cast<HANDLE>(context->Edi),
+		NULL, ProtToPageFlags(context->Edx), 0, context->Ecx, NULL);
+	if(mapping) {
+
+		// Convert the prot and flags into FILE_MAP_XXXX flags for MapViewOfFile()
+		uint32_t filemapflags = ProtToFileMapFlags(context->Edx);
+		if(flags & MAP_PRIVATE) filemapflags |= FILE_MAP_COPY;
+
+		// Attempt to map the file into memory using the constructed flags and offset values
+		void* address = MapViewOfFileEx(mapping, filemapflags, offset.HighPart, offset.LowPart, context->Ecx, 
+			reinterpret_cast<void*>(context->Ebx));
+
+		// Always close the file mapping handle, it will remain active until the view is unmapped
+		CloseHandle(mapping);
+
+		return (address) ? reinterpret_cast<int>(address) : -1;
 	}
+
+	return -1;
+
+	// MAP_FIXED - interpret addr as absolute, otherwise it's a hint!
 }
 
 //-----------------------------------------------------------------------------

@@ -91,11 +91,25 @@ public:
 	// Number of program headers defines as part of the loaded image
 	__declspec(property(get=getNumProgramHeaders)) size_t NumProgramHeaders;
 	size_t getNumProgramHeaders(void) const { return m_phdrents; }
+
 	// ProgramHeaders
 	//
 	// Pointer to program headers that were defined as part of the loaded image
 	__declspec(property(get=getProgramHeaders)) const phdr_t* ProgramHeaders;
 	const phdr_t* getProgramHeaders(void) const { return m_phdrs; }
+
+	// TlsBaseAddress
+	//
+	// Gets the base address for the initial thread local storage data
+	__declspec(property(get=getTlsBaseAddress)) const void* TlsBaseAddress;
+	const void* getTlsBaseAddress(void) const { return m_tlsbase; }
+
+	// TlsLength
+	//
+	// Gets the length of the initial thread local storage data
+	__declspec(property(get=getTlsLength)) size_t TlsLength;
+	size_t getTlsLength(void) const { return m_tlslength; }
+
 
 private:
 
@@ -120,6 +134,8 @@ private:
 	std::unique_ptr<MemoryRegion>	m_region;		// Allocated virtual memory
 	std::tstring					m_interpreter;	// Program interpreter
 	void*							m_base;			// Loaded image base address
+	void*							m_tlsbase;		// TLS segment base address
+	size_t							m_tlslength;	// TLS segment length
 	void*							m_entry;		// Calculated image entry point
 	const phdr_t*					m_phdrs;		// Program header (in image)
 	size_t							m_phdrents;		// Program header entries

@@ -21,16 +21,37 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include <errno.h>						// Include ERRNO declarations
+#include "uapi.h"						// Include Linux UAPI declarations
 
-//-----------------------------------------------------------------------------
-// sys_noentry
-//
-// Dummy entry point for a missing/unimplemented system call
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-void sys_noentry(PCONTEXT context)
+#define __NEW_UTS_LEN	64
+
+struct new_utsname {
+
+	char sysname[__NEW_UTS_LEN + 1];
+	char nodename[__NEW_UTS_LEN + 1];
+	char release[__NEW_UTS_LEN + 1];
+	char version[__NEW_UTS_LEN + 1];
+	char machine[__NEW_UTS_LEN + 1];
+	char domainname[__NEW_UTS_LEN + 1];
+ };
+
+int sys122_newuname(PCONTEXT context)
 {
-	context->Eax = ENOSYS;
+	new_utsname* utsname = reinterpret_cast<new_utsname*>(context->Ebx);
+
+	ZeroMemory(utsname, sizeof(new_utsname));
+	lstrcpynA(utsname->sysname, "SYSNAME", __NEW_UTS_LEN);
+	lstrcpynA(utsname->nodename, "NODENAME", __NEW_UTS_LEN);
+	lstrcpynA(utsname->release, "RELEASE", __NEW_UTS_LEN);
+	lstrcpynA(utsname->version, "VERSION", __NEW_UTS_LEN);
+	lstrcpynA(utsname->machine, "i686", __NEW_UTS_LEN);
+	lstrcpynA(utsname->domainname, "DOMAINNAME", __NEW_UTS_LEN);
+
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
+
+#pragma warning(pop)

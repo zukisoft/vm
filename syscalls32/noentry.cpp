@@ -20,29 +20,22 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "uapi.h"						// Include Linux UAPI declarations
+
+// int noentry(void)
+//
+// EBX
+// ECX
+// EDX
+// ESI
+// EDI
+// EBP
+//
+int noentry(PCONTEXT context)
+{
+	UNREFERENCED_PARAMETER(context);
+	return -LINUX_ENOSYS;
+}
 
 //-----------------------------------------------------------------------------
-// Win32 Declarations
-
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
-
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <stdint.h>				// Include standard integer declarations
-#include <functional>			// lambda support
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-//-----------------------------------------------------------------------------
-
-#endif	// __STDAFX_H_

@@ -87,7 +87,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="linux_errno.h" />
+    <ClInclude Include="ContextRecord.h" />
+    <ClInclude Include="Instruction.h" />
+    <ClInclude Include="ModRM.h" />
+    <ClInclude Include="uapi.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
@@ -99,15 +102,21 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Instruction.cpp" />
+    <ClCompile Include="ModRM.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="sys020_getpid.cpp" />
+    <ClCompile Include="sys090_mmap.cpp" />
     <ClCompile Include="sys125_mprotect.cpp" />
     <ClCompile Include="sys191_ugetrlimit.cpp" />
-    <ClCompile Include="sys_noentry.cpp" />
-    <ClCompile Include="sys_newuname.cpp" />
-    <ClCompile Include="sys_set_thread_area.cpp" />
+    <ClCompile Include="sys192_mmap2.cpp" />
+    <ClCompile Include="sys224_gettid.cpp" />
+    <ClCompile Include="noentry.cpp" />
+    <ClCompile Include="sys122_newuname.cpp" />
+    <ClCompile Include="sys243_set_thread_area.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="syscalls32.def" />

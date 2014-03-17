@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
+#include "uapi.h"						// Include Linux UAPI declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -39,12 +40,24 @@ struct user_desc {
 #endif
 };
 
-// EAX = 243
-// EBX = struct user_desc*
-void sys_set_thread_area(PCONTEXT context)
+// pid_t gettid(void);
+//
+// EBX	- struct user_desc*
+// ECX
+// EDX
+// ESI
+// EDI
+// EBP
+//
+int sys243_set_thread_area(PCONTEXT context)
 {
+	// Cast out and check the structure pointer for NULL
 	struct user_desc* desc = reinterpret_cast<struct user_desc*>(context->Ebx);
-	
+	if(!desc) return LINUX_EFAULT;
+
+	// Windows doesn't allow us to set a specific TLS slot
+	if(desc->entry_number != -1) return LINUX_EINVAL;
+
 	//
 	// TODO: Need to verify user_desc is compatible here, it more or less describes an LDT
 	// (see fill_ldt in arch/x86/include/asm/desc.h)
@@ -57,12 +70,12 @@ void sys_set_thread_area(PCONTEXT context)
 		//if(!mem) { /* deal with this */ }
 		TlsSetValue(desc->entry_number, reinterpret_cast<void*>(desc->base_addr));
 	}
-	
-	// desc->base_address is seemingly important here, perhaps it needs to be copied
 
 	// TODO: NEED ERRNO CODES NOT -1 !!!!!!!!
 
-	context->Eax = 0;
+// EINVAL u_info->entry_number is out of bounds. EFAULT u_info is an invalid pointer. ESRCH A free TLS entry could not be located.
+
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

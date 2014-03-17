@@ -61,15 +61,6 @@
     <ClInclude Include="ElfArguments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ContextRecord.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Instruction.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModRM.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -97,15 +88,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ElfArguments.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadLocalStorage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Instruction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModRM.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

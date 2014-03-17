@@ -21,34 +21,47 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
+#include "uapi.h"						// Include Linux UAPI declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#define __NEW_UTS_LEN	64
-
-struct new_utsname {
-
-	char sysname[__NEW_UTS_LEN + 1];
-	char nodename[__NEW_UTS_LEN + 1];
-	char release[__NEW_UTS_LEN + 1];
-	char version[__NEW_UTS_LEN + 1];
-	char machine[__NEW_UTS_LEN + 1];
-	char domainname[__NEW_UTS_LEN + 1];
- };
-
-void sys_newuname(PCONTEXT context)
+inline static DWORD FlagsToProtection(DWORD flags)
 {
-	new_utsname* utsname = reinterpret_cast<new_utsname*>(context->Ebx);
+	switch(flags) {
 
-	ZeroMemory(utsname, sizeof(new_utsname));
-	lstrcpynA(utsname->sysname, "SYSNAME", __NEW_UTS_LEN);
-	lstrcpynA(utsname->nodename, "NODENAME", __NEW_UTS_LEN);
-	lstrcpynA(utsname->release, "RELEASE", __NEW_UTS_LEN);
-	lstrcpynA(utsname->version, "VERSION", __NEW_UTS_LEN);
-	lstrcpynA(utsname->machine, "i686", __NEW_UTS_LEN);
-	lstrcpynA(utsname->domainname, "DOMAINNAME", __NEW_UTS_LEN);
+		case PROT_EXEC:								return PAGE_EXECUTE;
+		case PROT_WRITE :							return PAGE_READWRITE;
+		case PROT_READ :							return PAGE_READONLY;
+		case PROT_EXEC | PROT_WRITE :				return PAGE_EXECUTE_READWRITE;
+		case PROT_EXEC | PROT_READ :				return PAGE_EXECUTE_READ;
+		case PROT_WRITE | PROT_READ :				return PAGE_READWRITE;
+		case PROT_EXEC | PROT_WRITE | PROT_READ :	return PAGE_EXECUTE_READWRITE;
+	}
 
-	context->Eax = 0;
+	return PAGE_NOACCESS;
+}
+
+// void* mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+//
+// EBX	- void*		addr
+// ECX	- size_t	length
+// EDX	- int		prot
+// ESI	- int		flags
+// EDI	- int		fd
+// EBP	- off_t		offset
+//
+int sys090_mmap(PCONTEXT context)
+{
+	if(VirtualProtect(reinterpret_cast<void*>(context->Ebx), 
+		static_cast<size_t>(context->Ecx), FlagsToProtection(context->Edx), 
+		&context->Edx)) return 0;
+
+	else switch(GetLastError()) {
+
+		case ERROR_INVALID_ADDRESS: return LINUX_EINVAL;
+		case ERROR_INVALID_PARAMETER: return LINUX_EACCES;
+		default: return LINUX_EACCES;
+	}
 }
 
 //-----------------------------------------------------------------------------

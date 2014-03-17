@@ -17,12 +17,24 @@
       <UniqueIdentifier>{d1cfc03f-1499-4c72-94d4-a42f1445bdab}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Source Files\System Calls">
+      <UniqueIdentifier>{4a626597-a6b7-42c4-8d17-8dc9cfea610a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="linux_errno.h">
+    <ClInclude Include="uapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ContextRecord.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModRM.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -33,20 +45,38 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sys_noentry.cpp">
+    <ClCompile Include="Instruction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sys_newuname.cpp">
+    <ClCompile Include="ModRM.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sys_set_thread_area.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="sys020_getpid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys090_mmap.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys125_mprotect.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys191_ugetrlimit.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys192_mmap2.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys224_gettid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys122_newuname.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys243_set_thread_area.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="noentry.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
