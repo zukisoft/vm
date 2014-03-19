@@ -25,26 +25,6 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#define PROT_READ       0x1             // page can be read
-#define PROT_WRITE      0x2             // page can be written
-#define PROT_EXEC       0x4             // page can be executed
-
-inline static DWORD FlagsToProtection(DWORD flags)
-{
-	switch(flags) {
-
-		case PROT_EXEC:								return PAGE_EXECUTE;
-		case PROT_WRITE :							return PAGE_READWRITE;
-		case PROT_READ :							return PAGE_READONLY;
-		case PROT_EXEC | PROT_WRITE :				return PAGE_EXECUTE_READWRITE;
-		case PROT_EXEC | PROT_READ :				return PAGE_EXECUTE_READ;
-		case PROT_WRITE | PROT_READ :				return PAGE_READWRITE;
-		case PROT_EXEC | PROT_WRITE | PROT_READ :	return PAGE_EXECUTE_READWRITE;
-	}
-
-	return PAGE_NOACCESS;
-}
-
 // void* mmap2(void *addr, size_t length, int prot, int flags, int fd, off_t pgoffset);
 //
 // EBX	- void*		addr

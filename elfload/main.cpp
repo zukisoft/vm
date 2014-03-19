@@ -79,7 +79,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::Load(_T("D:\\test"));
 		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-		p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"));
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"));
+		p = ElfImage::Load(_T("D:\\Linux Binaries\\bionicapp"));
 		
 		//LPCTSTR interp = p->Interpreter;
 

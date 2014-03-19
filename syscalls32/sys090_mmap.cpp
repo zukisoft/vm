@@ -25,22 +25,6 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-inline static DWORD FlagsToProtection(DWORD flags)
-{
-	switch(flags) {
-
-		case PROT_EXEC:								return PAGE_EXECUTE;
-		case PROT_WRITE :							return PAGE_READWRITE;
-		case PROT_READ :							return PAGE_READONLY;
-		case PROT_EXEC | PROT_WRITE :				return PAGE_EXECUTE_READWRITE;
-		case PROT_EXEC | PROT_READ :				return PAGE_EXECUTE_READ;
-		case PROT_WRITE | PROT_READ :				return PAGE_READWRITE;
-		case PROT_EXEC | PROT_WRITE | PROT_READ :	return PAGE_EXECUTE_READWRITE;
-	}
-
-	return PAGE_NOACCESS;
-}
-
 // void* mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 //
 // EBX	- void*		addr
@@ -52,16 +36,9 @@ inline static DWORD FlagsToProtection(DWORD flags)
 //
 int sys090_mmap(PCONTEXT context)
 {
-	if(VirtualProtect(reinterpret_cast<void*>(context->Ebx), 
-		static_cast<size_t>(context->Ecx), FlagsToProtection(context->Edx), 
-		&context->Edx)) return 0;
-
-	else switch(GetLastError()) {
-
-		case ERROR_INVALID_ADDRESS: return LINUX_EINVAL;
-		case ERROR_INVALID_PARAMETER: return LINUX_EACCES;
-		default: return LINUX_EACCES;
-	}
+	DebugBreak();
+	UNREFERENCED_PARAMETER(context);
+	return -LINUX_ENOSYS;
 }
 
 //-----------------------------------------------------------------------------

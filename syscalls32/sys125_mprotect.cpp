@@ -25,22 +25,6 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-inline static DWORD FlagsToProtection(DWORD flags)
-{
-	switch(flags) {
-
-		case PROT_EXEC:								return PAGE_EXECUTE;
-		case PROT_WRITE :							return PAGE_READWRITE;
-		case PROT_READ :							return PAGE_READONLY;
-		case PROT_EXEC | PROT_WRITE :				return PAGE_EXECUTE_READWRITE;
-		case PROT_EXEC | PROT_READ :				return PAGE_EXECUTE_READ;
-		case PROT_WRITE | PROT_READ :				return PAGE_READWRITE;
-		case PROT_EXEC | PROT_WRITE | PROT_READ :	return PAGE_EXECUTE_READWRITE;
-	}
-
-	return PAGE_NOACCESS;
-}
-
 // int mprotect(void *addr, size_t len, int prot);
 //
 // EBX	- void*		addr
@@ -52,16 +36,25 @@ inline static DWORD FlagsToProtection(DWORD flags)
 //
 int sys125_mprotect(PCONTEXT context)
 {
-	if(VirtualProtect(reinterpret_cast<void*>(context->Ebx), 
-		static_cast<size_t>(context->Ecx), FlagsToProtection(context->Edx), 
-		&context->Edx)) return 0;
+	MEMORY_BASIC_INFORMATION		info;				// Virtual memory information
 
-	else switch(GetLastError()) {
+	// Pop out variables that will be used more than once in here
+	void* address = reinterpret_cast<void*>(context->Ebx);
+	size_t length = static_cast<size_t>(context->Ecx);
 
-		case ERROR_INVALID_ADDRESS: return LINUX_EINVAL;
-		case ERROR_INVALID_PARAMETER: return LINUX_EACCES;
-		default: return LINUX_EACCES;
-	}
+	// Request information about the allocated virtual memory region, which may be different
+	if(VirtualQuery(address, &info, sizeof(MEMORY_BASIC_INFORMATION)) == 0) return -LINUX_EINVAL;
+	if((address != info.AllocationBase) && (VirtualQuery(info.AllocationBase, &info, sizeof(MEMORY_BASIC_INFORMATION)) == 0)) return -LINUX_EINVAL;
+
+	// Check the length of the protection request against the allocated region
+	if((uintptr_t(address) + length) > (uintptr_t(info.AllocationBase) + info.RegionSize)) return -LINUX_ENOMEM;
+
+	// Attempt to set the equivalent set of protection to the requested memory region
+	if(VirtualProtect(address, length, ProtToPageFlags(context->Edx), &context->Edx)) return 0;
+
+	// ERROR_INVALID_ADDRESS -> -EINVAL; otherwise return -EACCES
+	if(GetLastError() == ERROR_INVALID_ADDRESS) return -LINUX_EINVAL;
+	else return -LINUX_EACCES;
 }
 
 //-----------------------------------------------------------------------------

@@ -22,11 +22,11 @@
 
 EXPORTS
 
-	__NR_exit=noentry @1
+	__NR_exit=sys001_exit						@1
 	__NR_fork=noentry @2
 	__NR_read=noentry @3
 	__NR_write=noentry @4
-	__NR_open=noentry @5
+	__NR_open=sys005_open						@5
 	__NR_close=noentry @6
 	__NR_waitpid=noentry @7
 	__NR_creat=noentry @8
@@ -240,8 +240,7 @@ EXPORTS
 	__NR_setfsgid32=noentry @216
 	__NR_pivot_root=noentry @217
 	__NR_mincore=noentry @218
-	__NR_madvise=noentry @219
-	; __NR_madvise1=noentry @219  ; <--- duplicate?
+	__NR_madvise=sys219_madvise						@219
 	__NR_getdents64=noentry @220
 	__NR_fcntl64=noentry @221
 	__NR_gettid=sys224_gettid						@224
@@ -271,7 +270,7 @@ EXPORTS
 	__NR_io_submit=noentry @248
 	__NR_io_cancel=noentry @249
 	__NR_fadvise64=noentry @250
-	__NR_exit_group=noentry @252
+	__NR_exit_group=sys252_exit_group				@252
 	__NR_lookup_dcookie=noentry @253
 	__NR_epoll_create=noentry @254
 	__NR_epoll_ctl=noentry @255

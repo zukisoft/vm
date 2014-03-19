@@ -66,7 +66,7 @@ int sys191_ugetrlimit(PCONTEXT context)
 
 	// Get the pointer for the provided structure and fail if it's NULL
 	struct rlimit* limit = reinterpret_cast<struct rlimit*>(context->Ecx);
-	if(!limit) return LINUX_EFAULT;
+	if(!limit) return -LINUX_EFAULT;
 
 	// EBX = int resource
 	switch(context->Ebx) {
@@ -105,10 +105,10 @@ int sys191_ugetrlimit(PCONTEXT context)
 		// TODO: There are a lot more here
 
 		// Unsupported resource
-		default: return LINUX_EINVAL;
+		default: return -LINUX_EINVAL;
 	}
 
-	return LINUX_ENOSYS;
+	return -LINUX_ENOSYS;
 }
 
 //-----------------------------------------------------------------------------

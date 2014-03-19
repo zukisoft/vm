@@ -41,77 +41,83 @@ public:
 	// Properties
 
 	// CF (Carry Flag - bit 0)
-	__declspec(property(get=getCF)) bool CF;
-	bool getCF(void) const { return (m_eflags & 0x00000001) != 0; }
+	__declspec(property(get=getCF, put=putCF)) bool CF;
+	bool getCF(void) const { return (m_context->EFlags & 0x00000001) != 0; }
+	void putCF(bool value) { if(value) m_context->EFlags |= 0x00000001; else m_context->EFlags &= ~0x00000001; }
 
 	// PF (Parity Flag - bit 2)
-	__declspec(property(get=getPF)) bool PF;
-	bool getPF(void) const { return (m_eflags & 0x00000004) != 0; }
+	__declspec(property(get=getPF, put=putPF)) bool PF;
+	bool getPF(void) const { return (m_context->EFlags & 0x00000004) != 0; }
+	void putPF(bool value) { if(value) m_context->EFlags |= 0x00000004; else m_context->EFlags &= ~0x00000004; }
 
 	// AF (Auxiliary Carry Flag - bit 4)
-	__declspec(property(get=getAF)) bool AF;
-	bool getAF(void) const { return (m_eflags & 0x00000010) != 0; }
+	__declspec(property(get=getAF, put=putAF)) bool AF;
+	bool getAF(void) const { return (m_context->EFlags & 0x00000010) != 0; }
+	void putAF(bool value) { if(value) m_context->EFlags |= 0x00000010; else m_context->EFlags &= ~0x00000010; }
 
 	// ZF (Zero Flag - bit 6)
-	__declspec(property(get=getZF)) bool ZF;
-	bool getZF(void) const { return (m_eflags & 0x00000040) != 0; }
+	__declspec(property(get=getZF, put=putZF)) bool ZF;
+	bool getZF(void) const { return (m_context->EFlags & 0x00000040) != 0; }
+	void putZF(bool value) { if(value) m_context->EFlags |= 0x00000040; else m_context->EFlags &= ~0x00000040; }
 
 	// SF (Sign Flag - bit 7)
-	__declspec(property(get=getSF)) bool SF;
-	bool getSF(void) const { return (m_eflags & 0x00000080) != 0; }
+	__declspec(property(get=getSF, put=putSF)) bool SF;
+	bool getSF(void) const { return (m_context->EFlags & 0x00000080) != 0; }
+	void putSF(bool value) { if(value) m_context->EFlags |= 0x00000080; else m_context->EFlags &= ~0x00000080; }
 
 	// TF (Trap Flag - bit 8)
 	__declspec(property(get=getTF)) bool TF;
-	bool getTF(void) const { return (m_eflags & 0x00000100) != 0; }
+	bool getTF(void) const { return (m_context->EFlags & 0x00000100) != 0; }
 
 	// IF (Interrupt Enable Flag - bit 9)
 	__declspec(property(get=getIF)) bool IF;
-	bool getIF(void) const { return (m_eflags & 0x00000200) != 0; }
+	bool getIF(void) const { return (m_context->EFlags & 0x00000200) != 0; }
 
 	// DF (Direction Flag - bit 10)
 	__declspec(property(get=getDF)) bool DF;
-	bool getDF(void) const { return (m_eflags & 0x00000400) != 0; }
+	bool getDF(void) const { return (m_context->EFlags & 0x00000400) != 0; }
 
 	// OF (Overflow Flag - bit 11)
-	__declspec(property(get=getOF)) bool OF;
-	bool getOF(void) const { return (m_eflags & 0x00000800) != 0; }
+	__declspec(property(get=getOF, put=putOF)) bool OF;
+	bool getOF(void) const { return (m_context->EFlags & 0x00000800) != 0; }
+	void putOF(bool value) { if(value) m_context->EFlags |= 0x00000800; else m_context->EFlags &= ~0x00000800; }
 
 	// IOPL (I/O Privilege Level - bits 12 and 13)
 	__declspec(property(get=getIOPL)) uint8_t IOPL;
-	uint8_t getIOPL(void) const { return (m_eflags & 0x00003000) >> 12; }
+	uint8_t getIOPL(void) const { return (m_context->EFlags & 0x00003000) >> 12; }
 
 	// NT (Nested Task Flag - bit 14)
 	__declspec(property(get=getNT)) bool NT;
-	bool getNT(void) const { return (m_eflags & 0x00004000) != 0; }
+	bool getNT(void) const { return (m_context->EFlags & 0x00004000) != 0; }
 
 	// RF (Resume Flag - bit 16)
 	__declspec(property(get=getRF)) bool RF;
-	bool getRF(void) const { return (m_eflags & 0x00010000) != 0; }
+	bool getRF(void) const { return (m_context->EFlags & 0x00010000) != 0; }
 
 	// VM (Virtual 8086 Mode - bit 17)
 	__declspec(property(get=getVM)) bool VM;
-	bool getVM(void) const { return (m_eflags & 0x00020000) != 0; }
+	bool getVM(void) const { return (m_context->EFlags & 0x00020000) != 0; }
 
 	// AC (Alignment Check Flag - bit 18)
 	__declspec(property(get=getAC)) bool AC;
-	bool getAC(void) const { return (m_eflags & 0x00040000) != 0; }
+	bool getAC(void) const { return (m_context->EFlags & 0x00040000) != 0; }
 
 	// VIF (Virtual Interrupt Flag - bit 19)
 	__declspec(property(get=getVIF)) bool VIF;
-	bool getVIF(void) const { return (m_eflags & 0x00080000) != 0; }
+	bool getVIF(void) const { return (m_context->EFlags & 0x00080000) != 0; }
 
 	// VIP (Virtual Interrupt Pending Flag - bit 20)
 	__declspec(property(get=getVIP)) bool VIP;
-	bool getVIP(void) const { return (m_eflags & 0x00100000) != 0; }
+	bool getVIP(void) const { return (m_context->EFlags & 0x00100000) != 0; }
 
 	// ID (Identification Flag - bit 21)
 	__declspec(property(get=getID)) bool ID;
-	bool getID(void) const { return (m_eflags & 0x00200000) != 0; }
+	bool getID(void) const { return (m_context->EFlags & 0x00200000) != 0; }
 
 private:
 
 	// Instance Constructor
-	ContextRecordFlags(uint32_t eflags) : m_eflags(eflags) {}
+	ContextRecordFlags(PCONTEXT context) : m_context(context) {}
 
 	ContextRecordFlags(const ContextRecordFlags&);
 	ContextRecordFlags& operator=(const ContextRecordFlags&);
@@ -119,7 +125,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	uint32_t				m_eflags;			// Value of the EFLAGS register
+	PCONTEXT				m_context;			// Pointer to the actual context
 };
 
 //-----------------------------------------------------------------------------
@@ -309,7 +315,7 @@ class ContextRecord
 public:
 
 	// Instance Constructor
-	ContextRecord(PCONTEXT context) : m_context(context), m_flags(context->EFlags),
+	ContextRecord(PCONTEXT context) : m_context(context), m_flags(context),
 		m_registers(context) {}
 
 	//-------------------------------------------------------------------------
@@ -326,7 +332,7 @@ public:
 	template <typename T> T* PopReference(void)
 	{
 		T* value = reinterpret_cast<T*>(m_context->Eip);
-		m_context->Eip += sizeof(T*);
+		m_context->Eip += sizeof(T);
 		return value;
 	}
 	

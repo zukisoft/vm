@@ -78,6 +78,18 @@
     <ClCompile Include="noentry.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
+    <ClCompile Include="sys219_madvise.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys005_open.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys252_exit_group.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys001_exit.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="syscalls32.def">

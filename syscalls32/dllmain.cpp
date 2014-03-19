@@ -192,6 +192,30 @@ Instruction MOV_AX_GS_MOFFS32(0x66, 0x65, 0xA1, [](ContextRecord& context) -> bo
 	return true;
 });
 
+//// 65 83 : CMP GS:[xxxxxx],imm8
+//Instruction CMP_GS_RM32_IMM8(0x65, 0x83, [](ContextRecord& context) -> bool {
+//
+//	ModRM modrm(context.PopValue<uint8_t>());
+//
+//	// RHS is sign-extended to match the bit length of LHS
+//	int32_t lhs = ReadGS<int32_t>(*modrm.GetEffectiveAddress<uint32_t>(context));
+//	int32_t rhs = context.PopValue<uint8_t>();
+//
+//	// CMP subtracts RHS from LHS but result is only used to set flags
+//	int32_t result = lhs - rhs;
+//
+//	// OF SF ZF AF PF CF
+//	// TODO : overflow, aux carry and parity
+//	//bool of = false;
+//	context.Flags.SF = ((result & 0x80000000) != 0);
+//	context.Flags.ZF = (lhs == rhs);
+//	//bool af = (result & ~0xF);
+//	//bool pf = false;
+//	context.Flags.CF = (static_cast<uint32_t>(rhs) > static_cast<uint32_t>(lhs));
+//
+//	return true;
+//});
+
 //-----------------------------------------------------------------------------
 // ExceptionHandler
 //
