@@ -21,12 +21,58 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "resource.h"
 #include "Exception.h"
 #include "ElfImage.h"
 
 extern "C" DWORD __stdcall ElfEntry(void* args);
 
 typedef DWORD (*INITIALIZETLS)(const void* tlsbase, size_t tlslength);
+
+// UnhandledException
+//
+// 
+LONG CALLBACK UnhandledException(PEXCEPTION_POINTERS exception)
+{
+	// Get the current process and thread handles
+	HANDLE process = GetCurrentProcess();
+	HANDLE thread = GetCurrentThread();
+
+	// Make a copy of the context so it doesn't get trashed
+	CONTEXT context;
+	memcpy(&context, exception->ContextRecord, sizeof(CONTEXT));
+	
+	// Allocate and initialize the STACKFRAME64 structure for the walk
+	STACKFRAME64 stackframe;
+	memset(&stackframe, sizeof(STACKFRAME64), 0);
+	stackframe.AddrPC.Mode = AddrModeFlat;
+	stackframe.AddrPC.Offset = context.Eip;
+	stackframe.AddrStack.Mode = AddrModeFlat;
+	stackframe.AddrStack.Offset = context.Esp;
+	stackframe.AddrFrame.Mode = AddrModeFlat;
+	stackframe.AddrFrame.Offset = context.Ebp;
+
+	// Allocate the symbol lookup structure, which includes space for the name
+	uint8_t symbuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(CHAR)];
+	PSYMBOL_INFO symbol = reinterpret_cast<PSYMBOL_INFO>(symbuffer);
+	symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+	symbol->MaxNameLen = MAX_SYM_NAME;
+
+	SymFromAddr(process, context.Eip, 0, symbol);
+	OutputDebugString(_T("unhandled exception in function: "));
+	OutputDebugStringA(symbol->Name);
+	OutputDebugString(_T("\r\nstrack trace:\r\n"));
+
+	// Walk the stack until it cannot be walked any further ...
+	while(StackWalk64(IMAGE_FILE_MACHINE_I386, process, thread, &stackframe, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+
+		SymFromAddr(process, stackframe.AddrPC.Offset, 0, symbol);
+		OutputDebugStringA(symbol->Name);
+		OutputDebugString(_T("\r\n"));
+	} ;
+
+	return EXCEPTION_CONTINUE_SEARCH;
+}
 
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
@@ -37,7 +83,14 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	HMODULE hm = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
+	AddVectoredExceptionHandler(0, UnhandledException);
+
+	BOOL bresult = SymInitialize(GetCurrentProcess(), NULL, FALSE);
+
+	// VDSO
+	ElfImage* vdso = ElfImage::FromResource(NULL, MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
+
+ 	HMODULE hm = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
 	INITIALIZETLS tlsinit = (INITIALIZETLS)GetProcAddress(hm, "InitializeTls");
 	
 	////DWORD result;
@@ -78,9 +131,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// note: would use a while loop to iterate over interpreters, they could be chained
 		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::Load(_T("D:\\test"));
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"));
-		p = ElfImage::Load(_T("D:\\Linux Binaries\\bionicapp"));
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"), true);
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"), true);
+		p = ElfImage::Load(_T("D:\\Linux Binaries\\bionicapp"), true);
+		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\root\\init"), true);
 		
 		//LPCTSTR interp = p->Interpreter;
 
@@ -114,8 +168,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		builder.AppendAuxiliaryVector(AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
 		(AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
 		(AT_EXECFN);		// 31
-		(AT_SYSINFO);		// 32
-		(AT_SYSINFO_EHDR);	// 33
+		builder.AppendAuxiliaryVector(AT_SYSINFO, vdso->EntryPoint);
+		builder.AppendAuxiliaryVector(AT_SYSINFO_EHDR, vdso->BaseAddress);
 
 		if((tlsinit) && (p->TlsBaseAddress) && (p->TlsLength)) tlsinit(p->TlsBaseAddress, p->TlsLength);
 

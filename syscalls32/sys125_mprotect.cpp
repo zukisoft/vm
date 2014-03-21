@@ -44,10 +44,9 @@ int sys125_mprotect(PCONTEXT context)
 
 	// Request information about the allocated virtual memory region, which may be different
 	if(VirtualQuery(address, &info, sizeof(MEMORY_BASIC_INFORMATION)) == 0) return -LINUX_EINVAL;
-	if((address != info.AllocationBase) && (VirtualQuery(info.AllocationBase, &info, sizeof(MEMORY_BASIC_INFORMATION)) == 0)) return -LINUX_EINVAL;
 
 	// Check the length of the protection request against the allocated region
-	if((uintptr_t(address) + length) > (uintptr_t(info.AllocationBase) + info.RegionSize)) return -LINUX_ENOMEM;
+	if((uintptr_t(address) + length) > (uintptr_t(info.BaseAddress) + info.RegionSize)) return -LINUX_ENOMEM;
 
 	// Attempt to set the equivalent set of protection to the requested memory region
 	if(VirtualProtect(address, length, ProtToPageFlags(context->Edx), &context->Edx)) return 0;

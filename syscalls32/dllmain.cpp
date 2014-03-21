@@ -96,10 +96,20 @@ template <typename T> void WriteGS(T value, uint32_t offset)
 // CD/b 80 : INT 80
 Instruction INT_80(0xCD, 0x80, [](ContextRecord& context) -> bool {
 
+#ifdef _DEBUG
+	// Get the system call number to show up when the breakpoint below triggers
+	uint32_t syscall = context.Registers.EAX;
+#endif
+
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit
 	SYSCALL func = g_syscalls[context.Registers.EAX];
 	context.Registers.EAX = static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS);
+
+#ifdef _DEBUG
+	// Throw a breakpoint in here to watch failed system calls
+//	if(static_cast<int>(context.Registers.EAX) < 0) DebugBreak();
+#endif
 
 	return true;						// Always considered successful
 });
@@ -192,29 +202,32 @@ Instruction MOV_AX_GS_MOFFS32(0x66, 0x65, 0xA1, [](ContextRecord& context) -> bo
 	return true;
 });
 
-//// 65 83 : CMP GS:[xxxxxx],imm8
-//Instruction CMP_GS_RM32_IMM8(0x65, 0x83, [](ContextRecord& context) -> bool {
-//
-//	ModRM modrm(context.PopValue<uint8_t>());
-//
-//	// RHS is sign-extended to match the bit length of LHS
-//	int32_t lhs = ReadGS<int32_t>(*modrm.GetEffectiveAddress<uint32_t>(context));
-//	int32_t rhs = context.PopValue<uint8_t>();
-//
-//	// CMP subtracts RHS from LHS but result is only used to set flags
-//	int32_t result = lhs - rhs;
-//
-//	// OF SF ZF AF PF CF
-//	// TODO : overflow, aux carry and parity
-//	//bool of = false;
-//	context.Flags.SF = ((result & 0x80000000) != 0);
-//	context.Flags.ZF = (lhs == rhs);
-//	//bool af = (result & ~0xF);
-//	//bool pf = false;
-//	context.Flags.CF = (static_cast<uint32_t>(rhs) > static_cast<uint32_t>(lhs));
-//
-//	return true;
-//});
+// 65 83 : CMP GS:[xxxxxx],imm8
+Instruction CMP_GS_RM32_IMM8(0x65, 0x83, [](ContextRecord& context) -> bool {
+
+	ModRM modrm(context.PopValue<uint8_t>());
+
+	// RHS is sign-extended to match the bit length of LHS
+	int32_t lhs = ReadGS<int32_t>(*modrm.GetEffectiveAddress<uint32_t>(context));
+	int32_t rhs = context.PopValue<uint8_t>();
+
+	// Due to the flags, this operation is easier not to simulate
+	__asm mov eax, lhs
+	__asm cmp eax, rhs
+	__asm pushfd
+	__asm pop eax
+	__asm mov rhs, eax
+
+	// CMP instruction affects OF, SF, ZF, AF, PF and CF
+	context.Flags.OF = ((rhs & 0x00000800) != 0);
+	context.Flags.SF = ((rhs & 0x00000080) != 0);
+	context.Flags.ZF = ((rhs & 0x00000040) != 0);
+	context.Flags.AF = ((rhs & 0x00000010) != 0);
+	context.Flags.PF = ((rhs & 0x00000004) != 0);
+	context.Flags.CF = ((rhs & 0x00000001) != 0);
+
+	return true;
+});
 
 //-----------------------------------------------------------------------------
 // ExceptionHandler
@@ -251,6 +264,8 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS exception)
 		// MOV r16,GS:[r/m32]
 		if(MOV_R32_GS_RM32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 		if(MOV_R16_GS_RM32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
+
+		if(CMP_GS_RM32_IMM8.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;

@@ -273,6 +273,18 @@ DWORD ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FlagsToProtection(uint32_t flag
 	return PAGE_NOACCESS;
 }
 
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FromResource(HMODULE module, const tchar_t* name, const tchar_t* type)
+{
+	// TODO: Exceptions
+	HRSRC hrsrc = FindResource(module, name, type);
+	size_t length = SizeofResource(module, hrsrc);
+	HGLOBAL hglobal = LoadResource(module, hrsrc);
+	void* resource = LockResource(hglobal);
+	
+	return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(resource, length, true);
+}
+
 //-----------------------------------------------------------------------------
 // ElfImageT::Load (static)
 //

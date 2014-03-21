@@ -61,6 +61,9 @@
     <ClInclude Include="ElfArguments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -98,6 +101,9 @@
     <ResourceCompile Include="..\tmp\vm.elfload\messages\messages.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>
+    <ResourceCompile Include="vdso.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="messages.mc">
@@ -111,5 +117,13 @@
     <MASM Include="ElfEntry64.asm">
       <Filter>Source Files</Filter>
     </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vdso32-int80.so">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="vdso32-sysenter.so">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

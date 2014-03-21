@@ -166,6 +166,7 @@
     <ClInclude Include="MemoryRegion.h" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="Exception.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Trace.h" />
     <ClInclude Include="Win32Exception.h" />
@@ -189,6 +190,7 @@
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
     <ResourceCompile Include="..\tmp\vm.elfload\messages\messages.rc" />
+    <ResourceCompile Include="vdso.rc" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="messages.mc">
@@ -233,6 +235,14 @@ MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tm
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vdso32-int80.so">
+      <DeploymentContent>false</DeploymentContent>
+    </None>
+    <None Include="vdso32-sysenter.so">
+      <DeploymentContent>false</DeploymentContent>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

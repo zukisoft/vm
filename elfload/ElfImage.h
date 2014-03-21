@@ -62,6 +62,8 @@ public:
 	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* Load(const tchar_t* path) { return Load(path, false); }
 	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* Load(const tchar_t* path, bool loadsymbols);
 
+	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* FromResource(HMODULE module, const tchar_t* name, const tchar_t* type);
+
 	// ValidateHeader
 	//
 	// Validates an ELF image header and checks for platform compatibility
