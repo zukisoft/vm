@@ -46,11 +46,10 @@ extern "C" void __stdcall ElfEntry(void* address, const void* args, size_t argsl
 //
 //	base		- Pointer to the base of the ELF Iimage
 //	length		- Optional length to use from mapping
-//	symbols		- Flag to load basic symbol table information
 
 template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t length, bool loadsymbols) : 
-	m_base(nullptr), m_tlsbase(nullptr), m_tlslength(0), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0)
+ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t length) : 
+	m_base(nullptr), m_tlsbase(nullptr), m_tlslength(0), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0), m_symbols(false)
 {
 	if(!base) throw Exception(E_ARGUMENTNULL, _T("base"));
 
@@ -172,9 +171,6 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 	// Calculate the address of the image entry point, if one has been specified in the header
 	m_entry = (elfheader->e_entry) ? reinterpret_cast<void*>(elfheader->e_entry + vaddrdelta) : nullptr;
 
-	// Loading the symbol table is optional; this will only load function symbols right now anyway
-	if(!loadsymbols) return;
-
 	// Pointers to the main string table as well as the symbol table
 	const shdr_t* strheader = nullptr;
 	const shdr_t* symheader = nullptr;
@@ -215,7 +211,8 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		
 		// The symbol value for ET_EXEC and ET_DYN images is a virtual address.  This is more complicated for ET_REL
 		// images, but this class currently doesn't support those anyway.  See ELF documentation for more information.
-		SymAddSymbol(GetCurrentProcess(), uintptr_t(m_base), symname, symbol->st_value + vaddrdelta, symbol->st_size, 0);
+		// Toggle the 'symbols loaded' flag to TRUE if any symbols are successfully loaded
+		if(SymAddSymbol(GetCurrentProcess(), uintptr_t(m_base), symname, symbol->st_value + vaddrdelta, symbol->st_size, 0)) m_symbols = true;
 	}
 }
 
@@ -273,20 +270,8 @@ DWORD ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FlagsToProtection(uint32_t flag
 	return PAGE_NOACCESS;
 }
 
-template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FromResource(HMODULE module, const tchar_t* name, const tchar_t* type)
-{
-	// TODO: Exceptions
-	HRSRC hrsrc = FindResource(module, name, type);
-	size_t length = SizeofResource(module, hrsrc);
-	HGLOBAL hglobal = LoadResource(module, hrsrc);
-	void* resource = LockResource(hglobal);
-	
-	return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(resource, length, true);
-}
-
 //-----------------------------------------------------------------------------
-// ElfImageT::Load (static)
+// ElfImageT::FromFile (static)
 //
 // Parses and loads the specified ELF image into virtual memory
 //
@@ -296,7 +281,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, sym
 //	loadsymbols		- Flag to load basic symbol information from image
 
 template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::Load(const tchar_t* path, bool loadsymbols)
+ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FromFile(const tchar_t* path)
 {
 	if(!path) throw Exception(E_ARGUMENTNULL, _T("path"));
 
@@ -312,9 +297,39 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, sym
 		std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ));
 
 		// Construct a new ElfImage instance from the mapped image file view
-		return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(view->Pointer, view->Length, loadsymbols);
+		return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(view->Pointer, view->Length);
 	
 	} catch(Exception& ex) { throw Exception(ex, E_LOADELFIMAGEFAILED, path); }
+}
+
+//-----------------------------------------------------------------------------
+// ElfImageT::FromResource (static)
+//
+// Parses and loads the specified ELF image into virtual memory
+//
+// Arguments:
+//
+//	module		- Windows module handle for the resource
+//	name		- Resource name
+//	type		- Resource type
+
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FromResource(HMODULE module, const tchar_t* name, const tchar_t* type)
+{
+	// Locate the resource in the target module
+	HRSRC hrsrc = FindResource(module, name, type);
+	if(hrsrc == NULL) throw Win32Exception();
+
+	// The length of the resource should be at least big enough for the ELF header
+	size_t length = SizeofResource(module, hrsrc);
+	if(length < sizeof(ehdr_t)) throw Exception(E_ELFIMAGETRUNCATED);
+
+	// Load the resource; note that once loaded you don't unload them again
+	HGLOBAL hglobal = LoadResource(module, hrsrc);
+	if(hglobal == NULL) throw Win32Exception();
+
+	// Construct a new ElfImageT<> instance from the resource base pointer and length
+	return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(LockResource(hglobal), length);
 }
 
 //-----------------------------------------------------------------------------

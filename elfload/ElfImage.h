@@ -56,12 +56,15 @@ public:
 	// Executes the ELF image by jumping to the entry point
 	void Execute(ElfArguments& args);
 
-	// Load
+	// FromFile
 	//
-	// Parses and loads the specified ELF image into virtual memory
-	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* Load(const tchar_t* path) { return Load(path, false); }
-	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* Load(const tchar_t* path, bool loadsymbols);
+	// Parses and loads the specified ELF image into virtual memory from a file
+	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* FromFile(const tchar_t* path);
 
+	// FromResource
+	//
+	// Parses and loads the specified ELF image into virtual memory from a resource
+	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* FromResource(const tchar_t* name, const tchar_t* type) { return FromResource(NULL, name, type); }
 	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* FromResource(HMODULE module, const tchar_t* name, const tchar_t* type);
 
 	// ValidateHeader
@@ -102,6 +105,12 @@ public:
 	__declspec(property(get=getProgramHeaders)) const phdr_t* ProgramHeaders;
 	const phdr_t* getProgramHeaders(void) const { return m_phdrs; }
 
+	// SymbolsLoaded
+	//
+	// Flag if any symbols were successfully loaded from the image
+	__declspec(property(get=getSymbolsLoaded)) bool SymbolsLoaded;
+	bool getSymbolsLoaded(void) const { return m_symbols; }
+
 	// TlsBaseAddress
 	//
 	// Gets the base address for the initial thread local storage data
@@ -122,7 +131,7 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImageT(const void* base, size_t length, bool loadsymbols);
+	ElfImageT(const void* base, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -143,6 +152,7 @@ private:
 	void*							m_entry;		// Calculated image entry point
 	const phdr_t*					m_phdrs;		// Program header (in image)
 	size_t							m_phdrents;		// Program header entries
+	bool							m_symbols;		// Flag if symbols were loaded
 };
 
 //-----------------------------------------------------------------------------

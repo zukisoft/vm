@@ -88,7 +88,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	BOOL bresult = SymInitialize(GetCurrentProcess(), NULL, FALSE);
 
 	// VDSO
-	ElfImage* vdso = ElfImage::FromResource(NULL, MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
+	ElfImage* vdso = ElfImage::FromResource(MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
 
  	HMODULE hm = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
 	INITIALIZETLS tlsinit = (INITIALIZETLS)GetProcAddress(hm, "InitializeTls");
@@ -129,12 +129,12 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	try { 
 		
 		// note: would use a while loop to iterate over interpreters, they could be chained
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
-		//p = ElfImage::Load(_T("D:\\test"));
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"), true);
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\busybox-x86"), true);
-		p = ElfImage::Load(_T("D:\\Linux Binaries\\bionicapp"), true);
-		//p = ElfImage::Load(_T("D:\\Linux Binaries\\generic_x86\\root\\init"), true);
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
+		//p = ElfImage::FromFile(_T("D:\\test"));
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
+		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\root\\init"));
 		
 		//LPCTSTR interp = p->Interpreter;
 
@@ -168,7 +168,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		builder.AppendAuxiliaryVector(AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
 		(AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
 		(AT_EXECFN);		// 31
-		builder.AppendAuxiliaryVector(AT_SYSINFO, vdso->EntryPoint);
+		(AT_SYSINFO);		// 32 - PROBABLY DO NOT IMPLEMENT
 		builder.AppendAuxiliaryVector(AT_SYSINFO_EHDR, vdso->BaseAddress);
 
 		if((tlsinit) && (p->TlsBaseAddress) && (p->TlsLength)) tlsinit(p->TlsBaseAddress, p->TlsLength);
