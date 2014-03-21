@@ -202,6 +202,7 @@ typedef struct elf64_sym {
   Elf64_Xword st_size;		/* Associated symbol size */
 } Elf64_Sym;
 
+#define STN_UNDEF	0
 
 #define EI_NIDENT	16
 

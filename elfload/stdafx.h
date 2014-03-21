@@ -39,6 +39,10 @@
 #include <stdint.h>				// Include standard integer declarations
 #include <stdlib.h>				// Include standard library declarations
 
+// Debug Help Library
+#include <DbgHelp.h>			// Include Debug Helper library decarlations
+#pragma comment(lib, "DbgHelp.lib")
+
 // STL
 #include <algorithm>			// for_each()
 #include <functional>			// lambdas

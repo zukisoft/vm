@@ -29,9 +29,9 @@
 // Explicit Instantiations
 
 #ifdef _M_X64
-template ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>;
+template ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
 #else
-template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>;
+template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>;
 #endif
 
 //-----------------------------------------------------------------------------
@@ -46,9 +46,10 @@ extern "C" void __stdcall ElfEntry(void* address, const void* args, size_t argsl
 //
 //	base		- Pointer to the base of the ELF Iimage
 //	length		- Optional length to use from mapping
+//	symbols		- Flag to load basic symbol table information
 
-template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length) : 
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t length, bool loadsymbols) : 
 	m_base(nullptr), m_tlsbase(nullptr), m_tlslength(0), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0)
 {
 	if(!base) throw Exception(E_ARGUMENTNULL, _T("base"));
@@ -170,6 +171,52 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length) :
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	m_entry = (elfheader->e_entry) ? reinterpret_cast<void*>(elfheader->e_entry + vaddrdelta) : nullptr;
+
+	// Loading the symbol table is optional; this will only load function symbols right now anyway
+	if(!loadsymbols) return;
+
+	// Pointers to the main string table as well as the symbol table
+	const shdr_t* strheader = nullptr;
+	const shdr_t* symheader = nullptr;
+
+	// Make a pass over the section headers looking for the string and symbol tables
+	for(int index = 0; index < elfheader->e_shnum; index++) {
+
+		// Get a pointer to the section header and verify that it won't go beyond the end of the data
+		uintptr_t offset = uintptr_t(elfheader->e_shoff + (index * elfheader->e_shentsize));
+		const shdr_t* sectheader = reinterpret_cast<const shdr_t*>(baseptr + offset);
+		if(length < (offset + elfheader->e_shentsize)) throw Exception(E_ELFIMAGETRUNCATED);
+
+		// Check to make sure this isn't the section name string table
+		if((sectheader->sh_type == SHT_STRTAB) && (index != elfheader->e_shstrndx)) strheader = sectheader;
+		else if(sectheader->sh_type == SHT_SYMTAB) symheader = sectheader;
+	}
+
+	// If either the string or symbol table couldn't be found, there are no usable symbols to parse
+	if(strheader == nullptr || symheader == nullptr) return;
+
+	// A virtual module needs to be registered with the operating system before symbols can be added.
+	uint64_t result = SymLoadModuleEx(GetCurrentProcess(), NULL, NULL, NULL, uintptr_t(m_base), maxvaddr - minvaddr, NULL, SLMFLAG_VIRTUAL);
+	if(result != uintptr_t(m_base)) return;
+	
+	// Iterate over all of the symbols in the symbol table
+	int numsymbols = symheader->sh_size / symheader->sh_entsize;
+	for(int index = 0; index < numsymbols; index++) {
+
+		uintptr_t offset = uintptr_t(symheader->sh_offset + (index * symheader->sh_entsize));
+		const symb_t* symbol = reinterpret_cast<const symb_t*>(baseptr + offset);
+		if(length < (offset + symheader->sh_entsize)) throw Exception(E_ELFIMAGETRUNCATED);
+
+		if(symbol->st_name == STN_UNDEF) continue;					// Undefined symbol has a zero name index
+		if(ELF_ST_TYPE(symbol->st_info) != STT_FUNC) continue;		// Only loading function symbols here
+
+		// Look up the symbol name in the string table
+		const char* symname = reinterpret_cast<const char*>(baseptr + strheader->sh_offset + symbol->st_name);
+		
+		// The symbol value for ET_EXEC and ET_DYN images is a virtual address.  This is more complicated for ET_REL
+		// images, but this class currently doesn't support those anyway.  See ELF documentation for more information.
+		SymAddSymbol(GetCurrentProcess(), uintptr_t(m_base), symname, symbol->st_value + vaddrdelta, symbol->st_size, 0);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -181,8 +228,8 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>::ElfImageT(const void* base, size_t length) :
 //
 //	args			- ELF entry point arguments
 
-template <class ehdr_t, class phdr_t, class shdr_t>
-void ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments& args)
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+void ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::Execute(ElfArguments& args)
 {
 	const void*		argvector;					// Arguments vector data
 	size_t			argvectorlen;				// Arguments vector length
@@ -209,8 +256,8 @@ void ElfImageT<ehdr_t, phdr_t, shdr_t>::Execute(ElfArguments& args)
 //
 //	flags		- ELF program header p_flags value
 
-template <class ehdr_t, class phdr_t, class shdr_t>
-DWORD ElfImageT<ehdr_t, phdr_t, shdr_t>::FlagsToProtection(uint32_t flags)
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+DWORD ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FlagsToProtection(uint32_t flags)
 {
 	switch(flags) {
 
@@ -233,10 +280,11 @@ DWORD ElfImageT<ehdr_t, phdr_t, shdr_t>::FlagsToProtection(uint32_t flags)
 //
 // Arguments:
 //
-//	path		- ELF image file path
+//	path			- ELF image file path
+//	loadsymbols		- Flag to load basic symbol information from image
 
-template <class ehdr_t, class phdr_t, class shdr_t>
-ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(const tchar_t* path)
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::Load(const tchar_t* path, bool loadsymbols)
 {
 	if(!path) throw Exception(E_ARGUMENTNULL, _T("path"));
 
@@ -252,7 +300,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(const
 		std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ));
 
 		// Construct a new ElfImage instance from the mapped image file view
-		return new ElfImageT<ehdr_t, phdr_t, shdr_t>(view->Pointer, view->Length);
+		return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(view->Pointer, view->Length, loadsymbols);
 	
 	} catch(Exception& ex) { throw Exception(ex, E_LOADELFIMAGEFAILED, path); }
 }
@@ -267,8 +315,8 @@ ElfImageT<ehdr_t, phdr_t, shdr_t>* ElfImageT<ehdr_t, phdr_t, shdr_t>::Load(const
 //	base		- Base address of the ELF binary to test
 //	length		- Length of the buffer pointed to by base
 
-template <class ehdr_t, class phdr_t, class shdr_t>
-const ehdr_t* ElfImageT<ehdr_t, phdr_t, shdr_t>::ValidateHeader(const void* base, size_t length)
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
+const ehdr_t* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ValidateHeader(const void* base, size_t length)
 {
 	if(!base) throw Exception(E_ARGUMENTNULL, _T("base"));
 

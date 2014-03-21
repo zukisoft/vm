@@ -41,8 +41,9 @@
 //	ehdr_t		- ELF header structure type
 //	phdr_t		- ELF program header structure type
 //	shdr_t		- ELF section header structure type
+//	symb_t		- ELF symbol structure type
 
-template <class ehdr_t, class phdr_t, class shdr_t>
+template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
 class ElfImageT
 {
 public:
@@ -58,7 +59,8 @@ public:
 	// Load
 	//
 	// Parses and loads the specified ELF image into virtual memory
-	static ElfImageT<ehdr_t, phdr_t, shdr_t>* Load(const tchar_t* path);
+	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* Load(const tchar_t* path) { return Load(path, false); }
+	static ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* Load(const tchar_t* path, bool loadsymbols);
 
 	// ValidateHeader
 	//
@@ -118,7 +120,7 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImageT(const void* base, size_t length);
+	ElfImageT(const void* base, size_t length, bool loadsymbols);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -147,9 +149,9 @@ private:
 // Typedef of ElfImageT<> based on build configuration
 
 #ifdef _M_X64
-typedef ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>	ElfImage;
+typedef ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>	ElfImage;
 #else
-typedef ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>	ElfImage;
+typedef ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>	ElfImage;
 #endif
 
 //-----------------------------------------------------------------------------
