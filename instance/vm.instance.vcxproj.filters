@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Service Template Library">
+      <UniqueIdentifier>{1edb1ceb-8d74-4ff5-b348-6a35554bf66f}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Service Template Library\Header Files">
+      <UniqueIdentifier>{999129cf-3136-484d-be75-38348ceb6f63}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Service Template Library\Resource Files">
+      <UniqueIdentifier>{dffdc1f5-f937-4d3e-84c1-cb8d97c7ef94}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Service Template Library\Source Files">
+      <UniqueIdentifier>{5c003310-8f7d-4496-977c-863b0361a784}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{21950f9b-dc94-4ce6-b050-279701a01102}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctl.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlapi.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlcom.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlcrt.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlctl.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlcui.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlevt.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlgui.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlhlr.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlins.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctllib.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctllog.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlmap.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlmgr.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlmui.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlreg.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlres.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlsts.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlsvc.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\svctl\svctlui.h">
+      <Filter>Service Template Library\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VmService.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlapi.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlcom.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlctl.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlcui.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlevt.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlgui.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlhlr.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlins.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctllib.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctllog.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlmap.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlmgr.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlmui.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlreg.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlsts.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlsvc.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\svctl\svctlui.cpp">
+      <Filter>Service Template Library\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VmService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\external\svctl\svctl.rc">
+      <Filter>Service Template Library\Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="services.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\tmp\version\version.rc">
+      <Filter>Generated Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
