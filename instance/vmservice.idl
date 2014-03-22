@@ -20,39 +20,41 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
-
-//-----------------------------------------------------------------------------
-// Win32 Declarations
-
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
-
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <stdint.h>				// Include standard integer declarations
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
+import "oaidl.idl";
+import "ocidl.idl";
 
 //---------------------------------------------------------------------------
-// Service Template Library (SVCTL)
+// Forward Interface Declarations
 
-#include "svctl.h"
+interface IVmService;				// {B46E5851-24F7-4BD0-9B51-2E188C19C3C8}
 
 //---------------------------------------------------------------------------
-// Project COM Declarations
+// CLSID Declarations
 
-#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
-#include "vmservice_h.h"		// Include project COM declarations
+// CLSID_VmService				--> {FD778C20-0203-4AA0-B315-2479B28946B4}
+cpp_quote("DEFINE_GUID(CLSID_VmService, ")
+cpp_quote("0xfd778c20, 0x203, 0x4aa0, 0xb3, 0x15, 0x24, 0x79, 0xb2, 0x89, 0x46, 0xb4);")
 
-//-----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Type Declarations
 
-#endif	// __STDAFX_H_
+// Redefine both LPWSTR and LPCWSTR to default to a [unique] pointer type,
+// which will allow NULL pointers to be passed into remote methods
+
+typedef [unique, string] wchar_t*			LPWSTR;
+typedef [unique, string] const wchar_t*		LPCWSTR;
+
+//---------------------------------------------------------------------------
+// Interface IVmService
+
+[
+	object, nonextensible,
+	uuid(B46E5851-24F7-4BD0-9B51-2E188C19C3C8),
+	pointer_default(unique)
+]
+
+interface IVmService : IUnknown
+{
+};
+
+//---------------------------------------------------------------------------

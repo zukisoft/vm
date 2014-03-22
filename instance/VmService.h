@@ -25,16 +25,13 @@
 #pragma once
 
 #include "resource.h"				// Include project resource declarations
-//#include "messages.h"				// Include project message declarations
-//#include "NullDacl.h"				// Include NullDacl declarations
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
-//#pragma warning(disable:4100)		// "unreferenced formal parameter"
 
 //---------------------------------------------------------------------------
 // Class VmService
 
-class VmService : public SVCTL::Service<VmService>
+class VmService : public SVCTL::ComService<VmService>, public IVmService
 {
 public:
 
@@ -49,7 +46,7 @@ public:
 	DECLARE_SERVICE_TYPE(SERVICE_WIN32_SHARE_PROCESS)
 	DECLARE_SERVICE_START_TYPE(SERVICE_AUTO_START)
 
-	//DECLARE_COM_SERVICE_CLASSID(CLSID_SleepManagerService)
+	DECLARE_COM_SERVICE_CLASSID(CLSID_VmService)
 	//DECLARE_EVENTLOG_CATEGORIES(EVENTLOG_CATEGORY_COUNT)
 
 	//-----------------------------------------------------------------------
@@ -67,6 +64,16 @@ public:
 	//	BOOLEAN_PARAMETER_ID(IDP_DISKACTIVITYSERVICE_FILESIZE, 8)
 	//END_PARAMETER_MAP()
 
+	//-----------------------------------------------------------------------
+	// SVCTL COM Interface Map
+
+	BEGIN_COM_INTERFACE_MAP()
+		COM_INTERFACE(IVmService)
+	END_COM_INTERFACE_MAP()
+
+	//-------------------------------------------------------------------------
+	// IVmService
+	
 private:
 
 	VmService(const VmService &rhs);
@@ -93,9 +100,7 @@ private:
 	//-----------------------------------------------------------------------
 	// Member Variables
 
-	HANDLE			m_hevtStop;					// Service STOP kernel event object
-	//TCHAR			m_pszTempFile[MAX_PATH];	// Temporary file name
-	//HANDLE			m_hTempFile;				// Temporary file handle
+	HANDLE			m_hevtStop;			// Service STOP kernel event object
 };
 
 //---------------------------------------------------------------------------
