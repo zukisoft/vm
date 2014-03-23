@@ -107,7 +107,7 @@
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\tmp\zuki.vm.instance\vmservice_h.h">
+    <ClInclude Include="..\tmp\vm.dcom\vm.dcom.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -172,7 +172,7 @@
     <ClCompile Include="VmService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\tmp\zuki.vm.instance\vmservice_i.c">
+    <ClCompile Include="..\tmp\vm.dcom\vm.dcom.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -180,16 +180,11 @@
     <ResourceCompile Include="..\..\external\svctl\svctl.rc">
       <Filter>Service Template Library\Resource Files</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="services.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
     <ResourceCompile Include="..\tmp\version\version.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="vmservice.idl">
-      <Filter>Source Files</Filter>
-    </Midl>
+    <ResourceCompile Include="vm.service.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -51,7 +51,7 @@
 // Project COM Declarations
 
 #include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
-#include "vmservice_h.h"		// Include project COM declarations
+#include "vm.dcom.h"			// Include project COM declarations
 
 //-----------------------------------------------------------------------------
 

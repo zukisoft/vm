@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C367CDDA-D85D-47D2-8685-46DF64B486E7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>zuki.vm.elfload</RootNamespace>
-    <ProjectName>vm.elfload</ProjectName>
+    <RootNamespace>zuki.vm.loader</RootNamespace>
+    <ProjectName>vm.loader</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -155,7 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\tmp\vm.elfload\messages\messages.h" />
+    <ClInclude Include="..\tmp\vm.loader\messages\messages.h" />
     <ClInclude Include="auxvec.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
@@ -189,7 +189,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
-    <ResourceCompile Include="..\tmp\vm.elfload\messages\messages.rc" />
+    <ResourceCompile Include="..\tmp\vm.loader\messages\messages.rc" />
     <ResourceCompile Include="vdso.rc" />
   </ItemGroup>
   <ItemGroup>
@@ -243,6 +243,11 @@ MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tm
     <None Include="vdso32-sysenter.so">
       <DeploymentContent>false</DeploymentContent>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\syscalls\vm.syscalls.vcxproj">
+      <Project>{2cd0303d-470a-4941-bb21-e7f3f840e131}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

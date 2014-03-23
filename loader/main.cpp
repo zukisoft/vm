@@ -25,9 +25,7 @@
 #include "Exception.h"
 #include "ElfImage.h"
 
-extern "C" DWORD __stdcall ElfEntry(void* args);
-
-typedef DWORD (*INITIALIZETLS)(const void* tlsbase, size_t tlslength);
+DWORD InitializeTls(const void* tlsbase, size_t tlslength);
 
 // UnhandledException
 //
@@ -90,19 +88,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	// VDSO
 	ElfImage* vdso = ElfImage::FromResource(MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
 
- 	HMODULE hm = LoadLibraryEx(L"D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.syscalls32.dll", NULL, 0);
-	INITIALIZETLS tlsinit = (INITIALIZETLS)GetProcAddress(hm, "InitializeTls");
-	
-	////DWORD result;
-	//HANDLE h = CreateThread(NULL, 0, ElfEntry, (void*)0xFFFFEEEE, 0, NULL);
-	//WaitForSingleObject(h, INFINITE);
-	////GetExitCodeThread(h, &result);
-	//CloseHandle(h);
-
-	//return 0;
-
 	ElfImage* p;
-	ElfImage* pinterp;
+//	ElfImage* pinterp;
 	ElfArguments builder;
 	builder.AppendArgument(L"hello world 123");
 	builder.AppendArgument("hello world 456");
@@ -115,14 +102,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	GUID pseudorandom;
 	CoCreateGuid(&pseudorandom);
 
-	//LDT_ENTRY ldtEntry;
-	//DWORD selector = 0;
-	//GetThreadSelectorEntry(GetCurrentThread(), selector, &ldtEntry);
-
-	//uintptr_t fsVA = (ldtEntry.HighWord.Bytes.BaseHi) << 24 | (ldtEntry.HighWord.Bytes.BaseMid) << 16 | (ldtEntry.BaseLow);
- //
-
-
 	//Elf32_Addr* args;
 	//size_t count = builder.CreateArgumentStack(&args);
 
@@ -132,8 +111,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::FromFile(_T("D:\\test"));
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
-		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
+		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\root\\init"));
 		
 		//LPCTSTR interp = p->Interpreter;
@@ -169,9 +148,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		(AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
 		(AT_EXECFN);		// 31
 		(AT_SYSINFO);		// 32 - PROBABLY DO NOT IMPLEMENT
-		builder.AppendAuxiliaryVector(AT_SYSINFO_EHDR, vdso->BaseAddress);
+		builder.AppendAuxiliaryVector(AT_SYSINFO_EHDR, vdso->BaseAddress);			// 33
 
-		if((tlsinit) && (p->TlsBaseAddress) && (p->TlsLength)) tlsinit(p->TlsBaseAddress, p->TlsLength);
+		if((p->TlsBaseAddress) && (p->TlsLength)) InitializeTls(p->TlsBaseAddress, p->TlsLength);
 
 		//AddVectoredExceptionHandler(1, SysCallHandler);
 		p->Execute(builder);

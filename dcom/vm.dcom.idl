@@ -22,11 +22,15 @@
 
 import "oaidl.idl";
 import "ocidl.idl";
+import "wtypes.idl";
 
 //---------------------------------------------------------------------------
 // Forward Interface Declarations
 
 interface IVmService;				// {B46E5851-24F7-4BD0-9B51-2E188C19C3C8}
+interface IDevice;					// {0B1E207A-1973-4CFE-9A8E-A5FD89DA1AEB}
+interface ICharacterDevice;			// {A7F26FEF-BFC9-413E-B5BC-816DE283B0E6}
+interface IBlockDevice;				// {20B19DAF-0151-4D89-8DDF-07172FCD689E}
 
 //---------------------------------------------------------------------------
 // CLSID Declarations
@@ -54,6 +58,45 @@ typedef [unique, string] const wchar_t*		LPCWSTR;
 ]
 
 interface IVmService : IUnknown
+{
+};
+
+//---------------------------------------------------------------------------
+// Interface IDevice
+
+[
+	object, nonextensible,
+	uuid(0B1E207A-1973-4CFE-9A8E-A5FD89DA1AEB),
+	pointer_default(unique)
+]
+
+interface IDevice : IUnknown
+{
+};
+
+//---------------------------------------------------------------------------
+// Interface ICharacterDevice
+
+[
+	object, nonextensible,
+	uuid(A7F26FEF-BFC9-413E-B5BC-816DE283B0E6),
+	pointer_default(unique)
+]
+
+interface ICharacterDevice : IDevice
+{
+};
+
+//---------------------------------------------------------------------------
+// Interface IBlockDevice
+
+[
+	object, nonextensible,
+	uuid(20B19DAF-0151-4D89-8DDF-07172FCD689E),
+	pointer_default(unique)
+]
+
+interface IBlockDevice : IDevice
 {
 };
 

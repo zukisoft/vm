@@ -19,24 +19,34 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="instance.dcom.def">
+    <None Include="vm.dcom.def">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\tmp\zuki.vm.instance\vmservice_d.c">
+    <Midl Include="vm.dcom.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\tmp\vm.dcom\vm.dcom_d.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\tmp\zuki.vm.instance\vmservice_i.c">
+    <ClCompile Include="..\tmp\vm.dcom\vm.dcom_p.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\tmp\zuki.vm.instance\vmservice_p.c">
+    <ClCompile Include="..\tmp\vm.dcom\vm.dcom.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\tmp\vm.dcom\vm.dcom.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">
-      <Filter>Resource Files</Filter>
+      <Filter>Generated Files</Filter>
     </ResourceCompile>
   </ItemGroup>
 </Project>
