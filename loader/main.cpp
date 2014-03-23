@@ -88,34 +88,35 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	// VDSO
 	ElfImage* vdso = ElfImage::FromResource(MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
 
+
+
 	ElfImage* p;
 //	ElfImage* pinterp;
 	ElfArguments builder;
-	builder.AppendArgument(L"hello world 123");
-	builder.AppendArgument("hello world 456");
 
-	builder.AppendEnvironmentVariable(L"hello", L"world");
-	builder.AppendEnvironmentVariable(L"mike", L"brehm");
-	builder.AppendEnvironmentVariable(L"reeve", L"skye");
+	// Clone the command line arguments into the auxiliary vector; these are expected
+	// to be correct for the hosted process, including argument zero, on entry
+	for(int index = 0; index < __argc; index++) builder.AppendArgument(__targv[index]);
 
+	// Clone the initial environment into the auxiliary vector
+	tchar_t** env = _tenviron;
+	while(*env) { builder.AppendEnvironmentVariable(*env); env++; }
 
+	// AT_RANDOM
 	GUID pseudorandom;
 	CoCreateGuid(&pseudorandom);
-
-	//Elf32_Addr* args;
-	//size_t count = builder.CreateArgumentStack(&args);
 
 	try { 
 		
 		// note: would use a while loop to iterate over interpreters, they could be chained
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::FromFile(_T("D:\\test"));
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
+		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\root\\init"));
 		
-		//LPCTSTR interp = p->Interpreter;
+		LPCTSTR interp = p->Interpreter;
 
 		//
 		// AUXILIARY VECTORS
@@ -167,4 +168,3 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	return 0;
 }
-

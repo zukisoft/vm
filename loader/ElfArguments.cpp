@@ -196,6 +196,49 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const voi
 //-----------------------------------------------------------------------------
 // ElfArgumentsT::AppendEnvironmentVariable
 //
+// Appends a preformatted environment variable to the contained list
+//
+// Arguments:
+//
+//	variable	- Preformatted environment variable in KEY=VALUE format
+
+template <class addr_t, class auxv_t>
+void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const char* keyandvalue)
+{
+	if(!keyandvalue) throw Exception(E_ARGUMENTNULL, _T("keyandvalue"));
+
+	// Since the variable is preformatted, it can be put right into place
+	m_env.push_back(AppendInfo(keyandvalue, strlen(keyandvalue) + 1));
+}
+
+//-----------------------------------------------------------------------------
+// ElfArgumentsT::AppendEnvironmentVariable
+//
+// Appends a preformatted environment variable to the contained list
+//
+// Arguments:
+//
+//	variable	- Preformatted environment variable in KEY=VALUE format
+
+template <class addr_t, class auxv_t>
+void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* keyandvalue)
+{
+	if(!keyandvalue) throw Exception(E_ARGUMENTNULL, _T("keyandvalue"));
+
+	// Get the number of bytes required to hold the converted string and the NULL terminator
+	int required = WideCharToMultiByte(CP_UTF8, 0, keyandvalue, -1, NULL, 0, NULL, NULL);
+	if(required == 0) throw Win32Exception();
+
+	// Append the converted string to the information block
+	addr_t variable = AppendInfo(NULL, required);
+	WideCharToMultiByte(CP_UTF8, 0, keyandvalue, -1, reinterpret_cast<char*>(variable), required, NULL, NULL);
+
+	m_env.push_back(variable);				// Keep track of the pointer
+}
+
+//-----------------------------------------------------------------------------
+// ElfArgumentsT::AppendEnvironmentVariable
+//
 // Appends an environment variable to the contained list
 //
 // Arguments:

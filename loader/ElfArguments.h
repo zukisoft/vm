@@ -103,6 +103,8 @@ public:
 	// AppendEnvironmentVariable
 	//
 	// Appends an environment variable
+	void AppendEnvironmentVariable(const char* keyandvalue);
+	void AppendEnvironmentVariable(const wchar_t* keyandvalue);
 	void AppendEnvironmentVariable(const char* key, const char* value);
 	void AppendEnvironmentVariable(const wchar_t* key, const wchar_t* value);
 
