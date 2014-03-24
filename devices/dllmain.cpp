@@ -1,19 +1,76 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
-#include "stdafx.h"
+// dllmain.cpp : Implementation of DllMain.
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
+#include "stdafx.h"
+#include "resource.h"
+#include "vm.devices.h"
+#include "dllmain.h"
+
+CdevicesModule _AtlModule;
+
+// DLL Entry Point
+extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
-	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
-	return TRUE;
+	hInstance;
+	return _AtlModule.DllMain(dwReason, lpReserved); 
 }
+
+//using namespace ATL;
+
+// Used to determine whether the DLL can be unloaded by OLE.
+STDAPI DllCanUnloadNow(void)
+{
+			return _AtlModule.DllCanUnloadNow();
+	}
+
+// Returns a class factory to create an object of the requested type.
+STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID* ppv)
+{
+		return _AtlModule.DllGetClassObject(rclsid, riid, ppv);
+}
+
+// DllRegisterServer - Adds entries to the system registry.
+STDAPI DllRegisterServer(void)
+{
+	// registers object, typelib and all interfaces in typelib
+	HRESULT hr = _AtlModule.DllRegisterServer();
+		return hr;
+}
+
+// DllUnregisterServer - Removes entries from the system registry.
+STDAPI DllUnregisterServer(void)
+{
+	HRESULT hr = _AtlModule.DllUnregisterServer();
+		return hr;
+}
+
+// DllInstall - Adds/Removes entries to the system registry per user per machine.
+STDAPI DllInstall(BOOL bInstall, _In_opt_  LPCWSTR pszCmdLine)
+{
+	HRESULT hr = E_FAIL;
+	static const wchar_t szUserSwitch[] = L"user";
+
+	if (pszCmdLine != NULL)
+	{
+		if (_wcsnicmp(pszCmdLine, szUserSwitch, _countof(szUserSwitch)) == 0)
+		{
+			ATL::AtlSetPerUserRegistration(true);
+		}
+	}
+
+	if (bInstall)
+	{	
+		hr = DllRegisterServer();
+		if (FAILED(hr))
+		{
+			DllUnregisterServer();
+		}
+	}
+	else
+	{
+		hr = DllUnregisterServer();
+	}
+
+	return hr;
+}
+
 

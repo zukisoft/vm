@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -123,6 +123,15 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -148,6 +157,15 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -177,6 +195,15 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -206,6 +233,15 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="vm.dcom.def" />
@@ -214,36 +250,7 @@
     <ResourceCompile Include="..\tmp\version\version.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="vm.dcom.idl">
-      <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</GenerateStublessProxies>
-      <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateStublessProxies>
-      <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateStublessProxies>
-      <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateStublessProxies>
-      <OutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName).h</HeaderFileName>
-      <DllDataFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)_p.c</ProxyFileName>
-      <GenerateTypeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</GenerateTypeLibrary>
-      <OutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName).h</HeaderFileName>
-      <DllDataFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)_p.c</ProxyFileName>
-      <GenerateTypeLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</GenerateTypeLibrary>
-      <OutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName).h</HeaderFileName>
-      <DllDataFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)_p.c</ProxyFileName>
-      <GenerateTypeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GenerateTypeLibrary>
-      <OutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName).h</HeaderFileName>
-      <DllDataFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)_p.c</ProxyFileName>
-      <GenerateTypeLibrary Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</GenerateTypeLibrary>
-    </Midl>
+    <Midl Include="vm.dcom.idl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\tmp\vm.dcom\vm.dcom.c" />

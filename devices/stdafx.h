@@ -24,17 +24,28 @@
 #define __STDAFX_H_
 #pragma once
 
-//-----------------------------------------------------------------------------
-// Win32 Declarations
-
+// Target Versions
 #define NTDDI_VERSION			NTDDI_WIN7
 #define	_WIN32_WINNT			_WIN32_WINNT_WIN7
 #define WINVER					_WIN32_WINNT_WIN7
 #define	_WIN32_IE				_WIN32_IE_IE80
 
 // Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <stdint.h>				// Include standard integer declarations
+#ifndef STRICT
+#define STRICT
+#endif
+
+// Active Template Library (ATL)
+#define _ATL_APARTMENT_THREADED
+#define _ATL_NO_AUTOMATIC_NAMESPACE
+#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
+#define ATL_NO_ASSERT_ON_DESTROY_NONEXISTENT_WINDOW
+#include <atlbase.h>
+#include <atlcom.h>
+#include <atlctl.h>
+
+// VM.DCOM
+#include "vm.dcom.h"
 
 //-----------------------------------------------------------------------------
 
