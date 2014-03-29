@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/vm.dcom;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,6 +108,22 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+      <ValidateAllParameters>true</ValidateAllParameters>
+    </Midl>
+    <PreBuildEvent>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Creating Temporary Folder</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -116,7 +132,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/vm.dcom;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,6 +142,22 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+      <ValidateAllParameters>true</ValidateAllParameters>
+    </Midl>
+    <PreBuildEvent>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Creating Temporary Folder</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -136,7 +168,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/vm.dcom;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -148,6 +180,22 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+      <ValidateAllParameters>true</ValidateAllParameters>
+    </Midl>
+    <PreBuildEvent>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Creating Temporary Folder</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -158,7 +206,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/vm.dcom;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../external/svctl;$(SolutionDir)tmp/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -170,6 +218,22 @@
       <Command>
       </Command>
     </CustomBuildStep>
+    <Midl>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
+      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
+      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <GenerateTypeLibrary>false</GenerateTypeLibrary>
+      <GenerateStublessProxies>true</GenerateStublessProxies>
+      <ValidateAllParameters>true</ValidateAllParameters>
+    </Midl>
+    <PreBuildEvent>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Creating Temporary Folder</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\external\svctl\svctl.h" />
@@ -192,10 +256,21 @@
     <ClInclude Include="..\..\external\svctl\svctlsts.h" />
     <ClInclude Include="..\..\external\svctl\svctlsvc.h" />
     <ClInclude Include="..\..\external\svctl\svctlui.h" />
-    <ClInclude Include="..\tmp\vm.dcom\vm.dcom.h" />
+    <ClInclude Include="..\tmp\vm.service\vm.service.h" />
+    <ClInclude Include="BlockDevice.h" />
+    <ClInclude Include="CharacterDevice.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="FileSystemService.h" />
+    <ClInclude Include="FsNode.h" />
+    <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RpcException.h" />
+    <ClInclude Include="RpcServer.h" />
+    <ClInclude Include="SocketDevice.h" />
+    <ClInclude Include="stat.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VmService.h" />
+    <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\svctl\svctlapi.cpp" />
@@ -215,13 +290,23 @@
     <ClCompile Include="..\..\external\svctl\svctlsts.cpp" />
     <ClCompile Include="..\..\external\svctl\svctlsvc.cpp" />
     <ClCompile Include="..\..\external\svctl\svctlui.cpp" />
-    <ClCompile Include="..\tmp\vm.dcom\vm.dcom.c">
+    <ClCompile Include="..\tmp\vm.service\vm.service_s.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="FileSystemService.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="rpc005_open.cpp" />
+    <ClCompile Include="rpc006_close.cpp" />
+    <ClCompile Include="rpc010_unlink.cpp" />
+    <ClCompile Include="rpc014_mknod.cpp" />
+    <ClCompile Include="rpc295_openat.cpp" />
+    <ClCompile Include="rpc297_mknodat.cpp" />
+    <ClCompile Include="rpcmem.cpp" />
+    <ClCompile Include="RpcServer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -234,6 +319,12 @@
     <ResourceCompile Include="..\..\external\svctl\svctl.rc" />
     <ResourceCompile Include="..\tmp\version\version.rc" />
     <ResourceCompile Include="vm.service.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="vm.service.idl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vm.service.acf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

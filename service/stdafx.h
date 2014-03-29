@@ -34,13 +34,47 @@
 
 // Windows / CRT
 #include <windows.h>			// Include main Windows declarations
+#include <tchar.h>				// Include generic text mappings
 #include <stdint.h>				// Include standard integer declarations
+
+#include <memory>				// std::allocator, etc.
+#include <string>				// std::string, std::wstring
+
+// RPC - may move this out
+#include <rpc.h>
+#pragma comment(lib, "rpcrt4.lib")
+#pragma comment(lib, "rpcns4.lib")
+
+#ifdef _UNICODE
+typedef RPC_WSTR		RPC_TSTR;
+typedef RPC_CWSTR		RPC_CTSTR;
+#else
+#define unsigned char*	RPC_TSTR;
+#define RPC_CSTR		RPC_CTSTR;
+#endif
 
 // KiB / MiB / GiB
 
 #define KiB		*(1 << 10)		// KiB multiplier
 #define MiB		*(1 << 20)		// MiB multiplier
 #define GiB		*(1 << 30)		// GiB multiplier
+
+namespace std {
+#ifdef _UNICODE
+	typedef wstring tstring;
+#else
+	typedef string tstring;
+#endif
+}
+
+// char_t, tchar_t
+//
+typedef char		char_t;
+#ifdef _UNICODE
+typedef wchar_t		tchar_t;
+#else
+typedef char		tchar_t;
+#endif
 
 //---------------------------------------------------------------------------
 // Service Template Library (SVCTL)
@@ -50,8 +84,7 @@
 //---------------------------------------------------------------------------
 // Project COM Declarations
 
-#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
-#include "vm.dcom.h"			// Include project COM declarations
+//#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
 
 //-----------------------------------------------------------------------------
 

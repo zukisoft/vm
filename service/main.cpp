@@ -23,7 +23,12 @@
 #include "stdafx.h"					// Include project pre-compiled headers
 #include "resource.h"				// Include project resource declarations
 
+#include "FileSystemService.h"		// Include FileSystemService declarations
 #include "VmService.h"				// Include VmService declarations
+
+#include "RpcServer.h"				// Include RpcServer class declarations
+
+#include "vm.service.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 #pragma warning(disable:4100)		// "unreferenced formal parameter"
@@ -101,6 +106,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	bool					bDispatch = false;	// Flag to dispatch the service
 	DWORD					dwResult;			// Result from function call
 	HRESULT					hResult;			// Result from function call
+
+//////////////////
+
+	RpcServer::AddEndpoints(_T("ncalrpc"), RemoteSystemCalls_v1_0_s_ifspec);
+
+///////////////////
 
 #ifdef _DEBUG
 

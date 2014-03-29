@@ -1,0 +1,204 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2014 Michael G. Brehm
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//-----------------------------------------------------------------------------
+
+import "wtypes.idl";				// Import Win32 type declarations
+
+//-----------------------------------------------------------------------------
+// Type Declarations
+
+// stdint typedefs
+//
+typedef signed char					int8_t;
+typedef unsigned char				uint8_t;
+typedef short						int16_t;
+typedef unsigned short				uint16_t;
+typedef __int32						int32_t;
+typedef unsigned __int32			uint32_t;
+typedef __int64						int64_t;
+typedef unsigned __int64			uint64_t;
+
+// charptr_t / wcharptr_t - [unique] character string pointers
+//
+typedef [string, unique] char*		charptr_t;
+typedef [string, unique] wchar_t*	wcharptr_t;
+
+// LINUX
+// TODO: WORDS
+typedef unsigned __int32			dev_t;
+typedef unsigned __int32			gid_t;
+typedef unsigned __int32			mode_t;
+typedef unsigned __int32			uid_t;
+
+// fshandle_t - filesystem node handle
+//
+typedef unsigned __int64			fshandle_t;
+
+////---------------------------------------------------------------------------
+//// USERQUERY_FILTER_FLAGS
+////
+//// Defines the query filter flags to run against the user cache
+//
+//typedef [v1_enum] enum _UserQueryFlags {
+//
+//	FILTER_NAME_STARTS_WITH		= 0x0001,
+//	FILTER_NO_ACCTOPERS			= 0x0002,
+//	FILTER_NO_ADMINS			= 0x0004,
+//	FILTER_ONLY_ACCTOPERS		= 0x0008,
+//	FILTER_ONLY_ADMINS			= 0x0010,
+//	FILTER_GROUP_MEMBERS		= 0x0020,
+//	FILTER_ORG_ID				= 0x0040,
+//
+//} USERQUERY_FILTER_FLAGS;
+//
+////---------------------------------------------------------------------------
+//// GROUPQUERY_FILTER_FLAGS
+////
+//// Defines the query filter flags to run against the group cache
+//
+//typedef [v1_enum] enum _GroupQueryFlags {
+//
+//	FILTER_GROUP_STARTS_WITH	= 0x0001,
+//
+//} GROUPQUERY_FILTER_FLAGS;
+//
+////---------------------------------------------------------------------------
+//// USERQUERY_RESULT
+////
+//// Result set element from a user search query
+//
+//typedef struct _UserQueryResult {
+//
+//	WCHAR	pwszName[WUQUERY_MAX_STRING + 1];			// User name
+//	WCHAR	pwszFullName[WUQUERY_MAX_STRING + 1];		// User full name
+//	long	lOrgId;										// User org id
+//	DWORD	dwFlags;									// User flags
+//
+//} USERQUERY_RESULT, *PUSERQUERY_RESULT;
+//
+//typedef pipe USERQUERY_RESULT USERQUERY_RESULT_PIPE;	// Pipe for result set
+//
+////---------------------------------------------------------------------------
+//// GROUPQUERY_RESULT
+////
+//// Result set element from a group search query
+//
+//typedef struct _GroupQueryResult {
+//
+//	WCHAR	pwszName[WUQUERY_MAX_STRING + 1];			// Group name
+//	WCHAR	pwszDescription[WUQUERY_MAX_STRING + 1];	// Group description
+//
+//} GROUPQUERY_RESULT, *PGROUPQUERY_RESULT;
+//
+//typedef pipe GROUPQUERY_RESULT GROUPQUERY_RESULT_PIPE;
+//
+
+//-----------------------------------------------------------------------------
+// Interface RemoteSystemCalls
+
+[
+	version(1.0),
+	uuid(65AF53FB-CA7B-43DA-886E-A5F501FBACA9),
+	pointer_default(unique),
+	endpoint("ncalrpc:[vm.service.RemoteSystemCalls]", "ncalrpc:[vm.service.DeleteMe-Testing]"),
+]
+
+interface RemoteSystemCalls
+{
+	HRESULT rpc005_open		([in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
+	HRESULT rpc006_close	([in] fshandle_t fshandle);
+	HRESULT rpc010_unlink	([in] charptr_t pathname);
+
+	HRESULT rpc014_mknod	([in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
+
+	HRESULT rpc295_openat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
+	HRESULT rpc297_mknodat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
+}
+
+////---------------------------------------------------------------------------
+//// Interface IAdminCache
+//
+//[
+//	version(2.7),
+//	uuid(737b4ab0-7a77-11d3-b56e-00104bf8327a),
+//	pointer_default(unique),
+//]
+//
+//interface IAdminCache
+//{
+//	HRESULT AddAccountOperator([in] LPWSTR pwszDomain, [in] LPWSTR pwszUser);
+//	HRESULT AddAdministrator([in] LPWSTR pwszDomain, [in] LPWSTR pwszUser);
+//	
+//	HRESULT	GetGroupNames([out] LPWSTR *ppwszAcctOps, [out] LPWSTR *ppwszAdmins);
+//
+//	HRESULT	IsAccountOperator([in] LPWSTR pwszDomain, [in] LPWSTR pwszUser,
+//		[out] BOOL *pbAcctOper);
+//	HRESULT IsAdministrator([in] LPWSTR pwszDomain, [in] LPWSTR pwszUser,
+//		[out] BOOL *pbAdmin);
+//
+//	HRESULT RemoveAccountOperator([in] LPWSTR pwszDomain, [in] LPWSTR pwszUser);
+//	HRESULT RemoveAdministrator([in] LPWSTR pwszDomain, [in] LPWSTR pwszUser);
+//};
+//
+////---------------------------------------------------------------------------
+//// Interface IGroupQuery
+//
+//[
+//	version(2.7),
+//	uuid(f4d9a6e0-7b9a-11d3-b571-00104bf8327a),
+//	pointer_default(unique),
+//]
+//
+//interface IGroupQuery
+//{
+//	// NOTE : All parameters in a pipe procedure must be sized at
+//	// compile-time.  Hence, the fixed arrays for [in] strings ...
+//	
+//	HRESULT ExecuteGroupQuery([in] DWORD dwFilters,
+//		[in] WCHAR pwszCriteria[WUQUERY_MAX_STRING + 1], 
+//		[out] GROUPQUERY_RESULT_PIPE *pResultPipe);
+//};
+//
+////---------------------------------------------------------------------------
+//// Interface IUserQuery
+//
+//[
+//	version(2.7),
+//	uuid(096b6700-7b9b-11d3-b571-00104bf8327a),
+//	pointer_default(unique),
+//]
+//
+//interface IUserQuery
+//{
+//	HRESULT RemoveCachedUser([in] LPWSTR pwszName);
+//	HRESULT UpdateCachedUser([in] LPWSTR pwszName);
+//
+//	// NOTE : All parameters in a pipe procedure must be sized at
+//	// compile-time.  Hence, the fixed arrays for [in] strings ...
+//	
+//	HRESULT ExecuteUserQuery([in] DWORD dwFilters,
+//		[in] WCHAR pwszNameCriteria[WUQUERY_MAX_STRING + 1],
+//		[in] WCHAR pwszGroupCriteria[WUQUERY_MAX_STRING + 1],
+//		[in] long lOrgIdCriteria,
+//		[out] USERQUERY_RESULT_PIPE *pResultPipe);
+//};
+
+//---------------------------------------------------------------------------

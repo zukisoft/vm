@@ -31,7 +31,7 @@
 //---------------------------------------------------------------------------
 // Class VmService
 
-class VmService : public SVCTL::ComService<VmService>, public IVmService
+class VmService : public SVCTL::Service<VmService>
 {
 public:
 
@@ -46,7 +46,7 @@ public:
 	DECLARE_SERVICE_TYPE(SERVICE_WIN32_SHARE_PROCESS)
 	DECLARE_SERVICE_START_TYPE(SERVICE_AUTO_START)
 
-	DECLARE_COM_SERVICE_CLASSID(CLSID_VmService)
+	//DECLARE_COM_SERVICE_CLASSID(CLSID_VmService)
 	//DECLARE_EVENTLOG_CATEGORIES(EVENTLOG_CATEGORY_COUNT)
 
 	//-----------------------------------------------------------------------
@@ -67,9 +67,9 @@ public:
 	//-----------------------------------------------------------------------
 	// SVCTL COM Interface Map
 
-	BEGIN_COM_INTERFACE_MAP()
-		COM_INTERFACE(IVmService)
-	END_COM_INTERFACE_MAP()
+	//BEGIN_COM_INTERFACE_MAP()
+	//	COM_INTERFACE(IVmService)
+	//END_COM_INTERFACE_MAP()
 
 	//-------------------------------------------------------------------------
 	// IVmService
