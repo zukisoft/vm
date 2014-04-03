@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -28,26 +28,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -111,12 +111,20 @@
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
       <HeaderFileName>$(ProjectName).h</HeaderFileName>
-      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <DllDataFileName>
+      </DllDataFileName>
+      <InterfaceIdentifierFileName>
+      </InterfaceIdentifierFileName>
+      <ProxyFileName>
+      </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>true</GenerateStublessProxies>
       <ValidateAllParameters>true</ValidateAllParameters>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
+      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -145,12 +153,20 @@
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
       <HeaderFileName>$(ProjectName).h</HeaderFileName>
-      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <DllDataFileName>
+      </DllDataFileName>
+      <InterfaceIdentifierFileName>
+      </InterfaceIdentifierFileName>
+      <ProxyFileName>
+      </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>true</GenerateStublessProxies>
       <ValidateAllParameters>true</ValidateAllParameters>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
+      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -183,12 +199,20 @@
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
       <HeaderFileName>$(ProjectName).h</HeaderFileName>
-      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <DllDataFileName>
+      </DllDataFileName>
+      <InterfaceIdentifierFileName>
+      </InterfaceIdentifierFileName>
+      <ProxyFileName>
+      </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>true</GenerateStublessProxies>
       <ValidateAllParameters>true</ValidateAllParameters>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
+      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -221,12 +245,20 @@
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
       <HeaderFileName>$(ProjectName).h</HeaderFileName>
-      <DllDataFileName>$(ProjectName)_d.c</DllDataFileName>
-      <InterfaceIdentifierFileName>$(ProjectName).c</InterfaceIdentifierFileName>
-      <ProxyFileName>$(ProjectName)_p.c</ProxyFileName>
+      <DllDataFileName>
+      </DllDataFileName>
+      <InterfaceIdentifierFileName>
+      </InterfaceIdentifierFileName>
+      <ProxyFileName>
+      </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>true</GenerateStublessProxies>
       <ValidateAllParameters>true</ValidateAllParameters>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
+      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -259,18 +291,15 @@
     <ClInclude Include="..\tmp\vm.service\vm.service.h" />
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
-    <ClInclude Include="Exception.h" />
-    <ClInclude Include="FileSystemService.h" />
+    <ClInclude Include="char_t.h" />
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="RpcException.h" />
-    <ClInclude Include="RpcServer.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stat.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="tstring.h" />
     <ClInclude Include="VmService.h" />
-    <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\svctl\svctlapi.cpp" />
@@ -296,8 +325,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Exception.cpp" />
-    <ClCompile Include="FileSystemService.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />
@@ -306,7 +333,6 @@
     <ClCompile Include="rpc295_openat.cpp" />
     <ClCompile Include="rpc297_mknodat.cpp" />
     <ClCompile Include="rpcmem.cpp" />
-    <ClCompile Include="RpcServer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

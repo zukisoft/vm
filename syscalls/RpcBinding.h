@@ -20,55 +20,77 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __EXCEPTION_H_
-#define __EXCEPTION_H_
+#ifndef __RPCBINDING_H_
+#define __RPCBINDING_H_
 #pragma once
+
+#include "char_t.h"						// Include char_t declarations
+#include "RpcException.h"				// Include RpcException declarations
+#include "RpcProtocol.h"				// Include RpcProtocol declarations
+#include "RpcString.h"					// Include RpcString declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// Exception
+// RpcBinding
 //
-// Exception class
+// 
 
-class Exception
+class RpcBinding
 {
 public:
 
-	// Constructors / Destructor
+	// Destructor
 	//
-	Exception(HRESULT hResult, ...);
-	Exception(Exception& inner, HRESULT hResult, ...);
-	virtual ~Exception();
-
-	// Copy Constructor
-	//
-	Exception(const Exception& rhs);
+	~RpcBinding();
 
 	//-------------------------------------------------------------------------
 	// Overloaded Operators
 
-	operator LPCTSTR() const { return m_message.c_str(); }
-	Exception& operator=(const Exception& rhs);
+	// RPC_BINDING_HANDLE()
+	//
+	operator RPC_BINDING_HANDLE() const { return m_handle; }
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Compose
+	// 
+	// Composes an RPC binding from string components
+	static RpcBinding* Compose(const RpcProtocol& protocol, const tchar_t* endpoint)
+		{ return Compose(nullptr, protocol, endpoint, nullptr); }
+
+	static RpcBinding* Compose(const RpcProtocol& protocol, const tchar_t* endpoint, const tchar_t* options)
+		{ return Compose(nullptr, protocol, endpoint, options); }
+
+	static RpcBinding* Compose(const tchar_t* server, const RpcProtocol& protocol, const tchar_t* endpoint)
+		{ return Compose(server, protocol, endpoint, nullptr); }
+
+	static RpcBinding* Compose(const tchar_t* server, const RpcProtocol& protocol, const tchar_t* endpoint, const tchar_t* options);
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	__declspec(property(get=getInnerException)) Exception* InnerException;
-	Exception* getInnerException() const { return m_inner; }
+	__declspec(property(get=getHandle)) RPC_BINDING_HANDLE Handle;
+	RPC_BINDING_HANDLE getHandle(void) const { return m_handle; }
 
 private:
+
+	RpcBinding(const RpcBinding& rhs);
+	RpcBinding& operator=(const RpcBinding& rhs);
+
+	// Instance Constructor
+	//
+	explicit RpcBinding(RPC_BINDING_HANDLE handle);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HRESULT					m_hResult;			// Error HRESULT code
-	std::tstring			m_message;			// Formatted message string
-	Exception*				m_inner;			// Inner exception object
+	RPC_BINDING_HANDLE		m_handle = nullptr;		// Contained binding handle
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __EXCEPTION_H_
+#endif	// __RPCBINDING_H_

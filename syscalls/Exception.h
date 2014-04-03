@@ -20,33 +20,58 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __EXCEPTION_H_
+#define __EXCEPTION_H_
 #pragma once
 
-// Target Versions
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+#include "char_t.h"						// Include char_t declarations
+#include "tstring.h"					// Include tstring<> declarations
 
-// Windows / CRT
-#ifndef STRICT
-#define STRICT
-#endif
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// Active Template Library (ATL)
-#define _ATL_APARTMENT_THREADED
-#define _ATL_NO_AUTOMATIC_NAMESPACE
-#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
-#define ATL_NO_ASSERT_ON_DESTROY_NONEXISTENT_WINDOW
-#include <atlbase.h>
-#include <atlcom.h>
-#include <atlctl.h>
+//-----------------------------------------------------------------------------
+// Exception
+//
+// Exception class
 
-// VM.DCOM
-#include "vm.dcom.h"
+class Exception
+{
+public:
+
+	// Constructors / Destructor
+	//
+	Exception(HRESULT hResult, ...);
+	Exception(Exception& inner, HRESULT hResult, ...);
+	virtual ~Exception();
+
+	// Copy Constructor
+	//
+	Exception(const Exception& rhs);
+
+	//-------------------------------------------------------------------------
+	// Overloaded Operators
+
+	operator const tchar_t*() const { return m_message.c_str(); }
+	Exception& operator=(const Exception& rhs);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	__declspec(property(get=getInnerException)) Exception* InnerException;
+	Exception* getInnerException() const { return m_inner; }
+
+private:
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	HRESULT					m_hResult;			// Error HRESULT code
+	std::tstring			m_message;			// Formatted message string
+	Exception*				m_inner;			// Inner exception object
+};
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)
+
+#endif	// __EXCEPTION_H_

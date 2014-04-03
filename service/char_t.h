@@ -20,33 +20,22 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __FILESYSTEMSERVICE_H_
-#define __FILESYSTEMSERVICE_H_
+#ifndef __CHAR_T_H_
+#define __CHAR_T_H_
 #pragma once
 
-#include "FsNode.h"					// Include FsNode class declarations
+// char_t
+//
+typedef char		char_t;
 
-
-#pragma warning(push, 4)			// Enable maximum compiler warnings
-
-class FileSystemService
-{
-public:
-
-	void Test(void);
-
-private:
-
-	FileSystemService(const FileSystemService& rhs);
-	FileSystemService& operator=(const FileSystemService& rhs);
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-};
+// tchar_t
+//
+#ifdef _UNICODE
+typedef wchar_t		tchar_t;
+#else
+typedef char		tchar_t;
+#endif
 
 //-----------------------------------------------------------------------------
 
-#pragma warning(pop)
-
-#endif	// __FILESYSTEMSERVICE_H_
+#endif	// __CHAR_T_H

@@ -20,52 +20,40 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
-#pragma once
+#include "stdafx.h"					// Include project pre-compiled headers
+
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// Win32 Declarations
+// midl_user_allocate
+//
+// Allocates RPC stub and library memory
+//
+// Arguments:
+//
+//	len			- Length of the required memory buffer
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
-
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <rpc.h>				// Include Remote Procedure Call declarations
-#include <stdint.h>				// Include standard integer declarations
-#include <memory>				// std::allocator, etc.
-#include <string>				// std::string, std::wstring
-
-
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Generic Text Mappings
-#include <tchar.h>
-#include "char_t.h"
-#include "tstring.h"
-
-//---------------------------------------------------------------------------
-// Service Template Library (SVCTL)
-
-#include "svctl.h"
-
-#include "vm.service.h"
-
-//---------------------------------------------------------------------------
-// Project COM Declarations
-
-//#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
+void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
+{
+	// Use the COM task memory allocator for RPC
+	return CoTaskMemAlloc(len);
+}
 
 //-----------------------------------------------------------------------------
+// midl_user_free
+//
+// Relases RPC stub and library memory
+//
+// Arguments:
+//
+//	ptr			- Pointer to buffer allocated by MIDL_user_allocate
 
-#endif	// __STDAFX_H_
+void __RPC_USER midl_user_free(void __RPC_FAR* ptr)
+{
+	// Use the COM task memory allocator for RPC
+	CoTaskMemFree(ptr);
+}
+
+//---------------------------------------------------------------------------
+
+#pragma warning(pop)

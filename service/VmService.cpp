@@ -53,6 +53,12 @@ DWORD VmService::Init(DWORD dwArgc, LPTSTR *rgszArgv)
 	UNREFERENCED_PARAMETER(dwArgc);
 	UNREFERENCED_PARAMETER(rgszArgv);
 
+	//DebugBreak();
+
+	// Attept to register the remote system call RPC interface
+	RPC_STATUS rpcresult = RpcServerRegisterIf(RemoteSystemCalls_v1_0_s_ifspec, nullptr, nullptr);
+	if(rpcresult != RPC_S_OK) return rpcresult;
+
 	// Attempt to create the service STOP kernel event object
 	m_hevtStop = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if(!m_hevtStop) { 
@@ -77,8 +83,13 @@ DWORD VmService::Init(DWORD dwArgc, LPTSTR *rgszArgv)
 
 DWORD VmService::Run(void)
 {
+	RPC_STATUS result = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
+	if(result != RPC_S_OK) return result;
+
 	// For now, all we need is a simple idle loop waiting for the STOP event
 	WaitForSingleObject(m_hevtStop, INFINITE);
+
+	RpcMgmtStopServerListening(nullptr);
 
 	return ERROR_SUCCESS;
 }
@@ -97,6 +108,9 @@ void VmService::Term(void)
 	// Close and reset the STOP event object
 	if(m_hevtStop) CloseHandle(m_hevtStop);
 	m_hevtStop = NULL;
+
+	// Unregister the remote system call RPC interface
+	RpcServerUnregisterIf(RemoteSystemCalls_v1_0_s_ifspec, nullptr, 1);
 }
 
 //---------------------------------------------------------------------------

@@ -22,13 +22,7 @@
 
 #include "stdafx.h"					// Include project pre-compiled headers
 #include "resource.h"				// Include project resource declarations
-
-#include "FileSystemService.h"		// Include FileSystemService declarations
 #include "VmService.h"				// Include VmService declarations
-
-#include "RpcServer.h"				// Include RpcServer class declarations
-
-#include "vm.service.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 #pragma warning(disable:4100)		// "unreferenced formal parameter"
@@ -105,11 +99,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	bool					bRemove = false;	// Flag to remove the service
 	bool					bDispatch = false;	// Flag to dispatch the service
 	DWORD					dwResult;			// Result from function call
-	HRESULT					hResult;			// Result from function call
+//	HRESULT					hResult;			// Result from function call
 
 //////////////////
 
-	RpcServer::AddEndpoints(_T("ncalrpc"), RemoteSystemCalls_v1_0_s_ifspec);
+	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, RemoteSystemCalls_v1_0_s_ifspec, nullptr);
+	if(rpcresult != RPC_S_OK) {
+	}
 
 ///////////////////
 
@@ -122,20 +118,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 #endif	// _DEBUG
 
 	// Initialize the SVCTL service manager class object
-
 	dwResult = svcManager.Init(g_pServiceMap);
 	if(dwResult != ERROR_SUCCESS) return InitError(L"svcManager.Init()", dwResult);
 	
 	// Initialize the application's main thread in the process MTA
 
-	hResult = comInit.Initialize(COINIT_MULTITHREADED);
-	if(FAILED(hResult)) return InitError(L"comInit.Initialize()", hResult);
+	//hResult = comInit.Initialize(COINIT_MULTITHREADED);
+	//if(FAILED(hResult)) return InitError(L"comInit.Initialize()", hResult);
 
-	// Attempt to initialize the default proxy security for this process
+	//// Attempt to initialize the default proxy security for this process
 
-	hResult = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_NONE,
-		RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
-	if(FAILED(hResult)) return InitError(L"CoInitializeSecurity()", hResult);
+	//hResult = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_NONE,
+	//	RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
+	//if(FAILED(hResult)) return InitError(L"CoInitializeSecurity()", hResult);
 
 	// PROCESS COMMAND LINE -----------------------------------------
 

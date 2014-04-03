@@ -20,6 +20,22 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
+#ifndef __CHAR_T_H_
+#define __CHAR_T_H_
+#pragma once
+
+// char_t
+//
+typedef char		char_t;
+
+// tchar_t
+//
+#ifdef _UNICODE
+typedef wchar_t		tchar_t;
+#else
+typedef char		tchar_t;
+#endif
 
 //-----------------------------------------------------------------------------
+
+#endif	// __CHAR_T_H

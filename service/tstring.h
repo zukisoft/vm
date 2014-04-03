@@ -20,17 +20,24 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "FileSystemService.h"		// Include FileSystemService declarations
+#ifndef __TSTRING_H_
+#define __TSTRING_H_
+#pragma once
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#include <string>						// Include STL string<> declarations
 
-void FileSystemService::Test(void)
-{
-	fsnode_t node;
-	node.pipedev.device = nullptr;
-}
+namespace std {
 
-//---------------------------------------------------------------------------
+// tstring
+//
+#ifdef _UNICODE
+typedef wstring tstring;
+#else
+typedef string tstring;
+#endif
 
-#pragma warning(pop)
+}	// namespace std
+
+//-----------------------------------------------------------------------------
+
+#endif	// __TSTRING_H_

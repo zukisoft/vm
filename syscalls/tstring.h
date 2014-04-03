@@ -20,52 +20,21 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __TSTRING_H_
+#define __TSTRING_H_
 #pragma once
 
-//-----------------------------------------------------------------------------
-// Win32 Declarations
+#include <string>						// Include STL string<> declarations
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+namespace std {
 
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <rpc.h>				// Include Remote Procedure Call declarations
-#include <stdint.h>				// Include standard integer declarations
-#include <memory>				// std::allocator, etc.
-#include <string>				// std::string, std::wstring
-
-
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Generic Text Mappings
-#include <tchar.h>
-#include "char_t.h"
-#include "tstring.h"
-
-//---------------------------------------------------------------------------
-// Service Template Library (SVCTL)
-
-#include "svctl.h"
-
-#include "vm.service.h"
-
-//---------------------------------------------------------------------------
-// Project COM Declarations
-
-//#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
+#ifdef _UNICODE
+	typedef wstring		tstring;
+#else
+	typedef string		tstring;
+#endif
+}
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#endif	// __TSTRING_H_

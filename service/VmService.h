@@ -43,11 +43,8 @@ public:
 	DECLARE_SERVICE_NAME_ID(IDS_VMSERVICE_NAME)
 	DECLARE_SERVICE_DISPLAYNAME_ID(IDS_VMSERVICE_DISPLAYNAME)
 	DECLARE_SERVICE_DESCRIPTION_ID(IDS_VMSERVICE_DESCRIPTION)
-	DECLARE_SERVICE_TYPE(SERVICE_WIN32_SHARE_PROCESS)
-	DECLARE_SERVICE_START_TYPE(SERVICE_AUTO_START)
-
-	//DECLARE_COM_SERVICE_CLASSID(CLSID_VmService)
-	//DECLARE_EVENTLOG_CATEGORIES(EVENTLOG_CATEGORY_COUNT)
+	DECLARE_SERVICE_TYPE(SERVICE_WIN32_OWN_PROCESS)
+	DECLARE_SERVICE_START_TYPE(SERVICE_DEMAND_START)
 
 	//-----------------------------------------------------------------------
 	// SVCTL Control Map
@@ -64,16 +61,6 @@ public:
 	//	BOOLEAN_PARAMETER_ID(IDP_DISKACTIVITYSERVICE_FILESIZE, 8)
 	//END_PARAMETER_MAP()
 
-	//-----------------------------------------------------------------------
-	// SVCTL COM Interface Map
-
-	//BEGIN_COM_INTERFACE_MAP()
-	//	COM_INTERFACE(IVmService)
-	//END_COM_INTERFACE_MAP()
-
-	//-------------------------------------------------------------------------
-	// IVmService
-	
 private:
 
 	VmService(const VmService &rhs);
