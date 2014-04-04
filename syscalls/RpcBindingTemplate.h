@@ -41,9 +41,13 @@ public:
 	// Instance Constructors
 	//
 	RpcBindingTemplate(const RpcProtocol& protocol);
+	RpcBindingTemplate(const RpcProtocol& protocol, const uuid_t& object);
 	RpcBindingTemplate(const RpcProtocol& protocol, const tchar_t* endpoint);
+	RpcBindingTemplate(const RpcProtocol& protocol, const tchar_t* endpoint, const uuid_t& object);
 	RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol);
+	RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol, const uuid_t& object);
 	RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol, const tchar_t* endpoint);
+	RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol, const tchar_t* endpoint, const uuid_t& object);
 
 	// Copy Constructor
 	//

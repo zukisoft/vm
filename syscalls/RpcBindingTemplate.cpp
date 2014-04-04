@@ -33,7 +33,18 @@
 //	protocol	- Protocol sequence
 
 RpcBindingTemplate::RpcBindingTemplate(const RpcProtocol& protocol) : 
-	RpcBindingTemplate(nullptr, protocol, nullptr) {}
+	RpcBindingTemplate(nullptr, protocol, nullptr, GUID_NULL) {}
+
+//-----------------------------------------------------------------------------
+// RpcBindingTemplate Constructor
+//
+// Arguments:
+//
+//	protocol	- Protocol sequence
+//	object		- Server object UUID for binding
+
+RpcBindingTemplate::RpcBindingTemplate(const RpcProtocol& protocol, const uuid_t& object) : 
+	RpcBindingTemplate(nullptr, protocol, nullptr, object) {}
 
 //-----------------------------------------------------------------------------
 // RpcBindingTemplate Constructor
@@ -44,7 +55,19 @@ RpcBindingTemplate::RpcBindingTemplate(const RpcProtocol& protocol) :
 //	endpoint	- Endpoint; format depends on protocol sequence
 
 RpcBindingTemplate::RpcBindingTemplate(const RpcProtocol& protocol, const tchar_t* endpoint) : 
-	RpcBindingTemplate(nullptr, protocol, endpoint) {}
+	RpcBindingTemplate(nullptr, protocol, endpoint, GUID_NULL) {}
+
+//-----------------------------------------------------------------------------
+// RpcBindingTemplate Constructor
+//
+// Arguments:
+//
+//	protocol	- Protocol sequence
+//	endpoint	- Endpoint; format depends on protocol sequence
+//	object		- Server object UUID for the binding
+
+RpcBindingTemplate::RpcBindingTemplate(const RpcProtocol& protocol, const tchar_t* endpoint,
+	const uuid_t& object) : RpcBindingTemplate(nullptr, protocol, endpoint, object) {}
 
 //-----------------------------------------------------------------------------
 // RpcBindingTemplate Constructor
@@ -55,7 +78,19 @@ RpcBindingTemplate::RpcBindingTemplate(const RpcProtocol& protocol, const tchar_
 //	protocol	- Protocol sequence
 
 RpcBindingTemplate::RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol) : 
-	RpcBindingTemplate(server, protocol, nullptr) {}
+	RpcBindingTemplate(server, protocol, nullptr, GUID_NULL) {}
+
+//-----------------------------------------------------------------------------
+// RpcBindingTemplate Constructor
+//
+// Arguments:
+//
+//	server		- Target server; format depends on protocol sequence
+//	protocol	- Protocol sequence
+//	object		- Server object UUID for binding
+
+RpcBindingTemplate::RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol,
+	const uuid_t& object) : RpcBindingTemplate(server, protocol, nullptr, object) {}
 
 //-----------------------------------------------------------------------------
 // RpcBindingTemplate Constructor
@@ -67,17 +102,31 @@ RpcBindingTemplate::RpcBindingTemplate(const tchar_t* server, const RpcProtocol&
 //	endpoint	- Endpoint; format depends on protocol sequence
 
 RpcBindingTemplate::RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol,
-	const tchar_t* endpoint) : m_server(server), m_endpoint(endpoint)
+	const tchar_t* endpoint) : RpcBindingTemplate(server, protocol, endpoint, GUID_NULL) {}
+
+//-----------------------------------------------------------------------------
+// RpcBindingTemplate Constructor
+//
+// Arguments:
+//
+//	server		- Target server; format depends on protocol sequence
+//	protocol	- Protocol sequence
+//	endpoint	- Endpoint; format depends on protocol sequence
+//	object		- Server object UUID for binding
+
+RpcBindingTemplate::RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol,
+	const tchar_t* endpoint, const uuid_t& object) : m_server(server), m_endpoint(endpoint)
 {
 	memset(&m_template, 0, sizeof(RPC_BINDING_HANDLE_TEMPLATE_V1));
 
-	// Initialize the member structure, use pointers to the contained strings
+	// Initialize the member structure, use pointers to the contained RpcStrings
+	// rather than the pointers passed in by the caller
 	m_template.Version = 1;
-	m_template.Flags = 0;
+	m_template.Flags = (object == GUID_NULL) ? 0 : RPC_BHT_OBJECT_UUID_VALID;
 	m_template.ProtocolSequence = protocol;
 	m_template.NetworkAddress = m_server;
 	m_template.StringEndpoint = m_endpoint;
-	m_template.ObjectUuid = GUID_NULL;
+	m_template.ObjectUuid = object;
 }
 
 //-----------------------------------------------------------------------------
