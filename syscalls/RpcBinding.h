@@ -25,6 +25,7 @@
 #pragma once
 
 #include "char_t.h"						// Include char_t declarations
+#include "RpcBindingTemplate.h"			// Include RpcBindingTemplate declarations
 #include "RpcException.h"				// Include RpcException declarations
 #include "RpcProtocol.h"				// Include RpcProtocol declarations
 #include "RpcString.h"					// Include RpcString declarations
@@ -34,7 +35,10 @@
 //-----------------------------------------------------------------------------
 // RpcBinding
 //
-// 
+// Implements an RPC binding handle.  "Classic" handles are created by calling
+// the various .Compose() static methods, whereas "Fast" handles are created 
+// by calling the various .Create() static methods.  See RpcBindingCreate()
+// in MSDN for the differences between classic and fast RPC binding handles
 
 class RpcBinding
 {
@@ -42,7 +46,7 @@ public:
 
 	// Destructor
 	//
-	~RpcBinding();
+	~RpcBinding() { if(m_handle) RpcBindingFree(&m_handle); }
 
 	//-------------------------------------------------------------------------
 	// Overloaded Operators
@@ -54,9 +58,14 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Bind
+	//
+	// Synchronously binds a "fast" RPC binding handle to the server
+	void Bind(RPC_IF_HANDLE iface) const;
+
 	// Compose
 	// 
-	// Composes an RPC binding from string components
+	// Composes a "classic" RPC binding from string components
 	static RpcBinding* Compose(const RpcProtocol& protocol, const tchar_t* endpoint)
 		{ return Compose(nullptr, protocol, endpoint, nullptr); }
 
@@ -68,11 +77,50 @@ public:
 
 	static RpcBinding* Compose(const tchar_t* server, const RpcProtocol& protocol, const tchar_t* endpoint, const tchar_t* options);
 
+	// Copy
+	//
+	// Copies the specified binding handle into a new binding handle
+	RpcBinding* Copy(void);
+
+	// Create
+	//
+	// Creates a "fast" RPC binding from binding templates
+	static RpcBinding* Create(RpcBindingTemplate& template_)
+		{ return Create(template_, nullptr, nullptr); }
+
+	static RpcBinding* Create(PRPC_BINDING_HANDLE_TEMPLATE_V1 template_)
+		{ return Create(template_, nullptr, nullptr); }
+
+	static RpcBinding* Create(PRPC_BINDING_HANDLE_TEMPLATE_V1 template_, PRPC_BINDING_HANDLE_SECURITY_V1 security)
+		{ return Create(template_, security, nullptr); }
+
+	static RpcBinding* Create(PRPC_BINDING_HANDLE_TEMPLATE_V1 template_, PRPC_BINDING_HANDLE_SECURITY_V1 security, PRPC_BINDING_HANDLE_OPTIONS_V1 options);
+
+	// Reset
+	//
+	// Resets the binding handle by disassociating it from the server
+	void Reset(void) const;
+
+	// Unbind
+	//
+	// Unbinds the handle from the remote server, does not disconnect
+	void Unbind(void) const;
+
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// Handle
+	//
+	// Gets the underlying RPC_BINDING_HANDLE
 	__declspec(property(get=getHandle)) RPC_BINDING_HANDLE Handle;
 	RPC_BINDING_HANDLE getHandle(void) const { return m_handle; }
+
+	// Object
+	//
+	// Gets/sets the remote object UUID
+	__declspec(property(get=getObject, put=putObject)) uuid_t Object;
+	uuid_t getObject(void) const;
+	void putObject(uuid_t value);
 
 private:
 
@@ -81,7 +129,7 @@ private:
 
 	// Instance Constructor
 	//
-	explicit RpcBinding(RPC_BINDING_HANDLE handle);
+	explicit RpcBinding(RPC_BINDING_HANDLE handle) : m_handle(handle) {}
 
 	//-------------------------------------------------------------------------
 	// Member Variables

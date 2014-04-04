@@ -37,9 +37,6 @@
     <ClInclude Include="ModRM.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RpcBinding.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="char_t.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -63,6 +60,12 @@
     </ClInclude>
     <ClInclude Include="..\tmp\vm.service\vm.service.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RpcBinding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RpcBindingTemplate.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -117,9 +120,6 @@
     <ClCompile Include="sys001_exit.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="RpcBinding.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RpcString.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -130,6 +130,15 @@
       <Filter>Generated Files</Filter>
     </ClCompile>
     <ClCompile Include="rpcmem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RpcBinding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="testrpc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RpcBindingTemplate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

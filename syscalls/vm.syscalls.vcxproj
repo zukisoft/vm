@@ -171,6 +171,7 @@
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="ModRM.h" />
     <ClInclude Include="RpcBinding.h" />
+    <ClInclude Include="RpcBindingTemplate.h" />
     <ClInclude Include="RpcException.h" />
     <ClInclude Include="RpcProtocol.h" />
     <ClInclude Include="RpcString.h" />
@@ -204,6 +205,7 @@
     <ClCompile Include="Instruction.cpp" />
     <ClCompile Include="ModRM.cpp" />
     <ClCompile Include="RpcBinding.cpp" />
+    <ClCompile Include="RpcBindingTemplate.cpp" />
     <ClCompile Include="rpcmem.cpp" />
     <ClCompile Include="RpcString.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -225,6 +227,7 @@
     <ClCompile Include="sys122_newuname.cpp" />
     <ClCompile Include="sys243_set_thread_area.cpp" />
     <ClCompile Include="sys252_exit_group.cpp" />
+    <ClCompile Include="testrpc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />

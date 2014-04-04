@@ -20,83 +20,56 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __RPCPROTOCOL_H_
-#define __RPCPROTOCOL_H_
+#ifndef __RPCBINDINGTEMPLATE_H_
+#define __RPCBINDINGTEMPLATE_H_
 #pragma once
 
-#include "char_t.h"						// Include char_t declarations
-#include "tstring.h"					// Include tstring<> declarations
+#include "RpcProtocol.h"				// Include RpcProtocol declarations
+#include "RpcString.h"					// Include RpcString declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// RpcProtocol
+// RpcBindingTemplate
 //
-// 
+// Defines a "fast" RPC binding handle template, used with RpcBinding<>
 
-class RpcProtocol
+class RpcBindingTemplate
 {
 public:
+
+	// Instance Constructors
+	//
+	RpcBindingTemplate(const RpcProtocol& protocol);
+	RpcBindingTemplate(const RpcProtocol& protocol, const tchar_t* endpoint);
+	RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol);
+	RpcBindingTemplate(const tchar_t* server, const RpcProtocol& protocol, const tchar_t* endpoint);
+
+	// Copy Constructor
+	//
+	RpcBindingTemplate(const RpcBindingTemplate& rhs);
 
 	//-------------------------------------------------------------------------
 	// Overloaded Operators
 
-	// const tchar_t*()
+	// PRPC_BINDING_HANDLE_TEMPLATE_V1()
 	//
-	operator const tchar_t*() const { return m_value.c_str(); }
-
-	// unsigned long()
-	//
-	operator unsigned long() const { return m_code; }
-
-	//-------------------------------------------------------------------------
-	// Fields
-
-	// Http
-	//
-	// Internet Information Server protocol sequence
-	static const RpcProtocol Http;
-
-	// Local
-	//
-	// Local interprocess communication protocol sequence
-	static const RpcProtocol Local;
-
-	// NamedPipes
-	//
-	// Connection-oriented Named Pipes protocol sequence
-	static const RpcProtocol NamedPipes;
-
-	// TcpIp
-	//
-	// Connection-oriented TCP/IP protocol sequence
-	static const RpcProtocol TcpIp;
+	operator PRPC_BINDING_HANDLE_TEMPLATE_V1() { return &m_template; }
 
 private:
 
-	RpcProtocol(const RpcProtocol& rhs);
-	RpcProtocol& operator=(const RpcProtocol& rhs);
-
-	// Instance Constructor
-	//
-	RpcProtocol(const tchar_t* protocol, unsigned long code) : m_value(protocol), m_code(code) {}
+	RpcBindingTemplate& operator=(const RpcBindingTemplate& rhs);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::tstring		m_value;				// Contained string value
-	unsigned long		m_code;					// Contained protocol code
+	RPC_BINDING_HANDLE_TEMPLATE_V1	m_template;		// Template structure
+	RpcString						m_server;		// Target server name
+	RpcString						m_endpoint;		// Endpoint string	
 };
-
-// RPCPROTOCOL STATIC MEMBER INITIALIZATIONS
-//
-__declspec(selectany) const RpcProtocol RpcProtocol::Http(_T("ncacn_http"), RPC_PROTSEQ_HTTP);
-__declspec(selectany) const RpcProtocol RpcProtocol::Local(_T("ncalrpc"), RPC_PROTSEQ_LRPC);
-__declspec(selectany) const RpcProtocol RpcProtocol::NamedPipes(_T("ncacn_np"), RPC_PROTSEQ_NMP);
-__declspec(selectany) const RpcProtocol RpcProtocol::TcpIp(_T("ncacn_ip_tcp"), RPC_PROTSEQ_TCP);
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __RPCPROTOCOL_H_
+#endif	// __RPCBINDINGTEMPLATE_H_

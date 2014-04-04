@@ -324,8 +324,14 @@ DWORD InitializeTls(const void* tlsbase, size_t tlslength)
 //	reason			- Reason DLLMain() is being invoked
 //	reserved		- Reserved in Win32
 
+// DELETEME
+void test(void);
+///
+
 BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID)
 {
+	test();
+
 	switch(reason) {
 
 		case DLL_PROCESS_ATTACH:

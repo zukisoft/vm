@@ -51,10 +51,10 @@ public:
 	
 	// Instance Constructors
 	//
-	RpcString() : m_string(nullptr), m_rpcfree(false) {}
-	RpcString(RPC_CTSTR str) : m_string(nullptr), m_rpcfree(false) { operator=(str); }
-	RpcString(const tchar_t* str) : m_string(nullptr), m_rpcfree(false) { operator=(str); }
-	RpcString(const RpcString& rhs) : m_string(nullptr), m_rpcfree(false) { operator=(rhs); }
+	RpcString() {}
+	RpcString(RPC_CTSTR str) { operator=(str); }
+	RpcString(const tchar_t* str) { operator=(str); }
+	RpcString(const RpcString& rhs) { operator=(rhs); }
 
 	// Destructor
 	//
@@ -94,8 +94,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	RPC_TSTR			m_string;			// Pointer to the string data
-	bool				m_rpcfree;			// Flag if RpcStringFree() needed
+	RPC_TSTR		m_string = nullptr;			// Pointer to the string data
+	bool			m_rpcfree = false;			// Flag if RpcStringFree() needed
 };
 
 //-----------------------------------------------------------------------------
