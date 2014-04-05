@@ -118,30 +118,37 @@ RpcBinding* RpcBinding::Create(PRPC_BINDING_HANDLE_TEMPLATE_V1 template_, PRPC_B
 }
 
 //-----------------------------------------------------------------------------
-// RpcBinding::getObject
+// RpcBinding::GetOption (private)
 //
-// Gets the object UUID for the binding handle
+// Getter for the binding option properties
+//
+// Arguments:
+//
+//	key			- Option key
 
-uuid_t RpcBinding::getObject(void) const
+uintptr_t RpcBinding::GetOption(uint32_t key) const
 {
-	uuid_t		value;				// Value returned from RPC call
+	unsigned long		value;				// Option value
 
-	RPC_STATUS result = RpcBindingInqObject(m_handle, &value);
+	RPC_STATUS result = RpcBindingInqOption(m_handle, key, &value);
 	if(result != RPC_S_OK) throw RpcException(result);
 
 	return value;
 }
 
 //-----------------------------------------------------------------------------
-// RpcBinding::putObject
+// RpcBinding::PutOption (private)
 //
-// Sets the object UUID for the binding handle
+// Setter for the binding option properties
+//
+// Arguments:
+//
+//	key			- Option key
+//	value		- Option value
 
-void RpcBinding::putObject(uuid_t value)
+void RpcBinding::PutOption(uint32_t key, uintptr_t value) const
 {
-	//uuid_t object = value;			// Copy into a non-const UUID
-
-	RPC_STATUS result = RpcBindingSetObject(m_handle, &value);
+	RPC_STATUS result = RpcBindingSetOption(m_handle, key, value);
 	if(result != RPC_S_OK) throw RpcException(result);
 }
 
@@ -172,6 +179,68 @@ void RpcBinding::Reset(void) const
 void RpcBinding::Unbind(void) const
 {
 	RPC_STATUS result = RpcBindingUnbind(m_handle);
+	if(result != RPC_S_OK) throw RpcException(result);
+}
+
+//-----------------------------------------------------------------------------
+// RpcBinding::getAuthenticationCookie
+//
+// Gets a pointer to the binding authentication cookie string
+
+const char_t* RpcBinding::getAuthenticationCookie(void) const
+{
+	// Get the structure pointer from the binding handle option
+	RPC_C_OPT_COOKIE_AUTH_DESCRIPTOR* value = 
+		reinterpret_cast<RPC_C_OPT_COOKIE_AUTH_DESCRIPTOR*>(GetOption(RPC_C_OPT_COOKIE_AUTH));
+
+	// NULL structure pointer --> NULL string pointer
+	return (value) ? value->Buffer : nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// RpcBinding::putAuthenticationCookie
+//
+// Sets an authentication cookie string on the binding handle
+
+void RpcBinding::putAuthenticationCookie(const char_t* value)
+{
+	// NULL string - remove the option from the binding handle
+	if(value == nullptr) { PutOption(RPC_C_OPT_COOKIE_AUTH, 0); return; }
+
+	// Store the new cookie string
+	m_cookiestring = value;
+
+	// (re)initialize the member structure to point to the new string
+	m_cookie.Buffer = const_cast<char_t*>(m_cookiestring.c_str());
+	m_cookie.BufferSize = m_cookiestring.length() + 1;
+
+	// Set the address of the member structure on the binding handle
+	PutOption(RPC_C_OPT_COOKIE_AUTH, uintptr_t(&m_cookie));
+}
+
+//-----------------------------------------------------------------------------
+// RpcBinding::getObject
+//
+// Gets the object UUID for the binding handle
+
+uuid_t RpcBinding::getObject(void) const
+{
+	uuid_t		value;				// Value returned from RPC call
+
+	RPC_STATUS result = RpcBindingInqObject(m_handle, &value);
+	if(result != RPC_S_OK) throw RpcException(result);
+
+	return value;
+}
+
+//-----------------------------------------------------------------------------
+// RpcBinding::putObject
+//
+// Sets the object UUID for the binding handle
+
+void RpcBinding::putObject(uuid_t value)
+{
+	RPC_STATUS result = RpcBindingSetObject(m_handle, &value);
 	if(result != RPC_S_OK) throw RpcException(result);
 }
 

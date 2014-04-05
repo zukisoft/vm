@@ -109,11 +109,39 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// AuthenticationCookie
+	//
+	// Gets/Sets an authentication cookie string for the connection
+	__declspec(property(get=getAuthenticationCookie, put=putAuthenticationCookie)) const char_t* AuthenticationCookie;
+	const char_t* getAuthenticationCookie(void) const;
+	void putAuthenticationCookie(const char_t* value);
+
+	// DontLinger
+	//
+	// Gets/Sets the flag to force shutdown of the association after last handle has been freed
+	__declspec(property(get=getDontLinger, put=putDontLinger)) bool DontLinger;
+	bool getDontLinger(void) const { return GetOption(RPC_C_OPT_DONT_LINGER) ? true : false; }
+	void putDontLinger(bool value) const { PutOption(RPC_C_OPT_DONT_LINGER, (value) ? TRUE : FALSE); }
+
+	// GenerateSessionId
+	//
+	// Gets/Sets the flag to generate a unique session ID for every connection
+	__declspec(property(get=getGenerateSessionId, put=putGenerateSessionId)) bool GenerateSessionId;
+	bool getGenerateSessionId(void) const { return GetOption(RPC_C_OPT_SESSION_ID) ? true : false; }
+	void putGenerateSessionId(bool value) const { PutOption(RPC_C_OPT_SESSION_ID, (value) ? TRUE : FALSE); }
+
 	// Handle
 	//
 	// Gets the underlying RPC_BINDING_HANDLE
 	__declspec(property(get=getHandle)) RPC_BINDING_HANDLE Handle;
 	RPC_BINDING_HANDLE getHandle(void) const { return m_handle; }
+
+	// NonCausalOrdering
+	//
+	// Gets/Sets the non-causal call ordering option for the binding
+	__declspec(property(get=getNonCausalOrdering, put=putNonCausalOrdering)) bool NonCausal;
+	bool getNonCausalOrdering(void) const { return GetOption(RPC_C_OPT_BINDING_NONCAUSAL) ? true : false; }
+	void putNonCausalOrdering(bool value) const { PutOption(RPC_C_OPT_BINDING_NONCAUSAL, (value) ? TRUE : FALSE); }
 
 	// Object
 	//
@@ -121,6 +149,13 @@ public:
 	__declspec(property(get=getObject, put=putObject)) uuid_t Object;
 	uuid_t getObject(void) const;
 	void putObject(uuid_t value);
+
+	// UniqueBindingPerConnection
+	//
+	// Gets/Sets the flag to generate a unique binding per connection
+	__declspec(property(get=getUniqueBindingPerConnection, put=putUniqueBindingPerConnection)) bool UniqueBindingPerConnection;
+	bool getUniqueBindingPerConnection(void) const { return GetOption(RPC_C_OPT_UNIQUE_BINDING) ? true : false; }
+	void putUniqueBindingPerConnection(bool value) const { PutOption(RPC_C_OPT_UNIQUE_BINDING, (value) ? TRUE : FALSE); }
 
 private:
 
@@ -132,9 +167,22 @@ private:
 	explicit RpcBinding(RPC_BINDING_HANDLE handle) : m_handle(handle) {}
 
 	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// GetOption
+	//
+	// Getter for binding handle options
+	uintptr_t GetOption(uint32_t key) const;
+
+	// Setter for binding handle options
+	void PutOption(uint32_t key, uintptr_t value) const;
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
-	RPC_BINDING_HANDLE		m_handle = nullptr;		// Contained binding handle
+	RPC_BINDING_HANDLE					m_handle = nullptr;		// Binding handle
+	RPC_C_OPT_COOKIE_AUTH_DESCRIPTOR	m_cookie;				// Auth cookie structure
+	std::string							m_cookiestring;			// Authentication cookie
 };
 
 //-----------------------------------------------------------------------------

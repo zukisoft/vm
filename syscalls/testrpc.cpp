@@ -20,9 +20,17 @@ void test(void)
 	delete classic;
 
 	uuid_t junk = GUID_NULL;
+	RPC_C_OPT_COOKIE_AUTH_DESCRIPTOR put;
+	RPC_C_OPT_COOKIE_AUTH_DESCRIPTOR* get;
 
 	std::unique_ptr<RpcBinding> fast(RpcBinding::Create(u));
 	fast->Bind(RemoteSystemCalls_v1_0_c_ifspec);
+	
+	//get = fast->CookieAuthentication;
+	fast->AuthenticationCookie = "MyCookie";
+	fast->DontLinger = true;
+	const char_t* testme = fast->AuthenticationCookie;
+
 	fast->Reset();
 	fast->Bind(RemoteSystemCalls_v1_0_c_ifspec);
 	fast->Object = junk;
