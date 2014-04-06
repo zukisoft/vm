@@ -63,17 +63,19 @@ int sys243_set_thread_area(PCONTEXT context)
 	// (see fill_ldt in arch/x86/include/asm/desc.h)
 	//
 
-	desc->entry_number = static_cast<uint32_t>(TlsAlloc());
-	if(desc->entry_number != TLS_OUT_OF_INDEXES) {
+	// Allocate a Thread Local Storage slot for the calling process
+	uint32_t slot = TlsAlloc();
+	if(slot == TLS_OUT_OF_INDEXES) return -LINUX_ESRCH;
 
-		//void* mem = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, desc->limit);
-		//if(!mem) { /* deal with this */ }
-		TlsSetValue(desc->entry_number, reinterpret_cast<void*>(desc->base_addr));
-	}
+	// Libc/Bionic will turn around and put the returned slot number into the GS
+	// segment register.  Unfortunately, if the munged slot number happens to be
+	// valid, that call will not raise an access violation and the vectored handler
+	// won't be triggered.  For now I'm shifing it left 8 bits to try and guarantee
+	// it won't bump into anything, but this results in a maximum slot number of 31
+	if(slot > 31) { TlsFree(slot); return -LINUX_ESRCH; }
 
-	// TODO: NEED ERRNO CODES NOT -1 !!!!!!!!
-
-// EINVAL u_info->entry_number is out of bounds. EFAULT u_info is an invalid pointer. ESRCH A free TLS entry could not be located.
+	desc->entry_number = (slot << 8);
+	TlsSetValue(slot, reinterpret_cast<void*>(desc->base_addr));
 
 	return 0;
 }

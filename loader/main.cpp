@@ -25,7 +25,7 @@
 #include "Exception.h"
 #include "ElfImage.h"
 
-DWORD InitializeTls(const void* tlsbase, size_t tlslength);
+LONG CALLBACK SysCallExceptionHandler(PEXCEPTION_POINTERS exception);
 
 // UnhandledException
 //
@@ -71,7 +71,6 @@ LONG CALLBACK UnhandledException(PEXCEPTION_POINTERS exception)
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
-
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -151,9 +150,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		(AT_SYSINFO);		// 32 - PROBABLY DO NOT IMPLEMENT
 		builder.AppendAuxiliaryVector(AT_SYSINFO_EHDR, vdso->BaseAddress);			// 33
 
-		if((p->TlsBaseAddress) && (p->TlsLength)) InitializeTls(p->TlsBaseAddress, p->TlsLength);
+		// add exception handler from the system calls dll
+		AddVectoredExceptionHandler(1, SysCallExceptionHandler);
 
-		//AddVectoredExceptionHandler(1, SysCallHandler);
 		p->Execute(builder);
 
 		delete p;

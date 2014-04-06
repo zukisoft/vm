@@ -118,7 +118,7 @@ typedef unsigned __int64			fshandle_t;
 	version(1.0),
 	uuid(65AF53FB-CA7B-43DA-886E-A5F501FBACA9),
 	pointer_default(unique),
-	endpoint("ncalrpc:[vm.service.RemoteSystemCalls]", "ncalrpc:[vm.service.DeleteMe-Testing]"),
+	endpoint("ncalrpc:[vm.service.RemoteSystemCalls]"),
 ]
 
 interface RemoteSystemCalls

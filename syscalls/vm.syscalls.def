@@ -365,4 +365,4 @@ EXPORTS
 	__NR_sendmmsg=noentry @345
 	__NR_setns=noentry @346
 
-	InitializeTls
+	SysCallExceptionHandler

@@ -49,7 +49,7 @@ extern "C" void __stdcall ElfEntry(void* address, const void* args, size_t argsl
 
 template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
 ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t length) : 
-	m_base(nullptr), m_tlsbase(nullptr), m_tlslength(0), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0), m_symbols(false)
+	m_base(nullptr), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0), m_symbols(false)
 {
 	if(!base) throw Exception(E_ARGUMENTNULL, _T("base"));
 
@@ -98,13 +98,6 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		else if(progheader->p_type == PT_GNU_STACK) {
 
 			if(progheader->p_flags & PF_X) throw Exception(E_EXECUTABLESTACKFLAG);
-		}
-
-		// Check for a thread local storage segment and store the base address and length
-		else if(progheader->p_type == PT_TLS) {
-
-			m_tlsbase = reinterpret_cast<void*>(progheader->p_vaddr);
-			m_tlslength = progheader->p_memsz;
 		}
 	}
 
@@ -161,9 +154,6 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 			catch(Exception& ex) { throw Exception(ex, E_PROTECTIMAGESEGMENT); }
 		}
 	}
-
-	// Base address of thread local storage, adjusted for load delta
-	if(m_tlsbase != nullptr) m_tlsbase = reinterpret_cast<void*>(intptr_t(m_tlsbase) + vaddrdelta);
 
 	// Base address of the image is the original minimum virtual address, adjusted for load delta
 	m_base = reinterpret_cast<void*>(minvaddr + vaddrdelta);
