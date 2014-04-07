@@ -110,9 +110,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// note: would use a while loop to iterate over interpreters, they could be chained
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
 		//p = ElfImage::FromFile(_T("D:\\test"));
-		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
+		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
 		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\root\\init"));
 		
 		LPCTSTR interp = p->Interpreter;

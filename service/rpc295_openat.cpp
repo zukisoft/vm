@@ -30,7 +30,14 @@
 
 __int3264 rpc295_openat(handle_t rpchandle, fshandle_t dirhandle, charptr_t pathname, int32_t flags, mode_t mode, fshandle_t* fshandle)
 {
-	return E_NOTIMPL;
+	UNREFERENCED_PARAMETER(rpchandle);
+	UNREFERENCED_PARAMETER(dirhandle);
+	UNREFERENCED_PARAMETER(pathname);
+	UNREFERENCED_PARAMETER(flags);
+	UNREFERENCED_PARAMETER(mode);
+	UNREFERENCED_PARAMETER(fshandle);
+
+	return -LINUX_ENOSYS;
 }
 
 //---------------------------------------------------------------------------

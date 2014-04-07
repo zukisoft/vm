@@ -30,7 +30,13 @@
 
 __int3264 rpc005_open( handle_t rpchandle, charptr_t pathname, int32_t flags, mode_t mode, fshandle_t* fshandle)
 {
-	return -1;
+	UNREFERENCED_PARAMETER(rpchandle);
+	UNREFERENCED_PARAMETER(pathname);
+	UNREFERENCED_PARAMETER(flags);
+	UNREFERENCED_PARAMETER(mode);
+	UNREFERENCED_PARAMETER(fshandle);
+
+	return -LINUX_ENOSYS;
 }
 
 //---------------------------------------------------------------------------

@@ -25,6 +25,9 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// rpc.cpp
+handle_t rpc_bind_thread(void);
+
 // int open(const char* pathname, int flags, mode_t mode);
 //
 // EBX	- const char*	pathname
@@ -36,9 +39,20 @@
 //
 int sys005_open(PCONTEXT context)
 {
-	const char* pathname = reinterpret_cast<const char*>(context->Ebx);
-	int flags = static_cast<int>(context->Ecx);
-	int mode = static_cast<int>(context->Edx);
+	fshandle_t		fshandle;			// fshandle_t from remote services
+
+	// Get a bound RPC handle for the remote system calls service
+	handle_t rpc = rpc_bind_thread();
+	if(rpc == nullptr) return -LINUX_EREMOTEIO;
+
+	//const char* pathname = reinterpret_cast<const char*>(context->Ebx);
+	//int flags = static_cast<int>(context->Ecx);
+	//int mode = static_cast<int>(context->Edx);
+
+	__int3264 result = rpc005_open(rpc, reinterpret_cast<charptr_t>(context->Ebx),
+		static_cast<int32_t>(context->Ecx), static_cast<mode_t>(context->Edx), &fshandle);
+
+	return result;
 
 	return -LINUX_ENOSYS;
 }

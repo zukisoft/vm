@@ -26,6 +26,10 @@
 #include "Instruction.h"				// Include Instruction declarations
 #include "ModRM.h"						// Include ModRM declarations
 
+// rpc.cpp
+bool rpc_attach_thread(void);
+void rpc_detach_thread(void);
+
 //-----------------------------------------------------------------------------
 // Type Declarations
 
@@ -36,20 +40,6 @@ typedef int (*SYSCALL)(PCONTEXT context);
 //-----------------------------------------------------------------------------
 // Global Variables
 
-// REMOTESYSTEMCALLS_TEMPLATE
-//
-// Remote system call service RPC binding handle template
-static RPC_BINDING_HANDLE_TEMPLATE_V1 REMOTESYSTEMCALLS_TEMPLATE = {
-
-	1,																			// Version
-	0,																			// Flags
-	RPC_PROTSEQ_LRPC,															// ProtocolSequence
-	nullptr,																	// NetworkAddress
-	reinterpret_cast<unsigned short*>(_T("vm.service.RemoteSystemCalls")),		// StringEndpoint
-	nullptr,																	// Reserved
-	GUID_NULL,																	// ObjectUuid
-};
-
 // g_syscalls
 //
 // Table of all available system calls by ordinal
@@ -59,11 +49,6 @@ static SYSCALL g_syscalls[512];
 //
 // Emulated GS register
 __declspec(thread) static uint16_t t_gs = 0;
-
-// t_rpchandle (TLS)
-//
-// Remote system call binding handle
-__declspec(thread) handle_t t_rpchandle = nullptr;
 
 //-----------------------------------------------------------------------------
 // ReadGS<T>
@@ -286,10 +271,12 @@ LONG CALLBACK SysCallExceptionHandler(PEXCEPTION_POINTERS exception)
 //
 //	module			- DLL module handle
 //	reason			- Reason DLLMain() is being invoked
-//	reserved		- Reserved in Win32
+//	reserved		- DLL load context
 
-BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID)
+BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID reserved)
 {
+	UNREFERENCED_PARAMETER(reserved);
+
 	switch(reason) {
 
 		case DLL_PROCESS_ATTACH:
@@ -303,14 +290,12 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID)
 
 		case DLL_THREAD_ATTACH:
 
-			// Create the thread-local RPC binding handle from the global templates
-			if(RpcBindingCreate(&REMOTESYSTEMCALLS_TEMPLATE, nullptr, nullptr, &t_rpchandle) != RPC_S_OK) return FALSE;
+			if(!rpc_attach_thread()) return FALSE;
 			break;
 
 		case DLL_THREAD_DETACH:
-
-			// Destroy the thread-local RPC binding handle
-			RpcBindingFree(&t_rpchandle);
+			
+			rpc_detach_thread();
 			break;
 	}
 

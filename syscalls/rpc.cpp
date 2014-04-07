@@ -25,6 +25,28 @@
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// Global Variables
+
+// REMOTESYSTEMCALLS_TEMPLATE
+//
+// Remote system call service RPC binding handle template
+static RPC_BINDING_HANDLE_TEMPLATE_V1 REMOTESYSTEMCALLS_TEMPLATE = {
+
+	1,									// Version
+	0,									// Flags
+	RPC_PROTSEQ_LRPC,					// ProtocolSequence
+	nullptr,							// NetworkAddress
+	ENDPOINT_REMOTESYSTEMCALLS,			// StringEndpoint
+	nullptr,							// Reserved
+	GUID_NULL							// ObjectUuid
+};
+
+// t_rpchandle (TLS)
+//
+// Remote system call binding handle
+__declspec(thread) static handle_t t_rpchandle = nullptr;
+
+//-----------------------------------------------------------------------------
 // midl_user_allocate
 //
 // Allocates RPC stub and library memory
@@ -35,8 +57,7 @@
 
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
 {
-	// Use the COM task memory allocator for RPC
-	return CoTaskMemAlloc(len);
+	return new uint8_t[len];
 }
 
 //-----------------------------------------------------------------------------
@@ -50,8 +71,52 @@ void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
 
 void __RPC_USER midl_user_free(void __RPC_FAR* ptr)
 {
-	// Use the COM task memory allocator for RPC
-	CoTaskMemFree(ptr);
+	delete[] reinterpret_cast<uint8_t*>(ptr);
+}
+
+//-----------------------------------------------------------------------------
+// rpc_attach_thread
+//
+// Creates the RPC binding handle for a thread in respose to DLL_THREAD_ATTACH
+//
+// Arguments:
+//
+//	NONE
+
+bool rpc_attach_thread(void)
+{
+	// Create the thread-local RPC binding handle from the global templates
+	return (RpcBindingCreate(&REMOTESYSTEMCALLS_TEMPLATE, nullptr, nullptr, &t_rpchandle) == RPC_S_OK);
+}
+
+//---------------------------------------------------------------------------
+// rpc_bind_thread
+//
+//
+//
+// Arguments:
+//
+//	NONE
+
+handle_t rpc_bind_thread(void)
+{
+	// TODO: Just call Bind() every time for now
+	RPC_STATUS result = RpcBindingBind(nullptr, t_rpchandle, RemoteSystemCalls_v1_0_c_ifspec);
+	return (result == RPC_S_OK) ? t_rpchandle : nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// rpc_detach_thread
+//
+// Frees the RPC binding handle for a thread in respose to DLL_THREAD_DETACH
+//
+// Arguments:
+//
+//	NONE
+
+void rpc_detach_thread(void)
+{
+	RpcBindingFree(&t_rpchandle);			// Free the thread-local binding handle
 }
 
 //---------------------------------------------------------------------------

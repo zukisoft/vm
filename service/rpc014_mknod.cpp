@@ -30,7 +30,13 @@
 
 __int3264 rpc014_mknod(handle_t rpchandle, charptr_t pathname, mode_t mode, dev_t dev, fshandle_t* fshandle)
 {
-	return E_NOTIMPL;
+	UNREFERENCED_PARAMETER(rpchandle);
+	UNREFERENCED_PARAMETER(pathname);
+	UNREFERENCED_PARAMETER(mode);
+	UNREFERENCED_PARAMETER(dev);
+	UNREFERENCED_PARAMETER(fshandle);
+
+	return -LINUX_ENOSYS;
 }
 
 //---------------------------------------------------------------------------

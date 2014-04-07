@@ -43,7 +43,6 @@
 #pragma comment(lib, "rpcns4.lib")
 
 #include "char_t.h"
-
 #include "vm.service.h"
 
 // KiB / MiB / GiB

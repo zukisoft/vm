@@ -30,7 +30,10 @@
 
 __int3264 rpc010_unlink(handle_t rpchandle, charptr_t pathname)
 {
-	return E_NOTIMPL;
+	UNREFERENCED_PARAMETER(rpchandle);
+	UNREFERENCED_PARAMETER(pathname);
+
+	return -LINUX_ENOSYS;
 }
 
 //---------------------------------------------------------------------------

@@ -111,7 +111,7 @@
     <ClCompile Include="..\tmp\vm.service\vm.service_c.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="rpcmem.cpp">
+    <ClCompile Include="rpc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

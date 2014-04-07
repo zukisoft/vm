@@ -37,40 +37,43 @@ typedef __kernel_pid_t		pid_t;
 // errno-base.h
 //-----------------------------------------------------------------------------
 
-#define LINUX_EPERM              1              /* Operation not permitted */
-#define LINUX_ENOENT             2              /* No such file or directory */
-#define LINUX_ESRCH              3              /* No such process */
-#define LINUX_EINTR              4              /* Interrupted system call */
-#define LINUX_EIO                5              /* I/O error */
-#define LINUX_ENXIO              6              /* No such device or address */
-#define LINUX_E2BIG              7              /* Argument list too long */
-#define LINUX_ENOEXEC            8              /* Exec format error */
-#define LINUX_EBADF              9              /* Bad file number */
-#define LINUX_ECHILD            10              /* No child processes */
-#define LINUX_EAGAIN            11              /* Try again */
-#define LINUX_ENOMEM            12              /* Out of memory */
-#define LINUX_EACCES            13              /* Permission denied */
-#define LINUX_EFAULT            14              /* Bad address */
-#define LINUX_ENOTBLK           15              /* Block device required */
-#define LINUX_EBUSY             16              /* Device or resource busy */
-#define LINUX_EEXIST            17              /* File exists */
-#define LINUX_EXDEV             18              /* Cross-device link */
-#define LINUX_ENODEV            19              /* No such device */
-#define LINUX_ENOTDIR           20              /* Not a directory */
-#define LINUX_EISDIR            21              /* Is a directory */
-#define LINUX_EINVAL            22              /* Invalid argument */
-#define LINUX_ENFILE            23              /* File table overflow */
-#define LINUX_EMFILE            24              /* Too many open files */
-#define LINUX_ENOTTY            25              /* Not a typewriter */
-#define LINUX_ETXTBSY           26              /* Text file busy */
-#define LINUX_EFBIG             27              /* File too large */
-#define LINUX_ENOSPC            28              /* No space left on device */
-#define LINUX_ESPIPE            29              /* Illegal seek */
-#define LINUX_EROFS             30              /* Read-only file system */
-#define LINUX_EMLINK            31              /* Too many links */
-#define LINUX_EPIPE             32              /* Broken pipe */
-#define LINUX_EDOM              33              /* Math argument out of domain of func */
-#define LINUX_ERANGE            34              /* Math result not representable */
+// moved to service IDL
+//
+
+//#define LINUX_EPERM              1              /* Operation not permitted */
+//#define LINUX_ENOENT             2              /* No such file or directory */
+//#define LINUX_ESRCH              3              /* No such process */
+//#define LINUX_EINTR              4              /* Interrupted system call */
+//#define LINUX_EIO                5              /* I/O error */
+//#define LINUX_ENXIO              6              /* No such device or address */
+//#define LINUX_E2BIG              7              /* Argument list too long */
+//#define LINUX_ENOEXEC            8              /* Exec format error */
+//#define LINUX_EBADF              9              /* Bad file number */
+//#define LINUX_ECHILD            10              /* No child processes */
+//#define LINUX_EAGAIN            11              /* Try again */
+//#define LINUX_ENOMEM            12              /* Out of memory */
+//#define LINUX_EACCES            13              /* Permission denied */
+//#define LINUX_EFAULT            14              /* Bad address */
+//#define LINUX_ENOTBLK           15              /* Block device required */
+//#define LINUX_EBUSY             16              /* Device or resource busy */
+//#define LINUX_EEXIST            17              /* File exists */
+//#define LINUX_EXDEV             18              /* Cross-device link */
+//#define LINUX_ENODEV            19              /* No such device */
+//#define LINUX_ENOTDIR           20              /* Not a directory */
+//#define LINUX_EISDIR            21              /* Is a directory */
+//#define LINUX_EINVAL            22              /* Invalid argument */
+//#define LINUX_ENFILE            23              /* File table overflow */
+//#define LINUX_EMFILE            24              /* Too many open files */
+//#define LINUX_ENOTTY            25              /* Not a typewriter */
+//#define LINUX_ETXTBSY           26              /* Text file busy */
+//#define LINUX_EFBIG             27              /* File too large */
+//#define LINUX_ENOSPC            28              /* No space left on device */
+//#define LINUX_ESPIPE            29              /* Illegal seek */
+//#define LINUX_EROFS             30              /* Read-only file system */
+//#define LINUX_EMLINK            31              /* Too many links */
+//#define LINUX_EPIPE             32              /* Broken pipe */
+//#define LINUX_EDOM              33              /* Math argument out of domain of func */
+//#define LINUX_ERANGE            34              /* Math result not representable */
 
 //-----------------------------------------------------------------------------
 // errno.h
@@ -79,7 +82,7 @@ typedef __kernel_pid_t		pid_t;
 #define LINUX_EDEADLK           35              /* Resource deadlock would occur */
 #define LINUX_ENAMETOOLONG      36              /* File name too long */
 #define LINUX_ENOLCK            37              /* No record locks available */
-#define LINUX_ENOSYS            38              /* Function not implemented */
+//#define LINUX_ENOSYS            38              /* Function not implemented */
 #define LINUX_ENOTEMPTY         39              /* Directory not empty */
 #define LINUX_ELOOP             40              /* Too many symbolic links encountered */
 #define LINUX_EWOULDBLOCK       LINUX_EAGAIN    /* Operation would block */

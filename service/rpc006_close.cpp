@@ -30,7 +30,10 @@
 
 __int3264 rpc006_close(handle_t rpchandle, fshandle_t fshandle)
 {
-	return E_NOTIMPL;
+	UNREFERENCED_PARAMETER(rpchandle);
+	UNREFERENCED_PARAMETER(fshandle);
+
+	return -LINUX_ENOSYS;
 }
 
 //---------------------------------------------------------------------------
