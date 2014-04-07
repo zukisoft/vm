@@ -28,7 +28,7 @@
 //-----------------------------------------------------------------------------
 // close
 
-HRESULT rpc006_close(handle_t rpchandle, fshandle_t fshandle)
+__int3264 rpc006_close(handle_t rpchandle, fshandle_t fshandle)
 {
 	return E_NOTIMPL;
 }

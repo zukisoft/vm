@@ -28,7 +28,7 @@
 //-----------------------------------------------------------------------------
 // mknod
 
-HRESULT rpc014_mknod(handle_t rpchandle, charptr_t pathname, mode_t mode, dev_t dev, fshandle_t* fshandle)
+__int3264 rpc014_mknod(handle_t rpchandle, charptr_t pathname, mode_t mode, dev_t dev, fshandle_t* fshandle)
 {
 	return E_NOTIMPL;
 }

@@ -123,15 +123,22 @@ typedef unsigned __int64			fshandle_t;
 
 interface RemoteSystemCalls
 {
-	HRESULT rpc005_open		([in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
-	HRESULT rpc006_close	([in] fshandle_t fshandle);
-	HRESULT rpc010_unlink	([in] charptr_t pathname);
+	__int3264 rpc005_open		([in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
+	__int3264 rpc006_close		([in] fshandle_t fshandle);
+	__int3264 rpc010_unlink		([in] charptr_t pathname);
 
-	HRESULT rpc014_mknod	([in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
+	__int3264 rpc014_mknod		([in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
 
-	HRESULT rpc295_openat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
-	HRESULT rpc297_mknodat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
+	__int3264 rpc295_openat		([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
+	__int3264 rpc297_mknodat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
 }
+
+// Endpoint constant
+cpp_quote("#ifdef _UNICODE")
+cpp_quote("#define ENDPOINT_VM_SERVICE_REMOTESYSTEMCALLS reinterpret_cast<unsigned short*>(L\"vm.service.RemoteSystemCalls\")")
+cpp_quote("#else")
+cpp_quote("#define ENDPOINT_VM_SERVICE_REMOTESYSTEMCALLS reinterpret_cast<unsigned char*>(\"vm.service.RemoteSystemCalls\")")
+cpp_quote("#endif")
 
 ////---------------------------------------------------------------------------
 //// Interface IAdminCache

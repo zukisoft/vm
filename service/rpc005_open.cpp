@@ -28,9 +28,9 @@
 //-----------------------------------------------------------------------------
 // open
 
-HRESULT rpc005_open( handle_t rpchandle, charptr_t pathname, int32_t flags, mode_t mode, fshandle_t* fshandle)
+__int3264 rpc005_open( handle_t rpchandle, charptr_t pathname, int32_t flags, mode_t mode, fshandle_t* fshandle)
 {
-	return E_NOTIMPL;
+	return -1;
 }
 
 //---------------------------------------------------------------------------
