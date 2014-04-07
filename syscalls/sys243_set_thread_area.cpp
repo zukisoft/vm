@@ -25,22 +25,7 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-struct user_desc {
-	uint32_t entry_number;
-	uint32_t base_addr;
-	uint32_t limit;
-	uint32_t seg_32bit:1;
-	uint32_t contents:2;
-	uint32_t read_exec_only:1;
-	uint32_t limit_in_pages:1;
-	uint32_t seg_not_present:1;
-	uint32_t useable:1;
-#ifdef _M_X64
-	uint32_t lm:1;
-#endif
-};
-
-// pid_t gettid(void);
+// int set_thread_area(struct user_desc* u_info); 
 //
 // EBX	- struct user_desc*
 // ECX
@@ -58,19 +43,14 @@ int sys243_set_thread_area(PCONTEXT context)
 	// Windows doesn't allow us to set a specific TLS slot
 	if(desc->entry_number != -1) return -LINUX_EINVAL;
 
-	//
-	// TODO: Need to verify user_desc is compatible here, it more or less describes an LDT
-	// (see fill_ldt in arch/x86/include/asm/desc.h)
-	//
-
 	// Allocate a Thread Local Storage slot for the calling process
 	uint32_t slot = TlsAlloc();
 	if(slot == TLS_OUT_OF_INDEXES) return -LINUX_ESRCH;
 
-	// Libc/Bionic will turn around and put the returned slot number into the GS
+	// LIBC/Bionic will turn around and put the returned slot number into the GS
 	// segment register.  Unfortunately, if the munged slot number happens to be
 	// valid, that call will not raise an access violation and the vectored handler
-	// won't be triggered.  For now I'm shifing it left 8 bits to try and guarantee
+	// won't be triggered.  For now I'm shifting it left 8 bits to try and guarantee
 	// it won't bump into anything, but this results in a maximum slot number of 31
 	if(slot > 31) { TlsFree(slot); return -LINUX_ESRCH; }
 

@@ -45,16 +45,13 @@ int sys005_open(PCONTEXT context)
 	handle_t rpc = rpc_bind_thread();
 	if(rpc == nullptr) return -LINUX_EREMOTEIO;
 
-	//const char* pathname = reinterpret_cast<const char*>(context->Ebx);
-	//int flags = static_cast<int>(context->Ecx);
-	//int mode = static_cast<int>(context->Edx);
-
+	// Invoke the remote method call
 	__int3264 result = rpc005_open(rpc, reinterpret_cast<charptr_t>(context->Ebx),
 		static_cast<int32_t>(context->Ecx), static_cast<mode_t>(context->Edx), &fshandle);
 
-	return result;
+	// do something with fshandle here
 
-	return -LINUX_ENOSYS;
+	return result;
 }
 
 //-----------------------------------------------------------------------------
