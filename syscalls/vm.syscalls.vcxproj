@@ -207,6 +207,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="sys001_exit.cpp" />
+    <ClCompile Include="sys004_write.cpp" />
     <ClCompile Include="sys005_open.cpp" />
     <ClCompile Include="sys020_getpid.cpp" />
     <ClCompile Include="sys090_mmap.cpp" />

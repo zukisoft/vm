@@ -25,7 +25,7 @@ EXPORTS
 	__NR_exit=sys001_exit						@1
 	__NR_fork=noentry @2
 	__NR_read=noentry @3
-	__NR_write=noentry @4
+	__NR_write=sys004_write						@4
 	__NR_open=sys005_open						@5
 	__NR_close=noentry @6
 	__NR_waitpid=noentry @7
@@ -366,3 +366,4 @@ EXPORTS
 	__NR_setns=noentry @346
 
 	SysCallExceptionHandler
+	GetMyModuleTest

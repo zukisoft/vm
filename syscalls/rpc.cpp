@@ -57,7 +57,8 @@ __declspec(thread) static handle_t t_rpchandle = nullptr;
 
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
 {
-	return new uint8_t[len];
+	// Use the COM task memory allocator for RPC
+	return CoTaskMemAlloc(len);
 }
 
 //-----------------------------------------------------------------------------
@@ -71,7 +72,8 @@ void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
 
 void __RPC_USER midl_user_free(void __RPC_FAR* ptr)
 {
-	delete[] reinterpret_cast<uint8_t*>(ptr);
+	// Use the COM task memory allocator for RPC
+	CoTaskMemFree(ptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -98,10 +100,14 @@ bool rpc_attach_thread(void)
 //
 //	NONE
 
+__declspec(thread) static int bound = 0;
 handle_t rpc_bind_thread(void)
 {
+	if(bound) return t_rpchandle;
+
 	// TODO: Just call Bind() every time for now
 	RPC_STATUS result = RpcBindingBind(nullptr, t_rpchandle, RemoteSystemCalls_v1_0_c_ifspec);
+	bound = 1;
 	return (result == RPC_S_OK) ? t_rpchandle : nullptr;
 }
 

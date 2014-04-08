@@ -45,7 +45,7 @@ public:
 
 		// The system calls are accessed by ordinal in the DLL
 		m_func = reinterpret_cast<SYSCALL>(GetProcAddress(module, reinterpret_cast<LPCSTR>(number)));
-		if(m_func == nullptr) throw Exception(E_UNEXPECTED);		// TODO: Exception
+		if(m_func == nullptr) throw Exception(E_SYSCALLNOTFOUND, number);
 	}
 
 	//-------------------------------------------------------------------------
@@ -70,7 +70,7 @@ public:
 			case 3: this->Esi = uintptr_t(first); break;
 			case 4: this->Edi = uintptr_t(first); break;
 			case 5: this->Ebx = uintptr_t(first); break;
-			default: throw Exception(E_INVALIDARG);			// TODO
+			default: throw Exception(E_SYSCALLARGUMENTCOUNT, this->Eax);
 		}
 
 		// Increment the number of arguments so that the next one will

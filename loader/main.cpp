@@ -24,8 +24,10 @@
 #include "resource.h"
 #include "Exception.h"
 #include "ElfImage.h"
+#include "SystemCall.h"
 
 LONG CALLBACK SysCallExceptionHandler(PEXCEPTION_POINTERS exception);
+HMODULE GetMyModuleTest(void);
 
 // UnhandledException
 //
@@ -77,25 +79,36 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPTSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+	ElfImage*		executable = nullptr;				// Executable image
+	ElfImage*		interpreter = nullptr;				// Interpreter image
+
+
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
+	//const tchar_t* exec_path = _T("D:\\test");
+	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker");
+	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\busybox-x86");
+	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\bionicapp");
+	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\root\\init");
+
 
 	AddVectoredExceptionHandler(0, UnhandledException);
 
 	BOOL bresult = SymInitialize(GetCurrentProcess(), NULL, FALSE);
 
-	// VDSO
+	// VDSO - need to work on this, not to mention I need an x86 and an x64 version of it
 	ElfImage* vdso = ElfImage::FromResource(MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
 
-
-
-	ElfImage* p;
-//	ElfImage* pinterp;
 	ElfArguments builder;
 
 	// Clone the command line arguments into the auxiliary vector; these are expected
 	// to be correct for the hosted process, including argument zero, on entry
-	for(int index = 0; index < __argc; index++) builder.AppendArgument(__targv[index]);
+	builder.AppendArgument(exec_path);
+	for(int index = 1; index < __argc; index++) builder.AppendArgument(__targv[index]);
+
+	// environment should come from the remote services
 
 	// Clone the initial environment into the auxiliary vector
 	tchar_t** env = _tenviron;
@@ -105,17 +118,23 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	GUID pseudorandom;
 	CoCreateGuid(&pseudorandom);
 
+	HMODULE mod = GetMyModuleTest();
+
 	try { 
 		
 		// note: would use a while loop to iterate over interpreters, they could be chained
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation"));
-		//p = ElfImage::FromFile(_T("D:\\test"));
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\busybox-x86"));
-		p = ElfImage::FromFile(_T("D:\\Linux Binaries\\bionicapp"));
-		//p = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\root\\init"));
-		
-		LPCTSTR interp = p->Interpreter;
+		executable = ElfImage::FromFile(exec_path);
+		if(executable->Interpreter) {
+
+			// TEST: sys005_open()
+			int test = SystemCall(mod, 5).Invoke(executable->Interpreter, 0, 0);
+
+			interpreter = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
+			if(interpreter->Interpreter) {
+
+				// TODO: throw something here; don't support chained interpreters yet
+			}
+		}
 
 		//
 		// AUXILIARY VECTORS
@@ -123,23 +142,34 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 		(AT_EXECFD);		// 2 - DO NOT IMPLEMENT
 		
-		if(p->ProgramHeaders) {
+		if(executable->ProgramHeaders) {
 
-			builder.AppendAuxiliaryVector(AT_PHDR, p->ProgramHeaders);				// 3
-			builder.AppendAuxiliaryVector(AT_PHENT, sizeof(Elf32_Phdr));			// 4
-			builder.AppendAuxiliaryVector(AT_PHNUM, p->NumProgramHeaders);			// 5
+			builder.AppendAuxiliaryVector(AT_PHDR, executable->ProgramHeaders);				// 3
+#ifdef _M_X64
+			builder.AppendAuxiliaryVector(AT_PHENT, sizeof(Elf64_Phdr));					// 4
+#else
+			builder.AppendAuxiliaryVector(AT_PHENT, sizeof(Elf32_Phdr));					// 4
+#endif
+			builder.AppendAuxiliaryVector(AT_PHNUM, executable->NumProgramHeaders);			// 5
 		}
 
-		builder.AppendAuxiliaryVector(AT_PAGESZ, MemoryRegion::PageSize);			// 6
-		builder.AppendAuxiliaryVector(AT_BASE, p->BaseAddress);						// 7
+		builder.AppendAuxiliaryVector(AT_PAGESZ, MemoryRegion::PageSize);					// 6
+
+		// AT_BASE is only used with an interpreter and specifies that module's base address
+		if(interpreter) builder.AppendAuxiliaryVector(AT_BASE, interpreter->BaseAddress);	// 7
+
 		builder.AppendAuxiliaryVector(AT_FLAGS, 0);									// 8
-		builder.AppendAuxiliaryVector(AT_ENTRY, p->EntryPoint);						// 9
+		builder.AppendAuxiliaryVector(AT_ENTRY, executable->EntryPoint);			// 9
 		(AT_NOTELF);		// 10 - DO NOT IMPLEMENT
 		(AT_UID);			// 11
 		(AT_EUID);			// 12
 		(AT_GID);			// 13
 		(AT_EGID);			// 14
+#ifdef _M_X64
+		builder.AppendAuxiliaryVector(AT_PLATFORM, "x86_64");						// 15
+#else
 		builder.AppendAuxiliaryVector(AT_PLATFORM, "i686");							// 15
+#endif
 		(AT_HWCAP);			// 16
 		(AT_CLKTCK);		// 17
 		builder.AppendAuxiliaryVector(AT_SECURE, 0);								// 23
@@ -153,10 +183,11 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// add exception handler from the system calls dll
 		AddVectoredExceptionHandler(1, SysCallExceptionHandler);
 
-		p->Execute(builder);
+		if(interpreter) interpreter->Execute(builder);
+		else executable->Execute(builder);
 
-		delete p;
-		//delete pinterp;
+		if(interpreter) delete interpreter;
+		delete executable;
 	}
 	catch(Exception& ex) {
 		MessageBox(NULL, ex, _T("Exception"), MB_OK | MB_ICONHAND);

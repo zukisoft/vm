@@ -37,7 +37,7 @@
 
 //-----------------------------------------------------------------------------
 
-struct fsnode_t {
+struct __fsnode_t {
 
 	uint64_t		serialno;		// Node serial number
 	uint32_t		type;			// Node type

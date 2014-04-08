@@ -30,6 +30,11 @@
 bool rpc_attach_thread(void);
 void rpc_detach_thread(void);
 
+// testing
+static HMODULE g_module;
+HMODULE GetMyModuleTest(void) { return g_module; }
+// end: testing
+
 //-----------------------------------------------------------------------------
 // Type Declarations
 
@@ -280,6 +285,8 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID reserved)
 	switch(reason) {
 
 		case DLL_PROCESS_ATTACH:
+
+			g_module = module;					// Save the module handle
 
 			// The system calls are exported by ordinal from this DLL, which makes it
 			// rather trivial to create a table of them ...

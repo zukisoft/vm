@@ -20,38 +20,37 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "vm.service.h"				// Include project RPC declarations
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "uapi.h"						// Include Linux UAPI declarations
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-//-----------------------------------------------------------------------------
-// open
-
-__int3264 rpc005_open(handle_t client, charptr_t pathname, int32_t flags, mode_t mode, fsobject_t* fsobject)
+// ssize_t write(int fd, const void *buf, size_t count);
+//
+// EBX	- int			fd
+// ECX	- const void*	buf
+// EDX	- size_t		count
+// ESI
+// EDI
+// EBP
+//
+int sys004_write(PCONTEXT context)
 {
-	UNREFERENCED_PARAMETER(client);
-	UNREFERENCED_PARAMETER(flags);
-	UNREFERENCED_PARAMETER(mode);
+	int fd = static_cast<int>(context->Ebx);
+	const void* buf = reinterpret_cast<const void*>(context->Ecx);
+	size_t count = static_cast<size_t>(context->Edx);
 
-	fsobject->fshandle = 0;
-	fsobject->objecttype = FSOBJECT_PHYSICAL;
+	/// TESTING (STDERR)
+	if(fd == 2) {
 
-	size_t len = (3 + strlen(pathname) + 1);
-	fsobject->physical.ospath = (wcharptr_t)midl_user_allocate(len * sizeof(wchar_t));
-
-	wcscpy_s(fsobject->physical.ospath, len, L"D:");
-	MultiByteToWideChar(CP_UTF8, 0, pathname, -1, &fsobject->physical.ospath[2], len-2);
-
-	wchar_t* iterator = fsobject->physical.ospath;
-	while(*iterator) {
-		if(*iterator == '/') *iterator = '\\';
-		iterator++;
+		std::string output(reinterpret_cast<const char*>(buf), count);
+		OutputDebugStringA(output.c_str());
+		return count;
 	}
 
-	return 0;
+	return -LINUX_ENOSYS;
 }
 
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

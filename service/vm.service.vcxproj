@@ -125,6 +125,7 @@
       <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
+      <DefaultCharType>Unsigned</DefaultCharType>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -167,6 +168,7 @@
       <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
+      <DefaultCharType>Unsigned</DefaultCharType>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -213,6 +215,7 @@
       <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
+      <DefaultCharType>Unsigned</DefaultCharType>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -259,6 +262,7 @@
       <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
+      <DefaultCharType>Unsigned</DefaultCharType>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>

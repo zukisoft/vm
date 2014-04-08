@@ -23,6 +23,9 @@
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "uapi.h"						// Include Linux UAPI declarations
 
+// remove me
+#include <io.h>
+
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 // rpc.cpp
@@ -39,19 +42,43 @@ handle_t rpc_bind_thread(void);
 //
 int sys005_open(PCONTEXT context)
 {
-	fshandle_t		fshandle;			// fshandle_t from remote services
+	fsobject_t			fsobject;			// fsobject_t from remote services
 
 	// Get a bound RPC handle for the remote system calls service
 	handle_t rpc = rpc_bind_thread();
 	if(rpc == nullptr) return -LINUX_EREMOTEIO;
 
-	// Invoke the remote method call
+	// Structure must be initialized to zeros before invoking the remote method
+	memset(&fsobject, 0x00, sizeof(fsobject_t));
+
+	// Invoke the remote method to get information about the requested object
 	__int3264 result = rpc005_open(rpc, reinterpret_cast<charptr_t>(context->Ebx),
-		static_cast<int32_t>(context->Ecx), static_cast<mode_t>(context->Edx), &fshandle);
+		static_cast<int32_t>(context->Ecx), static_cast<mode_t>(context->Edx), &fsobject);
+	if(result < 0) return result;
 
-	// do something with fshandle here
+	///////// TESTING
+	HANDLE test;
 
-	return result;
+	switch(fsobject.objecttype) {
+
+		case FSOBJECT_PHYSICAL:
+
+			test = CreateFile(fsobject.physical.ospath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+			if(test == INVALID_HANDLE_VALUE) {
+				result = GetLastError();
+			}
+
+			midl_user_free(fsobject.physical.ospath);
+			
+			if(result != ERROR_SUCCESS) return -LINUX_EACCES;
+			else return _open_osfhandle(uintptr_t(test), 0);
+
+			break;
+	};
+
+	////////////////////////////////
+
+	return -1;
 }
 
 //-----------------------------------------------------------------------------

@@ -223,3 +223,16 @@ Language=English
 Internal Error: The ELF argument vector has not been aligned properly for the stack
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_SYSCALLNOTFOUND
+Language=English
+System call number %1!d! could not be located in the virtual system call module
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_SYSCALLARGUMENTCOUNT
+Language=English
+An invalid number of arguments have been specified for virtual system call number %1!d!
+.
