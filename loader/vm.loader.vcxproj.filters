@@ -64,6 +64,15 @@
     <ClInclude Include="..\tmp\vm.loader\messages\messages.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="SystemCall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="char_t.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tstring.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

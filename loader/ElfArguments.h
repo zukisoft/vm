@@ -86,14 +86,14 @@ public:
 	// AppendArgument
 	//
 	// Appends a command line argument
-	void AppendArgument(const char* value);
+	void AppendArgument(const char_t* value);
 	void AppendArgument(const wchar_t* value);
 
 	// AppendAuxiliaryVector
 	//
 	// Appends an auxiliary vector
 	void AppendAuxiliaryVector(addr_t type, addr_t value);
-	void AppendAuxiliaryVector(addr_t type, const char* value);
+	void AppendAuxiliaryVector(addr_t type, const char_t* value);
 	void AppendAuxiliaryVector(addr_t type, const wchar_t* value);
 	void AppendAuxiliaryVector(addr_t type, const void* buffer, size_t length);
 	void AppendAuxiliaryVector(addr_t type, int value) { AppendAuxiliaryVector(type, static_cast<addr_t>(value)); }
@@ -103,9 +103,9 @@ public:
 	// AppendEnvironmentVariable
 	//
 	// Appends an environment variable
-	void AppendEnvironmentVariable(const char* keyandvalue);
+	void AppendEnvironmentVariable(const char_t* keyandvalue);
 	void AppendEnvironmentVariable(const wchar_t* keyandvalue);
-	void AppendEnvironmentVariable(const char* key, const char* value);
+	void AppendEnvironmentVariable(const char_t* key, const char_t* value);
 	void AppendEnvironmentVariable(const wchar_t* key, const wchar_t* value);
 
 	// CreateArgumentVector

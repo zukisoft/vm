@@ -71,18 +71,10 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		if(progheader->p_type == PT_INTERP) {
 			
 			if(length < (progheader->p_offset + progheader->p_filesz)) throw Exception(E_ELFIMAGETRUNCATED);
-			char* interpreter = reinterpret_cast<char*>(baseptr + progheader->p_offset);
+			char_t* interpreter = reinterpret_cast<char_t*>(baseptr + progheader->p_offset);
 			if(interpreter[progheader->p_filesz - 1] != 0) throw Exception(E_INVALIDINTERPRETER);
 
-#ifdef _UNICODE
-			// UNICODE - The string needs to be converted from ANSI
-			wchar_t* winterpreter = reinterpret_cast<wchar_t*>(_alloca(progheader->p_filesz * sizeof(wchar_t)));
-			if(MultiByteToWideChar(CP_UTF8, 0, interpreter, static_cast<int>(progheader->p_filesz), 
-				winterpreter, static_cast<int>(progheader->p_filesz)) == 0) throw Exception(E_INVALIDINTERPRETER);
-			m_interpreter = winterpreter;
-#else
-			m_interpreter = interpreter;				// No conversion necessary
-#endif
+			m_interpreter = interpreter;			// Save interpreter string (always ANSI)
 		}
 
 		// Use loadable segment addresses and lengths to determine the memory footprint
@@ -197,7 +189,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		if(ELF_ST_TYPE(symbol->st_info) != STT_FUNC) continue;		// Only loading function symbols here
 
 		// Look up the symbol name in the string table
-		const char* symname = reinterpret_cast<const char*>(baseptr + strheader->sh_offset + symbol->st_name);
+		const char_t* symname = reinterpret_cast<const char_t*>(baseptr + strheader->sh_offset + symbol->st_name);
 		
 		// The symbol value for ET_EXEC and ET_DYN images is a virtual address.  This is more complicated for ET_REL
 		// images, but this class currently doesn't support those anyway.  See ELF documentation for more information.

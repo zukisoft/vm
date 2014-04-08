@@ -77,7 +77,7 @@ size_t ElfArgumentsT<addr_t, auxv_t>::AlignUp(size_t offset, size_t alignment)
 //	value		- Command-line argument to be added
 
 template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendArgument(const char* value)
+void ElfArgumentsT<addr_t, auxv_t>::AppendArgument(const char_t* value)
 {
 	if(!value) throw Exception(E_ARGUMENTNULL, _T("value"));
 	
@@ -104,7 +104,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendArgument(const wchar_t* value)
 	
 	// Reserve space in the information block for the UTF8 converted string and convert it
 	addr_t arg = AppendInfo(NULL, required);
-	WideCharToMultiByte(CP_UTF8, 0, value, -1, reinterpret_cast<char*>(arg), required, NULL, NULL);
+	WideCharToMultiByte(CP_UTF8, 0, value, -1, reinterpret_cast<char_t*>(arg), required, NULL, NULL);
 
 	m_argv.push_back(arg);
 }
@@ -136,7 +136,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, addr_t va
 //	value		- Auxiliary vector value
 
 template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const char* value)
+void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const char_t* value)
 {
 	auxv_t vector(type);				// Initialize with a NULL/zero value
 
@@ -167,7 +167,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const wch
 
 		// Reserve space in the information block for the UTF8 converted string and convert it
 		vector.a_val = AppendInfo(NULL, required);
-		WideCharToMultiByte(CP_UTF8, 0, value, -1, reinterpret_cast<char*>(vector.a_val), required, NULL, NULL);
+		WideCharToMultiByte(CP_UTF8, 0, value, -1, reinterpret_cast<char_t*>(vector.a_val), required, NULL, NULL);
 	}
 
 	m_auxv.push_back(vector);
@@ -203,7 +203,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const voi
 //	variable	- Preformatted environment variable in KEY=VALUE format
 
 template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const char* keyandvalue)
+void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const char_t* keyandvalue)
 {
 	if(!keyandvalue) throw Exception(E_ARGUMENTNULL, _T("keyandvalue"));
 
@@ -231,7 +231,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* key
 
 	// Append the converted string to the information block
 	addr_t variable = AppendInfo(NULL, required);
-	WideCharToMultiByte(CP_UTF8, 0, keyandvalue, -1, reinterpret_cast<char*>(variable), required, NULL, NULL);
+	WideCharToMultiByte(CP_UTF8, 0, keyandvalue, -1, reinterpret_cast<char_t*>(variable), required, NULL, NULL);
 
 	m_env.push_back(variable);				// Keep track of the pointer
 }
@@ -247,7 +247,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* key
 //	value		- Environment variable value
 
 template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const char* key, const char* value)
+void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const char_t* key, const char_t* value)
 {
 	if(!key) throw Exception(E_ARGUMENTNULL, _T("key"));
 
@@ -284,7 +284,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* key
 
 	// Append the converted key and an equal sign to the information block
 	addr_t variable = AppendInfo(NULL, required);
-	WideCharToMultiByte(CP_UTF8, 0, key, wcslen(key), reinterpret_cast<char*>(variable), required, NULL, NULL);
+	WideCharToMultiByte(CP_UTF8, 0, key, wcslen(key), reinterpret_cast<char_t*>(variable), required, NULL, NULL);
 	AppendInfo("=", 1);
 
 	// If a value was specified, convert and append that with it's NULL terminator
@@ -294,7 +294,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* key
 		if(required == 0) throw Win32Exception();
 
 		addr_t valueptr = AppendInfo(NULL, required);
-		WideCharToMultiByte(CP_UTF8, 0, value, -1, reinterpret_cast<char*>(valueptr), required, NULL, NULL);
+		WideCharToMultiByte(CP_UTF8, 0, value, -1, reinterpret_cast<char_t*>(valueptr), required, NULL, NULL);
 	}
 
 	else AppendInfo(NULL, 1);				// No value --> just a NULL terminator

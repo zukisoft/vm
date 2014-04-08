@@ -90,8 +90,8 @@ public:
 	// Interpreter
 	//
 	// Indicates the path to the program interpreter, if one is present
-	__declspec(property(get=getInterpreter)) const tchar_t* Interpreter;
-	const tchar_t* getInterpreter(void) const { return (m_interpreter.size() == 0) ? nullptr : m_interpreter.c_str(); }
+	__declspec(property(get=getInterpreter)) const char_t* Interpreter;
+	const char_t* getInterpreter(void) const { return (m_interpreter.size() == 0) ? nullptr : m_interpreter.c_str(); }
 
 	// NumProgramHeaders
 	//
@@ -132,7 +132,7 @@ private:
 	// Member Variables
 
 	std::unique_ptr<MemoryRegion>	m_region;		// Allocated virtual memory
-	std::tstring					m_interpreter;	// Program interpreter
+	std::string						m_interpreter;	// Program interpreter
 	void*							m_base;			// Loaded image base address
 	void*							m_entry;		// Calculated image entry point
 	const phdr_t*					m_phdrs;		// Program header (in image)

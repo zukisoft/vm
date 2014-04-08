@@ -20,46 +20,21 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __TSTRING_H_
+#define __TSTRING_H_
 #pragma once
 
-// Target Versions
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+#include <string>						// Include STL string<> declarations
 
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <tchar.h>				// Include generic text mappings
-#include <stdarg.h>				// Include standard argument decls (va_list)
-#include <stdint.h>				// Include standard integer declarations
-#include <stdlib.h>				// Include standard library declarations
+namespace std {
 
-// Debug Help Library
-#include <DbgHelp.h>			// Include Debug Helper library decarlations
-#pragma comment(lib, "DbgHelp.lib")
-
-// STL
-#include <algorithm>			// for_each()
-#include <functional>			// lambdas
-#include <memory>				// unique_ptr<>, shared_ptr<>, etc.
-#include <string>				// string<>, wstring<>, etc.
-#include <vector>				// vector<> template declarations
-
-#include "char_t.h"
-#include "tstring.h"
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Message Resources
-#include <messages.h>
+#ifdef _UNICODE
+	typedef wstring		tstring;
+#else
+	typedef string		tstring;
+#endif
+}
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#endif	// __TSTRING_H_

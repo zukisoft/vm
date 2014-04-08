@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="..\tmp\vm.loader\messages\messages.h" />
     <ClInclude Include="auxvec.h" />
+    <ClInclude Include="char_t.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="elf_em.h" />
@@ -168,7 +169,9 @@
     <ClInclude Include="Exception.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SystemCall.h" />
     <ClInclude Include="Trace.h" />
+    <ClInclude Include="tstring.h" />
     <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
