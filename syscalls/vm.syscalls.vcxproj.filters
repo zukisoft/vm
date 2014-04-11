@@ -52,6 +52,33 @@
     <ClInclude Include="..\tmp\vm.service\vm.service.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\external\cpp-btree\btree_map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FsObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CriticalSection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoCriticalSection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FIleDescriptorTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReaderWriterLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoReaderLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AutoWriterLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDescriptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -116,6 +143,12 @@
     </ClCompile>
     <ClCompile Include="sys004_write.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="FsObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDescriptorTable.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

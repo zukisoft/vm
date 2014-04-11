@@ -140,7 +140,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// AUXILIARY VECTORS
 		//
 
-		(AT_EXECFD);		// 2 - DO NOT IMPLEMENT
+		(AT_EXECFD);		// 2 - - CAN IMPLEMENT ONCE FSMANAGER IS WORKING
 		
 		if(executable->ProgramHeaders) {
 

@@ -97,6 +97,11 @@ const __int3264 LINUX_ERANGE            = 34;             /* Math result not rep
 const __int3264 LINUX_ENOSYS            = 38;             /* Function not implemented */
 // ...
 
+const __int32 LINUX_O_RDONLY			= 0x00;
+const __int32 LINUX_O_WRONLY			= 0x01;
+const __int32 LINUX_O_RDWR				= 0x02;
+const __int32 LINUX_O_ACCMODE			= 0x03;
+
 //-----------------------------------------------------------------------------
 // fsobjecttype_t
 //

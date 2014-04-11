@@ -25,11 +25,48 @@
 
 // remove me
 #include <io.h>
+#include "FsObject.h"
+#include "FileDescriptorTable.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 // rpc.cpp
 handle_t rpc_bind_thread(void);
+
+//
+//
+// Attempts to open a physical file system object
+//
+// Arguments:
+//
+//	object			- FsObject data returned from remote services
+//	flags			- Flags passed into open()
+//	mode			- Mode passed into open()
+//
+int open_physical(const FsObject& object, int flags, mode_t mode)
+{
+	DWORD		access;							// Win32 access mask
+	DWORD		share = 0;						// Win32 share mask
+	DWORD		disposition = OPEN_EXISTING;	// Win32 disposition mask
+	DWORD		attributes = 0;					// Win32 attributes mask
+
+	// Convert the Linux flags into a Windows access mask; this must exist
+	switch(flags & LINUX_O_ACCMODE) {
+
+		case LINUX_O_RDONLY: access = GENERIC_READ; break;
+		case LINUX_O_WRONLY: access = GENERIC_WRITE; break;
+		case LINUX_O_RDWR: access = GENERIC_READ | GENERIC_WRITE; break;
+		default: return -LINUX_EINVAL;
+	}
+
+	// Attempt to open/create the physical file system object
+	HANDLE handle = CreateFile(object.physical.ospath, access, share, nullptr, disposition, attributes, nullptr);
+	if(handle == INVALID_HANDLE_VALUE) {
+	}
+
+	// Object handle has been opened, allocate the file descriptor entry
+	return FileDescriptorTable::Allocate(object, handle);
+}
 
 // int open(const char* pathname, int flags, mode_t mode);
 //
@@ -42,43 +79,25 @@ handle_t rpc_bind_thread(void);
 //
 int sys005_open(PCONTEXT context)
 {
-	fsobject_t			fsobject;			// fsobject_t from remote services
+	FsObject				fsobject;				// fsobject_t from remote
+	int						flags;					// Flags argument value
+	mode_t					mode;					// Mode argument value
 
 	// Get a bound RPC handle for the remote system calls service
 	handle_t rpc = rpc_bind_thread();
 	if(rpc == nullptr) return -LINUX_EREMOTEIO;
-
-	// Structure must be initialized to zeros before invoking the remote method
-	memset(&fsobject, 0x00, sizeof(fsobject_t));
+	
+	// Pull out the flags and mode parameters from the CONTEXT object
+	flags = static_cast<int>(context->Ecx);
+	mode = static_cast<mode_t>(context->Edx);
 
 	// Invoke the remote method to get information about the requested object
-	__int3264 result = rpc005_open(rpc, reinterpret_cast<charptr_t>(context->Ebx),
-		static_cast<int32_t>(context->Ecx), static_cast<mode_t>(context->Edx), &fsobject);
+	__int3264 result = rpc005_open(rpc, reinterpret_cast<charptr_t>(context->Ebx), flags, mode, &fsobject);
 	if(result < 0) return result;
 
-	///////// TESTING
-	HANDLE test;
-
-	switch(fsobject.objecttype) {
-
-		case FSOBJECT_PHYSICAL:
-
-			test = CreateFile(fsobject.physical.ospath, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
-			if(test == INVALID_HANDLE_VALUE) {
-				result = GetLastError();
-			}
-
-			midl_user_free(fsobject.physical.ospath);
-			
-			if(result != ERROR_SUCCESS) return -LINUX_EACCES;
-			else return _open_osfhandle(uintptr_t(test), 0);
-
-			break;
-	};
-
-	////////////////////////////////
-
-	return -1;
+	// Physical file system objects are handled in-process, virtual ones are handled remotely ...
+	if(fsobject.objecttype == FSOBJECT_PHYSICAL) return open_physical(fsobject, flags, mode);
+	else return FileDescriptorTable::Allocate(fsobject);
 }
 
 //-----------------------------------------------------------------------------
