@@ -150,6 +150,12 @@
     <ClCompile Include="FileDescriptorTable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sys003_read.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys006_close.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">

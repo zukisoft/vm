@@ -55,16 +55,19 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// AllocateDescriptor
+	// Allocate
 	//
 	// Allocates a file descriptor
 	static int32_t Allocate(const FsObject& object) { return Allocate(object, INVALID_HANDLE_VALUE); }
 	static int32_t Allocate(const FsObject& object, HANDLE handle);
 
-	// FreeDescriptor
+	// Free
 	//
 	// Releases a file descriptor
 	static void Free(int32_t fd);
+
+	static FileDescriptor Get(int32_t fd);
+	FileDescriptor operator[](int32_t fd) { return Get(fd); }
 
 	//-------------------------------------------------------------------------
 	// Properties

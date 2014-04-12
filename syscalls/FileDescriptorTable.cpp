@@ -86,6 +86,16 @@ void FileDescriptorTable::Free(int32_t fd)
 	s_dead.push(fd);				// Push dead index into the queue
 }
 
+FileDescriptor FileDescriptorTable::Get(int32_t fd)
+{
+	AutoReaderLock lock(s_lock);
+
+	std::map<int32_t, FileDescriptor>::iterator iterator;
+	iterator = s_alive.find(fd);
+	return (iterator == s_alive.end()) ? FileDescriptor::Null : iterator->second;
+	//return iterator->second;
+}
+
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)

@@ -22,6 +22,8 @@
 
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "uapi.h"						// Include Linux UAPI declarations
+#include "FileDescriptor.h"				// Include FileDescriptor declarations
+#include "FIleDescriptorTable.h"		// Include FileDescriptorTable decls
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -37,18 +39,28 @@
 int sys192_mmap2(PCONTEXT context)
 {
 	uint32_t flags = static_cast<uint32_t>(context->Esi);
+	
+	// TODO : do MAP_ANONYMOUS thing here
+	FileDescriptor fd = (context->Edi) ? FileDescriptorTable::Get(static_cast<int32_t>(context->Edi)) : FileDescriptor::Null;
+
+	//
 
 	// Offset is specified as 4096-byte pages to allow for offsets greater than 2GiB on 32-bit systems
 	ULARGE_INTEGER offset;
 	offset.QuadPart = (context->Ebp * 4096);
 
+	// File mappings in Windows cannot use PAGE_NOACCESS for the protection
+	DWORD protection = ProtToPageFlags(context->Edx);
+	if(protection == PAGE_NOACCESS) protection = PAGE_READONLY;
+
 	// Attempt to create the file mapping using the arguments provided by the caller
-	HANDLE mapping = CreateFileMapping((flags & MAP_ANONYMOUS) ? INVALID_HANDLE_VALUE : reinterpret_cast<HANDLE>(context->Edi),
-		NULL, ProtToPageFlags(context->Edx), 0, context->Ecx, NULL);
+	HANDLE mapping = CreateFileMapping((flags & MAP_ANONYMOUS) ? INVALID_HANDLE_VALUE : fd.OsHandle,
+		NULL, protection, 0, context->Ecx, NULL);
 	if(mapping) {
 
-		// Convert the prot and flags into FILE_MAP_XXXX flags for MapViewOfFile()
+		// Convert the protection flags for MapViewOfFile(), once again avoiding PROT_NONE
 		uint32_t filemapflags = ProtToFileMapFlags(context->Edx);
+		if(filemapflags == 0) filemapflags = FILE_MAP_READ;
 		if(flags & MAP_PRIVATE) filemapflags |= FILE_MAP_COPY;
 
 		// Attempt to map the file into memory using the constructed flags and offset values
@@ -60,6 +72,9 @@ int sys192_mmap2(PCONTEXT context)
 
 		return (address) ? reinterpret_cast<int>(address) : -1;
 	}
+
+	// TODO: map error code
+	DWORD dw = GetLastError();
 
 	return -1;
 

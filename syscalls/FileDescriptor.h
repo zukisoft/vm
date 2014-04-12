@@ -71,6 +71,12 @@ public:
 		return *this;
 	}
 
+	bool operator==(const FileDescriptor& rhs)
+	{
+		return ((m_type == rhs.m_type) && (m_fshandle == rhs.m_fshandle) &&
+			(m_oshandle == rhs.m_oshandle));
+	}
+
 	//-------------------------------------------------------------------------
 	// Properties
 
@@ -95,7 +101,14 @@ public:
 	fsobjecttype_t getType(void) const { return m_type; }
 	void putType(fsobjecttype_t value) { m_type = value; }
 
+	//__declspec(property(get=getNull)) static FileDescriptor& Null;
+	//static FileDescriptor& getNull(void) { return s_null; }
+	
+	static const FileDescriptor Null;
+
 private:
+
+	FileDescriptor() : m_type(static_cast<fsobjecttype_t>(0)), m_fshandle(0), m_oshandle(INVALID_HANDLE_VALUE) {}
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -103,8 +116,11 @@ private:
 	fsobjecttype_t			m_type;				// Type of contained handle
 	fshandle_t				m_fshandle;			// Remote services handle
 	HANDLE					m_oshandle;			// Operating system handle
+
+	//static FileDescriptor	s_null;
 };
 
+__declspec(selectany) const FileDescriptor FileDescriptor::Null;
 
 //-----------------------------------------------------------------------------
 

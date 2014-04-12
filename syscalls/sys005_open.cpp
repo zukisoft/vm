@@ -33,6 +33,8 @@
 // rpc.cpp
 handle_t rpc_bind_thread(void);
 
+#include <fcntl.h>
+
 //
 //
 // Attempts to open a physical file system object
@@ -47,21 +49,53 @@ int open_physical(const FsObject& object, int flags, mode_t mode)
 {
 	DWORD		access;							// Win32 access mask
 	DWORD		share = 0;						// Win32 share mask
-	DWORD		disposition = OPEN_EXISTING;	// Win32 disposition mask
+	DWORD		disposition;					// Win32 disposition mask
 	DWORD		attributes = 0;					// Win32 attributes mask
+
+	// TODO
+	//SECURITY_ATTRIBUTES securityattrs;
+	//securityattrs.nLength = sizeof(SECURITY_ATTRIBUTES);
+	//securityattrs.lpSecurityDescriptor = nullptr;
+	//securityattrs.bInheritHandle = TRUE;
+
+	const wchar_t* path = object.physical.ospath;
 
 	// Convert the Linux flags into a Windows access mask; this must exist
 	switch(flags & LINUX_O_ACCMODE) {
 
-		case LINUX_O_RDONLY: access = GENERIC_READ; break;
-		case LINUX_O_WRONLY: access = GENERIC_WRITE; break;
-		case LINUX_O_RDWR: access = GENERIC_READ | GENERIC_WRITE; break;
+		case LINUX_O_RDONLY: access = GENERIC_READ | GENERIC_EXECUTE; break;
+		case LINUX_O_WRONLY: access = GENERIC_WRITE | GENERIC_EXECUTE; break;
+		case LINUX_O_RDWR: access = GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE; break;
 		default: return -LINUX_EINVAL;
 	}
+
+	// Convert linux flags into Windows disposition mask
+	switch(flags & (LINUX_O_CREAT | LINUX_O_EXCL | LINUX_O_TRUNC)) {
+	
+		case 0:
+		case LINUX_O_EXCL: disposition = OPEN_EXISTING; break;
+
+		case LINUX_O_CREAT: disposition = OPEN_ALWAYS; break;
+
+		case LINUX_O_CREAT | LINUX_O_EXCL:
+		case LINUX_O_CREAT | LINUX_O_TRUNC | LINUX_O_EXCL: disposition = CREATE_NEW; break;
+
+		case LINUX_O_TRUNC:
+		case LINUX_O_TRUNC | LINUX_O_EXCL: disposition = TRUNCATE_EXISTING; break;
+
+		case LINUX_O_CREAT | LINUX_O_TRUNC: disposition = CREATE_ALWAYS; break;
+
+		default: return -LINUX_EINVAL;			// <-- can't actually happen
+	}
+	
+	// TODO: This is not even close to being done -- just enough to test read() and close() with
 
 	// Attempt to open/create the physical file system object
 	HANDLE handle = CreateFile(object.physical.ospath, access, share, nullptr, disposition, attributes, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) {
+		
+		// TODO: need all the errors here
+		return -LINUX_ENOENT;
 	}
 
 	// Object handle has been opened, allocate the file descriptor entry

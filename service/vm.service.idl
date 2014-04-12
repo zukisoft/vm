@@ -97,10 +97,14 @@ const __int3264 LINUX_ERANGE            = 34;             /* Math result not rep
 const __int3264 LINUX_ENOSYS            = 38;             /* Function not implemented */
 // ...
 
-const __int32 LINUX_O_RDONLY			= 0x00;
-const __int32 LINUX_O_WRONLY			= 0x01;
-const __int32 LINUX_O_RDWR				= 0x02;
-const __int32 LINUX_O_ACCMODE			= 0x03;
+const __int32 LINUX_O_RDONLY			= 0x0000;
+const __int32 LINUX_O_WRONLY			= 0x0001;
+const __int32 LINUX_O_RDWR				= 0x0002;
+const __int32 LINUX_O_ACCMODE			= 0x0003;
+const __int32 LINUX_O_CREAT				= 0x0100;			/* Create file if it doesn't exist.  */
+const __int32 LINUX_O_EXCL				= 0x0200;			/* Fail if file already exists.  */
+const __int32 LINUX_O_NOCTTY			= 0x0400;
+const __int32 LINUX_O_TRUNC				= 0x1000;			/* Truncate file to zero length.  */
 
 //-----------------------------------------------------------------------------
 // fsobjecttype_t
