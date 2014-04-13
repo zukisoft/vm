@@ -27,7 +27,7 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// int __llseek(int fd, unsigned long offset_high, unsigned long offset_low, loff_t* result, int whence);
+// int __llseek(int fd, unsigned long offset_high, unsigned long offset_low, loff_t* result, int whence)
 //
 // EBX	- int			fd
 // ECX	- unsigned long offset_high
@@ -36,30 +36,41 @@
 // EDI	- int			whence
 // EBP
 //
-int sys140_llseek(PCONTEXT context)
+int sys140__llseek(PCONTEXT context)
 {
-	//// Look up the specified file descriptor in the process descriptor table
-	//FileDescriptor fd = FileDescriptorTable::Get(static_cast<int32_t>(context->Ebx));
-	//if(fd == FileDescriptor::Null) return -LINUX_EBADF;
+	// Assumptions
+	static_assert(LINUX_SEEK_SET == FILE_BEGIN, "Assumption (LINUX_SEEK_SET==FILE_BEGIN) is no longer true");
+	static_assert(LINUX_SEEK_CUR == FILE_CURRENT, "Assumption (LINUX_SEEK_CUR==FILE_CURRENT) is no longer true");
+	static_assert(LINUX_SEEK_END == FILE_END, "Assumption (LINUX_SEEK_END==FILE_END) is no longer true");
 
-	//// Convert the 32-bit offset components into a ULARGE_INTEGER
-	//LARGE_INTEGER offset;
-	//offset.HighPart = static_cast<int32_t>(context->Ecx);
-	//offset.LowPart = static_cast<int32_t>(context->Edx);
+	// Look up the specified file descriptor in the process descriptor table
+	FileDescriptor fd = FileDescriptorTable::Get(static_cast<int32_t>(context->Ebx));
+	if(fd == FileDescriptor::Null) return -LINUX_EBADF;
 
-	//// Check result for a bad pointer
-	//if(context->Esi == 0) return -LINUX_EFAULT;
+	// Check the output argument pointer
+	if(context->Esi == 0) return -LINUX_EFAULT;
 
-	//// TESTING (PHYSICAL FILES ASSUMED)
-	//DWORD bytesread;
-	//if(!ReadFile(fd.OsHandle, reinterpret_cast<void*>(context->Ecx), static_cast<DWORD>(context->Edx), &bytesread, nullptr)) {
-	//	
-	//	// Process error codes here
-	//}
+	// Sparse files aren't supported yet
+	if(static_cast<uint32_t>(context->Edi) > SEEK_END) {
 
-	//return static_cast<int>(bytesread);
+		_RPTF0(_CRT_ASSERT, "lseek: Sparse files have not been implemented yet");
+		return -LINUX_EINVAL;
+	}
+	
+	// Convert the distance into a 64-bit value, use QuadPart and bit shifting, that is how
+	// the value would have been set on the usermode side
+	LARGE_INTEGER distance;
+	uint64_t offset = static_cast<uint64_t>(context->Ecx) << 32 | static_cast<uint32_t>(context->Edx);
+	distance.QuadPart = static_cast<int64_t>(offset);
 
-	return -LINUX_ENOSYS;
+	// Change the file pointer
+	LARGE_INTEGER pointer;
+	if(!SetFilePointerEx(fd.OsHandle, distance, &pointer, context->Edi)) return -LINUX_EINVAL;
+
+	// __llseek returns the new file pointer as a 64-bit signed integer
+	*reinterpret_cast<loff_t*>(context->Esi) = pointer.QuadPart;
+
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

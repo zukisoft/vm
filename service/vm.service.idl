@@ -109,6 +109,16 @@ const __int32 LINUX_O_EXCL				= 0x0200;			/* Fail if file already exists.  */
 const __int32 LINUX_O_NOCTTY			= 0x0400;
 const __int32 LINUX_O_TRUNC				= 0x1000;			/* Truncate file to zero length.  */
 
+// fs.h
+//
+// Normal constants: __int3264
+const __int3264 LINUX_SEEK_SET			= 0;				/* seek relative to beginning of file */
+const __int3264 LINUX_SEEK_CUR			= 1;				/* seek relative to current file position */
+const __int3264 LINUX_SEEK_END			= 2;				/* seek relative to end of file */
+const __int3264 LINUX_SEEK_DATA			= 3;				/* seek to the next data */
+const __int3264 LINUX_SEEK_HOLE			= 4;				/* seek to the next hole */
+const __int3264 LINUX_SEEK_MAX			= LINUX_SEEK_HOLE;
+
 //-----------------------------------------------------------------------------
 // fsobjecttype_t
 //

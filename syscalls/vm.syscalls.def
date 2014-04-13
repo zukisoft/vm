@@ -161,7 +161,7 @@ EXPORTS
 	__NR_afs_syscall=noentry @137
 	__NR_setfsuid=noentry @138
 	__NR_setfsgid=noentry @139
-	__NR__llseek=sys140_llseek					@140
+	__NR__llseek=sys140__llseek					@140
 	__NR_getdents=noentry @141
 	__NR__newselect=noentry @142
 	__NR_flock=noentry @143

@@ -24,14 +24,19 @@
 #include "uapi.h"						// Include Linux UAPI declarations
 #include "CriticalSection.h"			// Include CriticalSection declarations
 #include "FileDescriptor.h"				// Include FileDescriptor declarations
-#include "FIleDescriptorTable.h"		// Include FileDescriptorTable decls
+#include "FileDescriptorTable.h"		// Include FileDescriptorTable decls
+#include "SystemCall.h"					// Include SystemCall class declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
+
+// Externs
+extern int sys003_read(PCONTEXT);
+extern int sys140__llseek(PCONTEXT);
 
 // MMAP2_IMPL
 //
 // Function pointer to the appropriate mmap2() implementation
-typedef int (*MMAP2_IMPL)(void*, size_t, uint32_t, uint32_t, FileDescriptor&, PULARGE_INTEGER);
+typedef int (*MMAP2_IMPL)(void*, size_t, uint32_t, uint32_t, int32_t, PLARGE_INTEGER);
 
 //-----------------------------------------------------------------------------
 // mmap2_private
@@ -47,12 +52,12 @@ typedef int (*MMAP2_IMPL)(void*, size_t, uint32_t, uint32_t, FileDescriptor&, PU
 //	fd			- File to be mapped into virtual memory
 //	offset		- Offset into the file to start the mapping
 
-int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, FileDescriptor& fd, PULARGE_INTEGER offset)
+int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int32_t fd, PLARGE_INTEGER offset)
 {
 	DWORD			oldprotection;				// Previously set protection flags
 
 	// Non-anonymous mappings require a valid file descriptor
-	if(((flags & MAP_ANONYMOUS) == 0) && (fd == FileDescriptor::Null)) return -LINUX_EBADF;
+	if(((flags & MAP_ANONYMOUS) == 0) && (fd <= 0)) return -LINUX_EBADF;
 	
 	// Get information about the requested memory region if address is not NULL
 	MEMORY_BASIC_INFORMATION meminfo = { nullptr, nullptr, 0, length, MEM_FREE, 0, 0 };
@@ -97,15 +102,21 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, File
 	// Non-anonymous private mappings read memory contents from the source file
 	if((flags & MAP_ANONYMOUS) == 0) {
 
-		DWORD bytesread;					// Number of bytes read from the file
+		loff_t pointer;						// New file pointer position
+		int result;							// Result from system call
 
 		// The region needs to be set to PAGE_READWRITE for the data to be loaded
 		VirtualProtect(addr, length, PAGE_READWRITE, &oldprotection);
 
-		// Rather than thunking to __llseek() and read() and incurring the overhead,
-		// move the file pointer and read the data directly in here
-		if(SetFilePointerEx(fd.OsHandle, *reinterpret_cast<PLARGE_INTEGER>(offset), nullptr, FILE_BEGIN))
-			ReadFile(fd.OsHandle, addr, length, &bytesread, nullptr);
+		// Thunk into _llseek() to move the file pointer to the requested position
+		result = SystemCall(sys140__llseek).Invoke(fd, offset->HighPart, offset->LowPart, &pointer, LINUX_SEEK_SET);
+		if(result < 0) return result;
+		if(pointer != offset->QuadPart) return -LINUX_EINVAL;
+
+		// Thunk into read() to read the information from the file
+		result = SystemCall(sys003_read).Invoke(fd, addr, length);
+		if(result < 0) return result;
+		if(static_cast<size_t>(result) != length) return -LINUX_EINVAL;
 
 		// Restore the previous protection flags to the region after it's been loaded
 		VirtualProtect(addr, length, oldprotection, &oldprotection);
@@ -131,10 +142,17 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, File
 //	fd			- File to be mapped into virtual memory
 //	offset		- Offset into the file to start the mapping
 
-int mmap2_shared(void* addr, size_t length, uint32_t prot, uint32_t flags, FileDescriptor& fd, PULARGE_INTEGER offset)
+int mmap2_shared(void* addr, size_t length, uint32_t prot, uint32_t flags, int32_t fd, PLARGE_INTEGER offset)
 {
 	// Non-anonymous mappings require a valid file descriptor
-	if((flags & MAP_ANONYMOUS) && (fd == FileDescriptor::Null)) return -LINUX_EBADF;
+	///if((flags & MAP_ANONYMOUS) && (fd == FileDescriptor::Null)) return -LINUX_EBADF;
+
+	UNREFERENCED_PARAMETER(addr);
+	UNREFERENCED_PARAMETER(length);
+	UNREFERENCED_PARAMETER(prot);
+	UNREFERENCED_PARAMETER(flags);
+	UNREFERENCED_PARAMETER(fd);
+	UNREFERENCED_PARAMETER(offset);
 
 	return -1;
 }
@@ -169,16 +187,12 @@ int sys192_mmap2(PCONTEXT context)
 	size_t length = static_cast<size_t>(context->Ecx);
 	if(length == 0) return -LINUX_EINVAL;
 
-	// Cast out the file descriptor and look up the FileDescriptor
-	int32_t fd = static_cast<int32_t>(context->Edi);
-	FileDescriptor filedesc = (fd > 0) ? FileDescriptorTable::Get(fd) : FileDescriptor::Null;
-
 	// Offset is specified as 4096-byte pages
-	ULARGE_INTEGER offset;
-	offset.QuadPart = (context->Ebp << 12);
+	LARGE_INTEGER offset;
+	offset.QuadPart = static_cast<int64_t>(static_cast<uint64_t>(context->Ebp) << 12);
 
 	// Invoke the proper version of this system call
-	return impl(address, length, ProtToPageFlags(context->Edx), flags, filedesc, &offset);
+	return impl(address, length, ProtToPageFlags(context->Edx), flags, static_cast<int32_t>(context->Edi), &offset);
 
 
 	//// Cast out all of the arguments into local variables for clarity

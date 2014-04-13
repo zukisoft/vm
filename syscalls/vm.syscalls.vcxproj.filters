@@ -79,6 +79,9 @@
     <ClInclude Include="FileDescriptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SystemCall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -159,7 +162,10 @@
     <ClCompile Include="sys091_munmap.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="sys140_llseek.cpp">
+    <ClCompile Include="sys140__llseek.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys019_lseek.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>

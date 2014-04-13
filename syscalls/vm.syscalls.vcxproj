@@ -179,6 +179,7 @@
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="ModRM.h" />
     <ClInclude Include="ReaderWriterLock.h" />
+    <ClInclude Include="SystemCall.h" />
     <ClInclude Include="tstring.h" />
     <ClInclude Include="uapi.h" />
     <ClInclude Include="stdafx.h" />
@@ -222,11 +223,12 @@
     <ClCompile Include="sys004_write.cpp" />
     <ClCompile Include="sys005_open.cpp" />
     <ClCompile Include="sys006_close.cpp" />
+    <ClCompile Include="sys019_lseek.cpp" />
     <ClCompile Include="sys020_getpid.cpp" />
     <ClCompile Include="sys090_mmap.cpp" />
     <ClCompile Include="sys091_munmap.cpp" />
     <ClCompile Include="sys125_mprotect.cpp" />
-    <ClCompile Include="sys140_llseek.cpp" />
+    <ClCompile Include="sys140__llseek.cpp" />
     <ClCompile Include="sys191_ugetrlimit.cpp" />
     <ClCompile Include="sys192_mmap2.cpp" />
     <ClCompile Include="sys219_madvise.cpp" />
