@@ -29,51 +29,6 @@
 LONG CALLBACK SysCallExceptionHandler(PEXCEPTION_POINTERS exception);
 HMODULE GetMyModuleTest(void);
 
-// UnhandledException
-//
-// 
-LONG CALLBACK UnhandledException(PEXCEPTION_POINTERS exception)
-{
-	// Get the current process and thread handles
-	HANDLE process = GetCurrentProcess();
-	HANDLE thread = GetCurrentThread();
-
-	// Make a copy of the context so it doesn't get trashed
-	CONTEXT context;
-	memcpy(&context, exception->ContextRecord, sizeof(CONTEXT));
-	
-	// Allocate and initialize the STACKFRAME64 structure for the walk
-	STACKFRAME64 stackframe;
-	memset(&stackframe, sizeof(STACKFRAME64), 0);
-	stackframe.AddrPC.Mode = AddrModeFlat;
-	stackframe.AddrPC.Offset = context.Eip;
-	stackframe.AddrStack.Mode = AddrModeFlat;
-	stackframe.AddrStack.Offset = context.Esp;
-	stackframe.AddrFrame.Mode = AddrModeFlat;
-	stackframe.AddrFrame.Offset = context.Ebp;
-
-	// Allocate the symbol lookup structure, which includes space for the name
-	uint8_t symbuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(CHAR)];
-	PSYMBOL_INFO symbol = reinterpret_cast<PSYMBOL_INFO>(symbuffer);
-	symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-	symbol->MaxNameLen = MAX_SYM_NAME;
-
-	SymFromAddr(process, context.Eip, 0, symbol);
-	OutputDebugString(_T("unhandled exception in function: "));
-	OutputDebugStringA(symbol->Name);
-	OutputDebugString(_T("\r\nstrack trace:\r\n"));
-
-	// Walk the stack until it cannot be walked any further ...
-	while(StackWalk64(IMAGE_FILE_MACHINE_I386, process, thread, &stackframe, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
-
-		SymFromAddr(process, stackframe.AddrPC.Offset, 0, symbol);
-		OutputDebugStringA(symbol->Name);
-		OutputDebugString(_T("\r\n"));
-	} ;
-
-	return EXCEPTION_CONTINUE_SEARCH;
-}
-
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPTSTR    lpCmdLine,
@@ -86,17 +41,13 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
-	//const tchar_t* exec_path = _T("D:\\test");
+	const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
+	//const tchar_t* exec_path = _T("D:\\android\\init");
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker");
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\busybox-x86");
-	const tchar_t* exec_path = _T("D:\\Linux Binaries\\bionicapp");
+	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\bionicapp");
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\root\\init");
 
-
-	AddVectoredExceptionHandler(0, UnhandledException);
-
-	BOOL bresult = SymInitialize(GetCurrentProcess(), NULL, FALSE);
 
 	// VDSO - need to work on this, not to mention I need an x86 and an x64 version of it
 	ElfImage* vdso = ElfImage::FromResource(MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);

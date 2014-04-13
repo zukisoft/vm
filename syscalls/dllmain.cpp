@@ -108,8 +108,11 @@ Instruction INT_80(0xCD, 0x80, [](ContextRecord& context) -> bool {
 	context.Registers.EAX = static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS);
 
 #ifdef _DEBUG
-	// Throw a breakpoint in here to watch failed system calls
-//	if(static_cast<int>(context.Registers.EAX) < 0) DebugBreak();
+
+	// Keep track of things that fail in the debug output (ENOSYS = -38)
+	if(static_cast<int32_t>(context.Registers.EAX) < 0)
+		_RPTF2(_CRT_WARN, "System Call %d Failed: EAX = %d\n", syscall, context.Registers.EAX);
+
 #endif
 
 	return true;						// Always considered successful

@@ -49,7 +49,7 @@ extern "C" void __stdcall ElfEntry(void* address, const void* args, size_t argsl
 
 template <class ehdr_t, class phdr_t, class shdr_t, class symb_t>
 ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t length) : 
-	m_base(nullptr), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0), m_symbols(false)
+	m_base(nullptr), m_entry(nullptr), m_phdrs(nullptr), m_phdrents(0)
 {
 	if(!base) throw Exception(E_ARGUMENTNULL, _T("base"));
 
@@ -152,50 +152,6 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	m_entry = (elfheader->e_entry) ? reinterpret_cast<void*>(elfheader->e_entry + vaddrdelta) : nullptr;
-
-	// Pointers to the main string table as well as the symbol table
-	const shdr_t* strheader = nullptr;
-	const shdr_t* symheader = nullptr;
-
-	// Make a pass over the section headers looking for the string and symbol tables
-	for(int index = 0; index < elfheader->e_shnum; index++) {
-
-		// Get a pointer to the section header and verify that it won't go beyond the end of the data
-		uintptr_t offset = uintptr_t(elfheader->e_shoff + (index * elfheader->e_shentsize));
-		const shdr_t* sectheader = reinterpret_cast<const shdr_t*>(baseptr + offset);
-		if(length < (offset + elfheader->e_shentsize)) throw Exception(E_ELFIMAGETRUNCATED);
-
-		// Check to make sure this isn't the section name string table
-		if((sectheader->sh_type == SHT_STRTAB) && (index != elfheader->e_shstrndx)) strheader = sectheader;
-		else if(sectheader->sh_type == SHT_SYMTAB) symheader = sectheader;
-	}
-
-	// If either the string or symbol table couldn't be found, there are no usable symbols to parse
-	if(strheader == nullptr || symheader == nullptr) return;
-
-	// A virtual module needs to be registered with the operating system before symbols can be added.
-	uint64_t result = SymLoadModuleEx(GetCurrentProcess(), NULL, NULL, NULL, uintptr_t(m_base), maxvaddr - minvaddr, NULL, SLMFLAG_VIRTUAL);
-	if(result != uintptr_t(m_base)) return;
-	
-	// Iterate over all of the symbols in the symbol table
-	int numsymbols = symheader->sh_size / symheader->sh_entsize;
-	for(int index = 0; index < numsymbols; index++) {
-
-		uintptr_t offset = uintptr_t(symheader->sh_offset + (index * symheader->sh_entsize));
-		const symb_t* symbol = reinterpret_cast<const symb_t*>(baseptr + offset);
-		if(length < (offset + symheader->sh_entsize)) throw Exception(E_ELFIMAGETRUNCATED);
-
-		if(symbol->st_name == STN_UNDEF) continue;					// Undefined symbol has a zero name index
-		if(ELF_ST_TYPE(symbol->st_info) != STT_FUNC) continue;		// Only loading function symbols here
-
-		// Look up the symbol name in the string table
-		const char_t* symname = reinterpret_cast<const char_t*>(baseptr + strheader->sh_offset + symbol->st_name);
-		
-		// The symbol value for ET_EXEC and ET_DYN images is a virtual address.  This is more complicated for ET_REL
-		// images, but this class currently doesn't support those anyway.  See ELF documentation for more information.
-		// Toggle the 'symbols loaded' flag to TRUE if any symbols are successfully loaded
-		if(SymAddSymbol(GetCurrentProcess(), uintptr_t(m_base), symname, symbol->st_value + vaddrdelta, symbol->st_size, 0)) m_symbols = true;
-	}
 }
 
 //-----------------------------------------------------------------------------

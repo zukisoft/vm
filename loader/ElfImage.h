@@ -105,12 +105,6 @@ public:
 	__declspec(property(get=getProgramHeaders)) const phdr_t* ProgramHeaders;
 	const phdr_t* getProgramHeaders(void) const { return m_phdrs; }
 
-	// SymbolsLoaded
-	//
-	// Flag if any symbols were successfully loaded from the image
-	__declspec(property(get=getSymbolsLoaded)) bool SymbolsLoaded;
-	bool getSymbolsLoaded(void) const { return m_symbols; }
-
 private:
 
 	ElfImageT(const ElfImageT&);
@@ -137,7 +131,6 @@ private:
 	void*							m_entry;		// Calculated image entry point
 	const phdr_t*					m_phdrs;		// Program header (in image)
 	size_t							m_phdrents;		// Program header entries
-	bool							m_symbols;		// Flag if symbols were loaded
 };
 
 //-----------------------------------------------------------------------------
