@@ -86,11 +86,11 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
+	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
 	//const tchar_t* exec_path = _T("D:\\test");
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker");
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\busybox-x86");
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\bionicapp");
+	const tchar_t* exec_path = _T("D:\\Linux Binaries\\bionicapp");
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\root\\init");
 
 

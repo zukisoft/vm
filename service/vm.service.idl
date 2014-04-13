@@ -48,6 +48,9 @@ typedef unsigned __int32			gid_t;
 typedef unsigned __int32			mode_t;
 typedef unsigned __int32			uid_t;
 
+//typedef __int32						off_t;
+typedef __int64						loff_t;
+
 // fshandle_t - filesystem node handle
 //
 typedef unsigned __int64			fshandle_t;

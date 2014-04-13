@@ -256,11 +256,13 @@ typedef __kernel_pid_t		pid_t;
 #define MAP_HUGE_2MB			(21 << MAP_HUGE_SHIFT)
 #define MAP_HUGE_1GB			(30 << MAP_HUGE_SHIFT)
 
+#define MAP_UNINITIALIZED		0x4000000
+
 // Converts Linux PROT_XXX flags into Windows PAGE_XXX flags
 //
 inline static uint32_t ProtToPageFlags(uint32_t prot)
 {
-	switch(prot) {
+	switch(prot & (PROT_EXEC | PROT_WRITE | PROT_READ)) {
 
 		case PROT_EXEC:								return PAGE_EXECUTE;
 		case PROT_WRITE :							return PAGE_READWRITE;

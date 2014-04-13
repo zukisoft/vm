@@ -22,31 +22,42 @@
 
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "uapi.h"						// Include Linux UAPI declarations
+#include "FileDescriptor.h"				// Include FileDescriptor declarations
+#include "FileDescriptorTable.h"		// Include FileDescriptorTable decls
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// ssize_t write(int fd, const void *buf, size_t count);
+// int __llseek(int fd, unsigned long offset_high, unsigned long offset_low, loff_t* result, int whence);
 //
 // EBX	- int			fd
-// ECX	- const void*	buf
-// EDX	- size_t		count
-// ESI
-// EDI
+// ECX	- unsigned long offset_high
+// EDX	- unsigned long	offset_low
+// ESI	- loff_t*		result
+// EDI	- int			whence
 // EBP
 //
-int sys004_write(PCONTEXT context)
+int sys140_llseek(PCONTEXT context)
 {
-	int fd = static_cast<int>(context->Ebx);
-	const void* buf = reinterpret_cast<const void*>(context->Ecx);
-	size_t count = static_cast<size_t>(context->Edx);
+	//// Look up the specified file descriptor in the process descriptor table
+	//FileDescriptor fd = FileDescriptorTable::Get(static_cast<int32_t>(context->Ebx));
+	//if(fd == FileDescriptor::Null) return -LINUX_EBADF;
 
-	/// TESTING (STDOUT / STDERR)
-	if((fd == 1) || (fd == 2)) {
+	//// Convert the 32-bit offset components into a ULARGE_INTEGER
+	//LARGE_INTEGER offset;
+	//offset.HighPart = static_cast<int32_t>(context->Ecx);
+	//offset.LowPart = static_cast<int32_t>(context->Edx);
 
-		std::string output(reinterpret_cast<const char*>(buf), count);
-		OutputDebugStringA(output.c_str());
-		return count;
-	}
+	//// Check result for a bad pointer
+	//if(context->Esi == 0) return -LINUX_EFAULT;
+
+	//// TESTING (PHYSICAL FILES ASSUMED)
+	//DWORD bytesread;
+	//if(!ReadFile(fd.OsHandle, reinterpret_cast<void*>(context->Ecx), static_cast<DWORD>(context->Edx), &bytesread, nullptr)) {
+	//	
+	//	// Process error codes here
+	//}
+
+	//return static_cast<int>(bytesread);
 
 	return -LINUX_ENOSYS;
 }

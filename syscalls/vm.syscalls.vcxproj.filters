@@ -156,6 +156,12 @@
     <ClCompile Include="sys006_close.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
+    <ClCompile Include="sys091_munmap.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys140_llseek.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">

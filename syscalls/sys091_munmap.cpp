@@ -21,34 +21,47 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// ssize_t write(int fd, const void *buf, size_t count);
+// int munmap(void *addr, size_t length)
 //
-// EBX	- int			fd
-// ECX	- const void*	buf
-// EDX	- size_t		count
+// EBX	- void*			addr
+// ECX	- size_t		length
+// EDX
 // ESI
 // EDI
 // EBP
 //
-int sys004_write(PCONTEXT context)
+int sys091_munmap(PCONTEXT context)
 {
-	int fd = static_cast<int>(context->Ebx);
-	const void* buf = reinterpret_cast<const void*>(context->Ecx);
-	size_t count = static_cast<size_t>(context->Edx);
+	BOOL					result;					// Result from function call
 
-	/// TESTING (STDOUT / STDERR)
-	if((fd == 1) || (fd == 2)) {
+	// Cast out the address and length parameters
+	void* addr = reinterpret_cast<void*>(context->Ebx);
+	size_t length = static_cast<size_t>(context->Ecx);
 
-		std::string output(reinterpret_cast<const char*>(buf), count);
-		OutputDebugStringA(output.c_str());
-		return count;
-	}
+	// Get information about the mapped memory region
+	MEMORY_BASIC_INFORMATION meminfo;
+	if(!VirtualQuery(addr, &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) return -LINUX_EINVAL;
 
-	return -LINUX_ENOSYS;
+	// Check that the memory has actually been allocated
+	if(meminfo.State == MEM_FREE) return -LINUX_EINVAL;
+
+	// DEBUG: Verify addr matches the base address of the allocated region
+	if(addr != meminfo.AllocationBase)
+		_RPTF2(_CRT_ASSERT, "munmap: address %p does not match allocated region base address %p", addr, meminfo.AllocationBase);
+
+	// DEBUG: Verify length matches the size of the allocated region
+	if(length != meminfo.RegionSize) 
+		_RPTF2(_CRT_ASSERT, "munmap: length %u does not match allocated region size %u", length, meminfo.RegionSize);
+		
+	// The memory allocated by mmap/mmap2 may have been done with MapViewOfFile
+	// or VirtualAlloc; the correct function must be called to release it
+	if(meminfo.Type == MEM_MAPPED) result = UnmapViewOfFile(addr);
+	else result = VirtualFree(addr, 0, MEM_RELEASE);
+
+	return (result) ? 0 : -LINUX_EINVAL;
 }
 
 //-----------------------------------------------------------------------------

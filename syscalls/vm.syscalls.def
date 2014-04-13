@@ -112,7 +112,7 @@ EXPORTS
 	__NR_reboot=noentry @88
 	__NR_readdir=noentry @89
 	__NR_mmap=sys090_mmap					@90
-	__NR_munmap=noentry @91
+	__NR_munmap=sys091_munmap				@91
 	__NR_truncate=noentry @92
 	__NR_ftruncate=noentry @93
 	__NR_fchmod=noentry @94
@@ -161,7 +161,7 @@ EXPORTS
 	__NR_afs_syscall=noentry @137
 	__NR_setfsuid=noentry @138
 	__NR_setfsgid=noentry @139
-	__NR__llseek=noentry @140
+	__NR__llseek=sys140_llseek					@140
 	__NR_getdents=noentry @141
 	__NR__newselect=noentry @142
 	__NR_flock=noentry @143

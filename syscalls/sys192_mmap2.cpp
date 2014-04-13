@@ -22,10 +22,122 @@
 
 #include "stdafx.h"						// Include project pre-compiled headers
 #include "uapi.h"						// Include Linux UAPI declarations
+#include "CriticalSection.h"			// Include CriticalSection declarations
 #include "FileDescriptor.h"				// Include FileDescriptor declarations
 #include "FIleDescriptorTable.h"		// Include FileDescriptorTable decls
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
+
+// MMAP2_IMPL
+//
+// Function pointer to the appropriate mmap2() implementation
+typedef int (*MMAP2_IMPL)(void*, size_t, uint32_t, uint32_t, FileDescriptor&, PULARGE_INTEGER);
+
+//-----------------------------------------------------------------------------
+// mmap2_private
+//
+// Implementation of mmap2() for private memory mapped files
+//
+// Arguments:
+//
+//	addr		- Optional base address for the mapping
+//	length		- Length of the mapping in bytes
+//	prot		- Memory protection flags (converted for Windows)
+//	flags		- Additional memory mapping behavior flags
+//	fd			- File to be mapped into virtual memory
+//	offset		- Offset into the file to start the mapping
+
+int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, FileDescriptor& fd, PULARGE_INTEGER offset)
+{
+	DWORD			oldprotection;				// Previously set protection flags
+
+	// Non-anonymous mappings require a valid file descriptor
+	if(((flags & MAP_ANONYMOUS) == 0) && (fd == FileDescriptor::Null)) return -LINUX_EBADF;
+	
+	// Get information about the requested memory region if address is not NULL
+	MEMORY_BASIC_INFORMATION meminfo = { nullptr, nullptr, 0, length, MEM_FREE, 0, 0 };
+	if(addr) VirtualQuery(addr, &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
+
+	// Verify that the requested length does not exceed the region length
+	if(length > meminfo.RegionSize) return -LINUX_EINVAL;
+
+	// Allocated region is already committed
+	if(meminfo.State == MEM_COMMIT) {
+
+		// The MAP_UNINITIALIZED optimization can be applied here by skipping the recommit
+		// and just applying the updated protection flags to the memory region
+		if((flags & MAP_UNINITIALIZED) == 0) {
+		
+			if(!VirtualFree(addr, length, MEM_DECOMMIT)) return -LINUX_EACCES;
+			if(VirtualAlloc(addr, length, MEM_COMMIT, prot) != addr) return -LINUX_EACCES;
+		}
+		else if(!VirtualProtect(addr, length, prot, &oldprotection)) return -LINUX_EACCES;
+	}
+
+	// Allocated region is reserved but not committed (should technically never happen)
+	else if(meminfo.State == MEM_RESERVE) {
+
+		if(VirtualAlloc(addr, length, MEM_COMMIT, prot) != addr) return -LINUX_EACCES;
+	}
+
+	// Unallocated memory region, or input address was NULL
+	else {
+
+		// Generate the memory allocation flags from the input mmap flags
+		uint32_t allocation = MEM_RESERVE | MEM_COMMIT;
+		if(flags & MAP_HUGETLB) allocation |= MEM_LARGE_PAGES;
+		if(flags & MAP_STACK) allocation |= MEM_TOP_DOWN;
+		// TODO: MAP_GROWDOWN -- how does this work?
+
+		// Allocate the memory region
+		addr = VirtualAlloc(addr, length, allocation, prot);
+		if(addr == nullptr) return -LINUX_EINVAL;
+	}
+
+	// Non-anonymous private mappings read memory contents from the source file
+	if((flags & MAP_ANONYMOUS) == 0) {
+
+		DWORD bytesread;					// Number of bytes read from the file
+
+		// The region needs to be set to PAGE_READWRITE for the data to be loaded
+		VirtualProtect(addr, length, PAGE_READWRITE, &oldprotection);
+
+		// Rather than thunking to __llseek() and read() and incurring the overhead,
+		// move the file pointer and read the data directly in here
+		if(SetFilePointerEx(fd.OsHandle, *reinterpret_cast<PLARGE_INTEGER>(offset), nullptr, FILE_BEGIN))
+			ReadFile(fd.OsHandle, addr, length, &bytesread, nullptr);
+
+		// Restore the previous protection flags to the region after it's been loaded
+		VirtualProtect(addr, length, oldprotection, &oldprotection);
+	}
+
+	// MAP_LOCKED must be applied after the region has been allocated
+	if(flags & MAP_LOCKED) VirtualLock(addr, length);
+
+	return reinterpret_cast<int>(addr);
+}
+
+//-----------------------------------------------------------------------------
+// mmap2_shared
+//
+// Implementation of mmap2() for shared memory mapped files
+//
+// Arguments:
+//
+//	addr		- Optional base address for the mapping
+//	length		- Length of the mapping in bytes
+//	prot		- Memory protection flags (converted for Windows)
+//	flags		- Additional memory mapping behavior flags
+//	fd			- File to be mapped into virtual memory
+//	offset		- Offset into the file to start the mapping
+
+int mmap2_shared(void* addr, size_t length, uint32_t prot, uint32_t flags, FileDescriptor& fd, PULARGE_INTEGER offset)
+{
+	// Non-anonymous mappings require a valid file descriptor
+	if((flags & MAP_ANONYMOUS) && (fd == FileDescriptor::Null)) return -LINUX_EBADF;
+
+	return -1;
+}
 
 // void* mmap2(void *addr, size_t length, int prot, int flags, int fd, off_t pgoffset);
 //
@@ -38,47 +150,81 @@
 //
 int sys192_mmap2(PCONTEXT context)
 {
+	MMAP2_IMPL impl = nullptr;					// Implementation function pointer
+
+	// Determine which version of mmap2 should be invoked based on MAP_PRIVATE | MAP_SHARED
 	uint32_t flags = static_cast<uint32_t>(context->Esi);
-	
-	// TODO : do MAP_ANONYMOUS thing here
-	FileDescriptor fd = (context->Edi) ? FileDescriptorTable::Get(static_cast<int32_t>(context->Edi)) : FileDescriptor::Null;
+	switch(flags & (MAP_PRIVATE | MAP_SHARED)) {
 
-	//
-
-	// Offset is specified as 4096-byte pages to allow for offsets greater than 2GiB on 32-bit systems
-	ULARGE_INTEGER offset;
-	offset.QuadPart = (context->Ebp * 4096);
-
-	// File mappings in Windows cannot use PAGE_NOACCESS for the protection
-	DWORD protection = ProtToPageFlags(context->Edx);
-	if(protection == PAGE_NOACCESS) protection = PAGE_READONLY;
-
-	// Attempt to create the file mapping using the arguments provided by the caller
-	HANDLE mapping = CreateFileMapping((flags & MAP_ANONYMOUS) ? INVALID_HANDLE_VALUE : fd.OsHandle,
-		NULL, protection, 0, context->Ecx, NULL);
-	if(mapping) {
-
-		// Convert the protection flags for MapViewOfFile(), once again avoiding PROT_NONE
-		uint32_t filemapflags = ProtToFileMapFlags(context->Edx);
-		if(filemapflags == 0) filemapflags = FILE_MAP_READ;
-		if(flags & MAP_PRIVATE) filemapflags |= FILE_MAP_COPY;
-
-		// Attempt to map the file into memory using the constructed flags and offset values
-		void* address = MapViewOfFileEx(mapping, filemapflags, offset.HighPart, offset.LowPart, context->Ecx, 
-			reinterpret_cast<void*>(context->Ebx));
-
-		// Always close the file mapping handle, it will remain active until the view is unmapped
-		CloseHandle(mapping);
-
-		return (address) ? reinterpret_cast<int>(address) : -1;
+		case MAP_PRIVATE:	impl = mmap2_private; break;
+		case MAP_SHARED:	impl = mmap2_shared; break;
+		
+		default: return -LINUX_EINVAL;
 	}
 
-	// TODO: map error code
-	DWORD dw = GetLastError();
+	// Windows does not accept suggested addresses, remove it unless MAP_FIXED has been set
+	void* address = (context->Esi & MAP_FIXED) ? reinterpret_cast<void*>(context->Ebx) : nullptr;
 
-	return -1;
+	// The length argument can never be zero
+	size_t length = static_cast<size_t>(context->Ecx);
+	if(length == 0) return -LINUX_EINVAL;
 
-	// MAP_FIXED - interpret addr as absolute, otherwise it's a hint!
+	// Cast out the file descriptor and look up the FileDescriptor
+	int32_t fd = static_cast<int32_t>(context->Edi);
+	FileDescriptor filedesc = (fd > 0) ? FileDescriptorTable::Get(fd) : FileDescriptor::Null;
+
+	// Offset is specified as 4096-byte pages
+	ULARGE_INTEGER offset;
+	offset.QuadPart = (context->Ebp << 12);
+
+	// Invoke the proper version of this system call
+	return impl(address, length, ProtToPageFlags(context->Edx), flags, filedesc, &offset);
+
+
+	//// Cast out all of the arguments into local variables for clarity
+	//void* addr = reinterpret_cast<void*>(context->Ebx);
+	//size_t length = static_cast<size_t>(context->Ecx);
+	//uint32_t prot = static_cast<uint32_t>(context->Edx);
+	//uint32_t flags = static_cast<uint32_t>(context->Esi);
+	//int32_t	fd = static_cast<int32_t>(context->Edi);
+
+	//// Offset is specified as 4096-byte pages to allow for offsets greater than 2GiB on 32-bit systems
+	//ULARGE_INTEGER offset;
+	//offset.QuadPart = (context->Ebp * 4096);
+
+	//// ANONYMOUS|SHARED and ANONYMOUS mappings use different implementations than a standard file mapping
+	//if(flags & (MAP_ANONYMOUS | MAP_SHARED)) return map_anonymous_shared(addr, length, prot, flags, &offset);
+	//else if(flags & MAP_ANONYMOUS) return map_anonymous(addr, length, prot, flags, &offset);
+
+	//// blah
+	//DWORD protection = ProtToPageFlags(context->Edx);
+	//if(protection == PAGE_NOACCESS) protection = PAGE_READONLY;
+
+	//// Attempt to create the file mapping using the arguments provided by the caller
+	//HANDLE mapping = CreateFileMapping(oshandle, NULL, protection, 0, context->Ecx, NULL);
+	//if(mapping) {
+
+	//	// Convert the protection flags for MapViewOfFile(), once again avoiding PROT_NONE
+	//	uint32_t filemapflags = ProtToFileMapFlags(context->Edx);
+	//	if(filemapflags == 0) filemapflags = FILE_MAP_READ;
+	//	if(flags & MAP_PRIVATE) filemapflags |= FILE_MAP_COPY;
+
+	//	// Attempt to map the file into memory using the constructed flags and offset values
+	//	void* address = MapViewOfFileEx(mapping, filemapflags, offset.HighPart, offset.LowPart, context->Ecx, 
+	//		reinterpret_cast<void*>(context->Ebx));
+
+	//	// Always close the file mapping handle, it will remain active until the view is unmapped
+	//	CloseHandle(mapping);
+
+	//	return (address) ? reinterpret_cast<int>(address) : -1;
+	//}
+
+	//// TODO: map error code
+	//DWORD dw = GetLastError();
+
+	//return -1;
+
+	//// MAP_FIXED - interpret addr as absolute, otherwise it's a hint!
 }
 
 //-----------------------------------------------------------------------------
