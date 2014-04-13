@@ -225,6 +225,7 @@
     <ClCompile Include="sys006_close.cpp" />
     <ClCompile Include="sys019_lseek.cpp" />
     <ClCompile Include="sys020_getpid.cpp" />
+    <ClCompile Include="sys045_brk.cpp" />
     <ClCompile Include="sys090_mmap.cpp" />
     <ClCompile Include="sys091_munmap.cpp" />
     <ClCompile Include="sys125_mprotect.cpp" />

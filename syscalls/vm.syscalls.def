@@ -66,7 +66,7 @@ EXPORTS
 	__NR_pipe=noentry @42
 	__NR_times=noentry @43
 	__NR_prof=noentry @44
-	__NR_brk=noentry @45
+	__NR_brk=sys045_brk							@45
 	__NR_setgid=noentry @46
 	__NR_getgid=noentry @47
 	__NR_signal=noentry @48

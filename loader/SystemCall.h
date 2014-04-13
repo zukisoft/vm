@@ -54,7 +54,7 @@ public:
 	// Invoke
 	//
 	// Invokes the specified system call
-	int Invoke(void) { return m_func(this); }
+	int Invoke(void) { m_args = 0; return m_func(this); }
 
 	// Invoke (variadic)
 	//

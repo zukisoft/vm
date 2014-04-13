@@ -20,38 +20,28 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "vm.service.h"				// Include project RPC declarations
+#include "stdafx.h"						// Include project pre-compiled headers
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-//-----------------------------------------------------------------------------
-// open
-
-__int3264 rpc005_open(handle_t client, charptr_t pathname, int32_t flags, mode_t mode, fsobject_t* fsobject)
+// int brk(void *addr)
+//
+// EBX	- void*			addr
+// ECX
+// EDX
+// ESI
+// EDI
+// EBP
+//
+int sys045_brk(PCONTEXT context)
 {
-	UNREFERENCED_PARAMETER(client);
-	UNREFERENCED_PARAMETER(flags);
-	UNREFERENCED_PARAMETER(mode);
+	_ASSERTE(context->Eax == 45);				// Verify system call number
 
-	fsobject->fshandle = 0;
-	fsobject->objecttype = FSOBJECT_PHYSICAL;
+	// TODO: How on Earth am I supposed to implement this?
 
-	size_t len = (11 + strlen(pathname) + 1);
-	fsobject->physical.ospath = (wcharptr_t)midl_user_allocate(len * sizeof(wchar_t));
-
-	wcscpy_s(fsobject->physical.ospath, len, L"D:\\android");
-	MultiByteToWideChar(CP_UTF8, 0, pathname, -1, &fsobject->physical.ospath[10], len-10);
-
-	wchar_t* iterator = fsobject->physical.ospath;
-	while(*iterator) {
-		if(*iterator == '/') *iterator = '\\';
-		iterator++;
-	}
-
-	return 0;
+	return -LINUX_ENOSYS;
 }
 
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

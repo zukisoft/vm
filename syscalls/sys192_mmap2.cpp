@@ -96,7 +96,6 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 		uint32_t allocation = MEM_RESERVE | MEM_COMMIT;
 		if(flags & MAP_HUGETLB) allocation |= MEM_LARGE_PAGES;
 		if(flags & MAP_STACK) allocation |= MEM_TOP_DOWN;
-		// TODO: MAP_GROWDOWN -- how does this work?
 
 		// Allocate the memory region
 		addr = VirtualAlloc(addr, length, allocation, prot);
@@ -148,9 +147,6 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 
 int mmap2_shared(void* addr, size_t length, uint32_t prot, uint32_t flags, int32_t fd, PLARGE_INTEGER offset)
 {
-	// Non-anonymous mappings require a valid file descriptor
-	///if((flags & MAP_ANONYMOUS) && (fd == FileDescriptor::Null)) return -LINUX_EBADF;
-
 	UNREFERENCED_PARAMETER(addr);
 	UNREFERENCED_PARAMETER(length);
 	UNREFERENCED_PARAMETER(prot);
@@ -158,7 +154,8 @@ int mmap2_shared(void* addr, size_t length, uint32_t prot, uint32_t flags, int32
 	UNREFERENCED_PARAMETER(fd);
 	UNREFERENCED_PARAMETER(offset);
 
-	return -1;
+	_RPTF0(_CRT_ASSERT, "Haven't reimplemented shared mmap2 yet");
+	return -LINUX_ENOSYS;
 }
 
 // void* mmap2(void *addr, size_t length, int prot, int flags, int fd, off_t pgoffset);

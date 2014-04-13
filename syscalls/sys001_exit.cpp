@@ -38,7 +38,7 @@ int sys001_exit(PCONTEXT context)
 {
 	_ASSERTE(context->Eax == 1);				// Verify system call number
 
-	ExitProcess(static_cast<UINT>(context->Ebx));
+	ExitProcess(static_cast<uint32_t>(context->Ebx));
 	
 	// Set a breakpoint here; this should not be reachable
 	DebugBreak();

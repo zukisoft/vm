@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSTEMCALL_H_
-#define __SYSTEMCALL_H_
+#ifndef __THUNK_H_
+#define __THUNK_H_
 #pragma once
 
 #include "Exception.h"					// Include Exception declarations
@@ -62,9 +62,9 @@ public:
 	template <typename _first, typename... _remaining>
 	int Invoke(const _first& first, const _remaining&... remaining) {
 
-		// TODO: deal with more than five arguments; need a buffer and point
+		// TODO: deal with more than five arguments; need a buffer to point
 		// context->Esp to it as if it were a stack
-		if(m_args > 5) _RPTF0(_CRT_ASSERT, "SystemCall: Have not implemented stack arguments yet!");
+		if(m_args > 5) _RPTF0(_CRT_ASSERT, "Thunk: Have not implemented stack arguments yet!");
 
 		switch(m_args) {
 
@@ -102,4 +102,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __SYSTEMCALL_H_
+#endif	// __THUNK_H_

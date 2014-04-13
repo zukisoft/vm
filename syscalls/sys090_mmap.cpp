@@ -21,11 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// void* mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+// mmap2()
+extern int sys192_mmap2(PCONTEXT);
+
+// void* mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 //
 // EBX	- void*		addr
 // ECX	- size_t	length
@@ -36,11 +38,13 @@
 //
 int sys090_mmap(PCONTEXT context)
 {
-	_ASSERTE(context->Eax == 90);				// Verify system call number
+	_ASSERTE(context->Eax == 90);			// Verify system call number
 
-	DebugBreak();
-	UNREFERENCED_PARAMETER(context);
-	return -LINUX_ENOSYS;
+	context->Eax = 192;						// Change to mmap2 syscall
+	context->Ebp >>= 12;					// Convert to 4096-byte pages
+
+	// Invoke mmap2() with the modified context registers
+	return sys192_mmap2(context);
 }
 
 //-----------------------------------------------------------------------------
