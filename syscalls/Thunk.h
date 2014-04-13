@@ -29,35 +29,24 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// SystemCall
+// Thunk
 //
 // Used to invoke a virtual system call directly.  The arguments are mapped into
 // the proper registers of the CONTEXT structure in the expected order based on
 // the current architecture
 
-class SystemCall : public CONTEXT
+class Thunk : public CONTEXT
 {
 public:
 
-	// SYSCALL
+	// THUNK
 	//
 	// Function pointer to a virtualized system call
-	typedef int (*SYSCALL)(PCONTEXT context);
+	typedef int (*THUNK)(PCONTEXT context);
 
 	// Instance Constructor
 	//
-	SystemCall(HMODULE module, uint32_t number) 
-	{ 
-		Eax = number;			// System call number should be in EAX
-
-		// The system calls are accessed by ordinal in the DLL
-		m_func = reinterpret_cast<SYSCALL>(GetProcAddress(module, reinterpret_cast<LPCSTR>(number)));
-		if(m_func == nullptr) throw Exception(E_NOTIMPL);
-	}
-
-	// Instance Constructor
-	//
-	SystemCall(SYSCALL syscall) : m_func(syscall) {}
+	Thunk(uint32_t number, THUNK syscall) : m_func(syscall) { Eax = number; }
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -65,7 +54,7 @@ public:
 	// Invoke
 	//
 	// Invokes the specified system call
-	int Invoke(void) { return m_func(this); }
+	int Invoke(void) { m_args = 0; return m_func(this); }
 
 	// Invoke (variadic)
 	//
@@ -99,14 +88,14 @@ public:
 
 private:
 
-	SystemCall(const SystemCall& rhs);
-	SystemCall& operator=(const SystemCall& rhs);
+	Thunk(const Thunk& rhs);
+	Thunk& operator=(const Thunk& rhs);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 	
 	size_t				m_args = 0;					// Number of arguments
-	SYSCALL				m_func = nullptr;			// Function pointer
+	THUNK				m_func = nullptr;			// Function pointer
 };
 
 //-----------------------------------------------------------------------------

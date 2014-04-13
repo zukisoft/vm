@@ -79,7 +79,7 @@
     <ClInclude Include="FileDescriptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SystemCall.h">
+    <ClInclude Include="Thunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

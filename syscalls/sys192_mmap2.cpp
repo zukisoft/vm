@@ -25,13 +25,17 @@
 #include "CriticalSection.h"			// Include CriticalSection declarations
 #include "FileDescriptor.h"				// Include FileDescriptor declarations
 #include "FileDescriptorTable.h"		// Include FileDescriptorTable decls
-#include "SystemCall.h"					// Include SystemCall class declarations
+#include "Thunk.h"						// Include Thunk class declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// Externs
+// read() thunk
 extern int sys003_read(PCONTEXT);
+static Thunk _read(3, sys003_read);
+
+// _llseek() thunk
 extern int sys140__llseek(PCONTEXT);
+static Thunk __llseek(140, sys140__llseek);
 
 // MMAP2_IMPL
 //
@@ -109,12 +113,12 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 		VirtualProtect(addr, length, PAGE_READWRITE, &oldprotection);
 
 		// Thunk into _llseek() to move the file pointer to the requested position
-		result = SystemCall(sys140__llseek).Invoke(fd, offset->HighPart, offset->LowPart, &pointer, LINUX_SEEK_SET);
+		result = __llseek.Invoke(fd, offset->HighPart, offset->LowPart, &pointer, LINUX_SEEK_SET);
 		if(result < 0) return result;
 		if(pointer != offset->QuadPart) return -LINUX_EINVAL;
 
 		// Thunk into read() to read the information from the file
-		result = SystemCall(sys003_read).Invoke(fd, addr, length);
+		result = _read.Invoke(fd, addr, length);
 		if(result < 0) return result;
 		if(static_cast<size_t>(result) != length) return -LINUX_EINVAL;
 
@@ -169,6 +173,8 @@ int mmap2_shared(void* addr, size_t length, uint32_t prot, uint32_t flags, int32
 int sys192_mmap2(PCONTEXT context)
 {
 	MMAP2_IMPL impl = nullptr;					// Implementation function pointer
+
+	_ASSERTE(context->Eax == 192);				// Verify system call number
 
 	// Determine which version of mmap2 should be invoked based on MAP_PRIVATE | MAP_SHARED
 	uint32_t flags = static_cast<uint32_t>(context->Esi);

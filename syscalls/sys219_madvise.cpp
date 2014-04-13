@@ -36,6 +36,8 @@
 //
 int sys219_madvise(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 219);				// Verify system call number
+
 	// Currently ignoring this function call; it's technically optional but
 	// there are things we can actually do with it (see PrefetchVirtualMemory() in Windows 8)
 	UNREFERENCED_PARAMETER(context);

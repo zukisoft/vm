@@ -113,6 +113,8 @@ int open_physical(const FsObject& object, int flags, mode_t mode)
 //
 int sys005_open(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 5);				// Verify system call number
+
 	FsObject				fsobject;				// fsobject_t from remote
 	int						flags;					// Flags argument value
 	mode_t					mode;					// Mode argument value

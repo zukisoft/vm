@@ -39,6 +39,8 @@ struct new_utsname {
 
 int sys122_newuname(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 122);				// Verify system call number
+
 	new_utsname* utsname = reinterpret_cast<new_utsname*>(context->Ebx);
 
 	ZeroMemory(utsname, sizeof(new_utsname));

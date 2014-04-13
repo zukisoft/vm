@@ -35,7 +35,9 @@
 //
 int sys091_munmap(PCONTEXT context)
 {
-	BOOL					result;					// Result from function call
+	BOOL					result;				// Result from function call
+
+	_ASSERTE(context->Eax == 91);				// Verify system call number
 
 	// Cast out the address and length parameters
 	void* addr = reinterpret_cast<void*>(context->Ebx);

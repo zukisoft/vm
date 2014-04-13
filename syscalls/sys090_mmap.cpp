@@ -36,6 +36,8 @@
 //
 int sys090_mmap(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 90);				// Verify system call number
+
 	DebugBreak();
 	UNREFERENCED_PARAMETER(context);
 	return -LINUX_ENOSYS;

@@ -43,6 +43,8 @@ int sys019_lseek(PCONTEXT context)
 	static_assert(LINUX_SEEK_CUR == FILE_CURRENT, "Assumption (LINUX_SEEK_CUR==FILE_CURRENT) is no longer true");
 	static_assert(LINUX_SEEK_END == FILE_END, "Assumption (LINUX_SEEK_END==FILE_END) is no longer true");
 
+	_ASSERTE(context->Eax == 19);				// Verify system call number
+
 	// Look up the specified file descriptor in the process descriptor table
 	FileDescriptor fd = FileDescriptorTable::Get(static_cast<int32_t>(context->Ebx));
 	if(fd == FileDescriptor::Null) return -LINUX_EBADF;

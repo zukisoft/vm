@@ -36,7 +36,9 @@
 //
 int sys020_getpid(PCONTEXT context)
 {
-	UNREFERENCED_PARAMETER(context);
+	_ASSERTE(context->Eax == 20);				// Verify system call number
+
+	// Return the current process identifier
 	return static_cast<pid_t>(GetCurrentProcessId());
 }
 

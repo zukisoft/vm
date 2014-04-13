@@ -36,7 +36,9 @@
 //
 int sys125_mprotect(PCONTEXT context)
 {
-	MEMORY_BASIC_INFORMATION		info;				// Virtual memory information
+	MEMORY_BASIC_INFORMATION		info;			// Virtual memory information
+
+	_ASSERTE(context->Eax == 125);					// Verify system call number
 
 	// Pop out variables that will be used more than once in here
 	void* address = reinterpret_cast<void*>(context->Ebx);

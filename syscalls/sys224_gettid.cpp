@@ -36,7 +36,9 @@
 //
 int sys224_gettid(PCONTEXT context)
 {
-	UNREFERENCED_PARAMETER(context);
+	_ASSERTE(context->Eax == 224);				// Verify system call number
+
+	// Return the current thread identifier
 	return static_cast<pid_t>(GetCurrentThreadId());
 }
 

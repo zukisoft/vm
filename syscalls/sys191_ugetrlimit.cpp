@@ -64,6 +64,8 @@ int sys191_ugetrlimit(PCONTEXT context)
 {
 	MEMORY_BASIC_INFORMATION		stackInfo;		// Stack memory information
 
+	_ASSERTE(context->Eax == 191);					// Verify system call number
+
 	// Get the pointer for the provided structure and fail if it's NULL
 	struct rlimit* limit = reinterpret_cast<struct rlimit*>(context->Ecx);
 	if(!limit) return -LINUX_EFAULT;

@@ -38,6 +38,8 @@
 //
 int sys003_read(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 3);				// Verify system call number
+
 	// Look up the specified file descriptor in the process descriptor table
 	FileDescriptor fd = FileDescriptorTable::Get(static_cast<int32_t>(context->Ebx));
 	if(fd == FileDescriptor::Null) return -LINUX_EBADF;

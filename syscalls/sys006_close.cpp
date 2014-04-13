@@ -37,6 +37,8 @@
 //
 int sys006_close(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 6);				// Verify system call number
+
 	int32_t fd = static_cast<int32_t>(context->Ebx);		// Cast out the fd
 
 	// Check that the file descriptor is valid for this process

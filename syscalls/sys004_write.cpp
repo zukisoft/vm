@@ -36,6 +36,8 @@
 //
 int sys004_write(PCONTEXT context)
 {
+	_ASSERTE(context->Eax == 4);				// Verify system call number
+
 	int fd = static_cast<int>(context->Ebx);
 	const void* buf = reinterpret_cast<const void*>(context->Ecx);
 	size_t count = static_cast<size_t>(context->Edx);
