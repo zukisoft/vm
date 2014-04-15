@@ -20,6 +20,12 @@
     <Filter Include="Source Files\System Calls">
       <UniqueIdentifier>{4a626597-a6b7-42c4-8d17-8dc9cfea610a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{403c97fe-da8a-4ced-b55d-2bb7645cae36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{02bc4c65-2cb4-4559-9b3d-3df40032d53b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -37,31 +43,10 @@
     <ClInclude Include="ModRM.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="char_t.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Exception.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32Exception.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tstring.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\tmp\vm.service\vm.service.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\external\cpp-btree\btree_map.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FsObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CriticalSection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AutoCriticalSection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FIleDescriptorTable.h">
@@ -70,17 +55,35 @@
     <ClInclude Include="ReaderWriterLock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AutoReaderLock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AutoWriterLock.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FileDescriptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Thunk.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\AutoCriticalSection.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\AutoReaderLock.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\AutoWriterLock.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\char_t.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Exception.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\tstring.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Win32Exception.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CriticalSection.h">
+      <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -135,9 +138,6 @@
     <ClCompile Include="sys001_exit.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="Exception.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\tmp\vm.service\vm.service_c.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
@@ -170,6 +170,9 @@
     </ClCompile>
     <ClCompile Include="sys045_brk.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Exception.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

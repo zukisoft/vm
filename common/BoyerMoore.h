@@ -20,24 +20,49 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __TSTRING_H_
-#define __TSTRING_H_
+#ifndef __BOYERMOORE_H_
+#define __BOYERMOORE_H_
 #pragma once
 
-#include <string>						// Include STL string<> declarations
+#include "Exception.h"				// Include Exception declarations
 
-namespace std {
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
-// tstring
+//-----------------------------------------------------------------------------
+// BoyerMoore
 //
-#ifdef _UNICODE
-typedef wstring tstring;
-#else
-typedef string tstring;
-#endif
+// Implementation of the Boyer-Moore search string algorithm
+// See http://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string_search_algorithm
 
-}	// namespace std
+class BoyerMoore
+{
+public:
+
+	// Search
+	//
+	// Executes a binary pattern search using the Boyer-Moore algorithm
+	static void* Search(void* haystack, size_t haystacklen, void* needle, size_t needlelen);
+
+private:
+
+	BoyerMoore();
+	BoyerMoore(const BoyerMoore&);
+	BoyerMoore& operator=(const BoyerMoore&);
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// Boyer-Moore Algorithm Functions
+	//
+	static uint8_t* BoyerMooreSearch(uint8_t *string, uint32_t stringlen, uint8_t *pat, uint32_t patlen);
+	static int		IsPrefix(uint8_t *word, int wordlen, int pos);
+	static void		MakeDelta1(int *delta1, uint8_t *pat, int32_t patlen);
+	static void		MakeDelta2(int *delta2, uint8_t *pat, int32_t patlen);
+	static int		SuffixLength(uint8_t *word, int wordlen, int pos);
+};
 
 //-----------------------------------------------------------------------------
 
-#endif	// __TSTRING_H_
+#pragma warning(pop)
+
+#endif	// __BOYERMOORE_H_

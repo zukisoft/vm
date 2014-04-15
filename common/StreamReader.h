@@ -20,55 +20,69 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __EXCEPTION_H_
-#define __EXCEPTION_H_
+#ifndef __STREAMREADER_H_
+#define __STREAMREADER_H_
 #pragma once
+
+#include "Exception.h"					// Include Exception declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// Exception
+// StreamReader
 //
-// Exception class
+// Implements a forward-only byte stream reader interface
 
-class Exception
+class StreamReader
 {
 public:
 
-	// Constructors / Destructor
+	// Destructor
 	//
-	Exception(HRESULT hResult, ...);
-	Exception(Exception& inner, HRESULT hResult, ...);
-	virtual ~Exception();
-
-	// Copy Constructor
-	//
-	Exception(const Exception& rhs);
+	virtual ~StreamReader() {}
 
 	//-------------------------------------------------------------------------
-	// Overloaded Operators
+	// Member Functions
 
-	operator LPCTSTR() const { return m_message.c_str(); }
-	Exception& operator=(const Exception& rhs);
+	// Read
+	//
+	// Reads the specified number of bytes from the underlying stream
+	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+
+	// Reset
+	//
+	// Resets the stream back to the beginning
+	virtual void Reset(void) = 0;
+
+	// Seek
+	//
+	// Advances the stream to the specified position
+	virtual void Seek(uint32_t position) = 0;
+
+	// TryRead
+	//
+	// Reads the specified number of bytes from the underlying stream
+	// Returns boolean success/failure rather than throwing an exception
+	virtual bool TryRead(void* buffer, uint32_t length, uint32_t* out);
+
+	// TrySeek
+	//
+	// Advances the stream to the specified position, returns a boolean
+	// success/failure rather than throwing an exception
+	virtual bool TrySeek(uint32_t position);
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	__declspec(property(get=getInnerException)) Exception* InnerException;
-	Exception* getInnerException() const { return m_inner; }
-
-private:
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	HRESULT					m_hResult;			// Error HRESULT code
-	std::tstring			m_message;			// Formatted message string
-	Exception*				m_inner;			// Inner exception object
+	// Position
+	//
+	// Gets the current position within the stream
+	__declspec(property(get=getPosition)) uint32_t Position;
+	virtual uint32_t getPosition(void) = 0;
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __EXCEPTION_H_
+#endif	// __STREAMREADER_H_

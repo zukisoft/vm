@@ -95,7 +95,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -111,7 +111,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -127,7 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +145,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -155,33 +155,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\char_t.h" />
+    <ClInclude Include="..\common\Exception.h" />
+    <ClInclude Include="..\common\File.h" />
+    <ClInclude Include="..\common\MappedFile.h" />
+    <ClInclude Include="..\common\MappedFileView.h" />
+    <ClInclude Include="..\common\MemoryRegion.h" />
+    <ClInclude Include="..\common\tstring.h" />
+    <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.loader\messages\messages.h" />
     <ClInclude Include="auxvec.h" />
-    <ClInclude Include="char_t.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="elf_em.h" />
-    <ClInclude Include="File.h" />
-    <ClInclude Include="MappedFile.h" />
-    <ClInclude Include="MappedFileView.h" />
-    <ClInclude Include="MemoryRegion.h" />
     <ClInclude Include="elf.h" />
-    <ClInclude Include="Exception.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemCall.h" />
     <ClInclude Include="Trace.h" />
-    <ClInclude Include="tstring.h" />
-    <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\Exception.cpp" />
+    <ClCompile Include="..\common\File.cpp" />
+    <ClCompile Include="..\common\MappedFile.cpp" />
+    <ClCompile Include="..\common\MappedFileView.cpp" />
+    <ClCompile Include="..\common\MemoryRegion.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />
-    <ClCompile Include="Exception.cpp" />
-    <ClCompile Include="File.cpp" />
-    <ClCompile Include="MappedFile.cpp" />
-    <ClCompile Include="MappedFileView.cpp" />
-    <ClCompile Include="MemoryRegion.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

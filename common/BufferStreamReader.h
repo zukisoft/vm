@@ -20,33 +20,70 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __WIN32EXCEPTION_H_
-#define __WIN32EXCEPTION_H_
+#ifndef _BUFFERSTREAMREADER_H_
+#define _BUFFERSTREAMREADER_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception declarations
+#include "Exception.h"					// Include Exception class declarations
+#include "StreamReader.h"				// Include StreamReader declarations
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// Win32Exception
+// BufferStreamReader
 //
-// Exception class for Windows system error codes
+// Memory buffer stream reader implementation
 
-class Win32Exception : public Exception
+class BufferStreamReader : public StreamReader
 {
 public:
 
-	// Constructors
+	// Constructors / Destructor
 	//
-	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
-	Win32Exception(DWORD result) : Exception(HRESULT_FROM_WIN32(result)) {}
-	Win32Exception(Exception& inner) : Exception(inner, HRESULT_FROM_WIN32(GetLastError())) {}
-	Win32Exception(Exception& inner, DWORD result) : Exception(inner, HRESULT_FROM_WIN32(result)) {}
+	BufferStreamReader(const void* base, size_t length);
+	virtual ~BufferStreamReader() {}
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// StreamReader::Read
+	//
+	// Reads the specified number of bytes from the underlying stream
+	virtual uint32_t Read(void* buffer, uint32_t length);
+
+	// StreamReader::Reset
+	//
+	// Resets the stream back to the beginning
+	virtual void Reset(void);
+
+	// StreamReader::Seek
+	//
+	// Advances the stream to the specified position
+	virtual void Seek(uint32_t position);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// StreamReader::getPosition
+	//
+	// Gets the current position within the stream
+	virtual uint32_t getPosition(void) { return m_offset; }
+
+private:
+
+	BufferStreamReader(const BufferStreamReader&);
+	BufferStreamReader& operator=(const BufferStreamReader&);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	const void*				m_base;				// Base memory address
+	uint32_t				m_length;			// Length of memory buffer
+	uint32_t				m_offset;			// Offset into the memory buffer
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __WIN32EXCEPTION_H_
+#endif	// _BUFFERSTREAMREADER_H_

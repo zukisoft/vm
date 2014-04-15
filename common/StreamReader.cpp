@@ -20,22 +20,47 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __CHAR_T_H_
-#define __CHAR_T_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "StreamReader.h"				// Include StreamReader declarations
 
-// char_t
-//
-typedef char		char_t;
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-// tchar_t
+//-----------------------------------------------------------------------------
+// StreamReader::TryRead
 //
-#ifdef _UNICODE
-typedef wchar_t		tchar_t;
-#else
-typedef char		tchar_t;
-#endif
+// Reads the specified number of bytes from the input stream into the output buffer.
+// Returns a boolean success/failure value rather than throwing an exception
+//
+// Arguments:
+//
+//	buffer			- Output buffer
+//	length			- Length of the output buffer, in bytes
+//	out				- Number of bytes written to the buffer
+
+bool StreamReader::TryRead(void* buffer, uint32_t length, uint32_t* out)
+{
+	if(!out) return false;					// Invalid [out] pointer
+
+	try { *out = Read(buffer, length); return true; }
+	catch(Exception&) { return false; }
+}
+
+//-----------------------------------------------------------------------------
+// StreamReader::TrySeek
+//
+// Advances the stream to the specified position.  Returns a boolean value
+// rather than throwing an exception
+//
+// Arguments:
+//
+//	position		- Position to advance the stream pointer to
+
+bool StreamReader::TrySeek(uint32_t position)
+{
+	try { Seek(position); return true; }
+	catch(Exception&) { return false; }
+}
 
 //-----------------------------------------------------------------------------
 
-#endif	// __CHAR_T_H
+#pragma warning(pop)

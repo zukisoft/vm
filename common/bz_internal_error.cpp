@@ -20,22 +20,25 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __CHAR_T_H_
-#define __CHAR_T_H_
-#pragma once
+#include "stdafx.h"
 
-// char_t
-//
-typedef char		char_t;
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
-// tchar_t
+//-----------------------------------------------------------------------------
+// bz_internal_error
 //
-#ifdef _UNICODE
-typedef wchar_t		tchar_t;
-#else
-typedef char		tchar_t;
-#endif
+// Invoked by BZIP2 library when an assertion is raised, this is required when
+// BZ_NO_STDIO has been defined
+//
+// Arguments:
+//
+//	error		- BZIP2 internal error code
+
+extern "C" void bz_internal_error(int error)
+{
+	UNREFERENCED_PARAMETER(error);
+}
 
 //-----------------------------------------------------------------------------
 
-#endif	// __CHAR_T_H
+#pragma warning(pop)
