@@ -199,19 +199,19 @@
     <CustomBuild Include="messages.mc">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
 
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
 
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
 
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" %(Filename)%(Extension)
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
 
 </Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
