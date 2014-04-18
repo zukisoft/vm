@@ -44,6 +44,7 @@
 
 #include "char_t.h"
 #include "vm.service.h"
+#include "messages.h"
 
 // KiB / MiB / GiB
 

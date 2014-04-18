@@ -60,6 +60,7 @@
 #include "svctl.h"
 
 #include "vm.service.h"
+#include "messages.h"
 
 //---------------------------------------------------------------------------
 // Project COM Declarations

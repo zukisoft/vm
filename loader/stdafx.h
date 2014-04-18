@@ -58,7 +58,7 @@
 #define GiB		*(1 << 30)		// GiB multiplier
 
 // Message Resources
-#include <messages.h>
+#include "messages.h"
 
 //-----------------------------------------------------------------------------
 

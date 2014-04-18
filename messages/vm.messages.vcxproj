@@ -18,11 +18,43 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="messages.mc">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
+MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Executing Message Compiler</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Executing Message Compiler</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Executing Message Compiler</Message>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\tmp\vm.messages\messages.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\tmp\version\version.rc" />
+    <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2CD0303D-470A-4941-BB21-E7F3F840E131}</ProjectGuid>
+    <ProjectGuid>{1CE1CA90-2F0D-449F-B33A-5E0452DFE658}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>zuki.vm.syscalls</RootNamespace>
-    <ProjectName>vm.syscalls</ProjectName>
+    <RootNamespace>zuki.vm.messages</RootNamespace>
+    <ProjectName>vm.messages</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,37 +103,37 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(RootNamespace)</TargetName>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(RootNamespace)</TargetName>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(RootNamespace)</TargetName>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(RootNamespace)</TargetName>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SYSCALLS32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.service;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MESSAGES_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>$(ProjectName).def</ModuleDefinitionFile>
-      <EntryPointSymbol>
-      </EntryPointSymbol>
+      <NoEntryPoint>true</NoEntryPoint>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -109,16 +141,12 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SYSCALLS32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.service;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MESSAGES_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>$(ProjectName).def</ModuleDefinitionFile>
-      <EntryPointSymbol>
-      </EntryPointSymbol>
+      <NoEntryPoint>true</NoEntryPoint>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,18 +156,15 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SYSCALLS32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.service;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;MESSAGES_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>$(ProjectName).def</ModuleDefinitionFile>
-      <EntryPointSymbol>
-      </EntryPointSymbol>
+      <NoEntryPoint>true</NoEntryPoint>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -149,103 +174,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SYSCALLS32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.service;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;MESSAGES_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>$(ProjectName).def</ModuleDefinitionFile>
-      <EntryPointSymbol>
-      </EntryPointSymbol>
+      <NoEntryPoint>true</NoEntryPoint>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\common\AutoCriticalSection.h" />
-    <ClInclude Include="..\common\AutoReaderLock.h" />
-    <ClInclude Include="..\common\AutoWriterLock.h" />
-    <ClInclude Include="..\common\char_t.h" />
-    <ClInclude Include="..\common\CriticalSection.h" />
-    <ClInclude Include="..\common\Exception.h" />
-    <ClInclude Include="..\common\tstring.h" />
-    <ClInclude Include="..\common\Win32Exception.h" />
-    <ClInclude Include="..\tmp\vm.messages\messages.h" />
-    <ClInclude Include="..\tmp\vm.service\vm.service.h" />
-    <ClInclude Include="ContextRecord.h" />
-    <ClInclude Include="FileDescriptor.h" />
-    <ClInclude Include="FIleDescriptorTable.h" />
-    <ClInclude Include="FsObject.h" />
-    <ClInclude Include="Instruction.h" />
-    <ClInclude Include="ModRM.h" />
-    <ClInclude Include="ReaderWriterLock.h" />
-    <ClInclude Include="Thunk.h" />
-    <ClInclude Include="uapi.h" />
-    <ClInclude Include="stdafx.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\common\Exception.cpp" />
-    <ClCompile Include="..\tmp\vm.service\vm.service_c.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="dllmain.cpp">
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </PrecompiledHeader>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CompileAsManaged>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="FileDescriptorTable.cpp" />
-    <ClCompile Include="FsObject.cpp" />
-    <ClCompile Include="Instruction.cpp" />
-    <ClCompile Include="ModRM.cpp" />
-    <ClCompile Include="rpc.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="sys001_exit.cpp" />
-    <ClCompile Include="sys003_read.cpp" />
-    <ClCompile Include="sys004_write.cpp" />
-    <ClCompile Include="sys005_open.cpp" />
-    <ClCompile Include="sys006_close.cpp" />
-    <ClCompile Include="sys019_lseek.cpp" />
-    <ClCompile Include="sys020_getpid.cpp" />
-    <ClCompile Include="sys045_brk.cpp" />
-    <ClCompile Include="sys090_mmap.cpp" />
-    <ClCompile Include="sys091_munmap.cpp" />
-    <ClCompile Include="sys125_mprotect.cpp" />
-    <ClCompile Include="sys140__llseek.cpp" />
-    <ClCompile Include="sys191_ugetrlimit.cpp" />
-    <ClCompile Include="sys192_mmap2.cpp" />
-    <ClCompile Include="sys219_madvise.cpp" />
-    <ClCompile Include="sys224_gettid.cpp" />
-    <ClCompile Include="noentry.cpp" />
-    <ClCompile Include="sys122_newuname.cpp" />
-    <ClCompile Include="sys243_set_thread_area.cpp" />
-    <ClCompile Include="sys252_exit_group.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\tmp\version\version.rc" />
-    <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="vm.syscalls.def" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

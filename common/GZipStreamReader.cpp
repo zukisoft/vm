@@ -30,11 +30,6 @@
 // Used when generating decompression exceptions
 const TCHAR COMPRESSION_METHOD[] = _T("gzip");
 
-// TODO
-#define E_DECOMPRESS_INIT 0xDEADBEEF
-#define E_DECOMPRESS_CORRUPT 0xDEADBEEF
-#define E_DECOMPRESS_TRUNCATED 0xDEADBEEF
-
 //-----------------------------------------------------------------------------
 // GZipStreamReader Constructor
 //

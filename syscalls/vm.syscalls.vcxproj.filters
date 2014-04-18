@@ -85,6 +85,9 @@
     <ClInclude Include="..\common\CriticalSection.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\tmp\vm.messages\messages.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -177,6 +180,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">
+      <Filter>Generated Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\tmp\vm.messages\messages.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>
   </ItemGroup>

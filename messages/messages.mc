@@ -24,8 +24,8 @@
 ;// Facility Codes
 FacilityNames=(
 			Generic=0x00:FACILITY_GENERIC
-			ElfImage=0x01:FACILITY_ELFIMAGE
-			ElfLoader=0x02:FACILITY_ELF_LOADER
+			Common=0x01:FACILITY_COMMON
+			ElfImage=0x02:FACILITY_ELFIMAGE
 			)
 
 ;//--------------------------------------------------------------------------
@@ -85,11 +85,52 @@ Parameter %1 was out of the range of valid values.
 .
 
 ;//----------------------------------------------------------------------------
+;// Common
+;//
+;// Messages for custom exceptions thrown by common code
+
+MessageId=0x100
+Severity=Error
+Facility=Common
+SymbolicName=E_DECOMPRESS_INIT
+Language=English
+The decompression stream cannot be initialized (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_BADMAGIC
+Language=English
+The decompression stream magic number is invalid (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_BADHEADER
+Language=English
+The decompression stream header is corrupt (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_TRUNCATED
+Language=English
+The decompression stream ended prematurely (method: %1)
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_DECOMPRESS_CORRUPT
+Language=English
+The decompression stream data is corrupt (method: %1)
+.
+
+;//----------------------------------------------------------------------------
 ;// ElfImage
 ;//
 ;// Messages specific to the parsing and loading of an ELF image
 
-MessageId=0x100
+MessageId=0x200
 Severity=Error
 Facility=ElfImage
 SymbolicName=E_TRUNCATEDELFHEADER

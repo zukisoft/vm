@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,7 +141,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -186,7 +186,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -233,7 +233,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\zlib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -301,6 +301,7 @@
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\tstring.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
+    <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\vm.service.h" />
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
@@ -419,6 +420,7 @@
   <ItemGroup>
     <ResourceCompile Include="..\..\external\svctl\svctl.rc" />
     <ResourceCompile Include="..\tmp\version\version.rc" />
+    <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
     <ResourceCompile Include="vm.service.rc" />
   </ItemGroup>
   <ItemGroup>

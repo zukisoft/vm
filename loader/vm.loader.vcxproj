@@ -95,7 +95,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -111,7 +111,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -127,7 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +145,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\$(ProjectName)\messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -163,7 +163,7 @@
     <ClInclude Include="..\common\MemoryRegion.h" />
     <ClInclude Include="..\common\tstring.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
-    <ClInclude Include="..\tmp\vm.loader\messages\messages.h" />
+    <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="auxvec.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
@@ -192,37 +192,8 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
-    <ResourceCompile Include="..\tmp\vm.loader\messages\messages.rc" />
+    <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
     <ResourceCompile Include="vdso.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="messages.mc">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
-
-</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
-
-</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
-
-</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)\messages" mkdir "$(SolutionDir)tmp\$(ProjectName)\messages"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)\messages" -r "$(SolutionDir)tmp\$(ProjectName)\messages" "%(FullPath)"
-
-</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Executing Message Compiler</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Executing Message Compiler</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Executing Message Compiler</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\messages\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\messages\MSG00409.bin;%(Outputs)</Outputs>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="ElfEntry32.asm">
