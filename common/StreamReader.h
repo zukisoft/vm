@@ -74,6 +74,12 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// Length
+	//
+	// Gets the overall length of the stream, if known
+	__declspec(property(get=getLength)) uint32_t Length;
+	virtual uint32_t getLength(void) const { return UINT32_MAX; }
+
 	// Position
 	//
 	// Gets the current position within the stream

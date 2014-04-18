@@ -295,6 +295,7 @@
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
     <ClInclude Include="..\common\char_t.h" />
+    <ClInclude Include="..\common\CpioArchive.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\GZipStreamReader.h" />
     <ClInclude Include="..\common\StreamReader.h" />
@@ -389,6 +390,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">GZ_NO_COMPRESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">GZ_NO_COMPRESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\common\CpioArchive.cpp" />
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\GZipStreamReader.cpp" />
     <ClCompile Include="..\common\StreamReader.cpp" />

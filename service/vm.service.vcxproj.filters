@@ -169,6 +169,9 @@
     <ClInclude Include="..\common\Win32Exception.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\CpioArchive.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -280,6 +283,9 @@
       <Filter>External Libraries\zlib</Filter>
     </ClCompile>
     <ClCompile Include="..\common\Exception.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CpioArchive.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
