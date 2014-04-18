@@ -73,6 +73,9 @@ public:
 
 private:
 
+	Instruction(const Instruction& rhs);
+	Instruction& operator=(const Instruction& rhs);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
