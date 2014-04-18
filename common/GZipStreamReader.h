@@ -37,7 +37,6 @@
 // - Disable precompiled headers for all the above .c files
 // - Define NO_GZ_COMPRESS as a preprocessor definition for all the above .c files
 // - Add external\zlib to the project Additional Include Directories
-// - Add #include <zlib.h> to the project stdafx.h header file
 //-----------------------------------------------------------------------------
 
 #ifndef __GZIPSTREAMREADER_H_
@@ -102,6 +101,7 @@ private:
 	uint8_t*				m_base;				// Base memory address
 	uint32_t				m_length;			// Length of memory buffer
 	uint32_t				m_position;			// Current stream position
+	bool					m_finished;			// End of stream has been reached
 };
 
 //-----------------------------------------------------------------------------

@@ -31,9 +31,9 @@
 const TCHAR COMPRESSION_METHOD[] = _T("gzip");
 
 // TODO
-#define E_DECOMPRESS_INIT 0
-#define E_DECOMPRESS_CORRUPT 0
-#define E_DECOMPRESS_TRUNCATED 0
+#define E_DECOMPRESS_INIT 0xDEADBEEF
+#define E_DECOMPRESS_CORRUPT 0xDEADBEEF
+#define E_DECOMPRESS_TRUNCATED 0xDEADBEEF
 
 //-----------------------------------------------------------------------------
 // GZipStreamReader Constructor
@@ -56,6 +56,7 @@ GZipStreamReader::GZipStreamReader(const void* base, size_t length)
 	m_base = reinterpret_cast<uint8_t*>(const_cast<void*>(base));;
 	m_length = static_cast<uint32_t>(length);
 	m_position = 0;
+	m_finished = false;
 
 	// Initialize the zlib stream structure
 	memset(&m_stream, 0, sizeof(z_stream));
@@ -90,7 +91,7 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 	bool freemem = false;					// Flag to free buffer
 	uint32_t out = m_stream.total_out;		// Save the current total
 
-	if(length == 0) return 0;				// Nothing to do
+	if((length == 0) || (m_finished)) return 0;		// Nothing to do
 
 	// The caller can specify NULL if the output data is irrelevant, but zlib
 	// expects to be able to write the decompressed data somewhere ...
@@ -111,6 +112,9 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 
 	if((result != Z_OK) && (result != Z_STREAM_END))
 		throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
+
+	// Prevent reading from beyond the end of the stream
+	if(result == Z_STREAM_END) m_finished = true;
 
 	out = (m_stream.total_out - out);			// Update output count
 	m_position += out;							// Update stream position
@@ -140,7 +144,8 @@ void GZipStreamReader::Reset(void)
 	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
 	if(result != Z_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
 
-	m_position = 0;				// Reset position back to zero
+	m_position = 0;
+	m_finished = false;
 }
 
 //-----------------------------------------------------------------------------
