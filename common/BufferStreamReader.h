@@ -24,8 +24,8 @@
 #define _BUFFERSTREAMREADER_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception class declarations
-#include "StreamReader.h"				// Include StreamReader declarations
+#include "Exception.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

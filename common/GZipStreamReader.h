@@ -43,9 +43,9 @@
 #define __GZIPSTREAMREADER_H_
 #pragma once
 
-#include <zlib.h>						// Include ZLIB library declarations
-#include "Exception.h"					// Include Exception class declarations
-#include "StreamReader.h"				// Include StreamReader declarations
+#include <zlib.h>
+#include "Exception.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

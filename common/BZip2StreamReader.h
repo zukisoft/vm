@@ -24,10 +24,34 @@
 #define __BZIP2STREAMREADER_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception class declarations
-#include "StreamReader.h"				// Include StreamReader declarations
+#include <bzlib.h>
+#include "Exception.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
+
+//-----------------------------------------------------------------------------
+// EXTERNAL DEPENDENCY: BIZP2
+//
+// - Add the following files from external\bzip2 to the parent project:
+//
+//	blocksort.c
+//	bzcompress.c
+//	bzlib.c
+//	bzlib.h
+//	crctable.c
+//	decompress.c
+//	huffman.c
+//	randtable.c
+//
+// - Disable precompiled headers for all the above .c files
+// - Define _CRT_SECURE_NO_WARNINGS and BZ_NO_STDIO preprocessor definitions for above .c files
+// - Add external\bzip2 to the project Additional Include Directories
+//
+// - Add the following files from common to the parent project:
+//
+//	bz_internal_error.cpp
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // BZip2StreamReader

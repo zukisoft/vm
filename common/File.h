@@ -24,8 +24,8 @@
 #define __FILE_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception declarations
-#include "Win32Exception.h"				// Include Win32Exception decls
+#include "Exception.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

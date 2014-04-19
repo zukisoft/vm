@@ -24,10 +24,11 @@
 #define __CPIOARCHIVE_H_
 #pragma once
 
-#include <functional>				// Include std::function and lambdas
-#include <string>					// Include std::string declarations
-#include "char_t.h"					// Include char_t declarations
-#include "StreamReader.h"			// Include StreamReader declarations
+#include <functional>
+#include <memory>
+#include <string>
+#include "char_t.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 

@@ -24,10 +24,28 @@
 #define __XZSTREAMREADER_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception class declarations
-#include "StreamReader.h"				// Include StreamReader declarations
+#include <xz.h>
+#include "Exception.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
+
+//----------------------------------------------------------------------------
+// EXTERNAL DEPENDENCY: XZ-EMBEDDED
+//
+// - Add the following files from external\xz-embedded to the parent project:
+//
+//	linux\include\linux\xz.h
+//	linux\lib\xz\xz_crc32.c
+//	linux\lib\xz\xz_dec_bcj.c
+//	linux\lib\xz\xz_dec_lzma2.c
+//	linux\lib\xz\xz_dec_stream.c
+//
+// - Disable precompiled headers for all the above .c files
+// - Define XZ_DEC_X86 preprocessor definition for above .c files
+// - Add external\xz-embedded\linux\include\linux and \external\xz-embedded\userspace
+//   to the project Additional Include Directories
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // XzStreamReader

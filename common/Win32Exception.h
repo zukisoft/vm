@@ -24,7 +24,7 @@
 #define __WIN32EXCEPTION_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception declarations
+#include "Exception.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

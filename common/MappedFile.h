@@ -24,9 +24,10 @@
 #define __MAPPEDFILE_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception declarations
-#include "File.h"						// Include File declarations
-#include "Win32Exception.h"				// Include Win32Exception decls
+#include <memory>
+#include "Exception.h"
+#include "File.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

@@ -24,7 +24,7 @@
 #define __AUTOCRITICALSECTION_H_
 #pragma once
 
-#include "CriticalSection.h"		// Include CriticalSection declarations
+#include "CriticalSection.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 

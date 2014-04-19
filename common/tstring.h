@@ -24,7 +24,7 @@
 #define __TSTRING_H_
 #pragma once
 
-#include <string>						// Include STL string<> declarations
+#include <string>
 
 namespace std {
 

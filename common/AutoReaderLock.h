@@ -24,7 +24,7 @@
 #define __AUTOREADERLOCK_H_
 #pragma once
 
-#include "ReaderWriterLock.h"		// Include ReaderWriterLock declarations
+#include "ReaderWriterLock.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 

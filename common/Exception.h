@@ -24,8 +24,8 @@
 #define __EXCEPTION_H_
 #pragma once
 
-#include "char_t.h"						// Include char_t declarations
-#include "tstring.h"					// Include tstring<> declarations
+#include "char_t.h"
+#include "tstring.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

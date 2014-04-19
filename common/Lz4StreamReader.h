@@ -24,10 +24,23 @@
 #define __LZ4STREAMREADER_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception class declarations
-#include "StreamReader.h"				// Include StreamReader declarations
+#include <lz4.h>
+#include "Exception.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
+
+//-----------------------------------------------------------------------------
+// EXTERNAL DEPENDENCY: LZ4
+//
+// - Add the following files from external\lz4 to the parent project:
+//
+//	lz4.c
+//	lz4.h
+//
+// - Disable precompiled headers for all the above .c files
+// - Add external\lz4 to the project Additional Include Directories
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // Lz4StreamReader
