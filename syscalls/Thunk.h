@@ -24,8 +24,6 @@
 #define __THUNK_H_
 #pragma once
 
-#include "Exception.h"					// Include Exception declarations
-
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
@@ -74,7 +72,7 @@ public:
 			case 3: this->Esi = uintptr_t(first); break;
 			case 4: this->Edi = uintptr_t(first); break;
 			case 5: this->Ebx = uintptr_t(first); break;
-			default: throw Exception(E_UNEXPECTED);
+			default: /* TODO: PUSH ONTO STACK */ break;
 		}
 
 		// Increment the number of arguments so that the next one will

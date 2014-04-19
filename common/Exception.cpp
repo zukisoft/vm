@@ -41,6 +41,12 @@ Exception::Exception(HRESULT hResult, ...) : m_hResult(hResult), m_inner(nullptr
 	va_list	args;
 	va_start(args, hResult);
 
+	//
+	// TODO: Passing FORMAT_MESSAGE_FROM_HMODULE only works if the module actually has 
+	// messages.  Need to add a static initializer to enumerate resource types, and also
+	// need to add a way to specify the custom module handle for DLL-based resources
+	//
+
 	// Invoke FormatMessage to convert the HRESULT and the variable arguments into a message,
 	// either from the system or the message resources in this module
 	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM, 
