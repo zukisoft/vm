@@ -62,7 +62,7 @@ MemoryRegion::MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect
 
 MemoryRegion::~MemoryRegion()
 {
-	if(m_base) VirtualFree(m_base, m_length, MEM_RELEASE);
+	if(m_base) VirtualFree(m_base, 0, MEM_RELEASE);
 }
 
 //-----------------------------------------------------------------------------

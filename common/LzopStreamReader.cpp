@@ -329,10 +329,10 @@ uint32_t LzopStreamReader::ReadNextBlock(void)
 {
 	uint32_t			uncompressed;			// Length of uncompressed data
 	uint32_t			compressed;				// Length of compressed data
-	uint32_t			adler_checksum_d;		// Decompressed data ADLER32
-	uint32_t			crc32_checksum_d;		// Decompressed data CRC32
-	uint32_t			adler_checksum_c;		// Compressed data ADLER32
-	uint32_t			crc32_checksum_c;		// Compressed data CRC32
+	uint32_t			adler_checksum_d = 0;	// Decompressed data ADLER32
+	uint32_t			crc32_checksum_d = 0;	// Decompressed data CRC32
+	uint32_t			adler_checksum_c = 0;	// Compressed data ADLER32
+	uint32_t			crc32_checksum_c = 0;	// Compressed data CRC32
 
 	// No more data
 	if(m_lzoremain == 0) return 0;

@@ -33,7 +33,7 @@
 //
 // Implements a forward-only byte stream reader interface
 
-class StreamReader
+class __declspec(novtable) StreamReader
 {
 public:
 
