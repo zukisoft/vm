@@ -59,7 +59,7 @@ public:
 	// Commit
 	//
 	// Commits page(s) within the region
-	void* Commit(void* address, size_t length, DWORD protect);
+	void* Commit(void* address, size_t length, uint32_t protect);
 
 	// Decommit
 	//
@@ -74,7 +74,7 @@ public:
 	// Protect
 	//
 	// Applies protection flags to page(s) within the region
-	void* Protect(void* address, size_t length, DWORD protect);
+	void* Protect(void* address, size_t length, uint32_t protect);
 
 	// Reserve
 	//
@@ -82,13 +82,13 @@ public:
 	static MemoryRegion* Reserve(size_t length)
 		{ return new MemoryRegion(NULL, length, MEM_RESERVE, PAGE_NOACCESS); }
 
-	static MemoryRegion* Reserve(size_t length, DWORD flags)
+	static MemoryRegion* Reserve(size_t length, uint32_t flags)
 		{ return new MemoryRegion(NULL, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	static MemoryRegion* Reserve(void* address, size_t length)
 		{ return new MemoryRegion(address, length, MEM_RESERVE, PAGE_NOACCESS); }
 
-	static MemoryRegion* Reserve(void* address, size_t length, DWORD flags)
+	static MemoryRegion* Reserve(void* address, size_t length, uint32_t flags)
 		{ return new MemoryRegion(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	// Unlock
@@ -131,7 +131,7 @@ private:
 
 	// Instance Constructor
 	//
-	MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect);
+	MemoryRegion(void* base, size_t length, uint32_t flags, uint32_t protect);
 
 	// SystemInfo
 	//

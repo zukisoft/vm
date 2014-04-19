@@ -36,7 +36,7 @@
 //	disposition		- File creation disposition
 //	flags			- File flags and attributes
 
-File::File(LPCTSTR path, DWORD access, DWORD share, DWORD disposition, DWORD flags)
+File::File(const tchar_t* path, uint32_t access, uint32_t share, uint32_t disposition, uint32_t flags)
 {
 	if(!path || !(*path)) throw Exception(E_INVALIDARG);
 

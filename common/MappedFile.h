@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include "char_t.h"
 #include "Exception.h"
 #include "File.h"
 #include "Win32Exception.h"
@@ -57,16 +58,16 @@ public:
 	// CreateFromFile
 	//
 	// Creates a mapping against an existing file handle
-	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, DWORD protect)
+	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, uint32_t protect)
 		{ return new MappedFile(file, protect, 0, NULL); }
 
-	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, DWORD protect, size_t capacity)
+	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, uint32_t protect, size_t capacity)
 		{ return new MappedFile(file, protect, capacity, NULL); }
 	
 	// CreateNew
 	//
 	// Creates a mapping against the system page file
-	static MappedFile* CreateNew(DWORD protect, size_t capacity)
+	static MappedFile* CreateNew(uint32_t protect, size_t capacity)
 		{ return new MappedFile(s_nullptr, protect, capacity, NULL); }
 
 	//-------------------------------------------------------------------------
@@ -91,7 +92,7 @@ private:
 
 	// Instance Constructor
 	//
-	MappedFile(std::shared_ptr<File>& file, DWORD protect, size_t capacity, LPCTSTR name);
+	MappedFile(std::shared_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

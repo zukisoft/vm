@@ -24,6 +24,7 @@
 #define __FILE_H_
 #pragma once
 
+#include "char_t.h"
 #include "Exception.h"
 #include "Win32Exception.h"
 
@@ -55,16 +56,16 @@ public:
 	// OpenExisting
 	//
 	// Opens an existing file
-	static File* OpenExisting(LPCTSTR path)
+	static File* OpenExisting(const tchar_t* path)
 		{ return new File(path, GENERIC_READ | GENERIC_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
 
-	static File* OpenExisting(LPCTSTR path, DWORD access)
+	static File* OpenExisting(const tchar_t* path, uint32_t access)
 		{ return new File(path, access, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
 	
-	static File* OpenExisting(LPCTSTR path, DWORD access, DWORD share)
+	static File* OpenExisting(const tchar_t* path, uint32_t access, uint32_t share)
 		{ return new File(path, access, share, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
 
-	static File* OpenExisting(LPCTSTR path, DWORD access, DWORD share, DWORD flags)
+	static File* OpenExisting(const tchar_t* path, uint32_t access, uint32_t share, uint32_t flags)
 		{ return new File(path, access, share, OPEN_EXISTING, flags); }
 
 	//-------------------------------------------------------------------------
@@ -89,7 +90,7 @@ private:
 
 	// Instance Constructor
 	//
-	File(LPCTSTR path, DWORD access, DWORD share, DWORD disposition, DWORD flags);
+	File(const tchar_t* path, uint32_t access, uint32_t share, uint32_t disposition, uint32_t flags);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

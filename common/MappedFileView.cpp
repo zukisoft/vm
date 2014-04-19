@@ -35,7 +35,7 @@
 //	offset		- Offset into the file mapping to begin the view
 //	length		- Length of the view to create
 
-MappedFileView::MappedFileView(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset, size_t length)
+MappedFileView::MappedFileView(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
 {
 	ULARGE_INTEGER		uloffset;				// Offset as a ULARGE_INTEGER
 

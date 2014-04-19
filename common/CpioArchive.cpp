@@ -126,7 +126,7 @@ void CpioArchive::EnumerateFiles(std::unique_ptr<StreamReader>& reader, std::fun
 		// A path of "TRAILER!!!" indicates there are no more entries to process
 		if(strcmp(path, "TRAILER!!!") == 0) return;
 
-		// DWORD alignment for the file data in the archive
+		// 32-bit alignment for the file data in the archive
 		reader->Seek(AlignUp(reader->Position, 4));
 
 		// Create a FileStream around the current base stream position
@@ -137,7 +137,7 @@ void CpioArchive::EnumerateFiles(std::unique_ptr<StreamReader>& reader, std::fun
 		func(CpioFile(header, path, filestream));
 
 		// In the event the entire file stream was not read, seek beyond it and
-		// apply the DWORD alignment to get to the next entry header
+		// apply the 32-bit alignment to get to the next entry header
 		reader->Seek(AlignUp(reader->Position + (datalength - filestream.Position), 4));
 	}
 }

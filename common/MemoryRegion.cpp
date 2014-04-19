@@ -42,7 +42,7 @@ size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 //	flags		- Memory region allocation type flags
 //	protect		- Memory region protection flags
 
-MemoryRegion::MemoryRegion(void* base, size_t length, DWORD flags, DWORD protect)
+MemoryRegion::MemoryRegion(void* base, size_t length, uint32_t flags, uint32_t protect)
 {
 	uintptr_t requested = uintptr_t(base);
 	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(base));
@@ -142,7 +142,7 @@ uintptr_t MemoryRegion::AlignUp(uintptr_t address, size_t alignment)
 //	length		- Length of the region to be committed
 //	protect		- Protection flags to be applied to the committed region
 
-void* MemoryRegion::Commit(void* address, size_t length, DWORD protect)
+void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 {
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
@@ -219,7 +219,7 @@ void* MemoryRegion::Lock(void* address, size_t length)
 //	length		- Length of the memory to apply the protection to
 //	protect		- Virtual memory protection flags
 
-void* MemoryRegion::Protect(void* address, size_t length, DWORD protect)
+void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 {
 	DWORD		oldprotect;					// Old protection flags
 

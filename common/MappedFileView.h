@@ -49,13 +49,13 @@ public:
 	// Create
 	//
 	// Creates a view of the specified memory mapped file
-	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, DWORD access)
+	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, uint32_t access)
 		{ return new MappedFileView(mapping, access, 0, 0); }
 
-	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset)
+	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset)
 		{ return new MappedFileView(mapping, access, offset, 0); }
 
-	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset, size_t length)
+	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
 		{ return new MappedFileView(mapping, access, offset, length); }
 
 	//-------------------------------------------------------------------------
@@ -80,7 +80,7 @@ private:
 
 	// Instance Constructor
 	//
-	MappedFileView(std::shared_ptr<MappedFile>& mapping, DWORD access, size_t offset, size_t length);
+	MappedFileView(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
