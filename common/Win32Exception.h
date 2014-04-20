@@ -37,7 +37,7 @@ class Win32Exception : public Exception
 {
 public:
 
-	// Constructors
+	// Instance Constructors
 	//
 	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
 	Win32Exception(DWORD result) : Exception(HRESULT_FROM_WIN32(result)) {}

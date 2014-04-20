@@ -25,6 +25,30 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// Exception::s_module
+//
+HMODULE Exception::s_module = Exception::SetMessagesModule(GetModuleHandle(nullptr));
+
+// EnumResourceTypesProc
+//
+// Callback for module resource enumeration
+static BOOL CALLBACK EnumResourceTypesProc(HMODULE module, LPTSTR type, LONG_PTR param)
+{
+	// On success, return the module handle through the param pointer
+	HMODULE* result = reinterpret_cast<HMODULE*>(param);
+	*result = nullptr;
+
+	// If an RT_MESSAGETABLE resource is found, return the module handle
+	// back to the caller through param and stop the enumeration
+	if(type == MAKEINTRESOURCE(RT_MESSAGETABLE)) {
+
+		*result = module;
+		return FALSE;
+	}
+
+	return TRUE;						// Continue the enumeration
+}
+
 //-----------------------------------------------------------------------------
 // Exception Constructor
 //
@@ -33,25 +57,20 @@
 //	hResult			- HRESULT code
 //	...				- Variable arguments to be passed to FormatMessage
 
-Exception::Exception(HRESULT hResult, ...) : m_hResult(hResult), m_inner(nullptr)
+Exception::Exception(HRESULT result, ...) : m_result(result), m_inner(nullptr)
 {
 	LPTSTR			formatted;				// Formatted message
 
 	// Initialize the variable argument list for FormatMessage()
 	va_list	args;
-	va_start(args, hResult);
-
-	//
-	// TODO: Passing FORMAT_MESSAGE_FROM_HMODULE only works if the module actually has 
-	// messages.  Need to add a static initializer to enumerate resource types, and also
-	// need to add a way to specify the custom module handle for DLL-based resources
-	//
+	va_start(args, result);
 
 	// Invoke FormatMessage to convert the HRESULT and the variable arguments into a message,
 	// either from the system or the message resources in this module
-	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM, 
-		GetModuleHandle(NULL), static_cast<DWORD>(hResult), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
-		reinterpret_cast<LPTSTR>(&formatted), 0, &args) == 0) return;
+	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | 
+		((s_module) ? FORMAT_MESSAGE_FROM_HMODULE : 0), s_module, static_cast<DWORD>(result), 
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPTSTR>(&formatted), 
+		0, &args) == 0) return;
 
 	m_message = formatted;					// Convert into an std::string/wstring
 	LocalFree(formatted);					// Release the allocated buffer
@@ -66,7 +85,7 @@ Exception::Exception(HRESULT hResult, ...) : m_hResult(hResult), m_inner(nullptr
 //	hResult			- HRESULT code
 //	...				- Variable arguments to be passed to FormatMessage
 
-Exception::Exception(Exception& inner, HRESULT hResult, ...) : m_hResult(hResult)
+Exception::Exception(Exception& inner, HRESULT result, ...) : m_result(result)
 {
 	LPTSTR			formatted;				// Formatted message
 
@@ -74,13 +93,14 @@ Exception::Exception(Exception& inner, HRESULT hResult, ...) : m_hResult(hResult
 
 	// Initialize the variable argument list for FormatMessage()
 	va_list	args;
-	va_start(args, hResult);
+	va_start(args, result);
 
 	// Invoke FormatMessage to convert the HRESULT and the variable arguments into a message,
 	// either from the system or the message resources in this module
-	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM, 
-		GetModuleHandle(NULL), static_cast<DWORD>(hResult), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
-		reinterpret_cast<LPTSTR>(&formatted), 0, &args) == 0) return;
+	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | 
+		((s_module) ? FORMAT_MESSAGE_FROM_HMODULE : 0), s_module, static_cast<DWORD>(result), 
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPTSTR>(&formatted), 
+		0, &args) == 0) return;
 
 	m_message = formatted;					// Convert into an std::string/wstring
 	LocalFree(formatted);					// Release the allocated buffer
@@ -91,7 +111,7 @@ Exception::Exception(Exception& inner, HRESULT hResult, ...) : m_hResult(hResult
 
 Exception::Exception(const Exception& rhs) 
 {
-	m_hResult = rhs.m_hResult;
+	m_result = rhs.m_result;
 	m_message = rhs.m_message;
 	m_inner = (rhs.m_inner) ? new Exception(*rhs.m_inner) : nullptr;
 }
@@ -109,7 +129,7 @@ Exception::~Exception()
 
 Exception& Exception::operator=(const Exception& rhs)
 {
-	m_hResult = rhs.m_hResult;
+	m_result = rhs.m_result;
 	m_message = rhs.m_message;
 	
 	// Inner exceptions are pointer-based; delete before changing it
@@ -117,6 +137,29 @@ Exception& Exception::operator=(const Exception& rhs)
 	m_inner = (rhs.m_inner) ? new Exception(*rhs.m_inner) : nullptr;
 
 	return *this;
+}
+
+//-----------------------------------------------------------------------------
+// Exception::SetMessagesModule (static)
+//
+// Sets the module handle where the custom message table is stored.  Return
+// value is a convenience for the s_module initializer, but can be checked for
+// nullptr if desired to verify the success of the function
+//
+// Arguments:
+//
+//	module		- Module handle to use for message table resources
+
+HMODULE Exception::SetMessagesModule(HMODULE module)
+{
+	HMODULE		result = nullptr;				// Result from enumeration
+
+	// Use EnumResourceTypes to determine if there are messages in the module,
+	// and replace the s_module static variable with the result
+	EnumResourceTypes(module, EnumResourceTypesProc, reinterpret_cast<LONG_PTR>(&result));
+	s_module = result;
+
+	return result;
 }
 
 //-----------------------------------------------------------------------------
