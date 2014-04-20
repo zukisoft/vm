@@ -125,6 +125,13 @@ Language=English
 The decompression stream data is corrupt (method: %1)
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_UNKNOWN_COMPRESSION_FORMAT
+Language=English
+The file compression format cannot be detected automatically
+.
+
 ;//----------------------------------------------------------------------------
 ;// ElfImage
 ;//
