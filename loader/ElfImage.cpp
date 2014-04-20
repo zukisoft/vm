@@ -97,8 +97,8 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
 		// so reserve them at the highest available virtual address
-		if(elfheader->e_type == ET_EXEC) m_region.reset(MemoryRegion::Reserve(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr));
-		else m_region.reset(MemoryRegion::Reserve(maxvaddr - minvaddr, MEM_TOP_DOWN));
+		if(elfheader->e_type == ET_EXEC) m_region = MemoryRegion::Reserve(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
+		else m_region = MemoryRegion::Reserve(maxvaddr - minvaddr, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(ex, E_RESERVEIMAGEREGION); }
 
@@ -226,13 +226,10 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, sym
 	try {
 
 		// Attempt to open the image file in read-only sequential scan mode
-		std::shared_ptr<File> image(File::OpenExisting(path, GENERIC_READ, 0, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN));
-
-		// Create a read-only memory mapping of the image file
-		std::shared_ptr<MappedFile> mapping(MappedFile::CreateFromFile(image, PAGE_READONLY));
+		std::unique_ptr<File> image(File::OpenExisting(path, GENERIC_READ, 0, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN));
 
 		// Create a read-only view against the mapped image file
-		std::unique_ptr<MappedFileView> view(MappedFileView::Create(mapping, FILE_MAP_READ));
+		std::unique_ptr<MappedFileView> view = MappedFileView::Create(MappedFile::CreateFromFile(image));
 
 		// Construct a new ElfImage instance from the mapped image file view
 		return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(view->Pointer, view->Length);
