@@ -58,20 +58,20 @@ public:
 	// CreateFromFile
 	//
 	// Creates a mapping against an existing file handle
-	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>& file)
+	static std::unique_ptr<MappedFile> CreateFromFile(const std::unique_ptr<File>& file)
 		{ return std::unique_ptr<MappedFile>(new MappedFile(file, PAGE_READONLY, 0, NULL)); }
 	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>&& file)
-		{ return std::unique_ptr<MappedFile>(new MappedFile(file, PAGE_READONLY, 0, NULL)); }
+		{ return CreateFromFile(std::forward<const std::unique_ptr<File>&>(file)); }
 
-	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>& file, uint32_t protect)
+	static std::unique_ptr<MappedFile> CreateFromFile(const std::unique_ptr<File>& file, uint32_t protect)
 		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, 0, NULL)); }
 	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>&& file, uint32_t protect)
-		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, 0, NULL)); }
+		{ return CreateFromFile(std::forward<const std::unique_ptr<File>&>(file), protect); }
 
-	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>& file, uint32_t protect, size_t capacity)
+	static std::unique_ptr<MappedFile> CreateFromFile(const std::unique_ptr<File>& file, uint32_t protect, size_t capacity)
 		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, capacity, NULL)); }
 	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>&& file, uint32_t protect, size_t capacity)
-		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, capacity, NULL)); }
+		{ return CreateFromFile(std::forward<const std::unique_ptr<File>&>(file), protect, capacity); }
 	
 	// CreateNew
 	//
@@ -101,7 +101,7 @@ private:
 
 	// Instance Constructor
 	//
-	MappedFile(std::unique_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name);
+	MappedFile(const std::unique_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

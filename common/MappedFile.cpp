@@ -40,7 +40,7 @@ std::unique_ptr<File> MappedFile::s_nullptr(nullptr);
 //	capacity	- Capacity of the file mapping to create
 //	name		- Mapping name
 
-MappedFile::MappedFile(std::unique_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name)
+MappedFile::MappedFile(const std::unique_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name)
 {
 	ULARGE_INTEGER		ulcapacity;			// Capacity as a ULARGE_INTEGER
 

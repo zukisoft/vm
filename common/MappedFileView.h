@@ -50,25 +50,25 @@ public:
 	// Create
 	//
 	// Creates a view of the specified memory mapped file
-	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping) 
+	static std::unique_ptr<MappedFileView> Create(const std::unique_ptr<MappedFile>& mapping) 
 		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, FILE_MAP_READ, 0, 0)); }
 	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping)
-		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, FILE_MAP_READ, 0, 0)); }
+		{ return Create(std::forward<const std::unique_ptr<MappedFile>&>(mapping)); }
 
-	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping, uint32_t access) 
+	static std::unique_ptr<MappedFileView> Create(const std::unique_ptr<MappedFile>& mapping, uint32_t access) 
 		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, 0, 0)); }
 	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping, uint32_t access)
-		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, 0, 0)); }
+		{ return Create(std::forward<const std::unique_ptr<MappedFile>&>(mapping), access); }
 
-	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset)
+	static std::unique_ptr<MappedFileView> Create(const std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset)
 		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, 0)); }
 	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping, uint32_t access, size_t offset)
-		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, 0)); }
+		{ return Create(std::forward<const std::unique_ptr<MappedFile>&>(mapping), access, offset); }
 
-	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
+	static std::unique_ptr<MappedFileView> Create(const std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
 		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, length)); }
 	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping, uint32_t access, size_t offset, size_t length)
-		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, length)); }
+		{ return Create(std::forward<const std::unique_ptr<MappedFile>&>(mapping), access, offset, length); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -92,7 +92,7 @@ private:
 
 	// Instance Constructor
 	//
-	MappedFileView(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length);
+	MappedFileView(const std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

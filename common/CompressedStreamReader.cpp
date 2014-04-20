@@ -33,7 +33,7 @@
 
 //-----------------------------------------------------------------------------
 
-CompressedStreamReader::CompressedStreamReader(std::unique_ptr<File>& file, size_t offset, size_t length)
+CompressedStreamReader::CompressedStreamReader(const std::unique_ptr<File>& file, size_t offset, size_t length)
 {
 	if(file == nullptr) throw Exception(E_INVALIDARG);
 

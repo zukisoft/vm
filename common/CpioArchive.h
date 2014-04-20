@@ -176,7 +176,10 @@ public:
 	// EnumerateFiles
 	//
 	// Enumerates over all of the entries in a CPIO archive stream
-	static void EnumerateFiles(std::unique_ptr<StreamReader>& reader, std::function<void(const CpioFile&&)> func);
+	static void EnumerateFiles(const std::unique_ptr<StreamReader>& reader, std::function<void(const CpioFile&&)> func);
+
+	static void EnumerateFiles(std::unique_ptr<StreamReader>&& reader, std::function<void(const CpioFile&&)> func)
+		{ return EnumerateFiles(std::forward<const std::unique_ptr<StreamReader>&>(reader), func); }
 
 private:
 
@@ -193,7 +196,7 @@ private:
 
 		// Instance Constructor
 		//
-		FileStream(std::unique_ptr<StreamReader>& basestream, uint32_t length) :
+		FileStream(const std::unique_ptr<StreamReader>& basestream, uint32_t length) :
 			m_basestream(basestream), m_length(length) {}
 
 		// Destructor
@@ -244,9 +247,9 @@ private:
 		// Member Variables
 
 		// Stream
-		std::unique_ptr<StreamReader>&	m_basestream;		// Base stream object
-		uint32_t						m_length;			// Stream length
-		uint32_t						m_position = 0;		// Current position
+		const std::unique_ptr<StreamReader>&	m_basestream;		// Base stream object
+		uint32_t								m_length;			// Stream length
+		uint32_t								m_position = 0;		// Current position
 	};
 };
 

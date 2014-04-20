@@ -73,20 +73,20 @@ public:
 	// FromFile
 	//
 	// Creates the compressed stream reader from a file
-	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>& file)
+	static std::unique_ptr<StreamReader> FromFile(const std::unique_ptr<File>& file)
 		{ return std::unique_ptr<StreamReader>(new CompressedStreamReader(file, 0, 0)); }
 	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>&& file)
-		{ return std::unique_ptr<StreamReader>(new CompressedStreamReader(file, 0, 0)); }
+		{ return FromFile(std::forward<std::unique_ptr<File>&>(file)); }
 
-	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>& file, size_t offset)
+	static std::unique_ptr<StreamReader> FromFile(const std::unique_ptr<File>& file, size_t offset)
 		{ return std::unique_ptr<StreamReader>(new CompressedStreamReader(file, offset, 0)); }
 	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>&& file, size_t offset)
-		{ return std::unique_ptr<StreamReader>(new CompressedStreamReader(file, offset, 0)); }
+		{ return FromFile(std::forward<std::unique_ptr<File>&>(file), offset); }
 
-	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>& file, size_t offset, size_t length)
+	static std::unique_ptr<StreamReader> FromFile(const std::unique_ptr<File>& file, size_t offset, size_t length)
 		{ return std::unique_ptr<StreamReader>(new CompressedStreamReader(file, offset, length)); }
 	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>&& file, size_t offset, size_t length)
-		{ return std::unique_ptr<StreamReader>(new CompressedStreamReader(file, offset, length)); }
+		{ return FromFile(std::forward<std::unique_ptr<File>&>(file), offset, length); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -103,7 +103,7 @@ private:
 
 	// Instance Constructor
 	//
-	CompressedStreamReader(std::unique_ptr<File>& file, size_t offset, size_t length);
+	CompressedStreamReader(const std::unique_ptr<File>& file, size_t offset, size_t length);
 
 	//-------------------------------------------------------------------------
 
