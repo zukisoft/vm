@@ -58,17 +58,26 @@ public:
 	// CreateFromFile
 	//
 	// Creates a mapping against an existing file handle
-	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, uint32_t protect)
-		{ return new MappedFile(file, protect, 0, NULL); }
+	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>& file)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(file, PAGE_READONLY, 0, NULL)); }
+	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>&& file)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(file, PAGE_READONLY, 0, NULL)); }
 
-	static MappedFile* CreateFromFile(std::shared_ptr<File>& file, uint32_t protect, size_t capacity)
-		{ return new MappedFile(file, protect, capacity, NULL); }
+	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>& file, uint32_t protect)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, 0, NULL)); }
+	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>&& file, uint32_t protect)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, 0, NULL)); }
+
+	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>& file, uint32_t protect, size_t capacity)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, capacity, NULL)); }
+	static std::unique_ptr<MappedFile> CreateFromFile(std::unique_ptr<File>&& file, uint32_t protect, size_t capacity)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(file, protect, capacity, NULL)); }
 	
 	// CreateNew
 	//
 	// Creates a mapping against the system page file
-	static MappedFile* CreateNew(uint32_t protect, size_t capacity)
-		{ return new MappedFile(s_nullptr, protect, capacity, NULL); }
+	static std::unique_ptr<MappedFile> CreateNew(uint32_t protect, size_t capacity)
+		{ return std::unique_ptr<MappedFile>(new MappedFile(s_nullptr, protect, capacity, NULL)); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -92,15 +101,14 @@ private:
 
 	// Instance Constructor
 	//
-	MappedFile(std::shared_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name);
+	MappedFile(std::unique_ptr<File>& file, uint32_t protect, size_t capacity, const tchar_t* name);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<File>			m_file;			// File handle
 	HANDLE							m_handle;		// File mapping handle
 	size_t							m_capacity;		// Capacity of the file mapping
-	static std::shared_ptr<File>	s_nullptr;		// INVALID_HANDLE_VALUE file
+	static std::unique_ptr<File>	s_nullptr;		// INVALID_HANDLE_VALUE file
 };
 
 //-----------------------------------------------------------------------------

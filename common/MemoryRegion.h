@@ -24,6 +24,7 @@
 #define __MEMORYREGION_H_
 #pragma once
 
+#include <memory>
 #include "Exception.h"
 #include "Win32Exception.h"
 
@@ -79,17 +80,17 @@ public:
 	// Reserve
 	//
 	// Reserves a range of virtual memory
-	static MemoryRegion* Reserve(size_t length)
-		{ return new MemoryRegion(NULL, length, MEM_RESERVE, PAGE_NOACCESS); }
+	static std::unique_ptr<MemoryRegion> Reserve(size_t length)
+		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(NULL, length, MEM_RESERVE, PAGE_NOACCESS)); }
 
-	static MemoryRegion* Reserve(size_t length, uint32_t flags)
-		{ return new MemoryRegion(NULL, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
+	static std::unique_ptr<MemoryRegion> Reserve(size_t length, uint32_t flags)
+		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(NULL, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS)); }
 
-	static MemoryRegion* Reserve(void* address, size_t length)
-		{ return new MemoryRegion(address, length, MEM_RESERVE, PAGE_NOACCESS); }
+	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length)
+		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(address, length, MEM_RESERVE, PAGE_NOACCESS)); }
 
-	static MemoryRegion* Reserve(void* address, size_t length, uint32_t flags)
-		{ return new MemoryRegion(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
+	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length, uint32_t flags)
+		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS)); }
 
 	// Unlock
 	//

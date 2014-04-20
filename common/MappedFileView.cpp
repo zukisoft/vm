@@ -35,7 +35,7 @@
 //	offset		- Offset into the file mapping to begin the view
 //	length		- Length of the view to create
 
-MappedFileView::MappedFileView(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
+MappedFileView::MappedFileView(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
 {
 	ULARGE_INTEGER		uloffset;				// Offset as a ULARGE_INTEGER
 
@@ -45,8 +45,6 @@ MappedFileView::MappedFileView(std::shared_ptr<MappedFile>& mapping, uint32_t ac
 	// Attempt to map the specified region of the file into this process
 	m_view = MapViewOfFile(mapping->Handle, access, uloffset.HighPart, uloffset.LowPart, length);
 	if(!m_view) throw Win32Exception();
-
-	m_mapping = mapping;						// Store the shared_ptr object
 
 	// If the specified length was zero, the view encompasses the entire mapped file
 	m_length = (length) ? length : mapping->Capacity;

@@ -44,6 +44,7 @@ public:
 	//
 	Exception(HRESULT result, ...);
 	Exception(Exception& inner, HRESULT result, ...);
+	Exception(Exception&& inner, HRESULT result, ...);
 	Exception(const Exception& rhs);
 
 	// Destructor

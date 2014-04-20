@@ -24,6 +24,7 @@
 #define __FILE_H_
 #pragma once
 
+#include <memory>
 #include "char_t.h"
 #include "Exception.h"
 #include "Win32Exception.h"
@@ -56,17 +57,18 @@ public:
 	// OpenExisting
 	//
 	// Opens an existing file
-	static File* OpenExisting(const tchar_t* path)
-		{ return new File(path, GENERIC_READ | GENERIC_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
 
-	static File* OpenExisting(const tchar_t* path, uint32_t access)
-		{ return new File(path, access, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
+	static std::unique_ptr<File> OpenExisting(const tchar_t* path)
+		{ return std::unique_ptr<File>(new File(path, GENERIC_READ | GENERIC_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL)); }
+
+	static std::unique_ptr<File> OpenExisting(const tchar_t* path, uint32_t access)
+		{ return std::unique_ptr<File>(new File(path, access, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL)); }
 	
-	static File* OpenExisting(const tchar_t* path, uint32_t access, uint32_t share)
-		{ return new File(path, access, share, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
+	static std::unique_ptr<File> OpenExisting(const tchar_t* path, uint32_t access, uint32_t share)
+		{ return std::unique_ptr<File>(new File(path, access, share, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL)); }
 
-	static File* OpenExisting(const tchar_t* path, uint32_t access, uint32_t share, uint32_t flags)
-		{ return new File(path, access, share, OPEN_EXISTING, flags); }
+	static std::unique_ptr<File> OpenExisting(const tchar_t* path, uint32_t access, uint32_t share, uint32_t flags)
+		{ return std::unique_ptr<File>(new File(path, access, share, OPEN_EXISTING, flags)); }
 
 	//-------------------------------------------------------------------------
 	// Properties

@@ -24,6 +24,7 @@
 #define __MAPPEDFILEVIEW_H_
 #pragma once
 
+#include <memory>
 #include "Exception.h"
 #include "MappedFile.h"
 #include "Win32Exception.h"
@@ -49,14 +50,25 @@ public:
 	// Create
 	//
 	// Creates a view of the specified memory mapped file
-	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, uint32_t access)
-		{ return new MappedFileView(mapping, access, 0, 0); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping) 
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, FILE_MAP_READ, 0, 0)); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping)
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, FILE_MAP_READ, 0, 0)); }
 
-	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset)
-		{ return new MappedFileView(mapping, access, offset, 0); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping, uint32_t access) 
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, 0, 0)); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping, uint32_t access)
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, 0, 0)); }
 
-	static MappedFileView* Create(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
-		{ return new MappedFileView(mapping, access, offset, length); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset)
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, 0)); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping, uint32_t access, size_t offset)
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, 0)); }
+
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length)
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, length)); }
+	static std::unique_ptr<MappedFileView> Create(std::unique_ptr<MappedFile>&& mapping, uint32_t access, size_t offset, size_t length)
+		{ return std::unique_ptr<MappedFileView>(new MappedFileView(mapping, access, offset, length)); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -80,12 +92,11 @@ private:
 
 	// Instance Constructor
 	//
-	MappedFileView(std::shared_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length);
+	MappedFileView(std::unique_ptr<MappedFile>& mapping, uint32_t access, size_t offset, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<MappedFile>		m_mapping;		// Contained file mapping
 	void*							m_view;			// Base pointer of the view
 	size_t							m_length;		// Length of the view
 };
