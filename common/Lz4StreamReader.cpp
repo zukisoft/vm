@@ -28,7 +28,7 @@
 // COMPRESSION_METHOD
 //
 // Used when generating decompression exceptions
-const TCHAR COMPRESSION_METHOD[] = _T("lz4");
+const tchar_t COMPRESSION_METHOD[] = _T("lz4");
 
 //-----------------------------------------------------------------------------
 // LZ4 DECLARATIONS

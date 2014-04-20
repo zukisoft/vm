@@ -28,7 +28,7 @@
 // COMPRESSION_METHOD
 //
 // Used when generating decompression exceptions
-const TCHAR COMPRESSION_METHOD[] = _T("xz");
+const tchar_t COMPRESSION_METHOD[] = _T("xz");
 
 //-----------------------------------------------------------------------------
 // XzStreamReader Constructor

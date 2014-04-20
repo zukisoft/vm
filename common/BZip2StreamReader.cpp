@@ -28,7 +28,7 @@
 // COMPRESSION_METHOD
 //
 // Used when generating decompression exceptions
-const TCHAR COMPRESSION_METHOD[] = _T("bzip2");
+const tchar_t COMPRESSION_METHOD[] = _T("bzip2");
 
 //-----------------------------------------------------------------------------
 // BZip2StreamReader Constructor

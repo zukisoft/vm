@@ -28,7 +28,7 @@
 // COMPRESSION_METHOD
 //
 // Used when generating decompression exceptions
-const TCHAR COMPRESSION_METHOD[] = _T("lzop");
+const tchar_t COMPRESSION_METHOD[] = _T("lzop");
 
 //-----------------------------------------------------------------------------
 // LZOP DECLARATIONS
