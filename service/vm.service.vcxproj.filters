@@ -53,6 +53,22 @@
       <UniqueIdentifier>{d17e3b80-cbce-4317-8b0b-401f8eb5b9d9}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="External Libraries\bzip2">
+      <UniqueIdentifier>{faad06cc-310a-47b1-b7aa-afe77d5edb52}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="External Libraries\xz-embedded">
+      <UniqueIdentifier>{28a4c10b-354b-46dd-984b-dd018b35bd6d}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="External Libraries\lz4">
+      <UniqueIdentifier>{27f14f72-3d4d-4060-8000-3c0ccb7b024f}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="External Libraries\minilzo">
+      <UniqueIdentifier>{438ae0f9-01be-424b-93c1-0bbc71d1d0d2}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -175,6 +191,51 @@
     <ClInclude Include="..\tmp\vm.messages\messages.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\BZip2StreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CompressedStreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Lz4StreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\LzopStreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\XzStreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\bzip2\bzlib.h">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\minilzo\lzoconf.h">
+      <Filter>External Libraries\minilzo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\minilzo\lzodefs.h">
+      <Filter>External Libraries\minilzo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\minilzo\minilzo.h">
+      <Filter>External Libraries\minilzo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\File.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MappedFile.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MappedFileView.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MemoryRegion.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\lz4\lz4.h">
+      <Filter>External Libraries\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -290,6 +351,75 @@
     </ClCompile>
     <ClCompile Include="..\common\CpioArchive.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BZip2StreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CompressedStreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Lz4StreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\LzopStreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\XzStreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\bz_internal_error.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\blocksort.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\bzcompress.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\crctable.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\decompress.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\huffman.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\randtable.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\minilzo\minilzo.c">
+      <Filter>External Libraries\minilzo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\bzip2\bzlib.c">
+      <Filter>External Libraries\bzip2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\File.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MappedFile.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MappedFileView.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MemoryRegion.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\lz4\lz4.c">
+      <Filter>External Libraries\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_crc32.c">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_bcj.c">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_lzma2.c">
+      <Filter>External Libraries\xz-embedded</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_stream.c">
+      <Filter>External Libraries\xz-embedded</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
