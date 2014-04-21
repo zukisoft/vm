@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include "BufferStreamReader.h"
 #include "BZip2StreamReader.h"
 #include "Exception.h"
 #include "File.h"

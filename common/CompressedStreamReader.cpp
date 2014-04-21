@@ -55,7 +55,7 @@ CompressedStreamReader::CompressedStreamReader(const std::unique_ptr<File>& file
 	// LZMA
 	// TODO: Implement LzmaStreamReader (perhaps xz-embedded can handle this?)
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x5D), UINT8_C(0x00), UINT8_C(0x00), UINT8_C(0x00))) 
-		throw Exception(E_UNKNOWN_COMPRESSION_FORMAT);
+		throw Exception(E_COMPRESSION_FORMAT, _T("LZMA"));
 	
 	// LZOP
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x89), 'L', 'Z', 'O', UINT8_C(0x00), UINT8_C(0x0D), UINT8_C(0x0A), UINT8_C(0x1A), UINT8_C(0x0A))) 
@@ -65,8 +65,8 @@ CompressedStreamReader::CompressedStreamReader(const std::unique_ptr<File>& file
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x02), UINT8_C(0x21), UINT8_C(0x4C), UINT8_C(0x18))) 
 		m_stream = std::unique_ptr<StreamReader>(new Lz4StreamReader(m_view->Pointer, m_view->Length));
 
-	// UNKNOWN
-	else throw Exception(E_UNKNOWN_COMPRESSION_FORMAT);
+	// UNKNOWN OR UNCOMPRESSED
+	else m_stream = std::unique_ptr<StreamReader>(new BufferStreamReader(m_view->Pointer, m_view->Length));
 }
 
 //-----------------------------------------------------------------------------
