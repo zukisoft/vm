@@ -159,7 +159,7 @@ private:
 // along with a lambda to process the data:
 //
 // std::unique_ptr<StreamReader> input(new GzipStreamReader(...));
-// CpioArchive::EnumerateFiles(input, [](const CpioFile&& file) -> void {
+// CpioArchive::EnumerateFiles(input, [](const CpioFile& file) -> void {
 //
 //		create_file(file.Path);
 //		while(file.Read(....)) {
@@ -176,9 +176,9 @@ public:
 	// EnumerateFiles
 	//
 	// Enumerates over all of the entries in a CPIO archive stream
-	static void EnumerateFiles(const std::unique_ptr<StreamReader>& reader, std::function<void(const CpioFile&&)> func);
+	static void EnumerateFiles(const std::unique_ptr<StreamReader>& reader, std::function<void(const CpioFile&)> func);
 
-	static void EnumerateFiles(std::unique_ptr<StreamReader>&& reader, std::function<void(const CpioFile&&)> func)
+	static void EnumerateFiles(std::unique_ptr<StreamReader>&& reader, std::function<void(const CpioFile&)> func)
 		{ return EnumerateFiles(std::forward<const std::unique_ptr<StreamReader>&>(reader), func); }
 
 private:

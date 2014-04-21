@@ -107,7 +107,7 @@ CpioFile::CpioFile(const cpio_header_t& header, const char_t* path, StreamReader
 //	reader		- StreamReader instance set to the beginning of the archive
 //	func		- Function to process each entry in the archive
 
-void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, std::function<void(const CpioFile&&)> func)
+void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, std::function<void(const CpioFile&)> func)
 {
 	cpio_header_t			header;				// Current file header
 
@@ -134,7 +134,7 @@ void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, st
 		FileStream filestream(reader, datalength);
 
 		// Invoke the caller-supplied function with a new CpioFile object
-		func(CpioFile(header, path, filestream));
+		func(std::move(CpioFile(header, path, filestream)));
 
 		// In the event the entire file stream was not read, seek beyond it and
 		// apply the 32-bit alignment to get to the next entry header
