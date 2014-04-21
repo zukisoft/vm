@@ -29,17 +29,17 @@
 // TODO: These constants will need to go into the .IDL file
 // for the COM (or RPC?) interface
 
-#define S_IFMT		0x00170000
-#define S_IFSOCK	0x00140000
-#define S_IFLNK		0x00120000
-#define S_IFREG		0x00100000
-#define S_IFBLK		0x00060000
-#define S_IFDIR		0x00040000
-#define S_IFCHR		0x00020000
-#define S_IFIFO		0x00010000
-#define S_ISUID		0x00004000
-#define S_ISGID		0x00002000
-#define S_ISVTX		0x00001000
+#define S_IFMT		0170000
+#define S_IFSOCK	0140000
+#define S_IFLNK		0120000
+#define S_IFREG		0100000
+#define S_IFBLK		0060000
+#define S_IFDIR		0040000
+#define S_IFCHR		0020000
+#define S_IFIFO		0010000
+#define S_ISUID		0004000
+#define S_ISGID		0002000
+#define S_ISVTX		0001000
 
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
@@ -49,20 +49,20 @@
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
 
-#define S_IRWXU		0x0700
-#define S_IRUSR		0x0400
-#define S_IWUSR		0x0200
-#define S_IXUSR		0x0100
+#define S_IRWXU		0700
+#define S_IRUSR		0400
+#define S_IWUSR		0200
+#define S_IXUSR		0100
 
-#define S_IRWXG		0x0070
-#define S_IRGRP		0x0040
-#define S_IWGRP		0x0020
-#define S_IXGRP		0x0010
+#define S_IRWXG		0070
+#define S_IRGRP		0040
+#define S_IWGRP		0020
+#define S_IXGRP		0010
 
-#define S_IRWXO		0x0007
-#define S_IROTH		0x0004
-#define S_IWOTH		0x0002
-#define S_IXOTH		0x0001
+#define S_IRWXO		0007
+#define S_IROTH		0004
+#define S_IWOTH		0002
+#define S_IXOTH		0001
 
 #pragma warning(pop)
 
