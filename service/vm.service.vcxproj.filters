@@ -421,6 +421,9 @@
     <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_dec_stream.c">
       <Filter>External Libraries\xz-embedded</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\BufferStreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\external\svctl\svctl.rc">
