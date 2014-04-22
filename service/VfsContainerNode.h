@@ -20,81 +20,57 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __FSNODE_H_
-#define __FSNODE_H_
+#ifndef __VFSCONTAINERNODE_H_
+#define __VFSCONTAINERNODE_H_
 #pragma once
 
-#include "linux\stat.h"				// Include Linux stat declarations
-
-#include "BlockDevice.h"			// Include BlockDevice class declarations
-#include "CharacterDevice.h"		// Include CharacterDevice class decls
-#include "PipeDevice.h"				// Include PipeDevice class declarations
-#include "SocketDevice.h"			// Include Socket class declarations
-
-
+#include "VfsNode.h"				// Include VfsNode class declarations
+#include <vector>					// Include STL vector<> declarations
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// VfsContainerNode
+//
+// Specialization of VfsNode for container objects (directories, etc)
 
-struct __fsnode_t {
+class __declspec(novtable) VfsContainerNode : public VfsNode
+{
+public:
 
-	uint64_t		serialno;		// Node serial number
-	uint32_t		type;			// Node type
-	char*			name;			// Node name
+	// Destructor
+	//
+	virtual ~VfsContainerNode();
 
-	union {
+	//-------------------------------------------------------------------------
+	// Member Functions
 
-		// S_IFBLK
-		struct {
+	VfsNode* AddChild(VfsNode* child) { m_children.push_back(child); return child; }
 
-			BlockDevice*		device;
-		
-		} blockdev;
+	VfsNode* FindChild(const char_t* path) { (path); return nullptr; }
 
-		// S_IFCHR
-		struct {
+	//-------------------------------------------------------------------------
+	// Properties
 
-			CharacterDevice*	device;
-		
-		} chardev;
+protected:
 
-		// S_IFREG
-		struct {
+	// Instance Constructor
+	//
+	VfsContainerNode(VfsNodeType type, VfsContainerNode* parent) : VfsNode(type, parent) {}
 
-			uint32_t temp;
-		
-		} file;
+private:
 
-		// S_IFDIR
-		struct {
+	VfsContainerNode(const VfsContainerNode&);
+	VfsContainerNode& operator=(const VfsContainerNode&);
 
-		} directory;
+	//-------------------------------------------------------------------------
+	// Member Variables
 
-		// S_IFLNK
-		struct {	
-
-		} link;
-
-		// S_IFIFO
-		struct {
-
-			PipeDevice*			device;
-		
-		} pipedev;
-
-		// S_IFSOCK
-		struct {
-
-			SocketDevice*		device;
-		
-		} socketdev;
-
-	};
+	std::vector<VfsNode*>		m_children;			// Child nodes
 };
 
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __FSNODE_H_
+#endif	// __VFSNODE_H_

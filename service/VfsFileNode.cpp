@@ -20,81 +20,15 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __FSNODE_H_
-#define __FSNODE_H_
-#pragma once
+#include "stdafx.h"						// Include project pre-compiled headers
+#include "VfsFileNode.h"				// Include VfsFileNode declarations
 
-#include "linux\stat.h"				// Include Linux stat declarations
+#pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#include "BlockDevice.h"			// Include BlockDevice class declarations
-#include "CharacterDevice.h"		// Include CharacterDevice class decls
-#include "PipeDevice.h"				// Include PipeDevice class declarations
-#include "SocketDevice.h"			// Include Socket class declarations
-
-
-
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+VfsFileNode::~VfsFileNode()
+{
+}
 
 //-----------------------------------------------------------------------------
 
-struct __fsnode_t {
-
-	uint64_t		serialno;		// Node serial number
-	uint32_t		type;			// Node type
-	char*			name;			// Node name
-
-	union {
-
-		// S_IFBLK
-		struct {
-
-			BlockDevice*		device;
-		
-		} blockdev;
-
-		// S_IFCHR
-		struct {
-
-			CharacterDevice*	device;
-		
-		} chardev;
-
-		// S_IFREG
-		struct {
-
-			uint32_t temp;
-		
-		} file;
-
-		// S_IFDIR
-		struct {
-
-		} directory;
-
-		// S_IFLNK
-		struct {	
-
-		} link;
-
-		// S_IFIFO
-		struct {
-
-			PipeDevice*			device;
-		
-		} pipedev;
-
-		// S_IFSOCK
-		struct {
-
-			SocketDevice*		device;
-		
-		} socketdev;
-
-	};
-};
-
-//---------------------------------------------------------------------------
-
 #pragma warning(pop)
-
-#endif	// __FSNODE_H_

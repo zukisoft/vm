@@ -324,8 +324,12 @@
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SocketDevice.h" />
-    <ClInclude Include="stat.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="VfsContainerNode.h" />
+    <ClInclude Include="VfsDirectoryNode.h" />
+    <ClInclude Include="VfsFileNode.h" />
+    <ClInclude Include="VfsNode.h" />
+    <ClInclude Include="VirtualFileSystem.h" />
     <ClInclude Include="VmService.h" />
   </ItemGroup>
   <ItemGroup>
@@ -541,6 +545,7 @@
     <ClCompile Include="..\common\MappedFile.cpp" />
     <ClCompile Include="..\common\MappedFileView.cpp" />
     <ClCompile Include="..\common\MemoryRegion.cpp" />
+    <ClCompile Include="..\common\rpcmem.cpp" />
     <ClCompile Include="..\common\StreamReader.cpp" />
     <ClCompile Include="..\common\XzStreamReader.cpp" />
     <ClCompile Include="..\tmp\vm.service\vm.service_s.c">
@@ -556,13 +561,17 @@
     <ClCompile Include="rpc014_mknod.cpp" />
     <ClCompile Include="rpc295_openat.cpp" />
     <ClCompile Include="rpc297_mknodat.cpp" />
-    <ClCompile Include="rpcmem.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="VfsContainerNode.cpp" />
+    <ClCompile Include="VfsDIrectoryNode.cpp" />
+    <ClCompile Include="VfsFileNode.cpp" />
+    <ClCompile Include="VfsNode.cpp" />
+    <ClCompile Include="VirtualFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
   </ItemGroup>
   <ItemGroup>

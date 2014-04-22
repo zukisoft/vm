@@ -20,81 +20,49 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __FSNODE_H_
-#define __FSNODE_H_
+#ifndef __VFSDIRECTORYNODE_H_
+#define __VFSDIRECTORYNODE_H_
 #pragma once
 
-#include "linux\stat.h"				// Include Linux stat declarations
-
-#include "BlockDevice.h"			// Include BlockDevice class declarations
-#include "CharacterDevice.h"		// Include CharacterDevice class decls
-#include "PipeDevice.h"				// Include PipeDevice class declarations
-#include "SocketDevice.h"			// Include Socket class declarations
-
-
+#include "VfsNode.h"				// Include VfsNode class declarations
+#include "VfsContainerNode.h"		// Include VfsContainerNode class declarations
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// VfsDirectoryNode
+//
+// Virtual File System directory node
 
-struct __fsnode_t {
+class VfsDirectoryNode : public VfsContainerNode
+{
+public:
 
-	uint64_t		serialno;		// Node serial number
-	uint32_t		type;			// Node type
-	char*			name;			// Node name
+	// Instance Constructor
+	//
+	VfsDirectoryNode(VfsContainerNode* parent) : VfsContainerNode(VfsNodeType::Directory, parent) {}
 
-	union {
+	// Destructor
+	//
+	virtual ~VfsDirectoryNode() {}
 
-		// S_IFBLK
-		struct {
+	//-------------------------------------------------------------------------
+	// Member Functions
 
-			BlockDevice*		device;
-		
-		} blockdev;
+	//-------------------------------------------------------------------------
+	// Properties
 
-		// S_IFCHR
-		struct {
+private:
 
-			CharacterDevice*	device;
-		
-		} chardev;
+	VfsDirectoryNode(const VfsDirectoryNode&);
+	VfsDirectoryNode& operator=(const VfsDirectoryNode&);
 
-		// S_IFREG
-		struct {
-
-			uint32_t temp;
-		
-		} file;
-
-		// S_IFDIR
-		struct {
-
-		} directory;
-
-		// S_IFLNK
-		struct {	
-
-		} link;
-
-		// S_IFIFO
-		struct {
-
-			PipeDevice*			device;
-		
-		} pipedev;
-
-		// S_IFSOCK
-		struct {
-
-			SocketDevice*		device;
-		
-		} socketdev;
-
-	};
+	//-------------------------------------------------------------------------
+	// Member Variables
 };
 
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __FSNODE_H_
+#endif	// __VFSDIRECTORYNODE_H_

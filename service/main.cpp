@@ -24,6 +24,8 @@
 #include "resource.h"				// Include project resource declarations
 #include "VmService.h"				// Include VmService declarations
 
+#include "VirtualFileSystem.h"
+
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 #pragma warning(disable:4100)		// "unreferenced formal parameter"
 
@@ -102,6 +104,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 //	HRESULT					hResult;			// Result from function call
 
 //////////////////
+
+	VirtualFileSystem vfs(L"D:\\temp");
+	vfs.LoadInitialFileSystem(L"D:\\ramdisk.cpio.gz");
+
+	return 0;
 
 	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, RemoteSystemCalls_v1_0_s_ifspec, nullptr);
 	if(rpcresult != RPC_S_OK) {

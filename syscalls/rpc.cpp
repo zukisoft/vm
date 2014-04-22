@@ -47,36 +47,6 @@ static RPC_BINDING_HANDLE_TEMPLATE_V1 REMOTESYSTEMCALLS_TEMPLATE = {
 __declspec(thread) static handle_t t_rpchandle = nullptr;
 
 //-----------------------------------------------------------------------------
-// midl_user_allocate
-//
-// Allocates RPC stub and library memory
-//
-// Arguments:
-//
-//	len			- Length of the required memory buffer
-
-void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
-{
-	// Use the COM task memory allocator for RPC
-	return CoTaskMemAlloc(len);
-}
-
-//-----------------------------------------------------------------------------
-// midl_user_free
-//
-// Relases RPC stub and library memory
-//
-// Arguments:
-//
-//	ptr			- Pointer to buffer allocated by MIDL_user_allocate
-
-void __RPC_USER midl_user_free(void __RPC_FAR* ptr)
-{
-	// Use the COM task memory allocator for RPC
-	CoTaskMemFree(ptr);
-}
-
-//-----------------------------------------------------------------------------
 // rpc_attach_thread
 //
 // Creates the RPC binding handle for a thread in respose to DLL_THREAD_ATTACH

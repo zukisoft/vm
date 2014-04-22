@@ -143,9 +143,6 @@
     <ClInclude Include="FsNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CharacterDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -236,6 +233,21 @@
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h">
       <Filter>External Libraries\xz-embedded</Filter>
     </ClInclude>
+    <ClInclude Include="VfsContainerNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VfsDirectoryNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VfsFileNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VfsNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualFileSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -300,9 +312,6 @@
     </ClCompile>
     <ClCompile Include="..\tmp\vm.service\vm.service_s.c">
       <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rpcmem.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="rpc005_open.cpp">
       <Filter>Source Files\System Calls</Filter>
@@ -423,6 +432,24 @@
     </ClCompile>
     <ClCompile Include="..\common\BufferStreamReader.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\rpcmem.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="VfsContainerNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VfsDIrectoryNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VfsFileNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VfsNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualFileSystem.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
