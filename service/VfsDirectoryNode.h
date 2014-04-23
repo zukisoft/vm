@@ -23,9 +23,8 @@
 #ifndef __VFSDIRECTORYNODE_H_
 #define __VFSDIRECTORYNODE_H_
 #pragma once
-
-#include "VfsNode.h"				// Include VfsNode class declarations
-#include "VfsContainerNode.h"		// Include VfsContainerNode class declarations
+				
+#include "VfsNode.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
@@ -34,13 +33,14 @@
 //
 // Virtual File System directory node
 
-class VfsDirectoryNode : public VfsContainerNode
+class VfsDirectoryNode : public VfsNode
 {
 public:
 
 	// Instance Constructor
 	//
-	VfsDirectoryNode(VfsContainerNode* parent) : VfsContainerNode(VfsNodeType::Directory, parent) {}
+	VfsDirectoryNode(mode_t mode) : VfsNode(mode) {}
+	VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid) {}
 
 	// Destructor
 	//

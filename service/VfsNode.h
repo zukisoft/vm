@@ -24,30 +24,17 @@
 #define __VFSNODE_H_
 #pragma once
 
-#include <string>					// Include STL string<> declarations
-
-// VfsContainerNode (Forward Declaration)
-//
-class VfsContainerNode;
+#include <queue>
+#include "AutoCriticalSection.h"
+#include "CriticalSection.h"
+#include "Exception.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
-
-// move me
-enum class VfsNodeType {
-
-	Directory		= 0,
-	File,
-};
 
 //-----------------------------------------------------------------------------
 // VfsNode
 //
 // Base class for all virtual file system nodes
-//
-// TODO: Move name to a string table?
-// TODO: Can these be allocated on a private heap 
-// TODO: Need private object security -- map uid/gid/mask to a collection
-// TODO: Using a vector<> for children is going to be O(n) --> terrible
 
 class __declspec(novtable) VfsNode
 {
@@ -55,26 +42,57 @@ public:
 
 	// Destructor
 	//
-	virtual ~VfsNode() {}
+	virtual ~VfsNode();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// AddRef
+	//
+	// Atomically increments the object reference counter
+	VfsNode* AddRef(void);
+
+	// Release
+	//
+	// Atomically decrements the object reference counter
+	void Release(void);
+
 	//-------------------------------------------------------------------------
 	// Properties
 
-	__declspec(property(get=getMode, put=putMode)) uint32_t Mode;
-	uint32_t getMode(void) const { return m_mode; }
-	void putMode(uint32_t value) { m_mode = value; }
+	// GroupId
+	//
+	// Gets/sets the node owner group id
+	__declspec(property(get=getGroupId, put=putGroupId)) gid_t GroupId;
+	gid_t getGroupId(void) const { return m_gid; }
+	void putGroupId(gid_t value);
 
-	__declspec(property(get=getType)) VfsNodeType Type;
-	VfsNodeType getType(void) const { return m_type; }
+	// Index
+	//
+	// Gets the node index
+	__declspec(property(get=getIndex)) int32_t Index;
+	int32_t getIndex(void) const { return m_index; }
+
+	// Mode
+	//
+	// Gets/sets the mode flags for this node
+	__declspec(property(get=getMode, put=putMode)) mode_t Mode;
+	uint32_t getMode(void) const { return m_mode; }
+	void putMode(mode_t value);
+
+	// UserId
+	//
+	// Gets/sets the node owner user id
+	__declspec(property(get=getUserId, put=putUserId)) uid_t UserId;
+	uid_t getUserId(void) const { return m_uid; }
+	void putUserId(uid_t value);
 
 protected:
 
-	// Instance Constructor
+	// Instance Constructors
 	//
-	VfsNode(VfsNodeType type, VfsContainerNode* parent) : m_type(type), m_parent(parent) {}
+	VfsNode(mode_t mode) : m_index(AllocateIndex()), m_mode(mode) { /*check index >= 0 */ }
+	VfsNode(mode_t mode, uid_t uid, gid_t gid) : m_index(AllocateIndex()), m_mode(mode), m_uid(uid), m_gid(gid) {}
 
 private:
 
@@ -82,18 +100,30 @@ private:
 	VfsNode& operator=(const VfsNode&);
 
 	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// AllocateIndex
+	//
+	// Allocates a unique node index from the index pool
+	static int32_t AllocateIndex(void);
+
+	// ReleaseIndex
+	//
+	// Releases a node index back into the index pool
+	static void ReleaseIndex(int32_t index);
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
-	VfsNodeType					m_type;				// Node type
-	std::string					m_name;				// Name
-	VfsContainerNode*			m_parent;			// Parent node
-	
-	// temporary?  Need a security descriptor / private object security
-	// except for temporary files, so maybe that doesn't count here?
+	volatile long				m_ref = 1;			// Reference counter
+	const int32_t				m_index;			// Node index
+	mode_t						m_mode;				// Node mode flags
+	uid_t						m_uid = 0;			// Node owner
+	gid_t						m_gid = 0;			// Node owner
 
-	uint32_t					m_mode;				// Node mode flags
-	uint32_t					m_uid;				// Node owner
-	uint32_t					m_gid;				// Node owner
+	static int32_t				s_next;				// Next sequential index
+	static std::queue<int32_t>	s_spent;			// Spent indexes
+	static CriticalSection		s_cs;				// Index allocator lock
 };
 
 //-----------------------------------------------------------------------------

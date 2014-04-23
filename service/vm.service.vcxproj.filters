@@ -69,6 +69,12 @@
       <UniqueIdentifier>{438ae0f9-01be-424b-93c1-0bbc71d1d0d2}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Header Files\Virtual File System">
+      <UniqueIdentifier>{68fdcab6-c1d3-4998-b787-c1edad61d0ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Virtual File System">
+      <UniqueIdentifier>{89830410-cf51-4580-86e6-c0e75d22790a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -233,20 +239,17 @@
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h">
       <Filter>External Libraries\xz-embedded</Filter>
     </ClInclude>
-    <ClInclude Include="VfsContainerNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsDirectoryNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsFileNode.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="VirtualFileSystem.h">
+      <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
     <ClInclude Include="VfsNode.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualFileSystem.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="VfsFileNode.h">
+      <Filter>Header Files\Virtual File System</Filter>
+    </ClInclude>
+    <ClInclude Include="VfsDirectoryNode.h">
+      <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -436,20 +439,17 @@
     <ClCompile Include="..\common\rpcmem.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="VfsContainerNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VfsDIrectoryNode.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
     <ClCompile Include="VfsFileNode.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
     <ClCompile Include="VfsNode.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
     <ClCompile Include="VirtualFileSystem.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

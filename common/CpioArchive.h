@@ -87,10 +87,10 @@ public:
 	__declspec(property(get=getDeviceMinorVersion)) uint32_t DeviceMinorVersion;
 	uint32_t getDeviceMinorVersion(void) const { return m_devminor; }
 
-	// GID
+	// GroupId
 	//
 	// Gets the file owner GID
-	__declspec(property(get=getGID)) uint32_t GID;
+	__declspec(property(get=getGID)) uint32_t GroupId;
 	uint32_t getGID(void) const { return m_gid; }
 
 	// INode
@@ -123,10 +123,10 @@ public:
 	__declspec(property(get=getPath)) const char_t* Path;
 	const char_t* getPath(void) const { return m_path.c_str(); }
 
-	// UID
+	// UserId
 	//
 	// Gets the file owner UID
-	__declspec(property(get=getUID)) uint32_t UID;
+	__declspec(property(get=getUID)) uint32_t UserId;
 	uint32_t getUID(void) const { return m_uid; }
 
 private:

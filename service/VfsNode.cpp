@@ -20,11 +20,127 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "VfsNode.h"					// Include VfsNode class declarations
-#include "VfsContainerNode.h"			// Include VfsContainerNode declarations
+#include "stdafx.h"
+#include "VfsNode.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
+
+// VfsNode::s_next (static)
+//
+// Next sequential node index
+int32_t VfsNode::s_next = 1;
+
+// VfsNode::s_spent (static)
+//
+// Queue of spent and available node indexes
+std::queue<int32_t> VfsNode::s_spent;
+
+// VfsNode::s_cs (static)
+//
+// Critical Section for access to the index allocator
+CriticalSection VfsNode::s_cs;
+
+//-----------------------------------------------------------------------------
+// VfsNode Destructor
+
+VfsNode::~VfsNode()
+{
+	ReleaseIndex(m_index);				// Release the allocated index
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::AddRef
+//
+// Increments the object reference counter
+//
+// Arguments:
+//
+//	NONE
+
+VfsNode* VfsNode::AddRef(void) 
+{
+	InterlockedIncrement(&m_ref);
+	return this;
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::AllocateIndex (static)
+//
+// Allocates a new node index, returns -1 if there are no more available
+//
+// Arguments:
+//
+//	NONE
+
+int32_t VfsNode::AllocateIndex(void)
+{
+	uint32_t				index;				// Index to return
+
+	AutoCriticalSection cs(s_cs);
+
+	// Ressurect a spent index when one is available, otherwise generate
+	// a sequentially new index for this node
+	if(!s_spent.empty()) { index = s_spent.front(); s_spent.pop(); }
+	else index = (s_next == INT32_MAX) ? -1 : s_next++;
+
+	return index;
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::putGroupId
+
+void VfsNode::putGroupId(gid_t value)
+{
+	UNREFERENCED_PARAMETER(value);
+	throw Exception(E_NOTIMPL);
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::putMode
+
+void VfsNode::putMode(mode_t value)
+{
+	UNREFERENCED_PARAMETER(value);
+	throw Exception(E_NOTIMPL);
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::putUserId
+
+void VfsNode::putUserId(uid_t value)
+{
+	UNREFERENCED_PARAMETER(value);
+	throw Exception(E_NOTIMPL);
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::Release
+//
+// Decrements the object reference counter and self-deletes when it reaches 0
+//
+// Arguments:
+//
+//	NONE
+
+void VfsNode::Release(void)
+{
+	if(InterlockedDecrement(&m_ref) == 0) delete this;
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::ReleaseIndex (static)
+//
+// Releases a previously allocated node index
+//
+// Arguments:
+//
+//	index		- Spent node index
+
+void VfsNode::ReleaseIndex(int32_t index)
+{
+	AutoCriticalSection cs(s_cs);
+	s_spent.push(index);
+}
 
 //-----------------------------------------------------------------------------
 

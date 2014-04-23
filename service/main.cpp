@@ -25,6 +25,7 @@
 #include "VmService.h"				// Include VmService declarations
 
 #include "VirtualFileSystem.h"
+#include <filesystem>
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 #pragma warning(disable:4100)		// "unreferenced formal parameter"
@@ -104,6 +105,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 //	HRESULT					hResult;			// Result from function call
 
 //////////////////
+
+	std::tr2::sys::wpath mypath;
+	mypath = L"dev/block/mike";
+	std::wstring base = mypath.basename();
+	std::wstring file = mypath.relative_path();
+
+	for(std::tr2::sys::wpath::iterator it = mypath.begin(); it != mypath.end(); ++it) {
+
+		std::wstring temp123 = *it;
+		int x = 123;
+	}
 
 	VirtualFileSystem vfs(L"D:\\temp");
 	vfs.LoadInitialFileSystem(L"D:\\ramdisk.cpio.gz");

@@ -25,8 +25,13 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+//-----------------------------------------------------------------------------
+// VfsFileNode Destructor
+
 VfsFileNode::~VfsFileNode()
 {
+	// Close the underlying temporary file handle
+	CloseHandle(m_handle);
 }
 
 //-----------------------------------------------------------------------------

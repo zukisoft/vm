@@ -23,8 +23,8 @@
 #ifndef __VFSFILENODE_H_
 #define __VFSFILENODE_H_
 #pragma once
-
-#include "VfsNode.h"				// Include VfsNode class declarations
+				
+#include "VfsNode.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
@@ -39,7 +39,8 @@ public:
 
 	// Instance Constructor
 	//
-	VfsFileNode(VfsContainerNode* parent) : VfsNode(VfsNodeType::File, parent) {}
+	VfsFileNode(mode_t mode) : VfsNode(mode) {}
+	VfsFileNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid) {}
 
 	// Destructor
 	//
@@ -57,7 +58,12 @@ private:
 	VfsFileNode& operator=(const VfsFileNode&);
 
 	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	//-------------------------------------------------------------------------
 	// Member Variables
+
+	HANDLE		m_handle = INVALID_HANDLE_VALUE;		// Underlying HANDLE
 };
 
 //-----------------------------------------------------------------------------

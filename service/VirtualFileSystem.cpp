@@ -33,11 +33,6 @@
 #define RPC_TSTR	RPC_CSTR
 #endif
 
-//
-// TODO: I DESPISE STD::STRING AND ALL THIS APPEND THIS APPEND THAT CRAP
-// (but it works for now)
-//
-
 //-----------------------------------------------------------------------------
 // VirtualFileSystem Constructor
 //
@@ -60,7 +55,7 @@ VirtualFileSystem::VirtualFileSystem(const tchar_t* tempdir)
 	if(!CreateDirectory(m_tempdir.c_str(), nullptr)) throw Win32Exception();
 
 	// Construct the root file system node
-	m_root = new VfsDirectoryNode(nullptr);
+	m_root = new VfsDirectoryNode(S_IFDIR);		// <--- TODO: access mask
 }
 
 //-----------------------------------------------------------------------------
@@ -130,7 +125,10 @@ VfsNode* VirtualFileSystem::CreateFileNode(const CpioFile& cpiofile)
 {
 	std::tstring localpath = m_tempdir + GetUuid();
 
-	VfsFileNode testme(m_root);
+	VfsFileNode* node = new	VfsFileNode(cpiofile.Mode, cpiofile.UserId, cpiofile.GroupId);
+	//VfsFileNode testme(m_root);
+
+	//node->Release();
 
 	return nullptr;
 }
