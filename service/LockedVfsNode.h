@@ -20,26 +20,52 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "VfsDirectoryNode.h"			// Include VfsDirectoryNode declarations
+#ifndef __LOCKEDVFSNODE_H_
+#define __LOCKEDVFSNODE_H_
+#pragma once
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#include "VfsNode.h"
+
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// VfsDirectoryNode Constructor
+// LockedVfsNode
 //
-// Arguments:
-//
-//	mode		- Initial mode flags for the virtual directory
-//	uid			- Initial owner uid for the virtual directory
-//	gid			- Initial owner gid for the virtual directory
+// Wrapper class for a VfsNode pointer that automaticaly calls .Release() on it
+// when destroyed or falls out of scope
 
-VfsDirectoryNode::VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid)
+class LockedVfsNode
 {
-	_ASSERTE((mode & S_IFMT) == S_IFDIR);
-	if((mode & S_IFMT) != S_IFDIR) throw Exception(E_VFS_INVALIDNODEMODE, mode);
-}
+public:
+
+	// Constructor
+	//
+	LockedVfsNode(VfsNode* const node) : m_node(node) {}
+
+	// Destructor
+	//
+	~LockedVfsNode() { m_node->Release(); }
+
+	//-------------------------------------------------------------------------
+	// Overloaded Operators
+
+	// Member Selection Operator
+	//
+	VfsNode* operator->() const { return m_node; }
+
+private:
+
+	LockedVfsNode(const LockedVfsNode&);
+	LockedVfsNode& operator=(const LockedVfsNode&);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	VfsNode* const			m_node;				// Contained node pointer
+};
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __LOCKEDVFSNODE_H_

@@ -33,6 +33,7 @@
 #include "CpioArchive.h"
 #include "Exception.h"
 #include "File.h"
+#include "LockedVfsNode.h"
 #include "VfsNode.h"
 #include "VfsDirectoryNode.h"
 #include "VfsFileNode.h"
@@ -55,8 +56,7 @@ public:
 
 	// Instance Constructors
 	//
-	VirtualFileSystem() : VirtualFileSystem(nullptr) {}
-	VirtualFileSystem(const tchar_t* tempdir);
+	VirtualFileSystem();
 
 	// Destructor
 	//
@@ -65,7 +65,41 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	//VfsNode* CreateFileNode(
+	// CreateDirectory
+	//
+	// Creates a directory node
+	static std::unique_ptr<LockedVfsNode> CreateDirectory(mode_t mode)
+		{ return std::unique_ptr<LockedVfsNode>(new LockedVfsNode(new VfsDirectoryNode(mode))); }
+	static std::unique_ptr<LockedVfsNode> CreateDirectory(mode_t mode, uid_t uid, gid_t gid)
+		{ return std::unique_ptr<LockedVfsNode>(new LockedVfsNode(new VfsDirectoryNode(mode, uid, gid))); }
+
+	// CreateFile
+	//
+	// Creates a file node
+	static std::unique_ptr<LockedVfsNode> CreateFile(mode_t mode)
+		{ return std::unique_ptr<LockedVfsNode>(new LockedVfsNode(new VfsFileNode(mode))); }
+	static std::unique_ptr<LockedVfsNode> CreateFile(mode_t mode, uid_t uid, gid_t gid)
+		{ return std::unique_ptr<LockedVfsNode>(new LockedVfsNode(new VfsFileNode(mode, uid, gid))); }
+	static std::unique_ptr<LockedVfsNode> CreateFile(mode_t mode, StreamReader& data)
+		{ return std::unique_ptr<LockedVfsNode>(new LockedVfsNode(new VfsFileNode(mode, data))); }
+	static std::unique_ptr<LockedVfsNode> CreateFile(mode_t mode, uid_t uid, gid_t gid, StreamReader& data)
+		{ return std::unique_ptr<LockedVfsNode>(new LockedVfsNode(new VfsFileNode(mode, uid, gid, data))); }
+
+	// Find
+	//
+	// Locates a node in the virtual file system
+
+	// need some form of result object:
+	//	- FoundExact -- found the exact node
+	//	- FoundParent -- found up through the parent
+	//	- FoundAncestor	-- found an ancestor node
+	//
+	// need a flag to traverse links
+	// need to addref() the node returned so it cannot be deleted
+	//  (use the result class destructor to release?)
+	//
+	//void Find(const char_t* path);
+	//void Find(const VfsNode* base, const char_t* path);
 
 	// LoadInitialFileSystem
 	//
@@ -83,23 +117,22 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	VfsNode* CreateFileNode(const CpioFile& cpiofile);
-
-	// GetTemporaryDirectory
+	// CreateDirectory
 	//
-	// Generates a unique temporary directory name for the current process
-	static std::tstring GetTemporaryDirectory(void);
+	// Internal overloads to create a directory node
+	static std::unique_ptr<LockedVfsNode> CreateDirectory(const CpioFile& cpiofile)
+		{ return CreateDirectory(cpiofile.Mode, cpiofile.UserId, cpiofile.GroupId); }
 
-	// GetUuid
+	// CreateFile
 	//
-	// Generates a UUID string
-	static std::tstring GetUuid(void);
+	// Internal overloads to create a file node
+	static std::unique_ptr<LockedVfsNode> CreateFile(const CpioFile& cpiofile)
+		{ return CreateFile(cpiofile.Mode, cpiofile.UserId, cpiofile.GroupId, cpiofile.Data); }
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	VfsDirectoryNode*	m_root;				// Root filesystem node
-	std::tstring		m_tempdir;			// Temporary directory
 };
 
 //-----------------------------------------------------------------------------

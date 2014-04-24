@@ -24,6 +24,7 @@
 #define __VFSDIRECTORYNODE_H_
 #pragma once
 				
+#include <linux/stat.h>
 #include "VfsNode.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
@@ -40,7 +41,7 @@ public:
 	// Instance Constructor
 	//
 	VfsDirectoryNode(mode_t mode) : VfsNode(mode) {}
-	VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid) {}
+	VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid);
 
 	// Destructor
 	//

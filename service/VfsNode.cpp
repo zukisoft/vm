@@ -25,6 +25,17 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// RPC_TSTR
+//
+// Macro indicating the proper string width from RPC function calls
+#pragma push_macro("RPC_TSTR")
+#undef RPC_TSTR
+#ifdef _UNICODE
+#define RPC_TSTR	RPC_WSTR
+#else
+#define RPC_TSTR	RPC_CSTR
+#endif
+
 // VfsNode::s_next (static)
 //
 // Next sequential node index
@@ -39,6 +50,19 @@ std::queue<int32_t> VfsNode::s_spent;
 //
 // Critical Section for access to the index allocator
 CriticalSection VfsNode::s_cs;
+
+// VfsNode::s_tempdir (static)
+//
+// Location where all the temporary node storage files will be placed
+std::tstring VfsNode::s_tempdir = []() -> std::tstring {
+
+	tchar_t	temppath[MAX_PATH + 1];			// Temporary path buffer
+
+	// Get the temporary path for the current process identity; return
+	// an empty string on failure, don't want to throw exceptions here
+	if(GetTempPath(MAX_PATH + 1, temppath) == 0) return std::tstring();
+	else return std::tstring(temppath);
+}();
 
 //-----------------------------------------------------------------------------
 // VfsNode Destructor
@@ -84,6 +108,37 @@ int32_t VfsNode::AllocateIndex(void)
 	else index = (s_next == INT32_MAX) ? -1 : s_next++;
 
 	return index;
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::GenerateTemporaryFileName (static, protected)
+//
+// Generates a unique file name for an underlying OS file
+//
+// Arguments:
+//
+//	NONE
+
+std::tstring VfsNode::GenerateTemporaryFileName(void)
+{
+	UUID			uuid;				// Folder UUID 
+	RPC_TSTR		uuidstr;			// Folder UUID as a string
+	RPC_STATUS		rpcstatus;			// Result from RPC function call
+
+	// Create a UUID with the RPC runtime rather than the COM runtime
+	rpcstatus = UuidCreate(&uuid);
+	if((rpcstatus != RPC_S_OK) && (rpcstatus != RPC_S_UUID_LOCAL_ONLY)) throw Win32Exception(rpcstatus);
+
+	// Convert the UUID into a string
+	rpcstatus = UuidToString(&uuid, &uuidstr);
+	if(rpcstatus != RPC_S_OK) throw Win32Exception(rpcstatus);
+
+	// Convert the string into a std::tstring and release the RPC buffer
+	std::tstring filename(reinterpret_cast<tchar_t*>(uuidstr));
+	RpcStringFree(&uuidstr);
+
+	// Append the generated file name to the temporary directory name
+	return s_tempdir + filename;
 }
 
 //-----------------------------------------------------------------------------
@@ -143,5 +198,7 @@ void VfsNode::ReleaseIndex(int32_t index)
 }
 
 //-----------------------------------------------------------------------------
+
+#pragma pop_macro("RPC_TSTR")
 
 #pragma warning(pop)

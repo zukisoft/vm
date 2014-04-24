@@ -24,7 +24,13 @@
 #define __VFSFILENODE_H_
 #pragma once
 				
+#include <linux/stat.h>
+#include <memory>
+#include "tstring.h"
+#include "Exception.h"
+#include "StreamReader.h"
 #include "VfsNode.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
@@ -37,10 +43,12 @@ class VfsFileNode : public VfsNode
 {
 public:
 
-	// Instance Constructor
+	// Instance Constructors
 	//
-	VfsFileNode(mode_t mode) : VfsNode(mode) {}
-	VfsFileNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid) {}
+	VfsFileNode(mode_t mode) : VfsFileNode(mode, 0, 0) {}
+	VfsFileNode(mode_t mode, uid_t uid, gid_t gid);
+	VfsFileNode(mode_t mode, StreamReader& data) : VfsFileNode(mode, 0, 0, data) {}
+	VfsFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data);
 
 	// Destructor
 	//
@@ -63,7 +71,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HANDLE		m_handle = INVALID_HANDLE_VALUE;		// Underlying HANDLE
+	HANDLE			m_handle = INVALID_HANDLE_VALUE;		// Underlying HANDLE
 };
 
 //-----------------------------------------------------------------------------

@@ -26,6 +26,7 @@ FacilityNames=(
 			Generic=0x00:FACILITY_GENERIC
 			Common=0x01:FACILITY_COMMON
 			ElfImage=0x02:FACILITY_ELFIMAGE
+			VirtualFileSystem=0x03:FACILITY_VFS
 			)
 
 ;//--------------------------------------------------------------------------
@@ -284,3 +285,17 @@ SymbolicName=E_SYSCALLARGUMENTCOUNT
 Language=English
 An invalid number of arguments have been specified for virtual system call number %1!d!
 .
+
+;//----------------------------------------------------------------------------
+;// VirtualFileSystem
+;//
+;// Messages specific to the virtual file system
+
+MessageId=0x300
+Severity=Error
+Facility=VirtualFileSystem
+SymbolicName=E_VFS_INVALIDNODEMODE
+Language=English
+The specified mode flags 0x%1!X! are not valid for the type of node being created
+.
+

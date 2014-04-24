@@ -251,6 +251,9 @@
     <ClInclude Include="VfsDirectoryNode.h">
       <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
+    <ClInclude Include="LockedVfsNode.h">
+      <Filter>Header Files\Virtual File System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

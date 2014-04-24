@@ -26,6 +26,68 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// VfsFileNode Constructor
+//
+// Arguments:
+//
+//	mode		- Initial mode flags for the virtual file
+//	uid			- Initial owner uid for the virtual file
+//	gid			- Initial owner gid for the virtual file
+
+VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid) 
+{
+	_ASSERTE((mode & S_IFMT) == S_IFREG);
+	if((mode & S_IFMT) != S_IFREG) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+
+	// Generate the underlying file name for this node in the temporary folder
+	std::tstring filename = VfsNode::GenerateTemporaryFileName();
+
+	// Create a temporary, delete-on-close file as backing storage for the node data
+	m_handle = CreateFile(filename.c_str(), FILE_ALL_ACCESS, 0, nullptr, CREATE_NEW, 
+		FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+	if(m_handle == INVALID_HANDLE_VALUE) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
+// VfsFileNode Constructor
+//
+// Arguments:
+//
+//	mode		- Initial mode flags for the virtual file
+//	uid			- Initial owner uid for the virtual file
+//	gid			- Initial owner gid for the virtual file
+//	data		- Initial data stream for the virtual file
+
+VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) : VfsFileNode(mode, uid, gid) 
+{
+	const int BUFFER_SIZE = (64 KiB);				// Local file buffer size
+
+	// Above constructor should have been successfully invoked before we get here
+	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+
+	// Use a 64KiB buffer to read from the stream into the target file
+	uint8_t* buffer = new uint8_t[BUFFER_SIZE];
+	if(!buffer) throw Exception(E_OUTOFMEMORY);
+
+	try {
+
+		// Load the file from the provided stream in BUFFER_SIZE chunks
+		uint32_t bytesread = data.Read(buffer, BUFFER_SIZE);
+		while(bytesread > 0) {
+
+			if(!WriteFile(m_handle, buffer, bytesread, reinterpret_cast<LPDWORD>(&bytesread), nullptr)) throw Win32Exception();
+			bytesread = data.Read(buffer, BUFFER_SIZE);
+		}
+	} 
+	
+	catch(...) { delete[] buffer; throw; }
+	delete[] buffer;
+
+	// Reset the file pointer back to the beginning of the file
+	SetFilePointer(m_handle, 0, nullptr, FILE_BEGIN);
+}
+
+//-----------------------------------------------------------------------------
 // VfsFileNode Destructor
 
 VfsFileNode::~VfsFileNode()

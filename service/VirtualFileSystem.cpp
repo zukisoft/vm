@@ -25,35 +25,15 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-#pragma push_macro("RPC_TSTR")
-#undef RPC_TSTR
-#ifdef _UNICODE
-#define RPC_TSTR	RPC_WSTR
-#else
-#define RPC_TSTR	RPC_CSTR
-#endif
-
 //-----------------------------------------------------------------------------
 // VirtualFileSystem Constructor
 //
 // Arguments:
 //
-//	tempdir		- Temporary directory for virtual files, can be NULL
+//	NONE
 
-VirtualFileSystem::VirtualFileSystem(const tchar_t* tempdir)
+VirtualFileSystem::VirtualFileSystem()
 {
-	// Use the temporary directory specified or generate one as necessary
-	m_tempdir = (tempdir) ? tempdir : GetTemporaryDirectory();
-
-	// The temporary path needs to end with a trailing backslash
-	if(m_tempdir.compare(m_tempdir.length() - 1, 1, L"\\") != 0) m_tempdir.append(L"\\");
-
-	// Add the GUID to the provided temporary directory
-	m_tempdir.append(GetUuid()) += L"\\";
-
-	// Create the directory for temporary file storage
-	if(!CreateDirectory(m_tempdir.c_str(), nullptr)) throw Win32Exception();
-
 	// Construct the root file system node
 	m_root = new VfsDirectoryNode(S_IFDIR);		// <--- TODO: access mask
 }
@@ -65,72 +45,6 @@ VirtualFileSystem::~VirtualFileSystem()
 {
 	// Deletion of the root node will cascade delete the virtual file system
 	delete m_root;
-
-	// Attempt to remove the temporary file directory, but don't throw
-	RemoveDirectory(m_tempdir.c_str());
-}
-
-//-----------------------------------------------------------------------------
-// VirtualFileSystem::GetTemporaryDirectory (static, private)
-//
-// Generates a temporary directory name for the current process if one
-// was not specified in the class constructor
-//
-// Arguents:
-//
-//	NONE
-
-std::tstring VirtualFileSystem::GetTemporaryDirectory(void)
-{
-	tchar_t		temppath[MAX_PATH + 1];			// Path buffer
-
-	// Get the temporary path for the current process identity
-	if(GetTempPath(MAX_PATH + 1, temppath) == 0) throw Win32Exception();
-
-	return std::tstring(temppath);
-}
-
-//-----------------------------------------------------------------------------
-// VirtualFileSystem::GetUuid (static, private)
-//
-// Generates a UUID string
-//
-// Arguments:
-//
-//	NONE
-
-std::tstring VirtualFileSystem::GetUuid(void)
-{
-	UUID			uuid;				// Folder UUID 
-	RPC_TSTR		uuidstr;			// Folder UUID as a string
-	RPC_STATUS		rpcstatus;			// Result from RPC function call
-
-	// Create a UUID with the RPC runtime rather than the COM runtime
-	rpcstatus = UuidCreate(&uuid);
-	if((rpcstatus != RPC_S_OK) && (rpcstatus != RPC_S_UUID_LOCAL_ONLY)) throw Win32Exception(rpcstatus);
-
-	// Convert the UUID into a string
-	rpcstatus = UuidToString(&uuid, &uuidstr);
-	if(rpcstatus != RPC_S_OK) throw Win32Exception(rpcstatus);
-
-	// Convert the string into a std::tstring and release the RPC buffer
-	std::tstring result(reinterpret_cast<tchar_t*>(uuidstr));
-	RpcStringFree(&uuidstr);
-
-	return result;
-}
-
-// Move me
-VfsNode* VirtualFileSystem::CreateFileNode(const CpioFile& cpiofile)
-{
-	std::tstring localpath = m_tempdir + GetUuid();
-
-	VfsFileNode* node = new	VfsFileNode(cpiofile.Mode, cpiofile.UserId, cpiofile.GroupId);
-	//VfsFileNode testme(m_root);
-
-	//node->Release();
-
-	return nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -154,10 +68,11 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 		switch(file.Mode & S_IFMT) {
 
 			case S_IFREG:
-				CreateFileNode(file);
+				CreateFile(file);
 				break;
 
 			case S_IFDIR:
+				CreateDirectory(file);
 				break;
 
 			case S_IFLNK:
@@ -182,7 +97,5 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 }
 
 //-----------------------------------------------------------------------------
-
-#pragma pop_macro("RPC_TSTR")
 
 #pragma warning(pop)

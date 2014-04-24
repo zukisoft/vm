@@ -25,9 +25,11 @@
 #pragma once
 
 #include <queue>
+#include "tstring.h"
 #include "AutoCriticalSection.h"
 #include "CriticalSection.h"
 #include "Exception.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
@@ -94,6 +96,14 @@ protected:
 	VfsNode(mode_t mode) : m_index(AllocateIndex()), m_mode(mode) { /*check index >= 0 */ }
 	VfsNode(mode_t mode, uid_t uid, gid_t gid) : m_index(AllocateIndex()), m_mode(mode), m_uid(uid), m_gid(gid) {}
 
+	//-------------------------------------------------------------------------
+	// Protected Member Functions
+
+	// GenerateTemporaryFileName
+	//
+	// Generates a UUID-based name to represent a temporary file
+	static std::tstring GenerateTemporaryFileName(void);
+
 private:
 
 	VfsNode(const VfsNode&);
@@ -124,6 +134,8 @@ private:
 	static int32_t				s_next;				// Next sequential index
 	static std::queue<int32_t>	s_spent;			// Spent indexes
 	static CriticalSection		s_cs;				// Index allocator lock
+
+	static std::tstring			s_tempdir;			// Temporary node storage
 };
 
 //-----------------------------------------------------------------------------
