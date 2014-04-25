@@ -69,6 +69,7 @@ std::tstring VfsNode::s_tempdir = []() -> std::tstring {
 
 VfsNode::~VfsNode()
 {
+	_ASSERTE(m_ref == 0);				// Bug if not zero here
 	ReleaseIndex(m_index);				// Release the allocated index
 }
 

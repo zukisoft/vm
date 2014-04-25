@@ -104,6 +104,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	DWORD					dwResult;			// Result from function call
 //	HRESULT					hResult;			// Result from function call
 
+#ifdef _DEBUG
+
+	int nDbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);	// Get current flags
+	nDbgFlags |= _CRTDBG_LEAK_CHECK_DF;						// Enable leak-check
+	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
+
+#endif	// _DEBUG
+
 //////////////////
 
 	VirtualFileSystem vfs;
@@ -116,14 +124,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 
 ///////////////////
-
-#ifdef _DEBUG
-
-	int nDbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);	// Get current flags
-	nDbgFlags |= _CRTDBG_LEAK_CHECK_DF;						// Enable leak-check
-	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
-
-#endif	// _DEBUG
 
 	// Initialize the SVCTL service manager class object
 	dwResult = svcManager.Init(g_pServiceMap);

@@ -32,10 +32,8 @@
 //
 //	NONE
 
-VirtualFileSystem::VirtualFileSystem()
+VirtualFileSystem::VirtualFileSystem() : m_root(new VfsDirectoryNode(S_IFDIR))
 {
-	// Construct the root file system node
-	m_root = new VfsDirectoryNode(S_IFDIR);		// <--- TODO: access mask
 }
 
 //-----------------------------------------------------------------------------
@@ -43,8 +41,37 @@ VirtualFileSystem::VirtualFileSystem()
 
 VirtualFileSystem::~VirtualFileSystem()
 {
-	// Deletion of the root node will cascade delete the virtual file system
-	delete m_root;
+}
+
+//-----------------------------------------------------------------------------
+// VirtualFileSystem::Find
+//
+// Executes a path search against the virtual file system
+//
+// Arguments:
+//
+//	base		- Base node to begin the search from
+//	path		- File system path string (ANSI)
+
+VfsSearchResult VirtualFileSystem::Find(const VfsNodePtr& base, const char_t* path)
+{
+	// Convert the C-style path into a <filesystem> path instance
+	std::tr2::sys::path	pathstr(path);
+
+	// If the path contains the root directory, ignore base and start at m_root.
+	VfsNodePtr current((pathstr.has_root_directory()) ? m_root : base);
+
+	// Remove the root directory from the path string
+	pathstr = pathstr.relative_path();
+
+	// Iterate over the path components to traverse the tree
+	for(auto it = pathstr.begin(); it != pathstr.end(); it++) {
+
+		// TODO: Interesting stuff here
+	}
+
+	// TODO: this is a dummy value
+	return VfsSearchResult(VfsSearch::FoundParent, VfsNodePtr(current));
 }
 
 //-----------------------------------------------------------------------------
@@ -64,30 +91,41 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 	// Decompress as necessary and iterate over all the files contained in the CPIO archive
 	CpioArchive::EnumerateFiles(CompressedStreamReader::FromFile(archive), [&](const CpioFile& file) -> void {
 
+		// All initramfs paths are based on the root file system node
+		VfsSearchResult search = Find(m_root, file.Path);
+
+		// TODO: Search result should always be parent when processing the initramfs,
+		// otherwise that will be an error
+
 		// Depending on the type of node being enumerated, construct the appropriate object
 		switch(file.Mode & S_IFMT) {
 
 			case S_IFREG:
-				CreateFile(file);
+				CreateFileNode(file);
 				break;
 
 			case S_IFDIR:
-				CreateDirectory(file);
+				CreateDirectoryNode(file);
 				break;
 
 			case S_IFLNK:
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFLNK not implemented yet");
 				break;
 
 			case S_IFCHR:
+				_RPTF0(_CRT_ASSERT, "initramfs: S_IFCHR not implemented yet");
 				break;
 
 			case S_IFBLK:
+				_RPTF0(_CRT_ASSERT, "initramfs: S_IFBLK not implemented yet");
 				break;
 
 			case S_IFIFO:
+				_RPTF0(_CRT_ASSERT, "initramfs: S_IFIFO not implemented yet");
 				break;
 
 			case S_IFSOCK:
+				_RPTF0(_CRT_ASSERT, "initramfs: S_IFSOCK not implemented yet");
 				break;
 
 			default:

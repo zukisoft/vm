@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __LOCKEDVFSNODE_H_
-#define __LOCKEDVFSNODE_H_
+#ifndef __VFSNODEPTR_H_
+#define __VFSNODEPTR_H_
 #pragma once
 
 #include "VfsNode.h"
@@ -29,43 +29,81 @@
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// LockedVfsNode
+// VfsNodePtr
 //
 // Wrapper class for a VfsNode pointer that automaticaly calls .Release() on it
 // when destroyed or falls out of scope
+//
+// Not sure I want to keep it this way, but construct/assignment against a raw
+// VfsNode pointer will not invoke AddRef(), whereas construct/assignment from
+// another VfsNodePtr instance will:
+//
+//	VfsNodePtr(VfsNode*)		--> No AddRef()
+//	VfsNodePtr(VfsNodePtr&)		--> AddRef()
+//	operator=(VfsNode*)			--> No AddRef()
+//	operator=(VfsNodePtr&)		--> AddRef()
 
-class LockedVfsNode
+class VfsNodePtr
 {
 public:
 
-	// Constructor
+	// Constructors
 	//
-	LockedVfsNode(VfsNode* const node) : m_node(node) {}
+	VfsNodePtr(VfsNode* node) : m_node(node) {}
+	VfsNodePtr(const VfsNodePtr& rhs) { m_node = (rhs.m_node) ? rhs.m_node->AddRef() : nullptr; }
 
 	// Destructor
 	//
-	~LockedVfsNode() { m_node->Release(); }
+	~VfsNodePtr() { if(m_node) m_node->Release(); }
 
 	//-------------------------------------------------------------------------
 	// Overloaded Operators
 
-	// Member Selection Operator
+	// Assignment operator (raw VfsNode pointer)
 	//
-	VfsNode* operator->() const { return m_node; }
+	VfsNodePtr& operator=(VfsNode* node) 
+	{ 
+		if(m_node) m_node->Release(); 
+		m_node = node; 
+		return *this; 
+	}
+
+	// Assignment operator (VfsNodePtr instance)
+	//
+	VfsNodePtr& operator=(const VfsNodePtr& rhs) 
+	{
+		if(m_node) m_node->Release();
+		m_node = (rhs.m_node) ? rhs.m_node->AddRef() : nullptr;
+		return *this;
+	}
+
+	// Member Selection operator
+	//
+	VfsNode* const operator->() const { return m_node; }
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Detach
+	//
+	// Detaches the VfsNode pointer from this class instance
+	VfsNode* Detach(void) 
+	{ 
+		VfsNode* result = m_node; 
+		m_node = nullptr; 
+		return result; 
+	}
 
 private:
-
-	LockedVfsNode(const LockedVfsNode&);
-	LockedVfsNode& operator=(const LockedVfsNode&);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	VfsNode* const			m_node;				// Contained node pointer
+	VfsNode* 				m_node;				// Contained node pointer
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __LOCKEDVFSNODE_H_
+#endif	// __VFSNODEPTR_H_

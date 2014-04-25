@@ -93,7 +93,7 @@ protected:
 
 	// Instance Constructors
 	//
-	VfsNode(mode_t mode) : m_index(AllocateIndex()), m_mode(mode) { /*check index >= 0 */ }
+	VfsNode(mode_t mode) : m_index(AllocateIndex()), m_mode(mode) { /*TODO: check index >= 0 */ }
 	VfsNode(mode_t mode, uid_t uid, gid_t gid) : m_index(AllocateIndex()), m_mode(mode), m_uid(uid), m_gid(gid) {}
 
 	//-------------------------------------------------------------------------

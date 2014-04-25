@@ -20,76 +20,66 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __FILEDESCRIPTORTABLE_H_
-#define __FILEDESCRIPTORTABLE_H_
+#ifndef __VFSSEARCHRESULT_H_
+#define __VFSSEARCHRESULT_H_
+#pragma once
 
-#include <queue>
-#include <map>
-#include "AutoReaderLock.h"
-#include "AutoWriterLock.h"
-#include "FileDescriptor.h"
-#include "FsObject.h"
-#include "ReaderWriterLock.h"
+#include "VfsNode.h"
+#include "VfsNodePtr.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// FileDescriptorTable
+// VfsSearch
 //
-// Implements the proces-wide file descriptor table.  File descriptors can be
-// allocated against virtual objects in the remote services, or against
-// physical file system resources.
-//
-// File descriptors are allocated sequentially and added into a queue when
-// released.  This allows previously owned file descriptors to be reused
-// without needing to search through the table to find an available slot
+// Poorly named enumeration indicating what node within a search path has
+// been returned from VirtualFileSystem::Find
 
-class FileDescriptorTable
+enum class VfsSearch
+{
+	Found			= 0,		// Path resolved to a specific node
+	FoundParent,				// Path resolved to the immediate ancestor
+	FoundAncestor,				// Path resolved to a non-immediate ancestor
+};
+
+//-----------------------------------------------------------------------------
+// VfsSearchResult
+//
+// Result object returned from a VFS path search.  This result can indicate one of
+// three conditions.  In all cases the node where the search terminated is provided
+// so that the caller can decide if there is something useful to do with it.
+
+class VfsSearchResult
 {
 public:
 
-	// Destructor
+	// Constructor
 	//
-	~FileDescriptorTable();
+	VfsSearchResult(VfsSearch result, VfsNodePtr node) : m_result(result), m_node(node) {}
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Allocate
-	//
-	// Allocates a file descriptor
-	static int32_t Allocate(const FsObject& object) { return Allocate(object, INVALID_HANDLE_VALUE); }
-	static int32_t Allocate(const FsObject& object, HANDLE handle);
-
-	// Free
-	//
-	// Releases a file descriptor
-	static void Free(int32_t fd);
-
-	static FileDescriptor Get(int32_t fd);
-	FileDescriptor operator[](int32_t fd) { return Get(fd); }
-
 	//-------------------------------------------------------------------------
 	// Properties
 
-private:
+	// Result
+	//
+	// Exposes the result value for the search operation
+	__declspec(property(get=getResult)) VfsSearch Result;
+	VfsSearch getResult(void) const { return m_result; }
 
-	FileDescriptorTable();
-	FileDescriptorTable(const FileDescriptorTable& rhs);
-	FileDescriptorTable& operator=(const FileDescriptorTable& rhs);
+private:
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	volatile static long						s_next;		// Next sequential descriptor
-	static std::map<int32_t, FileDescriptor>	s_alive;	// Alive descriptors
-	static std::queue<int32_t>					s_dead;		// Dead descriptors
-	static ReaderWriterLock						s_lock;		// Synchronization object
+	VfsSearch				m_result;			// Result of search
+	VfsNodePtr				m_node;				// Node located by search
 };
-
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __FILEDESCRIPTORTABLE_H_
+#endif	// __VFSSEARCHRESULT_H_
