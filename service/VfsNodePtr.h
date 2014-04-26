@@ -77,6 +77,22 @@ public:
 		return *this;
 	}
 
+	// Equality operator (raw VfsNode pointer)
+	//
+	bool operator==(VfsNode* node) { return (m_node == node); }
+
+	// Equality operator (VfsNodePtr instance)
+	//
+	bool operator==(const VfsNodePtr& rhs) { return (m_node == rhs.m_node); }
+
+	// Inequality operator (raw VfsNode pointer)
+	//
+	bool operator!=(VfsNode* node) { return (m_node != node); }
+
+	// Inequality operator (VfsNodePtr instance)
+	//
+	bool operator!=(const VfsNodePtr& rhs) { return (m_node != rhs.m_node); }
+
 	// Member Selection operator
 	//
 	VfsNode* const operator->() const { return m_node; }
@@ -94,6 +110,14 @@ public:
 		return result; 
 	}
 
+	//-------------------------------------------------------------------------
+	// Fields
+
+	// Null
+	//
+	// Represents a NULL node
+	static const VfsNodePtr Null;
+
 private:
 
 	//-------------------------------------------------------------------------
@@ -101,6 +125,11 @@ private:
 
 	VfsNode* 				m_node;				// Contained node pointer
 };
+
+// VfsNodePtr::Null
+//
+// Special NULL node pointer instance
+__declspec(selectany) const VfsNodePtr VfsNodePtr::Null(nullptr);
 
 //-----------------------------------------------------------------------------
 

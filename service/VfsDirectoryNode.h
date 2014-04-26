@@ -24,8 +24,14 @@
 #define __VFSDIRECTORYNODE_H_
 #pragma once
 				
+#include <map>
+#include <string>
 #include <linux/stat.h>
+#include "AutoReaderLock.h"
+#include "AutoWriterLock.h"
+#include "ReaderWriterLock.h"
 #include "VfsNode.h"
+#include "VfsNodePtr.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
@@ -50,8 +56,20 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	//-------------------------------------------------------------------------
-	// Properties
+	// AddAlias
+	//
+	// Adds an alias to the directory
+	void AddAlias(const char_t* alias, const VfsNodePtr& node);
+
+	// GetAlias
+	//
+	// Locates an alias within the directory, VfsNode::Null if not found
+	VfsNodePtr GetAlias(const char_t* alias);
+
+	// RemoveAlias
+	//
+	// Removes an existing alias from the directory
+	void RemoveAlias(const char_t* alias);
 
 private:
 
@@ -60,6 +78,9 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Member Variables
+
+	std::map<std::string, VfsNodePtr>	m_aliases;		// Contained aliases
+	static ReaderWriterLock				s_lock;			// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

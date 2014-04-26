@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
+// VfsDirectoryNode::s_lock
+//
+// Synchronization object (NOTE: may need one per instance rather than static)
+ReaderWriterLock VfsDirectoryNode::s_lock;
+
 //-----------------------------------------------------------------------------
 // VfsDirectoryNode Constructor
 //
@@ -38,6 +43,63 @@ VfsDirectoryNode::VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(
 {
 	_ASSERTE((mode & S_IFMT) == S_IFDIR);
 	if((mode & S_IFMT) != S_IFDIR) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+}
+
+//-----------------------------------------------------------------------------
+// VfsDirectoryNode::AddAlias
+//
+// Adds a new alias to the directory
+//
+// Arguments:
+//
+//	alias		- Alias name
+//	node		- VfsNode that alias refers to
+
+void VfsDirectoryNode::AddAlias(const char_t* alias, const VfsNodePtr& node)
+{
+	AutoWriterLock lock(s_lock);
+
+	// Attempt to insert the alias into the collection
+	if(!m_aliases.insert(std::make_pair(std::string(alias), VfsNodePtr(node))).second)
+		throw Exception(E_VFS_ALIASEXISTS, alias, VfsNode::Index);
+}
+
+//-----------------------------------------------------------------------------
+// VfsDirectoryNode::GetAlias
+//
+// Searches for a specific alias in this directory
+//
+// Arguments:
+//
+//	alias		- Alias name
+
+VfsNodePtr VfsDirectoryNode::GetAlias(const char_t* alias)
+{
+	AutoReaderLock lock(s_lock);
+
+	// Attempt to locate the alias in the member collection, return Null if not found
+	std::map<std::string, VfsNodePtr>::iterator iterator = m_aliases.find(std::string(alias));
+	if(iterator == m_aliases.end()) return VfsNodePtr::Null;
+
+	return VfsNodePtr(iterator->second);		// Return new VfsNodePtr
+}
+
+//-----------------------------------------------------------------------------
+// VfsDirectoryNode::RemoveAlias
+//
+// Removes an alias from the directory
+//
+// Arguments:
+//
+//	alias		- Alias name
+
+void VfsDirectoryNode::RemoveAlias(const char_t* alias)
+{
+	AutoWriterLock lock(s_lock);
+
+	// Attempt to remove the alias from the collection
+	if(m_aliases.erase(std::string(alias)) == 0) 
+		throw Exception(E_VFS_ALIASNOTFOUND, alias, VfsNode::Index);
 }
 
 //-----------------------------------------------------------------------------

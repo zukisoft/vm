@@ -37,7 +37,8 @@
 
 enum class VfsSearch
 {
-	Found			= 0,		// Path resolved to a specific node
+	InvalidPath		= 0,		// Path was horribly disfigured
+	Found,						// Path resolved to a specific node
 	FoundParent,				// Path resolved to the immediate ancestor
 	FoundAncestor,				// Path resolved to a non-immediate ancestor
 };

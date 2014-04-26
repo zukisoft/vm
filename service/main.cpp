@@ -25,7 +25,7 @@
 #include "VmService.h"				// Include VmService declarations
 
 #include "VirtualFileSystem.h"
-#include <filesystem>
+
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 #pragma warning(disable:4100)		// "unreferenced formal parameter"

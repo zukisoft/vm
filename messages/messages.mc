@@ -299,3 +299,19 @@ Language=English
 The specified mode flags 0x%1!X! are not valid for the type of node being created
 .
 
+MessageId=
+Severity=Error
+Facility=VirtualFileSystem
+SymbolicName=E_VFS_ALIASEXISTS
+Language=English
+The specified alias %1 is already a member of directory node %2!d!
+.
+
+MessageId=
+Severity=Error
+Facility=VirtualFileSystem
+SymbolicName=E_VFS_ALIASNOTFOUND
+Language=English
+The specified alias %1 is not a member of directory node %2!d!
+.
+
