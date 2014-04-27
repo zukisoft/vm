@@ -58,7 +58,8 @@ VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid,
 //	gid			- Initial owner gid for the virtual file
 //	data		- Initial data stream for the virtual file
 
-VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) : VfsFileNode(mode, uid, gid) 
+VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) 
+	: VfsFileNode(mode, uid, gid) 
 {
 	const int BUFFER_SIZE = (64 KiB);				// Local file buffer size
 

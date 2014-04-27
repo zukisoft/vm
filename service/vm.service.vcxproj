@@ -321,7 +321,6 @@
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
     <ClInclude Include="FsNode.h" />
-    <ClInclude Include="VfsNodePtr.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SocketDevice.h" />
@@ -329,7 +328,7 @@
     <ClInclude Include="VfsDirectoryNode.h" />
     <ClInclude Include="VfsFileNode.h" />
     <ClInclude Include="VfsNode.h" />
-    <ClInclude Include="VfsSearchResult.h" />
+    <ClInclude Include="VfsResolveResult.h" />
     <ClInclude Include="VirtualFileSystem.h" />
     <ClInclude Include="VmService.h" />
   </ItemGroup>

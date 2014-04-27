@@ -35,10 +35,9 @@
 #include "Exception.h"
 #include "File.h"
 #include "VfsNode.h"
-#include "VfsNodePtr.h"
 #include "VfsDirectoryNode.h"
 #include "VfsFileNode.h"
-#include "VfsSearchResult.h"
+#include "VfsResolveResult.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
@@ -70,29 +69,28 @@ public:
 	// CreateDirectoryNode
 	//
 	// Creates a directory node
-	static VfsNodePtr CreateDirectoryNode(mode_t mode)
-		{ return VfsNodePtr(new VfsDirectoryNode(mode)); }
-	static VfsNodePtr CreateDirectoryNode(mode_t mode, uid_t uid, gid_t gid)
-		{ return VfsNodePtr(new VfsDirectoryNode(mode, uid, gid)); }
+	//static VfsNodePtr CreateDirectoryNode(mode_t mode)
+	//	{ return VfsNodePtr(new VfsDirectoryNode(mode)); }
+	//static VfsNodePtr CreateDirectoryNode(mode_t mode, uid_t uid, gid_t gid)
+	//	{ return VfsNodePtr(new VfsDirectoryNode(mode, uid, gid)); }
 
 	// CreateFileNode
 	//
 	// Creates a file node
-	static VfsNodePtr CreateFileNode(mode_t mode)
-		{ return VfsNodePtr(new VfsFileNode(mode)); }
-	static VfsNodePtr CreateFileNode(mode_t mode, uid_t uid, gid_t gid)
-		{ return VfsNodePtr(new VfsFileNode(mode, uid, gid)); }
-	static VfsNodePtr CreateFileNode(mode_t mode, StreamReader& data)
-		{ return VfsNodePtr(new VfsFileNode(mode, data)); }
-	static VfsNodePtr CreateFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data)
-		{ return VfsNodePtr(new VfsFileNode(mode, uid, gid, data)); }
+	//static VfsNodePtr CreateFileNode(mode_t mode)
+	//	{ return VfsNodePtr(new VfsFileNode(mode)); }
+	//static VfsNodePtr CreateFileNode(mode_t mode, uid_t uid, gid_t gid)
+	//	{ return VfsNodePtr(new VfsFileNode(mode, uid, gid)); }
+	//static VfsNodePtr CreateFileNode(mode_t mode, StreamReader& data)
+	//	{ return VfsNodePtr(new VfsFileNode(mode, data)); }
+	//static VfsNodePtr CreateFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data)
+	//	{ return VfsNodePtr(new VfsFileNode(mode, uid, gid, data)); }
 
-	// Find
+	// ResolvePath
 	//
-	// Locates a node in the virtual file system
-	// TODO: need a flag to traverse links or not, perhaps more options
-	VfsSearchResult Find(const char_t* path) { return Find(m_root, path); }
-	VfsSearchResult Find(const VfsNodePtr& base, const char_t* path);
+	// Resolves a string-based file system path
+	VfsResolveResult ResolvePath(const char_t* path) { return ResolvePath(m_root, path); }
+	VfsResolveResult ResolvePath(const VfsDirectoryNodePtr& root, const char_t* path);
 
 	// LoadInitialFileSystem
 	//
@@ -108,24 +106,9 @@ private:
 	VirtualFileSystem& operator=(const VirtualFileSystem&);
 
 	//-------------------------------------------------------------------------
-	// Private Member Functions
-
-	// CreateDirectory
-	//
-	// Internal overloads to create a directory node
-	static VfsNodePtr CreateDirectoryNode(const CpioFile& file)
-		{ return VfsNodePtr(new VfsDirectoryNode(file.Mode, file.UserId, file.GroupId)); }
-
-	// CreateFile
-	//
-	// Internal overloads to create a file node
-	static VfsNodePtr CreateFileNode(const CpioFile& file)
-		{ return VfsNodePtr(new VfsFileNode(file.Mode, file.UserId, file.GroupId, file.Data)); }
-
-	//-------------------------------------------------------------------------
 	// Member Variables
 
-	VfsNodePtr			m_root;				// Root filesystem node
+	VfsDirectoryNodePtr		m_root;			// Root filesystem node
 };
 
 //-----------------------------------------------------------------------------

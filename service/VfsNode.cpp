@@ -69,23 +69,12 @@ std::tstring VfsNode::s_tempdir = []() -> std::tstring {
 
 VfsNode::~VfsNode()
 {
-	_ASSERTE(m_ref == 0);				// Bug if not zero here
+	// TODO: Remove
+	wchar_t temp[256];
+	wsprintf(temp, L"VfsNode::~VfsNode(%d) -- free queue is %d; next is %d\n", m_index, s_spent.size(), s_next);
+	OutputDebugString(temp);
+
 	ReleaseIndex(m_index);				// Release the allocated index
-}
-
-//-----------------------------------------------------------------------------
-// VfsNode::AddRef
-//
-// Increments the object reference counter
-//
-// Arguments:
-//
-//	NONE
-
-VfsNode* VfsNode::AddRef(void) 
-{
-	InterlockedIncrement(&m_ref);
-	return this;
 }
 
 //-----------------------------------------------------------------------------
@@ -107,6 +96,10 @@ int32_t VfsNode::AllocateIndex(void)
 	// a sequentially new index for this node
 	if(!s_spent.empty()) { index = s_spent.front(); s_spent.pop(); }
 	else index = (s_next == INT32_MAX) ? -1 : s_next++;
+
+	wchar_t temp[256];
+	wsprintf(temp, L"VfsNode::AllocateIndex -- allocating %d\n", index);
+	OutputDebugString(temp);
 
 	return index;
 }
@@ -170,20 +163,6 @@ void VfsNode::putUserId(uid_t value)
 }
 
 //-----------------------------------------------------------------------------
-// VfsNode::Release
-//
-// Decrements the object reference counter and self-deletes when it reaches 0
-//
-// Arguments:
-//
-//	NONE
-
-void VfsNode::Release(void)
-{
-	if(InterlockedDecrement(&m_ref) == 0) delete this;
-}
-
-//-----------------------------------------------------------------------------
 // VfsNode::ReleaseIndex (static)
 //
 // Releases a previously allocated node index
@@ -194,6 +173,11 @@ void VfsNode::Release(void)
 
 void VfsNode::ReleaseIndex(int32_t index)
 {
+	// TODO: Remove
+	wchar_t temp[256];
+	wsprintf(temp, L"VfsNode::ReleaseIndex -- spending %d\n", index);
+	OutputDebugString(temp);
+
 	AutoCriticalSection cs(s_cs);
 	s_spent.push(index);
 }

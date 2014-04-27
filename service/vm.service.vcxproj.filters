@@ -251,10 +251,7 @@
     <ClInclude Include="VfsDirectoryNode.h">
       <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
-    <ClInclude Include="VfsNodePtr.h">
-      <Filter>Header Files\Virtual File System</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsSearchResult.h">
+    <ClInclude Include="VfsResolveResult.h">
       <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
   </ItemGroup>

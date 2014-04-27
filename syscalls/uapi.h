@@ -79,12 +79,12 @@ typedef __kernel_pid_t		pid_t;
 // errno.h
 //-----------------------------------------------------------------------------
 
-#define LINUX_EDEADLK           35              /* Resource deadlock would occur */
-#define LINUX_ENAMETOOLONG      36              /* File name too long */
-#define LINUX_ENOLCK            37              /* No record locks available */
+//#define LINUX_EDEADLK           35              /* Resource deadlock would occur */
+//#define LINUX_ENAMETOOLONG      36              /* File name too long */
+//#define LINUX_ENOLCK            37              /* No record locks available */
 //#define LINUX_ENOSYS            38              /* Function not implemented */
-#define LINUX_ENOTEMPTY         39              /* Directory not empty */
-#define LINUX_ELOOP             40              /* Too many symbolic links encountered */
+//#define LINUX_ENOTEMPTY         39              /* Directory not empty */
+//#define LINUX_ELOOP             40              /* Too many symbolic links encountered */
 #define LINUX_EWOULDBLOCK       LINUX_EAGAIN    /* Operation would block */
 #define LINUX_ENOMSG            42              /* No message of desired type */
 #define LINUX_EIDRM             43              /* Identifier removed */

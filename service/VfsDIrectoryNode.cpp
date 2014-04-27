@@ -35,14 +35,18 @@ ReaderWriterLock VfsDirectoryNode::s_lock;
 //
 // Arguments:
 //
+//	parent		- Parent directory node
 //	mode		- Initial mode flags for the virtual directory
 //	uid			- Initial owner uid for the virtual directory
 //	gid			- Initial owner gid for the virtual directory
 
-VfsDirectoryNode::VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid)
+VfsDirectoryNode::VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode, uid_t uid, gid_t gid) 
+	: VfsNode(mode, uid, gid)
 {
 	_ASSERTE((mode & S_IFMT) == S_IFDIR);
 	if((mode & S_IFMT) != S_IFDIR) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+
+	m_parent = parent;					// Save strong reference to parent
 }
 
 //-----------------------------------------------------------------------------
@@ -55,12 +59,12 @@ VfsDirectoryNode::VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(
 //	alias		- Alias name
 //	node		- VfsNode that alias refers to
 
-void VfsDirectoryNode::AddAlias(const char_t* alias, const VfsNodePtr& node)
+void VfsDirectoryNode::AddAlias(const char_t* alias, const std::shared_ptr<VfsNode>& node)
 {
 	AutoWriterLock lock(s_lock);
 
 	// Attempt to insert the alias into the collection
-	if(!m_aliases.insert(std::make_pair(std::string(alias), VfsNodePtr(node))).second)
+	if(!m_aliases.insert(std::make_pair(std::string(alias), std::shared_ptr<VfsNode>(node))).second)
 		throw Exception(E_VFS_ALIASEXISTS, alias, VfsNode::Index);
 }
 
@@ -78,10 +82,10 @@ VfsNodePtr VfsDirectoryNode::GetAlias(const char_t* alias)
 	AutoReaderLock lock(s_lock);
 
 	// Attempt to locate the alias in the member collection, return Null if not found
-	std::map<std::string, VfsNodePtr>::iterator iterator = m_aliases.find(std::string(alias));
-	if(iterator == m_aliases.end()) return VfsNodePtr::Null;
+	std::map<std::string, std::shared_ptr<VfsNode>>::iterator iterator = m_aliases.find(std::string(alias));
+	if(iterator == m_aliases.end()) return VfsNodePtr(nullptr);
 
-	return VfsNodePtr(iterator->second);		// Return new VfsNodePtr
+	return VfsNodePtr(iterator->second);			// Return new VfsNodePtr
 }
 
 //-----------------------------------------------------------------------------

@@ -35,6 +35,14 @@
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// VfsNodePtr
+//
+// Typedef of std::shared_ptr<VfsFileNode>
+
+class VfsFileNode;
+typedef std::shared_ptr<VfsFileNode> VfsFileNodePtr;
+
+//-----------------------------------------------------------------------------
 // VfsFileNode
 //
 // Virtual File System regular file node

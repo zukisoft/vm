@@ -34,6 +34,14 @@
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
+// VfsNodePtr
+//
+// Typedef of std::shared_ptr<VfsNode>
+
+class VfsNode;
+typedef std::shared_ptr<VfsNode> VfsNodePtr;
+
+//-----------------------------------------------------------------------------
 // VfsNode
 //
 // Base class for all virtual file system nodes
@@ -45,19 +53,6 @@ public:
 	// Destructor
 	//
 	virtual ~VfsNode();
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// AddRef
-	//
-	// Atomically increments the object reference counter
-	VfsNode* AddRef(void);
-
-	// Release
-	//
-	// Atomically decrements the object reference counter
-	void Release(void);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -106,8 +101,8 @@ protected:
 
 private:
 
-	VfsNode(const VfsNode&);
-	VfsNode& operator=(const VfsNode&);
+	VfsNode(const VfsNode&)=delete;
+	VfsNode& operator=(const VfsNode&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -125,7 +120,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	volatile long				m_ref = 1;			// Reference counter
 	const int32_t				m_index;			// Node index
 	mode_t						m_mode;				// Node mode flags
 	uid_t						m_uid = 0;			// Node owner

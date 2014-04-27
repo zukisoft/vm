@@ -25,7 +25,7 @@
 #include "VmService.h"				// Include VmService declarations
 
 #include "VirtualFileSystem.h"
-
+#include <filesystem>
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 #pragma warning(disable:4100)		// "unreferenced formal parameter"
@@ -74,6 +74,27 @@ int InitError(LPCWSTR pwszDescription, DWORD dwError)
 	return static_cast<int>(dwError);
 }
 
+void Test(void)
+{
+	std::tr2::sys::path mypath("/dev/block/mike/.."); //myfile");
+
+	std::string basename = mypath.basename();
+	std::string branch_path = mypath.branch_path();
+	std::string directory_string = mypath.directory_string();
+	std::string external_directory_string = mypath.external_directory_string();
+	std::string external_file_string = mypath.external_file_string();
+	std::string file_string = mypath.file_string();
+	std::string filename = mypath.filename();
+	std::string leaf = mypath.leaf();
+	std::string parent_path = mypath.parent_path();
+	std::string relative_path = mypath.relative_path();
+	std::string root_directory = mypath.root_directory();
+	std::string root_name = mypath.root_name();
+	std::string root_path = mypath.root_path();
+	std::string stem = mypath.stem();
+	int x = 123;
+}
+
 //---------------------------------------------------------------------------
 // wWinMain
 //
@@ -113,6 +134,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 #endif	// _DEBUG
 
 //////////////////
+
+	Test();
 
 	VirtualFileSystem vfs;
 	vfs.LoadInitialFileSystem(L"D:\\ramdisk.cpio.gz");

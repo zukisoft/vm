@@ -25,15 +25,23 @@
 #pragma once
 				
 #include <map>
+#include <memory>
 #include <string>
 #include <linux/stat.h>
 #include "AutoReaderLock.h"
 #include "AutoWriterLock.h"
 #include "ReaderWriterLock.h"
 #include "VfsNode.h"
-#include "VfsNodePtr.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
+
+//-----------------------------------------------------------------------------
+// VfsDirectoryNodePtr
+//
+// Typedef of std::shared_ptr<VfsDirectoryNode>
+
+class VfsDirectoryNode;
+typedef std::shared_ptr<VfsDirectoryNode> VfsDirectoryNodePtr;
 
 //-----------------------------------------------------------------------------
 // VfsDirectoryNode
@@ -44,10 +52,10 @@ class VfsDirectoryNode : public VfsNode
 {
 public:
 
-	// Instance Constructor
+	// Instance Constructors
 	//
-	VfsDirectoryNode(mode_t mode) : VfsNode(mode) {}
-	VfsDirectoryNode(mode_t mode, uid_t uid, gid_t gid);
+	VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode) : VfsDirectoryNode(parent, mode, 0, 0) {}
+	VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode, uid_t uid, gid_t gid);
 
 	// Destructor
 	//
@@ -63,13 +71,24 @@ public:
 
 	// GetAlias
 	//
-	// Locates an alias within the directory, VfsNode::Null if not found
+	// Locates an alias within the directory
 	VfsNodePtr GetAlias(const char_t* alias);
 
 	// RemoveAlias
 	//
 	// Removes an existing alias from the directory
 	void RemoveAlias(const char_t* alias);
+	void RemoveAlias(const VfsNodePtr& alias)=delete;	// TODO
+	void RemoveAlias(int32_t alias)=delete;				// TODO
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// Parent
+	//
+	// Returns a reference to this directory's parent directory
+	__declspec(property(get=getParent)) const VfsDirectoryNodePtr& Parent;
+	const VfsDirectoryNodePtr& getParent(void) const { return m_parent; }
 
 private:
 
@@ -77,10 +96,24 @@ private:
 	VfsDirectoryNode& operator=(const VfsDirectoryNode&);
 
 	//-------------------------------------------------------------------------
+	// Private Type Declarations
+
+	// AliasCollection
+	//
+	// Defines the contained alias collection type
+	typedef std::map<std::string, std::shared_ptr<VfsNode>>	AliasCollection;
+
+	// AliasIterator
+	//
+	// Defines the iterator type for the contained alias collection
+	typedef std::map<std::string, std::shared_ptr<VfsNode>>::iterator AliasIterator;
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::map<std::string, VfsNodePtr>	m_aliases;		// Contained aliases
-	static ReaderWriterLock				s_lock;			// Synchronization object
+	VfsDirectoryNodePtr 			m_parent;		// Parent directory
+	AliasCollection					m_aliases;		// Contained aliases
+	static ReaderWriterLock			s_lock;			// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

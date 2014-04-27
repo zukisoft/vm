@@ -32,7 +32,7 @@
 //
 //	NONE
 
-VirtualFileSystem::VirtualFileSystem() : m_root(new VfsDirectoryNode(S_IFDIR))
+VirtualFileSystem::VirtualFileSystem() : m_root(new VfsDirectoryNode(m_root, S_IFDIR))
 {
 }
 
@@ -44,34 +44,60 @@ VirtualFileSystem::~VirtualFileSystem()
 }
 
 //-----------------------------------------------------------------------------
-// VirtualFileSystem::Find
+// VirtualFileSystem::ResolvePath
 //
-// Executes a path search against the virtual file system
+// Resolves a string-based path against the virtual file system
 //
 // Arguments:
 //
-//	base		- Base node to begin the search from
+//	root		- Base node to begin the search from
 //	path		- File system path string (ANSI)
 
-VfsSearchResult VirtualFileSystem::Find(const VfsNodePtr& base, const char_t* path)
+VfsResolveResult VirtualFileSystem::ResolvePath(const VfsDirectoryNodePtr& root, const char_t* path)
 {
 	// Convert the C-style path into a <filesystem> path instance
 	std::tr2::sys::path	pathstr(path);
 
-	// If the path contains the root directory, ignore base and start at m_root.
-	VfsNodePtr current((pathstr.has_root_directory()) ? m_root : base);
+	// If the path if rooted, ignore the provided node and use the actual root node
+	VfsDirectoryNodePtr branch = (pathstr.has_root_directory()) ? m_root : root;
 
-	// Remove the root directory from the path string
-	pathstr = pathstr.relative_path();
+	// Pull out the desired alias string and remove it from the branch path
+	std::string alias = pathstr.filename();
+	pathstr = pathstr.relative_path().parent_path();
 
-	// Iterate over the path components to traverse the tree
-	for(auto it = pathstr.begin(); it != pathstr.end(); it++) {
+	// Iterate over the branch path first
+	for(std::tr2::sys::path::iterator it = pathstr.begin(); it != pathstr.end(); it++) {
 
-		// TODO: Interesting stuff here
+		// .
+		// Special case indicating the current directory
+		if(it->compare(".")) continue;
+
+		// ..
+		// Special case indicating the parent of the current directory
+		else if(it->compare("..")) { branch = branch->Parent; continue; }
+
+		// Get the next node in the branch path
+		VfsNodePtr next = branch->GetAlias(it->c_str());
+		if(next == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
+
+		// Only directory and symbolic link nodes can be resolved as part of the branch
+		switch(next->Mode & S_IFMT) {
+
+			case S_IFDIR: 
+				branch = std::dynamic_pointer_cast<VfsDirectoryNode>(next);
+				if(branch == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
+				break;
+			
+			case S_IFLNK: /* TODO */ break;
+
+			default: return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
+		};
 	}
 
-	// TODO: this is a dummy value
-	return VfsSearchResult(VfsSearch::FoundParent, VfsNodePtr(current));
+	// After the loop, branch is now set to the parent directory for the alias
+	VfsNodePtr leaf = branch->GetAlias(alias.c_str());
+	VfsResolveStatus status = (leaf == nullptr) ? VfsResolveStatus::FoundBranch : VfsResolveStatus::FoundLeaf;
+	return VfsResolveResult(status, branch, leaf, alias);
 }
 
 //-----------------------------------------------------------------------------
@@ -91,21 +117,31 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 	// Decompress as necessary and iterate over all the files contained in the CPIO archive
 	CpioArchive::EnumerateFiles(CompressedStreamReader::FromFile(archive), [&](const CpioFile& file) -> void {
 
-		// All initramfs paths are based on the root file system node
-		VfsSearchResult search = Find(m_root, file.Path);
-
-		// TODO: Search result should always be parent when processing the initramfs,
-		// otherwise that will be an error
-
+		VfsResolveResult resolved = ResolvePath(m_root, file.Path);			// Resolve the parent path
+		if(!resolved) { /* TODO: ERROR */ }
+		
 		// Depending on the type of node being enumerated, construct the appropriate object
 		switch(file.Mode & S_IFMT) {
 
+			// S_IFREG
+			//
+			// FoundBranch	--> Create a new file node
+			// FoundNode	--> ERROR: The file already exists
 			case S_IFREG:
-				CreateFileNode(file);
+
+				if(resolved.Status != VfsResolveStatus::FoundBranch) { /* TODO: ERROR - FILE EXISTS */ }
+				resolved.Branch->AddAlias(resolved.Alias, std::make_shared<VfsFileNode>(file.Mode, file.UserId, file.GroupId, file.Data));
 				break;
 
+			// S_IFDIR
+			//
+			// FoundBranch	--> Create a new directory node
+			// FoundNode	--> Directory exists, reset mode, uid and gid to match the new entry
+			//
 			case S_IFDIR:
-				CreateDirectoryNode(file);
+
+				if(resolved.Status == VfsResolveStatus::FoundLeaf) break;  // <---- TODO: Change mode, uid and gid
+				resolved.Branch->AddAlias(resolved.Alias, std::make_shared<VfsDirectoryNode>(resolved.Branch, file.Mode, file.UserId, file.GroupId));
 				break;
 
 			case S_IFLNK:
