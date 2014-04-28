@@ -445,9 +445,6 @@
     <ClCompile Include="..\common\rpcmem.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="VfsDIrectoryNode.cpp">
-      <Filter>Source Files\Virtual File System</Filter>
-    </ClCompile>
     <ClCompile Include="VfsFileNode.cpp">
       <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
@@ -458,6 +455,9 @@
       <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
     <ClCompile Include="VfsSymbolicLinkNode.cpp">
+      <Filter>Source Files\Virtual File System</Filter>
+    </ClCompile>
+    <ClCompile Include="VfsDirectoryNode.cpp">
       <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
   </ItemGroup>

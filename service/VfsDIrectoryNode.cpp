@@ -41,12 +41,20 @@ ReaderWriterLock VfsDirectoryNode::s_lock;
 //	gid			- Initial owner gid for the virtual directory
 
 VfsDirectoryNode::VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode, uid_t uid, gid_t gid) 
-	: VfsNode(mode, uid, gid)
+	: VfsNode(mode, uid, gid), m_parent(parent)
 {
 	_ASSERTE((mode & S_IFMT) == S_IFDIR);
 	if((mode & S_IFMT) != S_IFDIR) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+}
 
-	m_parent = parent;					// Save strong reference to parent
+//-----------------------------------------------------------------------------
+// VfsDirectoryNode Destructor
+
+VfsDirectoryNode::~VfsDirectoryNode()
+{
+	// For proper hard-link tracking, the alias counter for each alias in the
+	// member collection has to be decremented before it's released
+	for(auto iterator : m_aliases) iterator.second->AliasDecrement();
 }
 
 //-----------------------------------------------------------------------------
@@ -66,6 +74,8 @@ void VfsDirectoryNode::AddAlias(const char_t* alias, const std::shared_ptr<VfsNo
 	// Attempt to insert the alias into the collection
 	if(!m_aliases.insert(std::make_pair(std::string(alias), std::shared_ptr<VfsNode>(node))).second)
 		throw Exception(E_VFS_ALIASEXISTS, alias, VfsNode::Index);
+
+	node->AliasIncrement();					// Holding a hard link to this node
 }
 
 //-----------------------------------------------------------------------------
@@ -82,7 +92,7 @@ VfsNodePtr VfsDirectoryNode::GetAlias(const char_t* alias)
 	AutoReaderLock lock(s_lock);
 
 	// Attempt to locate the alias in the member collection, return Null if not found
-	std::map<std::string, std::shared_ptr<VfsNode>>::iterator iterator = m_aliases.find(std::string(alias));
+	AliasIterator iterator = m_aliases.find(std::string(alias));
 	if(iterator == m_aliases.end()) return VfsNodePtr(nullptr);
 
 	return VfsNodePtr(iterator->second);			// Return new VfsNodePtr
@@ -102,8 +112,12 @@ void VfsDirectoryNode::RemoveAlias(const char_t* alias)
 	AutoWriterLock lock(s_lock);
 
 	// Attempt to remove the alias from the collection
-	if(m_aliases.erase(std::string(alias)) == 0) 
-		throw Exception(E_VFS_ALIASNOTFOUND, alias, VfsNode::Index);
+	AliasIterator iterator = m_aliases.find(std::string(alias));
+	if(iterator == m_aliases.end()) throw Exception(E_VFS_ALIASNOTFOUND, alias, VfsNode::Index);
+
+	// Decrement the alias (hard link) count of the node before letting it go
+	iterator->second->AliasDecrement();
+	m_aliases.erase(iterator);
 }
 
 //-----------------------------------------------------------------------------

@@ -568,7 +568,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="VfsDIrectoryNode.cpp" />
+    <ClCompile Include="VfsDirectoryNode.cpp" />
     <ClCompile Include="VfsFileNode.cpp" />
     <ClCompile Include="VfsNode.cpp" />
     <ClCompile Include="VfsSymbolicLinkNode.cpp" />

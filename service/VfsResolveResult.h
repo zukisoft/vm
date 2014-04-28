@@ -96,14 +96,14 @@ public:
 	// Branch
 	//
 	// Gets the branch node returned from the resolve operation; or nullptr
-	__declspec(property(get=getBranch)) const VfsDirectoryNodePtr& Branch;
-	const VfsDirectoryNodePtr& getBranch(void) const { return m_branch; }
+	__declspec(property(get=getBranch)) const VfsDirectoryNodePtr Branch;
+	const VfsDirectoryNodePtr getBranch(void) const { return m_branch; }
 
 	// Leaf
 	//
 	// Gets the leaf node returned from the resolve operation, or nullptr
-	__declspec(property(get=getLeaf)) const VfsNodePtr& Leaf;
-	const VfsNodePtr& getLeaf(void) const { return m_leaf; }
+	__declspec(property(get=getLeaf)) const VfsNodePtr Leaf;
+	const VfsNodePtr getLeaf(void) const { return m_leaf; }
 
 	// Status
 	//

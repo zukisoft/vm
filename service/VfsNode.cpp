@@ -69,12 +69,36 @@ std::tstring VfsNode::s_tempdir = []() -> std::tstring {
 
 VfsNode::~VfsNode()
 {
-	// TODO: Remove
-	wchar_t temp[256];
-	wsprintf(temp, L"VfsNode::~VfsNode(%d) -- free queue is %d; next is %d\n", m_index, s_spent.size(), s_next);
-	OutputDebugString(temp);
-
+	_ASSERTE(m_aliases == 0);			// Should have dropped to zero
 	ReleaseIndex(m_index);				// Release the allocated index
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::AliasDecrement
+//
+// Decrements the number of aliases (hard links) this node has
+//
+// Arguments:
+//
+//	NONE
+
+void VfsNode::AliasDecrement(void)
+{
+	InterlockedDecrement(&m_aliases);
+}
+
+//-----------------------------------------------------------------------------
+// VfsNode::AliasIncrement
+//
+// Increments the number of aliases (hard links) this node has
+//
+// Arguments:
+//
+//	NONE
+
+void VfsNode::AliasIncrement(void)
+{
+	InterlockedIncrement(&m_aliases);
 }
 
 //-----------------------------------------------------------------------------
@@ -96,10 +120,6 @@ int32_t VfsNode::AllocateIndex(void)
 	// a sequentially new index for this node
 	if(!s_spent.empty()) { index = s_spent.front(); s_spent.pop(); }
 	else index = (s_next == INT32_MAX) ? -1 : s_next++;
-
-	wchar_t temp[256];
-	wsprintf(temp, L"VfsNode::AllocateIndex -- allocating %d\n", index);
-	OutputDebugString(temp);
 
 	return index;
 }
@@ -173,11 +193,6 @@ void VfsNode::putUserId(uid_t value)
 
 void VfsNode::ReleaseIndex(int32_t index)
 {
-	// TODO: Remove
-	wchar_t temp[256];
-	wsprintf(temp, L"VfsNode::ReleaseIndex -- spending %d\n", index);
-	OutputDebugString(temp);
-
 	AutoCriticalSection cs(s_cs);
 	s_spent.push(index);
 }

@@ -55,7 +55,26 @@ public:
 	virtual ~VfsNode();
 
 	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// AliasDecrement
+	//
+	// Decrements the number of aliases (hard links) this node has
+	void AliasDecrement(void);
+
+	// AliasIncrement
+	//
+	// Increments the number of aliases (hard links) this node has
+	void AliasIncrement(void);
+
+	//-------------------------------------------------------------------------
 	// Properties
+
+	// AliasCount
+	//
+	// Gets/Sets the number of aliases this node has
+	__declspec(property(get=getAliasCount)) int32_t AliasCount;
+	int32_t getAliasCount(void) const { return static_cast<int32_t>(m_aliases); }
 
 	// GroupId
 	//
@@ -124,6 +143,7 @@ private:
 	mode_t						m_mode;				// Node mode flags
 	uid_t						m_uid = 0;			// Node owner
 	gid_t						m_gid = 0;			// Node owner
+	volatile long				m_aliases = 0;		// Aliases (hard links)
 
 	static int32_t				s_next;				// Next sequential index
 	static std::queue<int32_t>	s_spent;			// Spent indexes

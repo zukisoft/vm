@@ -26,24 +26,6 @@
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// VirtualFileSystem Constructor
-//
-// Arguments:
-//
-//	NONE
-
-VirtualFileSystem::VirtualFileSystem() : m_root(new VfsDirectoryNode(m_root, S_IFDIR))
-{
-}
-
-//-----------------------------------------------------------------------------
-// VirtualFileSystem Destructor
-
-VirtualFileSystem::~VirtualFileSystem()
-{
-}
-
-//-----------------------------------------------------------------------------
 // VirtualFileSystem::ResolvePath
 //
 // Resolves a string-based path against the virtual file system
@@ -78,11 +60,21 @@ VfsResolveResult VirtualFileSystem::ResolvePath(const VfsDirectoryNodePtr& root,
 
 		// .
 		// Special case indicating the current directory
-		if(it->compare(".")) continue;
+		if(it->compare(".") == 0) continue;
 
 		// ..
 		// Special case indicating the parent of the current directory
-		else if(it->compare("..")) { branch = branch->Parent; continue; }
+		else if(it->compare("..") == 0) { 
+		
+			// The root directory does not have a parent, .. means the same thing as .
+			if(branch == m_root) continue;
+
+			// Move up to the current directory's parent.  Parents are stored as weak
+			// references and may be NULL if the parent directory has been removed
+			branch = branch->Parent;
+			if(branch == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
+			continue; 
+		}
 
 		// Get the next node in the branch path
 		VfsNodePtr next = branch->GetAlias(it->c_str());
@@ -102,24 +94,32 @@ VfsResolveResult VirtualFileSystem::ResolvePath(const VfsDirectoryNodePtr& root,
 			VfsSymbolicLinkNodePtr link = std::dynamic_pointer_cast<VfsSymbolicLinkNode>(next);
 			if(link == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
 
-			// Chase the symbolic link
-			VfsResolveResult chase = ResolvePath(branch, link->Target, level);
+			// Chase the symbolic link (this isn't optional for branch paths)
+			VfsResolveResult chase = ResolvePath(branch, link->Target, true, level);
 			if(!chase) return chase;
 
-			// At this part of resolution, the symbolic link must resolve to a directory
-			branch = std::dynamic_pointer_cast<VfsDirectoryNode>(chase.Branch);
+			// The symbolic link must ultimately end in resolution of a directory
+			branch = std::dynamic_pointer_cast<VfsDirectoryNode>(chase.Leaf);
 			if(branch == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
 		}
 
 		else return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
 	}
 
-	// After the loop, branch is now set to the parent directory for the alias
-	//
-	// TODO: if followlink == true, follow a final symbolic link entry
+	// Attempt to access the leaf from the resolved branch, if not found we're done
 	VfsNodePtr leaf = branch->GetAlias(alias.c_str());
-	VfsResolveStatus status = (leaf == nullptr) ? VfsResolveStatus::FoundBranch : VfsResolveStatus::FoundLeaf;
-	return VfsResolveResult(status, branch, leaf, alias);
+	if(leaf == nullptr) return VfsResolveResult(VfsResolveStatus::FoundBranch, branch, leaf, alias);
+
+	// If the leaf is a symbolic link and we are to chase it, try to now resolve that recursively
+	if(((leaf->Mode & S_IFMT) == S_IFLNK) && (followlink)) {
+		
+		VfsSymbolicLinkNodePtr link = std::dynamic_pointer_cast<VfsSymbolicLinkNode>(leaf);
+		if(link == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
+		return ResolvePath(branch, link->Target, true, level);
+	}
+
+	// Not a symbolic link or not supposed to chase it, path resolution is successful
+	return VfsResolveResult(VfsResolveStatus::FoundLeaf, branch, leaf, alias);
 }
 
 //-----------------------------------------------------------------------------

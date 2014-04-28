@@ -56,36 +56,12 @@ class VirtualFileSystem
 {
 public:
 
-	// Instance Constructors
+	// Instance Constructor
 	//
-	VirtualFileSystem();
-
-	// Destructor
-	//
-	~VirtualFileSystem();
+	VirtualFileSystem() : m_root(std::make_shared<VfsDirectoryNode>(nullptr, ROOT_DIRECTORY_MODE)) {}
 
 	//-------------------------------------------------------------------------
 	// Member Functions
-
-	// CreateDirectoryNode
-	//
-	// Creates a directory node
-	//static VfsNodePtr CreateDirectoryNode(mode_t mode)
-	//	{ return VfsNodePtr(new VfsDirectoryNode(mode)); }
-	//static VfsNodePtr CreateDirectoryNode(mode_t mode, uid_t uid, gid_t gid)
-	//	{ return VfsNodePtr(new VfsDirectoryNode(mode, uid, gid)); }
-
-	// CreateFileNode
-	//
-	// Creates a file node
-	//static VfsNodePtr CreateFileNode(mode_t mode)
-	//	{ return VfsNodePtr(new VfsFileNode(mode)); }
-	//static VfsNodePtr CreateFileNode(mode_t mode, uid_t uid, gid_t gid)
-	//	{ return VfsNodePtr(new VfsFileNode(mode, uid, gid)); }
-	//static VfsNodePtr CreateFileNode(mode_t mode, StreamReader& data)
-	//	{ return VfsNodePtr(new VfsFileNode(mode, data)); }
-	//static VfsNodePtr CreateFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data)
-	//	{ return VfsNodePtr(new VfsFileNode(mode, uid, gid, data)); }
 
 	// ResolvePath
 	//
@@ -115,6 +91,11 @@ private:
 	//
 	// Maximum number of recursive path resolution calls that can be made
 	const uint32_t MAX_PATH_RECURSION = 40;
+
+	// ROOT_DIRECTORY_MODE
+	//
+	// Defines the mode_t value for the root directory (S_IFDIR | 0755)
+	const mode_t ROOT_DIRECTORY_MODE = (S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

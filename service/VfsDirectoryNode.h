@@ -59,7 +59,7 @@ public:
 
 	// Destructor
 	//
-	virtual ~VfsDirectoryNode()=default;
+	virtual ~VfsDirectoryNode();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -87,8 +87,8 @@ public:
 	// Parent
 	//
 	// Returns a reference to this directory's parent directory
-	__declspec(property(get=getParent)) const VfsDirectoryNodePtr& Parent;
-	const VfsDirectoryNodePtr& getParent(void) const { return m_parent; }
+	__declspec(property(get=getParent)) const VfsDirectoryNodePtr Parent;
+	const VfsDirectoryNodePtr getParent(void) const { return m_parent.lock(); }
 
 private:
 
@@ -111,7 +111,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	VfsDirectoryNodePtr 			m_parent;		// Parent directory
+	std::weak_ptr<VfsDirectoryNode>	m_parent;		// Parent directory
 	AliasCollection					m_aliases;		// Contained aliases
 	static ReaderWriterLock			s_lock;			// Synchronization object
 };
