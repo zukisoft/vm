@@ -73,8 +73,8 @@ public:
 
 private:
 
-	Instruction(const Instruction& rhs);
-	Instruction& operator=(const Instruction& rhs);
+	Instruction(const Instruction&)=delete;
+	Instruction& operator=(const Instruction&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

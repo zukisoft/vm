@@ -95,8 +95,8 @@ public:
 
 private:
 
-	BZip2StreamReader(const BZip2StreamReader&);
-	BZip2StreamReader& operator=(const BZip2StreamReader&);
+	BZip2StreamReader(const BZip2StreamReader&)=delete;
+	BZip2StreamReader& operator=(const BZip2StreamReader&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

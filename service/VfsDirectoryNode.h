@@ -59,7 +59,7 @@ public:
 
 	// Destructor
 	//
-	virtual ~VfsDirectoryNode() {}
+	virtual ~VfsDirectoryNode()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions

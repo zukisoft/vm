@@ -37,8 +37,8 @@ public:
 
 private:
 
-	SocketDevice(const SocketDevice& rhs);
-	SocketDevice& operator=(const SocketDevice& rhs);
+	SocketDevice(const SocketDevice& rhs)=delete;
+	SocketDevice& operator=(const SocketDevice& rhs)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

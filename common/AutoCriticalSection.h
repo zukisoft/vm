@@ -46,8 +46,8 @@ public:
 
 private:
 
-	AutoCriticalSection(const AutoCriticalSection& rhs);
-	AutoCriticalSection& operator=(const AutoCriticalSection& rhs);
+	AutoCriticalSection(const AutoCriticalSection&)=delete;
+	AutoCriticalSection& operator=(const AutoCriticalSection&)=delete;
 
 	//-----------------------------------------------------------------------
 	// Member Variables

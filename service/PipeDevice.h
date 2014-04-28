@@ -37,8 +37,8 @@ public:
 
 private:
 
-	PipeDevice(const PipeDevice& rhs);
-	PipeDevice& operator=(const PipeDevice& rhs);
+	PipeDevice(const PipeDevice& rhs)=delete;
+	PipeDevice& operator=(const PipeDevice& rhs)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

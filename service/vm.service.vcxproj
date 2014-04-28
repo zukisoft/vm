@@ -329,6 +329,7 @@
     <ClInclude Include="VfsFileNode.h" />
     <ClInclude Include="VfsNode.h" />
     <ClInclude Include="VfsResolveResult.h" />
+    <ClInclude Include="VfsSymbolicLinkNode.h" />
     <ClInclude Include="VirtualFileSystem.h" />
     <ClInclude Include="VmService.h" />
   </ItemGroup>
@@ -570,6 +571,7 @@
     <ClCompile Include="VfsDIrectoryNode.cpp" />
     <ClCompile Include="VfsFileNode.cpp" />
     <ClCompile Include="VfsNode.cpp" />
+    <ClCompile Include="VfsSymbolicLinkNode.cpp" />
     <ClCompile Include="VirtualFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
   </ItemGroup>

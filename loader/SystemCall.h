@@ -84,8 +84,8 @@ public:
 
 private:
 
-	SystemCall(const SystemCall& rhs);
-	SystemCall& operator=(const SystemCall& rhs);
+	SystemCall(const SystemCall&)=delete;
+	SystemCall& operator=(const SystemCall&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

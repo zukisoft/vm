@@ -107,8 +107,8 @@ public:
 
 private:
 
-	ElfImageT(const ElfImageT&);
-	ElfImageT& operator=(const ElfImageT&);
+	ElfImageT(const ElfImageT&)=delete;
+	ElfImageT& operator=(const ElfImageT&)=delete;
 
 	// Instance Constructor
 	//

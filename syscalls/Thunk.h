@@ -86,8 +86,8 @@ public:
 
 private:
 
-	Thunk(const Thunk& rhs);
-	Thunk& operator=(const Thunk& rhs);
+	Thunk(const Thunk&)=delete;
+	Thunk& operator=(const Thunk&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

@@ -75,8 +75,8 @@ public:
 private:
 
 	FileDescriptorTable();
-	FileDescriptorTable(const FileDescriptorTable& rhs);
-	FileDescriptorTable& operator=(const FileDescriptorTable& rhs);
+	FileDescriptorTable(const FileDescriptorTable&)=delete;
+	FileDescriptorTable& operator=(const FileDescriptorTable&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

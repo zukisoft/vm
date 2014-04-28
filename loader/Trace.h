@@ -58,8 +58,8 @@ public:
 private:
 
 	Trace();
-	Trace(const Trace&);
-	Trace& operator=(const Trace&);
+	Trace(const Trace&)=delete;
+	Trace& operator=(const Trace&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

@@ -46,8 +46,8 @@ public:
 
 private:
 
-	AutoReaderLock(const AutoReaderLock& rhs);
-	AutoReaderLock& operator=(const AutoReaderLock& rhs);
+	AutoReaderLock(const AutoReaderLock&)=delete;
+	AutoReaderLock& operator=(const AutoReaderLock&)=delete;
 
 	//-----------------------------------------------------------------------
 	// Member Variables

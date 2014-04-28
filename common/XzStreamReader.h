@@ -89,8 +89,8 @@ public:
 
 private:
 
-	XzStreamReader(const XzStreamReader&);
-	XzStreamReader& operator=(const XzStreamReader&);
+	XzStreamReader(const XzStreamReader&)=delete;
+	XzStreamReader& operator=(const XzStreamReader&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

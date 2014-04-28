@@ -74,8 +74,8 @@ public:
 
 private:
 
-	ReaderWriterLock(const ReaderWriterLock& rhs);
-	ReaderWriterLock& operator=(const ReaderWriterLock& rhs);
+	ReaderWriterLock(const ReaderWriterLock&)=delete;
+	ReaderWriterLock& operator=(const ReaderWriterLock&)=delete;
 	
 	//-----------------------------------------------------------------------
 	// Member Variables

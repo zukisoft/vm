@@ -87,8 +87,8 @@ public:
 
 private:
 
-	MappedFileView(const MappedFileView&);
-	MappedFileView& operator=(const MappedFileView&);
+	MappedFileView(const MappedFileView&)=delete;
+	MappedFileView& operator=(const MappedFileView&)=delete;
 
 	// Instance Constructor
 	//

@@ -96,8 +96,8 @@ public:
 
 private:
 
-	MappedFile(const MappedFile&);
-	MappedFile& operator=(const MappedFile&);
+	MappedFile(const MappedFile&)=delete;
+	MappedFile& operator=(const MappedFile&)=delete;
 
 	// Instance Constructor
 	//

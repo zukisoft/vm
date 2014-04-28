@@ -127,8 +127,8 @@ public:
 
 private:
 
-	MemoryRegion(const MemoryRegion&);
-	MemoryRegion& operator=(const MemoryRegion&);
+	MemoryRegion(const MemoryRegion&)=delete;
+	MemoryRegion& operator=(const MemoryRegion&)=delete;
 
 	// Instance Constructor
 	//

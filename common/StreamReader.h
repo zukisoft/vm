@@ -39,7 +39,7 @@ public:
 
 	// Destructor
 	//
-	virtual ~StreamReader() {}
+	virtual ~StreamReader()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions

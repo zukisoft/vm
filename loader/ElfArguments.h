@@ -115,8 +115,8 @@ public:
 
 private:
 
-	ElfArgumentsT(const ElfArgumentsT&);
-	ElfArgumentsT& operator=(const ElfArgumentsT&);
+	ElfArgumentsT(const ElfArgumentsT&)=delete;
+	ElfArgumentsT& operator=(const ElfArgumentsT&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

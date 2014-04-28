@@ -46,8 +46,8 @@ public:
 
 private:
 
-	AutoWriterLock(const AutoWriterLock& rhs);
-	AutoWriterLock& operator=(const AutoWriterLock& rhs);
+	AutoWriterLock(const AutoWriterLock&)=delete;
+	AutoWriterLock& operator=(const AutoWriterLock&)=delete;
 
 	//-----------------------------------------------------------------------
 	// Member Variables

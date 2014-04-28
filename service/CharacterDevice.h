@@ -37,8 +37,8 @@ public:
 
 private:
 
-	CharacterDevice(const CharacterDevice& rhs);
-	CharacterDevice& operator=(const CharacterDevice& rhs);
+	CharacterDevice(const CharacterDevice& rhs)=delete;
+	CharacterDevice& operator=(const CharacterDevice& rhs)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

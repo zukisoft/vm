@@ -20,32 +20,69 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __BLOCKDEVICE_H_
-#define __BLOCKDEVICE_H_
+#ifndef __VFSSYMBOLICLINKNODE_H_
+#define __VFSSYMBOLICLINKNODE_H_
 #pragma once
+
+#include <memory>
+#include <string>
+#include <linux/stat.h>
+#include "Exception.h"
+#include "StreamReader.h"
+#include "VfsNode.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// Class BlockDevice
+// VfsSymbolicLinkNodePtr
 //
-// Implements a virtual file system block device
+// Typedef of std::shared_ptr<VfsSymbolicLinkNode>
 
-class BlockDevice
+class VfsSymbolicLinkNode;
+typedef std::shared_ptr<VfsSymbolicLinkNode> VfsSymbolicLinkNodePtr;
+
+//-----------------------------------------------------------------------------
+// VfsSymbolicLinkNode
+//
+// Virtual File System symbolic link node
+
+class VfsSymbolicLinkNode : public VfsNode
 {
 public:
 
+	// Instance Constructors
+	//
+	VfsSymbolicLinkNode(mode_t mode, const char_t* target) : VfsSymbolicLinkNode(mode, 0, 0, target) {}
+	VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, const char_t* target);
+	VfsSymbolicLinkNode(mode_t mode, StreamReader& data) : VfsSymbolicLinkNode(mode, 0, 0, data) {}
+	VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) ;
+
+	// Destructor
+	//
+	virtual ~VfsSymbolicLinkNode()=default;
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// Target
+	//
+	// Gets the target string for the symbolc link
+	__declspec(property(get=getTarget)) const char_t* Target;
+	const char_t* getTarget(void) const { return m_target.c_str(); }
+
 private:
 
-	BlockDevice(const BlockDevice& rhs)=delete;
-	BlockDevice& operator=(const BlockDevice& rhs)=delete;
+	VfsSymbolicLinkNode(const VfsSymbolicLinkNode&)=delete;
+	VfsSymbolicLinkNode& operator=(const VfsSymbolicLinkNode&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
+
+	std::string				m_target;			// Symbolic link target
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __BLOCKDEVICE_H_
+#endif	// __VFSSYMBOLICLINKNODE_H_

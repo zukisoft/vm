@@ -131,8 +131,8 @@ public:
 
 private:
 
-	CpioFile(const CpioFile& rhs);
-	CpioFile& operator=(const CpioFile& rhs);
+	CpioFile(const CpioFile& rhs)=delete;
+	CpioFile& operator=(const CpioFile& rhs)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -201,7 +201,7 @@ private:
 
 		// Destructor
 		//
-		virtual ~FileStream() {}
+		virtual ~FileStream()=default;
 
 		//-------------------------------------------------------------------------
 		// Member Functions

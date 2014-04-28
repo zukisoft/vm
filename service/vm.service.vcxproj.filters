@@ -254,6 +254,9 @@
     <ClInclude Include="VfsResolveResult.h">
       <Filter>Header Files\Virtual File System</Filter>
     </ClInclude>
+    <ClInclude Include="VfsSymbolicLinkNode.h">
+      <Filter>Header Files\Virtual File System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -452,6 +455,9 @@
       <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
     <ClCompile Include="VirtualFileSystem.cpp">
+      <Filter>Source Files\Virtual File System</Filter>
+    </ClCompile>
+    <ClCompile Include="VfsSymbolicLinkNode.cpp">
       <Filter>Source Files\Virtual File System</Filter>
     </ClCompile>
   </ItemGroup>

@@ -35,7 +35,7 @@
 #pragma warning(push, 4)			// Enable maximum compiler warnings
 
 //-----------------------------------------------------------------------------
-// VfsNodePtr
+// VfsFileNodePtr
 //
 // Typedef of std::shared_ptr<VfsFileNode>
 
@@ -70,8 +70,8 @@ public:
 
 private:
 
-	VfsFileNode(const VfsFileNode&);
-	VfsFileNode& operator=(const VfsFileNode&);
+	VfsFileNode(const VfsFileNode&)=delete;
+	VfsFileNode& operator=(const VfsFileNode&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

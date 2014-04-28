@@ -51,7 +51,7 @@ public:
 
 	// Destructor
 	//
-	virtual ~CompressedStreamReader() {}
+	virtual ~CompressedStreamReader()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -99,8 +99,8 @@ public:
 
 private:
 
-	CompressedStreamReader(const CompressedStreamReader&);
-	CompressedStreamReader& operator=(const CompressedStreamReader&);
+	CompressedStreamReader(const CompressedStreamReader&)=delete;
+	CompressedStreamReader& operator=(const CompressedStreamReader&)=delete;
 
 	// Instance Constructor
 	//

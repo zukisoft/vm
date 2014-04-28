@@ -70,8 +70,8 @@ public:
 
 private:
 
-	CriticalSection(const CriticalSection& rhs);
-	CriticalSection& operator=(const CriticalSection& rhs);
+	CriticalSection(const CriticalSection&)=delete;
+	CriticalSection& operator=(const CriticalSection& rhs)=delete;
 	
 	//-----------------------------------------------------------------------
 	// Member Variables

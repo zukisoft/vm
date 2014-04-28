@@ -86,8 +86,8 @@ public:
 
 private:
 
-	LzopStreamReader(const LzopStreamReader&);
-	LzopStreamReader& operator=(const LzopStreamReader&);
+	LzopStreamReader(const LzopStreamReader&)=delete;
+	LzopStreamReader& operator=(const LzopStreamReader&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

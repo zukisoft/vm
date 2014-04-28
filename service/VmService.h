@@ -63,8 +63,8 @@ public:
 
 private:
 
-	VmService(const VmService &rhs);
-	VmService& operator=(const VmService &rhs);
+	VmService(const VmService &rhs)=delete;
+	VmService& operator=(const VmService &rhs)=delete;
 
 	//-----------------------------------------------------------------------
 	// Private Member Functions

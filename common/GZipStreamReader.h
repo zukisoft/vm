@@ -91,8 +91,8 @@ public:
 
 private:
 
-	GZipStreamReader(const GZipStreamReader&);
-	GZipStreamReader& operator=(const GZipStreamReader&);
+	GZipStreamReader(const GZipStreamReader&)=delete;
+	GZipStreamReader& operator=(const GZipStreamReader&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

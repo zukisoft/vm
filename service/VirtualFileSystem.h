@@ -38,6 +38,7 @@
 #include "VfsDirectoryNode.h"
 #include "VfsFileNode.h"
 #include "VfsResolveResult.h"
+#include "VfsSymbolicLinkNode.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)			// Enable maximum compiler warnings
@@ -89,8 +90,10 @@ public:
 	// ResolvePath
 	//
 	// Resolves a string-based file system path
-	VfsResolveResult ResolvePath(const char_t* path) { return ResolvePath(m_root, path); }
-	VfsResolveResult ResolvePath(const VfsDirectoryNodePtr& root, const char_t* path);
+	VfsResolveResult ResolvePath(const char_t* path) { return ResolvePath(m_root, path, true, 0); }
+	VfsResolveResult ResolvePath(const char_t* path, bool followlink) { return ResolvePath(m_root, path, followlink, 0); }
+	VfsResolveResult ResolvePath(const VfsDirectoryNodePtr& root, const char_t* path) { return ResolvePath(root, path, true, 0); }
+	VfsResolveResult ResolvePath(const VfsDirectoryNodePtr& root, const char_t* path, bool followlink) { return ResolvePath(root, path, followlink, 0); }
 
 	// LoadInitialFileSystem
 	//
@@ -104,6 +107,22 @@ private:
 
 	VirtualFileSystem(const VirtualFileSystem&);
 	VirtualFileSystem& operator=(const VirtualFileSystem&);
+
+	//-------------------------------------------------------------------------
+	// Private Constants
+
+	// MAX_PATH_RECURSION
+	//
+	// Maximum number of recursive path resolution calls that can be made
+	const uint32_t MAX_PATH_RECURSION = 40;
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// ResolvePath
+	//
+	// Private version of ResolvePath that tracks recursion
+	VfsResolveResult ResolvePath(const VfsDirectoryNodePtr& root, const char_t* path, bool followlink, uint32_t level);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

@@ -169,6 +169,7 @@
     <ClInclude Include="..\common\AutoWriterLock.h" />
     <ClInclude Include="..\common\char_t.h" />
     <ClInclude Include="..\common\CriticalSection.h" />
+    <ClInclude Include="..\common\ReaderWriterLock.h" />
     <ClInclude Include="..\common\tstring.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.service\vm.service.h" />
@@ -178,7 +179,6 @@
     <ClInclude Include="FsObject.h" />
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="ModRM.h" />
-    <ClInclude Include="ReaderWriterLock.h" />
     <ClInclude Include="Thunk.h" />
     <ClInclude Include="uapi.h" />
     <ClInclude Include="stdafx.h" />

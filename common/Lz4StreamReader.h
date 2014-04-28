@@ -84,8 +84,8 @@ public:
 
 private:
 
-	Lz4StreamReader(const Lz4StreamReader&);
-	Lz4StreamReader& operator=(const Lz4StreamReader&);
+	Lz4StreamReader(const Lz4StreamReader&)=delete;
+	Lz4StreamReader& operator=(const Lz4StreamReader&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

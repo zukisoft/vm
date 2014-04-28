@@ -119,8 +119,8 @@ private:
 	// Instance Constructor
 	ContextRecordFlags(PCONTEXT context) : m_context(context) {}
 
-	ContextRecordFlags(const ContextRecordFlags&);
-	ContextRecordFlags& operator=(const ContextRecordFlags&);
+	ContextRecordFlags(const ContextRecordFlags&)=delete;
+	ContextRecordFlags& operator=(const ContextRecordFlags&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -295,8 +295,8 @@ private:
 	// Instance Constructor
 	ContextRecordRegisters(PCONTEXT context) : m_context(context) {}
 
-	ContextRecordRegisters(const ContextRecordRegisters&);
-	ContextRecordRegisters& operator=(const ContextRecordRegisters&);
+	ContextRecordRegisters(const ContextRecordRegisters&)=delete;
+	ContextRecordRegisters& operator=(const ContextRecordRegisters&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
