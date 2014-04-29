@@ -74,20 +74,6 @@ uint32_t BufferStreamReader::Read(void* buffer, uint32_t length)
 }
 
 //-----------------------------------------------------------------------------
-// BufferStreamReader::Reset (StreamReader)
-//
-// Resets the stream back to the beginning
-//
-// Arguments:
-//
-//	NONE
-
-void BufferStreamReader::Reset(void)
-{
-	m_offset = 0;
-}
-
-//-----------------------------------------------------------------------------
 // BufferStreamReader::Seek (StreamReader)
 //
 // Advances the stream to the specified position

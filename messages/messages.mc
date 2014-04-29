@@ -128,6 +128,13 @@ The decompression stream data is corrupt (method: %1)
 
 MessageId=
 Severity=Error
+SymbolicName=E_DECOMPRESS_TOOBIG
+Language=English
+The decompressed stream data is too big for this library (method: %1)
+.
+
+MessageId=
+Severity=Error
 SymbolicName=E_COMPRESSION_FORMAT
 Language=English
 Compressed file format %1 is not supported 

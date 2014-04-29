@@ -31,6 +31,7 @@
 #include "File.h"
 #include "GZipStreamReader.h"
 #include "Lz4StreamReader.h"
+#include "LzmaStreamReader.h"
 #include "LzopStreamReader.h"
 #include "MappedFile.h"
 #include "MappedFileView.h"
@@ -60,11 +61,6 @@ public:
 	//
 	// Reads the specified number of bytes from the underlying stream
 	virtual uint32_t Read(void* buffer, uint32_t length) { return m_stream->Read(buffer, length); }
-
-	// StreamReader::Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) { m_stream->Reset(); }
 
 	// StreamReader::Seek
 	//

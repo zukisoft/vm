@@ -20,28 +20,42 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef _BUFFERSTREAMREADER_H_
-#define _BUFFERSTREAMREADER_H_
+#ifndef __LZMASTREAMREADER_H_
+#define __LZMASTREAMREADER_H_
 #pragma once
 
+#include <LzmaDec.h>
 #include "Exception.h"
 #include "StreamReader.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
-//-----------------------------------------------------------------------------
-// BufferStreamReader
+//----------------------------------------------------------------------------
+// EXTERNAL DEPENDENCY: LZMA SDK
 //
-// Memory buffer stream reader implementation
+// - Add the following files from external\lzma\C to the parent project:
+//
+//	LzmaDec.h
+//	LzmaDec.c
+//	Types.h
+//
+// - Disable precompiled headers for all the above .c files
+// - Add external\lmza\C to the project Additional Include Directories
+//-----------------------------------------------------------------------------
 
-class BufferStreamReader : public StreamReader
+//-----------------------------------------------------------------------------
+// LzmaStreamReader
+//
+// LZMA-based decompression stream reader implementation
+
+class LzmaStreamReader : public StreamReader
 {
 public:
 
 	// Constructors / Destructor
 	//
-	BufferStreamReader(const void* base, size_t length);
-	virtual ~BufferStreamReader() {}
+	LzmaStreamReader(const void* base, size_t length);
+	virtual ~LzmaStreamReader();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -61,29 +75,33 @@ public:
 
 	// StreamReader::getLength
 	//
-	// Gets the overall length of the stream data, if known
-	virtual uint32_t getLength(void) { return m_length; }
+	// Gets the length of the data stream, if known
+	virtual uint32_t getLength(void) { return (m_streamlen < UINT32_MAX) ? static_cast<uint32_t>(m_streamlen) : UINT32_MAX; }
 
 	// StreamReader::getPosition
 	//
 	// Gets the current position within the stream
-	virtual uint32_t getPosition(void) { return m_offset; }
+	virtual uint32_t getPosition(void) { return m_position; }
 
 private:
 
-	BufferStreamReader(const BufferStreamReader&)=delete;
-	BufferStreamReader& operator=(const BufferStreamReader&)=delete;
+	LzmaStreamReader(const LzmaStreamReader&)=delete;
+	LzmaStreamReader& operator=(const LzmaStreamReader&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const void*				m_base;				// Base memory address
-	uint32_t				m_length;			// Length of memory buffer
-	uint32_t				m_offset;			// Offset into the memory buffer
+	CLzmaDec				m_state;				// LZMA state structure
+	uint64_t				m_streamlen;			// Uncompressed stream length
+	uintptr_t				m_inputptr;				// Current input data pointer
+	const uintptr_t			m_baseptr;				// Base memory address pointer
+	const uint32_t			m_length;				// Length of memory buffer
+	uint32_t				m_position = 0;			// Current position in the stream
+	bool					m_finished = false;		// Flag for end of stream
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// _BUFFERSTREAMREADER_H_
+#endif	// __LZMASTREAMREADER_H_

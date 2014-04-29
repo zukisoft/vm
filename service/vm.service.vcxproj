@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,7 +141,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -186,7 +186,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -233,7 +233,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -274,6 +274,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\external\bzip2\bzlib.h" />
     <ClInclude Include="..\..\external\lz4\lz4.h" />
+    <ClInclude Include="..\..\external\lzma\C\LzmaDec.h" />
+    <ClInclude Include="..\..\external\lzma\C\Types.h" />
     <ClInclude Include="..\..\external\minilzo\lzoconf.h" />
     <ClInclude Include="..\..\external\minilzo\lzodefs.h" />
     <ClInclude Include="..\..\external\minilzo\minilzo.h" />
@@ -300,6 +302,7 @@
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h" />
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
+    <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
     <ClInclude Include="..\common\char_t.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
@@ -308,6 +311,7 @@
     <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\GZipStreamReader.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
+    <ClInclude Include="..\common\LzmaStreamReader.h" />
     <ClInclude Include="..\common\LzopStreamReader.h" />
     <ClInclude Include="..\common\MappedFile.h" />
     <ClInclude Include="..\common\MappedFileView.h" />
@@ -405,6 +409,12 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS;BZ_NO_STDIO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="..\..\external\lz4\lz4.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\external\lzma\C\LzmaDec.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -542,6 +552,7 @@
     <ClCompile Include="..\common\File.cpp" />
     <ClCompile Include="..\common\GZipStreamReader.cpp" />
     <ClCompile Include="..\common\Lz4StreamReader.cpp" />
+    <ClCompile Include="..\common\LzmaStreamReader.cpp" />
     <ClCompile Include="..\common\LzopStreamReader.cpp" />
     <ClCompile Include="..\common\MappedFile.cpp" />
     <ClCompile Include="..\common\MappedFileView.cpp" />

@@ -49,11 +49,6 @@ public:
 	// Reads the specified number of bytes from the underlying stream
 	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
 
-	// Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void) = 0;
-
 	// Seek
 	//
 	// Advances the stream to the specified position

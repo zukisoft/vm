@@ -287,15 +287,11 @@ LzopStreamReader::LzopStreamReader(const void* base, size_t length)
 	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
 #endif
 
-	m_base = intptr_t(base);
+	intptr_t baseptr = intptr_t(base);
 
 	// Verify the magic number and read the LZOP header information
-	m_base = ReadMagic(m_base, &length);
-	m_base = ReadHeader(m_base, &length, &header);
-
-	// Maintain the original information for Reset() capability
-	m_length = static_cast<uint32_t>(length);
-	m_position = 0;
+	baseptr = ReadMagic(baseptr, &length);
+	baseptr = ReadHeader(baseptr, &length, &header);
 
 	// Initialize the decompression block member variables
 	m_block = m_blockcurrent = NULL;
@@ -303,7 +299,7 @@ LzopStreamReader::LzopStreamReader(const void* base, size_t length)
 	m_blockremain = 0;
 
 	// Initialize the LZO input stream member variables
-	m_lzopos = m_base;
+	m_lzopos = baseptr;
 	m_lzoremain = length;
 	m_lzoflags = header.flags;
 }
@@ -447,28 +443,6 @@ uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
 
 	m_position += out;			// Increment the current stream position
 	return out;					// Return number of bytes written
-}
-
-//-----------------------------------------------------------------------------
-// LzopStreamReader::Reset (StreamReader)
-//
-// Resets the stream back to the beginning
-//
-// Arguments:
-//
-//	NONE
-
-void LzopStreamReader::Reset(void)
-{
-	// Reset the LZO stream pointers back to the first data block
-	m_lzopos = m_base;
-	m_lzoremain = m_length;
-
-	// Reset the block buffer pointer and remaining length
-	m_blockcurrent = m_block;
-	m_blockremain = 0;
-
-	m_position = 0;				// Reset position back to zero
 }
 
 //-----------------------------------------------------------------------------

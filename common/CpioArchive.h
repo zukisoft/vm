@@ -211,12 +211,6 @@ private:
 		// Reads the specified number of bytes from the underlying stream
 		virtual uint32_t Read(void* buffer, uint32_t length);
 
-		// StreamReader::Reset
-		// NOT IMPLEMENTED
-		//
-		// Resets the stream back to the beginning
-		virtual void Reset(void) { throw Exception(E_NOTIMPL); }
-
 		// StreamReader::Seek
 		// NOT IMPLEMENTED
 		//

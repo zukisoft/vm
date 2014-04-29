@@ -77,27 +77,23 @@ Lz4StreamReader::Lz4StreamReader(const void* base, size_t length)
 	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
 #endif
 
-	m_base = intptr_t(base);
+	intptr_t baseptr = intptr_t(base);
 
 	// Read and validate the magic number from the start of the stream
 	uint32_t magic;
-	m_base = ReadLE32(m_base, &length, &magic);
+	baseptr = ReadLE32(baseptr, &length, &magic);
 	if(magic != LEGACY_MAGICNUMBER) throw Exception(E_DECOMPRESS_BADMAGIC, COMPRESSION_METHOD);
 
 	// Allocate the decompression buffer
 	m_block = new uint8_t[LEGACY_BLOCKSIZE];
 	if(!m_block) throw Exception(E_OUTOFMEMORY);
 
-	// Maintain the original information for Reset() capability
-	m_length = static_cast<uint32_t>(length);
-	m_position = 0;
-
 	// Initialize the decompression block member variables
 	m_blockcurrent = m_block;
 	m_blockremain = 0;
 
 	// Initialize the LZ4 input stream member variables
-	m_lz4pos = m_base;
+	m_lz4pos = baseptr;
 	m_lz4remain = length;
 }
 
@@ -195,28 +191,6 @@ uint32_t Lz4StreamReader::Read(void* buffer, uint32_t length)
 
 	m_position += out;			// Increment the current stream position
 	return out;					// Return number of bytes written
-}
-
-//-----------------------------------------------------------------------------
-// Lz4StreamReader::Reset (StreamReader)
-//
-// Resets the stream back to the beginning
-//
-// Arguments:
-//
-//	NONE
-
-void Lz4StreamReader::Reset(void)
-{
-	// Reset the LZ4 stream pointers back to the first data block
-	m_lz4pos = m_base;
-	m_lz4remain = m_length;
-
-	// Reset the block buffer pointer and remaining length
-	m_blockcurrent = m_block;
-	m_blockremain = 0;
-
-	m_position = 0;				// Reset position back to zero
 }
 
 //-----------------------------------------------------------------------------

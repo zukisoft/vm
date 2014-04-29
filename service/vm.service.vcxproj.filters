@@ -75,6 +75,9 @@
     <Filter Include="Source Files\Virtual File System">
       <UniqueIdentifier>{89830410-cf51-4580-86e6-c0e75d22790a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\lzma">
+      <UniqueIdentifier>{e7bc0f43-14ed-4d23-93a0-7d9cc6815149}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -256,6 +259,18 @@
     </ClInclude>
     <ClInclude Include="VfsSymbolicLinkNode.h">
       <Filter>Header Files\Virtual File System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\lzma\C\LzmaDec.h">
+      <Filter>External Libraries\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\lzma\C\Types.h">
+      <Filter>External Libraries\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BufferStreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\LzmaStreamReader.h">
+      <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -459,6 +474,12 @@
     </ClCompile>
     <ClCompile Include="VfsDirectoryNode.cpp">
       <Filter>Source Files\Virtual File System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\lzma\C\LzmaDec.c">
+      <Filter>External Libraries\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\LzmaStreamReader.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

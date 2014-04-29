@@ -71,11 +71,6 @@ public:
 	// Reads the specified number of bytes from the underlying stream
 	virtual uint32_t Read(void* buffer, uint32_t length);
 
-	// StreamReader::Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void);
-
 	// StreamReader::Seek
 	//
 	// Advances the stream to the specified position
@@ -97,11 +92,9 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	z_stream				m_stream;			// GZIP decompression stream
-	uint8_t*				m_base;				// Base memory address
-	uint32_t				m_length;			// Length of memory buffer
-	uint32_t				m_position;			// Current stream position
-	bool					m_finished;			// End of stream has been reached
+	z_stream			m_stream;				// GZIP decompression stream
+	uint32_t			m_position = 0;			// Current stream position
+	bool				m_finished = false;		// End of stream has been reached
 };
 
 //-----------------------------------------------------------------------------

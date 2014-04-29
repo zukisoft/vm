@@ -47,18 +47,12 @@ XzStreamReader::XzStreamReader(const void* base, size_t length)
 	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
 #endif
 
-	// Maintain the original information for Reset() capability
-	m_base = reinterpret_cast<uint8_t*>(const_cast<void*>(base));
-	m_length = static_cast<uint32_t>(length);
-	m_position = 0;
-	m_finished = false;
-
 	// Initialize the XZ CRC32 checksum generator
 	xz_crc32_init();
 
 	// Initialize the XZ buffer structure
 	memset(&m_buffer, 0, sizeof(xz_buf));
-	m_buffer.in = m_base;
+	m_buffer.in = reinterpret_cast<const uint8_t*>(base);
 	m_buffer.in_pos = 0;
 	m_buffer.in_size = length;
 
@@ -122,29 +116,6 @@ uint32_t XzStreamReader::Read(void* buffer, uint32_t length)
 
 	m_position += static_cast<uint32_t>(m_buffer.out_pos);
 	return static_cast<uint32_t>(m_buffer.out_pos);
-}
-
-//-----------------------------------------------------------------------------
-// XzStreamReader::Reset (StreamReader)
-//
-// Resets the stream back to the beginning
-//
-// Arguments:
-//
-//	NONE
-
-void XzStreamReader::Reset(void)
-{
-	// Reset the XZ decoder state
-	xz_dec_reset(m_decoder);
-
-	// Reset the XZ buffer input
-	m_buffer.in = m_base;
-	m_buffer.in_pos = 0;
-	m_buffer.in_size = m_length;
-
-	m_position = 0;
-	m_finished = false;
 }
 
 //-----------------------------------------------------------------------------

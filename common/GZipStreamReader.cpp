@@ -47,16 +47,10 @@ GZipStreamReader::GZipStreamReader(const void* base, size_t length)
 	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
 #endif
 
-	// Maintain the original information for Reset() capability
-	m_base = reinterpret_cast<uint8_t*>(const_cast<void*>(base));;
-	m_length = static_cast<uint32_t>(length);
-	m_position = 0;
-	m_finished = false;
-
 	// Initialize the zlib stream structure
 	memset(&m_stream, 0, sizeof(z_stream));
-	m_stream.avail_in = m_length;
-	m_stream.next_in  = m_base;
+	m_stream.avail_in = length;
+	m_stream.next_in  = reinterpret_cast<Bytef*>(const_cast<void*>(base));;
 
 	// inflateInit2() must be used when working with a GZIP stream
 	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
@@ -115,32 +109,6 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 	m_position += out;							// Update stream position
 	
 	return out;
-}
-
-//-----------------------------------------------------------------------------
-// GZipStreamReader::Reset (StreamReader)
-//
-// Resets the stream back to the beginning
-//
-// Arguments:
-//
-//	NONE
-
-void GZipStreamReader::Reset(void)
-{
-	// Finish the existing decompression stream operations
-	inflateEnd(&m_stream);
-
-	// Reinitialize the decompression stream
-	memset(&m_stream, 0, sizeof(z_stream));
-	m_stream.avail_in = m_length;
-	m_stream.next_in  = m_base;
-
-	int result = inflateInit2(&m_stream, 16 + MAX_WBITS);
-	if(result != Z_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
-
-	m_position = 0;
-	m_finished = false;
 }
 
 //-----------------------------------------------------------------------------

@@ -42,31 +42,30 @@ CompressedStreamReader::CompressedStreamReader(const std::unique_ptr<File>& file
 
 	// GZIP
 	if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x1F), UINT8_C(0x8B), UINT8_C(0x08), UINT8_C(0x00))) 
-		m_stream = std::unique_ptr<StreamReader>(new GZipStreamReader(m_view->Pointer, m_view->Length));
+		m_stream = std::make_unique<GZipStreamReader>(m_view->Pointer, m_view->Length);
 
 	// XZ
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0xFD), '7', 'z', 'X', 'Z', UINT8_C(0x00))) 
-		m_stream = std::unique_ptr<StreamReader>(new XzStreamReader(m_view->Pointer, m_view->Length));
+		m_stream = std::make_unique<XzStreamReader>(m_view->Pointer, m_view->Length);
 
 	// BZIP2
 	else if(CheckMagic(m_view->Pointer, m_view->Length, 'B', 'Z', 'h')) 
-		m_stream = std::unique_ptr<StreamReader>(new BZip2StreamReader(m_view->Pointer, m_view->Length));
+		m_stream = std::make_unique<BZip2StreamReader>(m_view->Pointer, m_view->Length);
 
 	// LZMA
-	// TODO: Implement LzmaStreamReader (perhaps xz-embedded can handle this?)
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x5D), UINT8_C(0x00), UINT8_C(0x00), UINT8_C(0x00))) 
-		throw Exception(E_COMPRESSION_FORMAT, _T("LZMA"));
+		m_stream = std::make_unique<LzmaStreamReader>(m_view->Pointer, m_view->Length);
 	
 	// LZOP
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x89), 'L', 'Z', 'O', UINT8_C(0x00), UINT8_C(0x0D), UINT8_C(0x0A), UINT8_C(0x1A), UINT8_C(0x0A))) 
-		m_stream = std::unique_ptr<StreamReader>(new LzopStreamReader(m_view->Pointer, m_view->Length));
+		m_stream = std::make_unique<LzopStreamReader>(m_view->Pointer, m_view->Length);
 
 	// LZ4
 	else if(CheckMagic(m_view->Pointer, m_view->Length, UINT8_C(0x02), UINT8_C(0x21), UINT8_C(0x4C), UINT8_C(0x18))) 
-		m_stream = std::unique_ptr<StreamReader>(new Lz4StreamReader(m_view->Pointer, m_view->Length));
+		m_stream = std::make_unique<Lz4StreamReader>(m_view->Pointer, m_view->Length);
 
 	// UNKNOWN OR UNCOMPRESSED
-	else m_stream = std::unique_ptr<StreamReader>(new BufferStreamReader(m_view->Pointer, m_view->Length));
+	else m_stream = std::make_unique<BufferStreamReader>(m_view->Pointer, m_view->Length);
 }
 
 //-----------------------------------------------------------------------------

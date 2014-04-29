@@ -69,11 +69,6 @@ public:
 	// Reads the specified number of bytes from the underlying stream
 	virtual uint32_t Read(void* buffer, uint32_t length);
 
-	// StreamReader::Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void);
-
 	// StreamReader::Seek
 	//
 	// Advances the stream to the specified position
@@ -95,13 +90,10 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	xz_buf					m_buffer;			// XZ buffer structure
-	xz_dec*					m_decoder;			// XZ decoder structure
-
-	uint8_t*				m_base;				// Base memory address
-	uint32_t				m_length;			// Length of memory buffer
-	uint32_t				m_position;			// Current position in the stream
-	bool					m_finished;			// Flag for end of stream
+	xz_buf				m_buffer;				// XZ buffer structure
+	xz_dec*				m_decoder;				// XZ decoder structure
+	uint32_t			m_position = 0;			// Current position in the stream
+	bool				m_finished = false;		// Flag for end of stream
 };
 
 //-----------------------------------------------------------------------------

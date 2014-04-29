@@ -66,11 +66,6 @@ public:
 	// Reads the specified number of bytes from the underlying stream
 	virtual uint32_t Read(void* buffer, uint32_t length);
 
-	// StreamReader::Reset
-	//
-	// Resets the stream back to the beginning
-	virtual void Reset(void);
-
 	// StreamReader::Seek
 	//
 	// Advances the stream to the specified position
@@ -100,15 +95,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	intptr_t				m_base;				// Base memory address
-	uint32_t				m_length;			// Length of memory buffer
-	uint32_t				m_position;			// Current stream position
-
+	uint32_t				m_position = 0;		// Current stream position
 	uint8_t*				m_block;			// Decompressed block data
 	size_t					m_blocklen;			// Block data buffer size
 	uint8_t*				m_blockcurrent;		// Pointer into block data
 	uint32_t				m_blockremain;		// Remaining block data
-
 	uint32_t				m_lzoflags;			// LZOP header flags
 	intptr_t				m_lzopos;			// Position in LZO stream
 	size_t					m_lzoremain;		// Remaining LZOP data
