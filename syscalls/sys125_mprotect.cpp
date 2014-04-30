@@ -20,8 +20,9 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
+#include "stdafx.h"
+#include <linux/mman.h>
+#include "uapi.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -51,7 +52,7 @@ int sys125_mprotect(PCONTEXT context)
 	if((uintptr_t(address) + length) > (uintptr_t(info.BaseAddress) + info.RegionSize)) return -LINUX_ENOMEM;
 
 	// Attempt to set the equivalent set of protection to the requested memory region
-	if(VirtualProtect(address, length, ProtToPageFlags(context->Edx), &context->Edx)) return 0;
+	if(VirtualProtect(address, length, uapi::LinuxProtToWindowsPageFlags(context->Edx), &context->Edx)) return 0;
 
 	// ERROR_INVALID_ADDRESS -> -EINVAL; otherwise return -EACCES
 	if(GetLastError() == ERROR_INVALID_ADDRESS) return -LINUX_EINVAL;

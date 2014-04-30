@@ -318,6 +318,7 @@
     <ClInclude Include="..\common\linux\errno.h" />
     <ClInclude Include="..\common\linux\fcntl.h" />
     <ClInclude Include="..\common\linux\fs.h" />
+    <ClInclude Include="..\common\linux\mman.h" />
     <ClInclude Include="..\common\linux\stat.h" />
     <ClInclude Include="..\common\linux\types.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />

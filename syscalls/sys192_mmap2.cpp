@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include <linux/fcntl.h>
 #include <linux/fs.h>
+#include <linux/mman.h>
 #include "uapi.h"
 #include "CriticalSection.h"
 #include "FileDescriptor.h"
@@ -63,7 +64,7 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 	DWORD			oldprotection;				// Previously set protection flags
 
 	// Non-anonymous mappings require a valid file descriptor
-	if(((flags & MAP_ANONYMOUS) == 0) && (fd <= 0)) return -LINUX_EBADF;
+	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) return -LINUX_EBADF;
 	
 	// Get information about the requested memory region if address is not NULL
 	MEMORY_BASIC_INFORMATION meminfo = { nullptr, nullptr, 0, length, MEM_FREE, 0, 0 };
@@ -77,7 +78,7 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 
 		// The MAP_UNINITIALIZED optimization can be applied here by skipping the recommit
 		// and just applying the updated protection flags to the memory region
-		if((flags & MAP_UNINITIALIZED) == 0) {
+		if((flags & LINUX_MAP_UNINITIALIZED) == 0) {
 		
 			if(!VirtualFree(addr, length, MEM_DECOMMIT)) return -LINUX_EACCES;
 			if(VirtualAlloc(addr, length, MEM_COMMIT, prot) != addr) return -LINUX_EACCES;
@@ -96,8 +97,8 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 
 		// Generate the memory allocation flags from the input mmap flags
 		uint32_t allocation = MEM_RESERVE | MEM_COMMIT;
-		if(flags & MAP_HUGETLB) allocation |= MEM_LARGE_PAGES;
-		if(flags & MAP_STACK) allocation |= MEM_TOP_DOWN;
+		if(flags & LINUX_MAP_HUGETLB) allocation |= MEM_LARGE_PAGES;
+		if(flags & LINUX_MAP_STACK) allocation |= MEM_TOP_DOWN;
 
 		// Allocate the memory region
 		addr = VirtualAlloc(addr, length, allocation, prot);
@@ -105,7 +106,7 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 	}
 
 	// Non-anonymous private mappings read memory contents from the source file
-	if((flags & MAP_ANONYMOUS) == 0) {
+	if((flags & LINUX_MAP_ANONYMOUS) == 0) {
 
 		uapi::loff_t pointer;				// New file pointer position
 		int result;							// Result from system call
@@ -128,7 +129,7 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 	}
 
 	// MAP_LOCKED must be applied after the region has been allocated
-	if(flags & MAP_LOCKED) VirtualLock(addr, length);
+	if(flags & LINUX_MAP_LOCKED) VirtualLock(addr, length);
 
 	return reinterpret_cast<int>(addr);
 }
@@ -177,16 +178,16 @@ int sys192_mmap2(PCONTEXT context)
 
 	// Determine which version of mmap2 should be invoked based on MAP_PRIVATE | MAP_SHARED
 	uint32_t flags = static_cast<uint32_t>(context->Esi);
-	switch(flags & (MAP_PRIVATE | MAP_SHARED)) {
+	switch(flags & (LINUX_MAP_PRIVATE | LINUX_MAP_SHARED)) {
 
-		case MAP_PRIVATE:	impl = mmap2_private; break;
-		case MAP_SHARED:	impl = mmap2_shared; break;
+		case LINUX_MAP_PRIVATE:	impl = mmap2_private; break;
+		case LINUX_MAP_SHARED:	impl = mmap2_shared; break;
 		
 		default: return -LINUX_EINVAL;
 	}
 
 	// Windows does not accept suggested addresses, remove it unless MAP_FIXED has been set
-	void* address = (context->Esi & MAP_FIXED) ? reinterpret_cast<void*>(context->Ebx) : nullptr;
+	void* address = (context->Esi & LINUX_MAP_FIXED) ? reinterpret_cast<void*>(context->Ebx) : nullptr;
 
 	// The length argument can never be zero
 	size_t length = static_cast<size_t>(context->Ecx);
@@ -197,7 +198,7 @@ int sys192_mmap2(PCONTEXT context)
 	offset.QuadPart = static_cast<int64_t>(static_cast<uint64_t>(context->Ebp) << 12);
 
 	// Invoke the proper version of this system call
-	return impl(address, length, ProtToPageFlags(context->Edx), flags, static_cast<int32_t>(context->Edi), &offset);
+	return impl(address, length, uapi::LinuxProtToWindowsPageFlags(context->Edx), flags, static_cast<int32_t>(context->Edi), &offset);
 
 
 	//// Cast out all of the arguments into local variables for clarity
