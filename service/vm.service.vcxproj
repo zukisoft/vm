@@ -110,7 +110,7 @@
     </CustomBuildStep>
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
       <InterfaceIdentifierFileName>
@@ -122,8 +122,8 @@
       <ValidateAllParameters>true</ValidateAllParameters>
       <AdditionalOptions>
       </AdditionalOptions>
-      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
-      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ClientStubFile>%(Filename)_c.c</ClientStubFile>
+      <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
@@ -154,7 +154,7 @@
     </CustomBuildStep>
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
       <InterfaceIdentifierFileName>
@@ -166,8 +166,8 @@
       <ValidateAllParameters>true</ValidateAllParameters>
       <AdditionalOptions>
       </AdditionalOptions>
-      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
-      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ClientStubFile>%(Filename)_c.c</ClientStubFile>
+      <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
@@ -202,7 +202,7 @@
     </CustomBuildStep>
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
       <InterfaceIdentifierFileName>
@@ -214,8 +214,8 @@
       <ValidateAllParameters>true</ValidateAllParameters>
       <AdditionalOptions>
       </AdditionalOptions>
-      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
-      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ClientStubFile>%(Filename)_c.c</ClientStubFile>
+      <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
@@ -250,7 +250,7 @@
     </CustomBuildStep>
     <Midl>
       <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
-      <HeaderFileName>$(ProjectName).h</HeaderFileName>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
       <InterfaceIdentifierFileName>
@@ -262,8 +262,8 @@
       <ValidateAllParameters>true</ValidateAllParameters>
       <AdditionalOptions>
       </AdditionalOptions>
-      <ClientStubFile>$(ProjectName)_c.c</ClientStubFile>
-      <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
+      <ClientStubFile>%(Filename)_c.c</ClientStubFile>
+      <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>

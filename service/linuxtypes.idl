@@ -20,6 +20,17 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
+// Interface LinuxTypes
+//
+// Dummy interface used to bring the <linux/types.h> header file into the IDL
+// without MIDL dumping all of the declarations themselves into the output
+//
+// See "Importing System Header Files" MSDN topic:
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa367049(v=vs.85).aspx
+//
+// This file should be excluded from compilation, it's for import purposes only
+
 [ local ]
 interface LinuxTypes
 {
