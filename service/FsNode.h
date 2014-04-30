@@ -24,16 +24,16 @@
 #define __FSNODE_H_
 #pragma once
 
-#include "linux\stat.h"				// Include Linux stat declarations
+#include "linux\stat.h"
 
-#include "BlockDevice.h"			// Include BlockDevice class declarations
-#include "CharacterDevice.h"		// Include CharacterDevice class decls
-#include "PipeDevice.h"				// Include PipeDevice class declarations
-#include "SocketDevice.h"			// Include Socket class declarations
+#include "BlockDevice.h"
+#include "CharacterDevice.h"
+#include "PipeDevice.h"
+#include "SocketDevice.h"
 
 
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
 

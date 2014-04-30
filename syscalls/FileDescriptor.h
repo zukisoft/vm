@@ -23,9 +23,9 @@
 #ifndef __FILEDESCRIPTOR_H_
 #define __FILEDESCRIPTOR_H_
 
-#include "FsObject.h"					// Include FsObject class declarations
+#include "FsObject.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // FileDescriptor

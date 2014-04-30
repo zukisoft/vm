@@ -2,10 +2,10 @@
 #define __ELF_H_
 #pragma once
 
-#include <stdint.h>						// Include standard integer declarations
-#include "elf_em.h"						// Include ELF target machine declarations
+#include <stdint.h>
+#include "elf_em.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 

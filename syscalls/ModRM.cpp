@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "ModRM.h"						// Include ModRM declarations
+#include "stdafx.h"
+#include "ModRM.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // ModRM::GetEffectiveAddress (private, static)

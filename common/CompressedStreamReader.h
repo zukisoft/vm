@@ -38,7 +38,7 @@
 #include "StreamReader.h"
 #include "XzStreamReader.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // CompressedStreamReader

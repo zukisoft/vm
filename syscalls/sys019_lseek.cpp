@@ -25,7 +25,7 @@
 #include "FileDescriptor.h"
 #include "FileDescriptorTable.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // off_t lseek(int fd, off_t offset, int whence)
 //

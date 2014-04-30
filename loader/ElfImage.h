@@ -24,14 +24,14 @@
 #define __ELFIMAGE_H_
 #pragma once
 
-#include "elf.h"						// Include ELF file format decls
-#include "ElfArguments.h"				// Include ElfArguments declarations
-#include "Exception.h"					// Include Exception declarations
-#include "MappedFile.h"					// Include MappedFile declarations
-#include "MappedFileView.h"				// Include MappedFileView declarations
-#include "MemoryRegion.h"				// Include MemoryRegion declarations
+#include "elf.h"
+#include "ElfArguments.h"
+#include "Exception.h"
+#include "MappedFile.h"
+#include "MappedFileView.h"
+#include "MemoryRegion.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // ElfImageT

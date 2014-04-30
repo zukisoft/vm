@@ -33,11 +33,11 @@
 #define	_WIN32_IE				_WIN32_IE_IE80
 
 // Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <rpc.h>				// Include Remote Procedure Call declarations
-#include <stdint.h>				// Include standard integer declarations
-#include <memory>				// std::allocator, etc.
-#include <string>				// std::string, std::wstring
+#include <windows.h>
+#include <rpc.h>
+#include <stdint.h>
+#include <memory>
+#include <string>
 
 
 #pragma comment(lib, "rpcrt4.lib")

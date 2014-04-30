@@ -31,22 +31,22 @@
 #define	_WIN32_IE				_WIN32_IE_IE80
 
 // Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <tchar.h>				// Include generic text mappings
-#include <stdarg.h>				// Include standard argument decls (va_list)
-#include <stdint.h>				// Include standard integer declarations
-#include <stdlib.h>				// Include standard library declarations
+#include <windows.h>
+#include <tchar.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 // Debug Help Library
-#include <DbgHelp.h>			// Include Debug Helper library decarlations
+#include <DbgHelp.h>
 #pragma comment(lib, "DbgHelp.lib")
 
 // STL
-#include <algorithm>			// for_each()
-#include <functional>			// lambdas
-#include <memory>				// unique_ptr<>, shared_ptr<>, etc.
-#include <string>				// string<>, wstring<>, etc.
-#include <vector>				// vector<> template declarations
+#include <algorithm>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "char_t.h"
 #include "tstring.h"

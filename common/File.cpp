@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "File.h"						// Include File declarations
+#include "stdafx.h"
+#include "File.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // File Constructor (private)

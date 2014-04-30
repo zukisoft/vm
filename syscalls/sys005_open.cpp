@@ -28,7 +28,7 @@
 #include "FsObject.h"
 #include "FileDescriptorTable.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // rpc.cpp
 handle_t rpc_bind_thread(void);

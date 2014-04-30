@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "FsObject.h"				// Include FsObject declarations
+#include "stdafx.h"
+#include "FsObject.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
 // FsObject Constructor

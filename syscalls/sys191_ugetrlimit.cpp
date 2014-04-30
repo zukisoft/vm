@@ -22,7 +22,7 @@
 
 #include "stdafx.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 #define RLIMIT_CPU			0	/* CPU time in sec */
 #define RLIMIT_FSIZE		1	/* Maximum filesize */

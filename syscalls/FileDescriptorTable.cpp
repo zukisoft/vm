@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "FileDescriptorTable.h"	// Include FileDescriptorTable declarations
+#include "stdafx.h"
+#include "FileDescriptorTable.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 // FD_NUM_RESERVED
 //

@@ -20,10 +20,9 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "Lz4StreamReader.h"			// Include Lz4StreamReader declarations
-
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#include "stdafx.h"
+#include "Lz4StreamReader.h"
+#pragma warning(push, 4)				
 
 // COMPRESSION_METHOD
 //

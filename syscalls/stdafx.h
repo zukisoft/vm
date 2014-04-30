@@ -33,10 +33,10 @@
 #define	_WIN32_IE				_WIN32_IE_IE80
 
 // Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <tchar.h>				// Include generic text mappings
-#include <stdint.h>				// Include standard integer declarations
-#include <functional>			// lambda support
+#include <windows.h>
+#include <tchar.h>
+#include <stdint.h>	
+#include <functional>
 
 #include <rpc.h>
 #pragma comment(lib, "rpcrt4.lib")

@@ -29,7 +29,7 @@
 #include "FileDescriptorTable.h"
 #include "Thunk.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // read() thunk
 extern int sys003_read(PCONTEXT);

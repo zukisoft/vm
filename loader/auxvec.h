@@ -2,9 +2,9 @@
 #define __AUXVEC_H_
 #pragma once
 
-#include "elf.h"						// Include ELF format declarations
+#include "elf.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 

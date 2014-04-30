@@ -20,11 +20,11 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "FileDescriptor.h"				// Include FileDescriptor declarations
-#include "FileDescriptorTable.h"		// Include FileDescriptorTable decls
+#include "stdafx.h"
+#include "FileDescriptor.h"
+#include "FileDescriptorTable.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // int close(int fd);
 //

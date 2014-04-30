@@ -24,13 +24,13 @@
 #define __ELFARGUMENTS_H_
 #pragma once
 
-#include "auxvec.h"						// Include auxiliary vector decls
-#include "elf.h"						// Include ELF format declarations
-#include "Exception.h"					// Include Exception declarations
-#include "MemoryRegion.h"				// Include MemoryRegion declarations
-#include "Win32Exception.h"				// Include Win32Exception declarations
+#include "auxvec.h"
+#include "elf.h"
+#include "Exception.h"
+#include "MemoryRegion.h"
+#include "Win32Exception.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // ElfArgumentsT

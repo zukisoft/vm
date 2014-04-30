@@ -22,7 +22,7 @@
 
 #include "stdafx.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // int madvise(void* addr, size_t length, int advice);
 //

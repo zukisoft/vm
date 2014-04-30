@@ -29,7 +29,7 @@
 #include "MappedFile.h"
 #include "Win32Exception.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // MappedFileView

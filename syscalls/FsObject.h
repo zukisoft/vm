@@ -23,7 +23,7 @@
 #ifndef __FSOBJECT_H_
 #define __FSOBJECT_H_
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // FsObject

@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "vm.service.h"				// Include project RPC declarations
+#include "stdafx.h"
+#include "vm.service.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
 // open

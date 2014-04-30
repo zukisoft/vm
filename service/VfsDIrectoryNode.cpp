@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "VfsDirectoryNode.h"			// Include VfsDirectoryNode declarations
+#include "stdafx.h"
+#include "VfsDirectoryNode.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // VfsDirectoryNode::s_lock
 //

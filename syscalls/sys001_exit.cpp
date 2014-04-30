@@ -22,7 +22,7 @@
 
 #include "stdafx.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // void exit(int status);
 //

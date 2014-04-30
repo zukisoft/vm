@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "GZipStreamReader.h"			// Include GZipStreamReader declarations
+#include "stdafx.h"
+#include "GZipStreamReader.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // COMPRESSION_METHOD
 //

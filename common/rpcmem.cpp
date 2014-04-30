@@ -20,9 +20,9 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
+#include "stdafx.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
 // midl_user_allocate

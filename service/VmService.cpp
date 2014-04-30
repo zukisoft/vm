@@ -20,10 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "VmService.h"				// Include VmService class declarations
+#include "stdafx.h"
+#include "VmService.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 //---------------------------------------------------------------------------
 // VmService Constructor

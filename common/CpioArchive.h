@@ -30,7 +30,7 @@
 #include "char_t.h"
 #include "StreamReader.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 // cpio_header_t
 //

@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include <linux/ldt.h>
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // int set_thread_area(struct user_desc* u_info); 
 //

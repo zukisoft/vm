@@ -24,9 +24,9 @@
 #define __MODRM_H_
 #pragma once
 
-#include "ContextRecord.h"				// Include ContextRecord declarations
+#include "ContextRecord.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 #pragma warning(disable:4201)			// Nameless struct/union
 
 //-----------------------------------------------------------------------------

@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "VfsNode.h"
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // RPC_TSTR
 //

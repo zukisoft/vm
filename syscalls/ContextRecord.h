@@ -24,7 +24,7 @@
 #define __CONTEXTRECORD_H_
 #pragma once
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
 // ContextRecordFlags

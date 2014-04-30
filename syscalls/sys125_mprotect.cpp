@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include <linux/mman.h>
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+#pragma warning(push, 4)				
 
 // int mprotect(void *addr, size_t len, int prot);
 //

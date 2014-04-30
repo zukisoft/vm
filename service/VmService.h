@@ -24,9 +24,9 @@
 #define __VMSERVICE_H_
 #pragma once
 
-#include "resource.h"				// Include project resource declarations
+#include "resource.h"
 
-#pragma warning(push, 4)			// Enable maximum compiler warnings
+#pragma warning(push, 4)			
 
 //---------------------------------------------------------------------------
 // Class VmService
