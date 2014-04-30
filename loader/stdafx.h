@@ -48,8 +48,11 @@
 #include <string>
 #include <vector>
 
-#include "char_t.h"
-#include "tstring.h"
+#include <char_t.h>
+#include <tstring.h>
+
+#include <linux/types.h>
+#include <linux/errno.h>
 
 // KiB / MiB / GiB
 
@@ -58,7 +61,7 @@
 #define GiB		*(1 << 30)		// GiB multiplier
 
 // Message Resources
-#include "messages.h"
+#include <messages.h>
 
 //-----------------------------------------------------------------------------
 

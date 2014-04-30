@@ -24,11 +24,11 @@
 #define __ELFARGUMENTS_H_
 #pragma once
 
-#include "auxvec.h"
-#include "elf.h"
-#include "Exception.h"
-#include "MemoryRegion.h"
-#include "Win32Exception.h"
+#include <linux/auxvec.h>
+#include <linux/elf.h>
+#include <Exception.h>
+#include <MemoryRegion.h>
+#include <Win32Exception.h>
 
 #pragma warning(push, 4)				
 
@@ -150,9 +150,9 @@ private:
 // Typedef of ElfArgumentBuilderT<> based on build configuration
 
 #ifdef _M_X64
-typedef ElfArgumentsT<Elf64_Addr, Elf64_auxv_t>	ElfArguments;
+typedef ElfArgumentsT<uapi::Elf64_Addr, uapi::Elf64_auxv_t>	ElfArguments;
 #else
-typedef ElfArgumentsT<Elf32_Addr, Elf32_auxv_t>	ElfArguments;
+typedef ElfArgumentsT<uapi::Elf32_Addr, uapi::Elf32_auxv_t>	ElfArguments;
 #endif
 
 //-----------------------------------------------------------------------------

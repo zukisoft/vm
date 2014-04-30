@@ -24,12 +24,13 @@
 #define __ELFIMAGE_H_
 #pragma once
 
-#include "elf.h"
+#include <linux/elf.h>
+#include <linux/elf-em.h>
+#include <Exception.h>
+#include <MappedFile.h>
+#include <MappedFileView.h>
+#include <MemoryRegion.h>
 #include "ElfArguments.h"
-#include "Exception.h"
-#include "MappedFile.h"
-#include "MappedFileView.h"
-#include "MemoryRegion.h"
 
 #pragma warning(push, 4)				
 
@@ -139,9 +140,9 @@ private:
 // Typedef of ElfImageT<> based on build configuration
 
 #ifdef _M_X64
-typedef ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>	ElfImage;
+typedef ElfImageT<uapi::Elf64_Ehdr, uapi::Elf64_Phdr, uapi::Elf64_Shdr, uapi::Elf64_Sym>	ElfImage;
 #else
-typedef ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>	ElfImage;
+typedef ElfImageT<uapi::Elf32_Ehdr, uapi::Elf32_Phdr, uapi::Elf32_Shdr, uapi::Elf32_Sym>	ElfImage;
 #endif
 
 //-----------------------------------------------------------------------------

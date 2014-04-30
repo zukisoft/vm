@@ -29,9 +29,9 @@
 // Explicit Instantiations
 
 #ifdef _M_X64
-template ElfArgumentsT<Elf64_Addr, Elf64_auxv_t>;
+template ElfArgumentsT<uapi::Elf64_Addr, uapi::Elf64_auxv_t>;
 #else
-template ElfArgumentsT<Elf32_Addr, Elf32_auxv_t>;
+template ElfArgumentsT<uapi::Elf32_Addr, uapi::Elf32_auxv_t>;
 #endif
 
 //---------------------------------------------------------------------------
@@ -397,7 +397,7 @@ const void* ElfArgumentsT<addr_t, auxv_t>::CreateArgumentVector(size_t* length)
 
 	// AUXILIARY VECTORS
 	for_each(m_auxv.begin(), m_auxv.end(), [&](auxv_t auxv) { AppendInfo(auxv); });
-	AppendInfo(auxv_t(AT_NULL, 0));
+	AppendInfo(auxv_t(LINUX_AT_NULL, 0));
 
 	// TERMINATOR
 	AppendInfo(static_cast<addr_t>(NULL));

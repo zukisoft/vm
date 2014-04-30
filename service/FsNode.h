@@ -24,14 +24,11 @@
 #define __FSNODE_H_
 #pragma once
 
-#include "linux\stat.h"
-
+#include <linux/stat.h>
 #include "BlockDevice.h"
 #include "CharacterDevice.h"
 #include "PipeDevice.h"
 #include "SocketDevice.h"
-
-
 
 #pragma warning(push, 4)			
 

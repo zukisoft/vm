@@ -21,8 +21,8 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include <Exception.h>
 #include "resource.h"
-#include "Exception.h"
 #include "ElfImage.h"
 #include "SystemCall.h"
 
@@ -91,45 +91,45 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		// AUXILIARY VECTORS
 		//
 
-		(AT_EXECFD);		// 2 - - CAN IMPLEMENT ONCE FSMANAGER IS WORKING
+		(LINUX_AT_EXECFD);		// 2 - - CAN IMPLEMENT ONCE FSMANAGER IS WORKING
 		
 		if(executable->ProgramHeaders) {
 
-			builder.AppendAuxiliaryVector(AT_PHDR, executable->ProgramHeaders);				// 3
+			builder.AppendAuxiliaryVector(LINUX_AT_PHDR, executable->ProgramHeaders);				// 3
 #ifdef _M_X64
-			builder.AppendAuxiliaryVector(AT_PHENT, sizeof(Elf64_Phdr));					// 4
+			builder.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(uapi::Elf64_Phdr));					// 4
 #else
-			builder.AppendAuxiliaryVector(AT_PHENT, sizeof(Elf32_Phdr));					// 4
+			builder.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(uapi::Elf32_Phdr));					// 4
 #endif
-			builder.AppendAuxiliaryVector(AT_PHNUM, executable->NumProgramHeaders);			// 5
+			builder.AppendAuxiliaryVector(LINUX_AT_PHNUM, executable->NumProgramHeaders);			// 5
 		}
 
-		builder.AppendAuxiliaryVector(AT_PAGESZ, MemoryRegion::PageSize);					// 6
+		builder.AppendAuxiliaryVector(LINUX_AT_PAGESZ, MemoryRegion::PageSize);					// 6
 
 		// AT_BASE is only used with an interpreter and specifies that module's base address
-		if(interpreter) builder.AppendAuxiliaryVector(AT_BASE, interpreter->BaseAddress);	// 7
+		if(interpreter) builder.AppendAuxiliaryVector(LINUX_AT_BASE, interpreter->BaseAddress);	// 7
 
-		builder.AppendAuxiliaryVector(AT_FLAGS, 0);									// 8
-		builder.AppendAuxiliaryVector(AT_ENTRY, executable->EntryPoint);			// 9
-		(AT_NOTELF);		// 10 - DO NOT IMPLEMENT
-		(AT_UID);			// 11
-		(AT_EUID);			// 12
-		(AT_GID);			// 13
-		(AT_EGID);			// 14
+		builder.AppendAuxiliaryVector(LINUX_AT_FLAGS, 0);									// 8
+		builder.AppendAuxiliaryVector(LINUX_AT_ENTRY, executable->EntryPoint);			// 9
+		(LINUX_AT_NOTELF);		// 10 - DO NOT IMPLEMENT
+		(LINUX_AT_UID);			// 11
+		(LINUX_AT_EUID);			// 12
+		(LINUX_AT_GID);			// 13
+		(LINUX_AT_EGID);			// 14
 #ifdef _M_X64
-		builder.AppendAuxiliaryVector(AT_PLATFORM, "x86_64");						// 15
+		builder.AppendAuxiliaryVector(LINUX_AT_PLATFORM, "x86_64");						// 15
 #else
-		builder.AppendAuxiliaryVector(AT_PLATFORM, "i686");							// 15
+		builder.AppendAuxiliaryVector(LINUX_AT_PLATFORM, "i686");							// 15
 #endif
-		(AT_HWCAP);			// 16
-		(AT_CLKTCK);		// 17
-		builder.AppendAuxiliaryVector(AT_SECURE, 0);								// 23
-		(AT_BASE_PLATFORM);	// 24 - DO NOT IMPLEMENT
-		builder.AppendAuxiliaryVector(AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
-		(AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
-		(AT_EXECFN);		// 31
-		(AT_SYSINFO);		// 32 - PROBABLY DO NOT IMPLEMENT
-		builder.AppendAuxiliaryVector(AT_SYSINFO_EHDR, vdso->BaseAddress);			// 33
+		(LINUX_AT_HWCAP);			// 16
+		(LINUX_AT_CLKTCK);		// 17
+		builder.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);								// 23
+		(LINUX_AT_BASE_PLATFORM);	// 24 - DO NOT IMPLEMENT
+		builder.AppendAuxiliaryVector(LINUX_AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
+		(LINUX_AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
+		(LINUX_AT_EXECFN);		// 31
+		(LINUX_AT_SYSINFO);		// 32 - PROBABLY DO NOT IMPLEMENT
+		builder.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);			// 33
 
 		// add exception handler from the system calls dll
 		AddVectoredExceptionHandler(1, SysCallExceptionHandler);

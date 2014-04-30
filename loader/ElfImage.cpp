@@ -29,9 +29,9 @@
 // Explicit Instantiations
 
 #ifdef _M_X64
-template ElfImageT<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
+template ElfImageT<uapi::Elf64_Ehdr, uapi::Elf64_Phdr, uapi::Elf64_Shdr, uapi::Elf64_Sym>;
 #else
-template ElfImageT<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>;
+template ElfImageT<uapi::Elf32_Ehdr, uapi::Elf32_Phdr, uapi::Elf32_Shdr, uapi::Elf32_Sym>;
 #endif
 
 //-----------------------------------------------------------------------------
@@ -68,7 +68,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		const phdr_t* progheader = reinterpret_cast<const phdr_t*>(baseptr + offset);
 
 		// Check for the presence of an interpreter binary path and store it
-		if(progheader->p_type == PT_INTERP) {
+		if(progheader->p_type == LINUX_PT_INTERP) {
 			
 			if(length < (progheader->p_offset + progheader->p_filesz)) throw Exception(E_ELFIMAGETRUNCATED);
 			char_t* interpreter = reinterpret_cast<char_t*>(baseptr + progheader->p_offset);
@@ -78,7 +78,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		}
 
 		// Use loadable segment addresses and lengths to determine the memory footprint
-		else if((progheader->p_type == PT_LOAD) && (progheader->p_memsz)) {
+		else if((progheader->p_type == LINUX_PT_LOAD) && (progheader->p_memsz)) {
 
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
@@ -87,9 +87,9 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		}
 
 		// Check for an executable stack flag; currently not going to support this
-		else if(progheader->p_type == PT_GNU_STACK) {
+		else if(progheader->p_type == LINUX_PT_GNU_STACK) {
 
-			if(progheader->p_flags & PF_X) throw Exception(E_EXECUTABLESTACKFLAG);
+			if(progheader->p_flags & LINUX_PF_X) throw Exception(E_EXECUTABLESTACKFLAG);
 		}
 	}
 
@@ -97,13 +97,13 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
 		// so reserve them at the highest available virtual address
-		if(elfheader->e_type == ET_EXEC) m_region = MemoryRegion::Reserve(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
+		if(elfheader->e_type == LINUX_ET_EXEC) m_region = MemoryRegion::Reserve(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
 		else m_region = MemoryRegion::Reserve(maxvaddr - minvaddr, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(ex, E_RESERVEIMAGEREGION); }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
-	intptr_t vaddrdelta = (elfheader->e_type == ET_EXEC) ? 0 : uintptr_t(m_region->Pointer) - minvaddr;
+	intptr_t vaddrdelta = (elfheader->e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(m_region->Pointer) - minvaddr;
 
 	// Second pass over the program headers to load, commit and protect the program segments
 	for(int index = 0; index < elfheader->e_phnum; index++) {
@@ -116,14 +116,14 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		// PT_PHDR - if it falls within the boundaries of the loadable segments, set this so that
 		// it can be added to the ELF arguments as an auxiliary vector.  It would be a simple task
 		// to just copy it from the header, but I think this is more how it was intended to be used
-		if((progheader->p_type == PT_PHDR) && (progheader->p_vaddr >= minvaddr) && ((progheader->p_vaddr + progheader->p_memsz) <= maxvaddr)) {
+		if((progheader->p_type == LINUX_PT_PHDR) && (progheader->p_vaddr >= minvaddr) && ((progheader->p_vaddr + progheader->p_memsz) <= maxvaddr)) {
 
 			 m_phdrs = reinterpret_cast<const phdr_t*>(uintptr_t(progheader->p_vaddr) + vaddrdelta);
 			 m_phdrents = progheader->p_memsz / sizeof(phdr_t);
 		}
 
 		// PT_LOAD - only load segments that have a non-zero memory footprint defined
-		else if((progheader->p_type == PT_LOAD) && (progheader->p_memsz)) {
+		else if((progheader->p_type == LINUX_PT_LOAD) && (progheader->p_memsz)) {
 
 			// Get the base address of the loadable segment and commit the virtual memory
 			uintptr_t segbase = progheader->p_vaddr + vaddrdelta;
@@ -186,6 +186,7 @@ void ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::Execute(ElfArguments& args)
 // ElfImageT::FlagsToProtection (private, static)
 //
 // Converts an ELF program header p_flags into VirtualAlloc() protection flags
+// NOTE: These are not the same as the PROT_XXXX flags used by mmap() et al
 //
 // Arguments:
 //
@@ -196,13 +197,13 @@ DWORD ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::FlagsToProtection(uint32_t flag
 {
 	switch(flags) {
 
-		case PF_X:					return PAGE_EXECUTE;
-		case PF_W :					return PAGE_READWRITE;
-		case PF_R :					return PAGE_READONLY;
-		case PF_X | PF_W :			return PAGE_EXECUTE_READWRITE;
-		case PF_X | PF_R :			return PAGE_EXECUTE_READ;
-		case PF_W | PF_R :			return PAGE_READWRITE;
-		case PF_X | PF_W | PF_R :	return PAGE_EXECUTE_READWRITE;
+		case LINUX_PF_X : return PAGE_EXECUTE;
+		case LINUX_PF_W : return PAGE_READWRITE;
+		case LINUX_PF_R : return PAGE_READONLY;
+		case LINUX_PF_X | LINUX_PF_W : return PAGE_EXECUTE_READWRITE;
+		case LINUX_PF_X | LINUX_PF_R : return PAGE_EXECUTE_READ;
+		case LINUX_PF_W | LINUX_PF_R : return PAGE_READWRITE;
+		case LINUX_PF_X | LINUX_PF_W | LINUX_PF_R :	return PAGE_EXECUTE_READWRITE;
 	}
 
 	return PAGE_NOACCESS;
@@ -287,25 +288,25 @@ const ehdr_t* ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ValidateHeader(const vo
 	const ehdr_t* header = reinterpret_cast<const ehdr_t*>(base);
 
 	// Check the ELF header magic number
-	if(memcmp(&header->e_ident[EI_MAG0], ELFMAG, SELFMAG) != 0) throw Exception(E_INVALIDELFMAGIC);
+	if(memcmp(&header->e_ident[LINUX_EI_MAG0], LINUX_ELFMAG, LINUX_SELFMAG) != 0) throw Exception(E_INVALIDELFMAGIC);
 
 	// Verify the ELF class matches the build configuration (32-bit vs. 64-bit)
-	int elfclass = (sizeof(ehdr_t) == sizeof(Elf32_Ehdr)) ? ELFCLASS32 : ELFCLASS64;
-	if(header->e_ident[EI_CLASS] != elfclass) throw Exception(E_INVALIDELFCLASS, header->e_ident[EI_CLASS]);
+	int elfclass = (sizeof(ehdr_t) == sizeof(uapi::Elf32_Ehdr)) ? LINUX_ELFCLASS32 : LINUX_ELFCLASS64;
+	if(header->e_ident[LINUX_EI_CLASS] != elfclass) throw Exception(E_INVALIDELFCLASS, header->e_ident[LINUX_EI_CLASS]);
 
 	// Verify the endianness and version of the ELF binary
-	if(header->e_ident[EI_DATA] != ELFDATA2LSB) throw Exception(E_INVALIDELFENCODING, header->e_ident[EI_DATA]);
-	if(header->e_ident[EI_VERSION] != EV_CURRENT) throw Exception(E_INVALIDELFVERSION, header->e_ident[EI_VERSION]);
+	if(header->e_ident[LINUX_EI_DATA] != LINUX_ELFDATA2LSB) throw Exception(E_INVALIDELFENCODING, header->e_ident[LINUX_EI_DATA]);
+	if(header->e_ident[LINUX_EI_VERSION] != LINUX_EV_CURRENT) throw Exception(E_INVALIDELFVERSION, header->e_ident[LINUX_EI_VERSION]);
 
 	// Only ET_EXEC and ET_DYN images can currently be loaded by this class
-	if((header->e_type != ET_EXEC) && (header->e_type != ET_DYN)) throw Exception(E_INVALIDELFTYPE, header->e_type);
+	if((header->e_type != LINUX_ET_EXEC) && (header->e_type != LINUX_ET_DYN)) throw Exception(E_INVALIDELFTYPE, header->e_type);
 
 	// The machine type must either be x86 (32 bit) or x86-64 (64 bit)
-	int elfmachinetype = (sizeof(ehdr_t) == sizeof(Elf32_Ehdr)) ? EM_386 : EM_X86_64;
+	int elfmachinetype = (sizeof(ehdr_t) == sizeof(uapi::Elf32_Ehdr)) ? LINUX_EM_386 : LINUX_EM_X86_64;
 	if(header->e_machine != elfmachinetype) throw Exception(E_INVALIDELFMACHINETYPE, header->e_machine);
 
 	// Verify that the version code matches the ELF headers used
-	if(header->e_version != EV_CURRENT) throw Exception(E_INVALIDELFVERSION, header->e_version);
+	if(header->e_version != LINUX_EV_CURRENT) throw Exception(E_INVALIDELFVERSION, header->e_version);
 
 	// Verify that the length of the header is the same size as the Elfxx_Ehdr struct
 	// and that the header entries are at least as big as the known structures

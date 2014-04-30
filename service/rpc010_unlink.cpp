@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "vm.service.h"
+#include <vm.service.h>
 
 #pragma warning(push, 4)			
 

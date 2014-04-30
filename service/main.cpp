@@ -24,9 +24,6 @@
 #include "resource.h"
 #include "VmService.h"
 
-#include "VirtualFileSystem.h"
-#include <filesystem>
-
 #pragma warning(push, 4)			
 #pragma warning(disable:4100)		// "unreferenced formal parameter"
 
@@ -111,15 +108,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
-
-//////////////////
-
-	VirtualFileSystem vfs;
-	vfs.LoadInitialFileSystem(L"D:\\ramdisk.cpio.gz");
-
-	VfsResolveResult find = vfs.ResolvePath("/sbin/../../././sbin");
-
-	return 0;
 
 	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, RemoteSystemCalls_v1_0_s_ifspec, nullptr);
 	if(rpcresult != RPC_S_OK) {

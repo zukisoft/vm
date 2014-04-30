@@ -51,8 +51,8 @@
 
 // Generic Text Mappings
 #include <tchar.h>
-#include "char_t.h"
-#include "tstring.h"
+#include <char_t.h>
+#include <tstring.h>
 
 // Linux
 #include <linux/types.h>
@@ -61,10 +61,10 @@
 //---------------------------------------------------------------------------
 // Service Template Library (SVCTL)
 
-#include "svctl.h"
+#include <svctl.h>
 
-#include "vm.service.h"
-#include "messages.h"
+#include <vm.service.h>
+#include <messages.h>
 
 //---------------------------------------------------------------------------
 // Project COM Declarations
