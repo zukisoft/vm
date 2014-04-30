@@ -20,11 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
-#include "ContextRecord.h"				// Include ContextRecord declarations
-#include "Instruction.h"				// Include Instruction declarations
-#include "ModRM.h"						// Include ModRM declarations
+#include "stdafx.h"
+#include "ContextRecord.h"
+#include "Instruction.h"
+#include "ModRM.h"
 
 // rpc.cpp
 bool rpc_attach_thread(void);

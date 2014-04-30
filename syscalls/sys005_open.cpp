@@ -22,7 +22,6 @@
 
 #include "stdafx.h"
 #include <linux/fcntl.h>
-#include "uapi.h"
 
 // remove me
 #include <io.h>

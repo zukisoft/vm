@@ -31,9 +31,6 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="uapi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ContextRecord.h">
       <Filter>Header Files</Filter>
     </ClInclude>

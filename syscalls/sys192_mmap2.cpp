@@ -24,7 +24,6 @@
 #include <linux/fcntl.h>
 #include <linux/fs.h>
 #include <linux/mman.h>
-#include "uapi.h"
 #include "CriticalSection.h"
 #include "FileDescriptor.h"
 #include "FileDescriptorTable.h"

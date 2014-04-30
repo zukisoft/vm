@@ -22,7 +22,6 @@
 
 #include "stdafx.h"
 #include <linux/mman.h>
-#include "uapi.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 

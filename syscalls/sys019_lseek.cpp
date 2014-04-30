@@ -22,7 +22,6 @@
 
 #include "stdafx.h"
 #include <linux/fs.h>
-#include "uapi.h"
 #include "FileDescriptor.h"
 #include "FileDescriptorTable.h"
 

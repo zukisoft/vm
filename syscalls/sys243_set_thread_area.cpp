@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
+#include "stdafx.h"
+#include <linux/ldt.h>
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -39,7 +39,7 @@ int sys243_set_thread_area(PCONTEXT context)
 	_ASSERTE(context->Eax == 243);				// Verify system call number
 
 	// Cast out and check the structure pointer for NULL
-	struct user_desc* desc = reinterpret_cast<struct user_desc*>(context->Ebx);
+	struct uapi::user_desc* desc = reinterpret_cast<struct uapi::user_desc*>(context->Ebx);
 	if(!desc) return -LINUX_EFAULT;
 
 	// Windows doesn't allow us to set a specific TLS slot

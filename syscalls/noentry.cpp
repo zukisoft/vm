@@ -20,8 +20,7 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
+#include "stdafx.h"
 
 // int noentry(void)
 //

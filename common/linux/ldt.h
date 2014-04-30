@@ -20,30 +20,42 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __UAPI_H_
-#define __UAPI_H_
+#ifndef __LINUX_LDT_H_
+#define __LINUX_LDT_H_
+#pragma once
 
-#pragma warning(push, 4)				// Enable maximum compiler warnings
+//-----------------------------------------------------------------------------
+// arch/x86/include/uapi/asm/ldt.h
+//-----------------------------------------------------------------------------
 
+#define LINUX_LDT_ENTRIES			8192	/* Maximum number of LDT entries supported. */
+#define LINUX_LDT_ENTRY_SIZE		8		/* The size of each LDT entry. */
 
-struct user_desc {
-	uint32_t entry_number;
-	uint32_t base_addr;
-	uint32_t limit;
-	uint32_t seg_32bit:1;
-	uint32_t contents:2;
-	uint32_t read_exec_only:1;
-	uint32_t limit_in_pages:1;
-	uint32_t seg_not_present:1;
-	uint32_t useable:1;
-#ifdef _M_X64
-	uint32_t lm:1;
-#endif
-};
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
 
+	struct user_desc {
+		unsigned int  entry_number;
+		unsigned int  base_addr;
+		unsigned int  limit;
+		unsigned int  seg_32bit:1;
+		unsigned int  contents:2;
+		unsigned int  read_exec_only:1;
+		unsigned int  limit_in_pages:1;
+		unsigned int  seg_not_present:1;
+		unsigned int  useable:1;
+	#ifdef _M_X64
+		unsigned int  lm:1;
+	#endif
+	};
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
+
+#define LINUX_MODIFY_LDT_CONTENTS_DATA		0
+#define LINUX_MODIFY_LDT_CONTENTS_STACK		1
+#define LINUX_MODIFY_LDT_CONTENTS_CODE		2
 
 //-----------------------------------------------------------------------------
 
-#pragma warning(pop)
-
-#endif		// __UAPI_H_
+#endif		// __LINUX_LDT_H_

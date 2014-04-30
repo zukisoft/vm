@@ -180,7 +180,6 @@
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="ModRM.h" />
     <ClInclude Include="Thunk.h" />
-    <ClInclude Include="uapi.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
