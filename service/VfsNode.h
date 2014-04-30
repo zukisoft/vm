@@ -25,6 +25,7 @@
 #pragma once
 
 #include <queue>
+#include <linux/types.h>
 #include "tstring.h"
 #include "AutoCriticalSection.h"
 #include "CriticalSection.h"
@@ -79,9 +80,9 @@ public:
 	// GroupId
 	//
 	// Gets/sets the node owner group id
-	__declspec(property(get=getGroupId, put=putGroupId)) gid_t GroupId;
-	gid_t getGroupId(void) const { return m_gid; }
-	void putGroupId(gid_t value);
+	__declspec(property(get=getGroupId, put=putGroupId)) uapi::gid_t GroupId;
+	uapi::gid_t getGroupId(void) const { return m_gid; }
+	void putGroupId(uapi::gid_t value);
 
 	// Index
 	//
@@ -92,23 +93,23 @@ public:
 	// Mode
 	//
 	// Gets/sets the mode flags for this node
-	__declspec(property(get=getMode, put=putMode)) mode_t Mode;
-	uint32_t getMode(void) const { return m_mode; }
-	void putMode(mode_t value);
+	__declspec(property(get=getMode, put=putMode)) uapi::mode_t Mode;
+	uapi::mode_t getMode(void) const { return m_mode; }
+	void putMode(uapi::mode_t value);
 
 	// UserId
 	//
 	// Gets/sets the node owner user id
-	__declspec(property(get=getUserId, put=putUserId)) uid_t UserId;
-	uid_t getUserId(void) const { return m_uid; }
-	void putUserId(uid_t value);
+	__declspec(property(get=getUserId, put=putUserId)) uapi::uid_t UserId;
+	uapi::uid_t getUserId(void) const { return m_uid; }
+	void putUserId(uapi::uid_t value);
 
 protected:
 
 	// Instance Constructors
 	//
-	VfsNode(mode_t mode) : m_index(AllocateIndex()), m_mode(mode) { /*TODO: check index >= 0 */ }
-	VfsNode(mode_t mode, uid_t uid, gid_t gid) : m_index(AllocateIndex()), m_mode(mode), m_uid(uid), m_gid(gid) {}
+	VfsNode(uapi::mode_t mode) : m_index(AllocateIndex()), m_mode(mode) { /*TODO: check index >= 0 */ }
+	VfsNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid) : m_index(AllocateIndex()), m_mode(mode), m_uid(uid), m_gid(gid) {}
 
 	//-------------------------------------------------------------------------
 	// Protected Member Functions
@@ -140,9 +141,9 @@ private:
 	// Member Variables
 
 	const int32_t				m_index;			// Node index
-	mode_t						m_mode;				// Node mode flags
-	uid_t						m_uid = 0;			// Node owner
-	gid_t						m_gid = 0;			// Node owner
+	uapi::mode_t				m_mode;				// Node mode flags
+	uapi::uid_t					m_uid = 0;			// Node owner
+	uapi::gid_t					m_gid = 0;			// Node owner
 	volatile long				m_aliases = 0;		// Aliases (hard links)
 
 	static int32_t				s_next;				// Next sequential index

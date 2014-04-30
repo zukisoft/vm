@@ -28,7 +28,7 @@
 //-----------------------------------------------------------------------------
 // mknodat
 
-__int3264 rpc297_mknodat(handle_t rpchandle, fshandle_t dirhandle, charptr_t pathname, mode_t mode, dev_t dev, fshandle_t* fshandle)
+__int3264 rpc297_mknodat(handle_t rpchandle, fshandle_t dirhandle, charptr_t pathname, uapi::mode_t mode, uapi::dev_t dev, fshandle_t* fshandle)
 {
 	UNREFERENCED_PARAMETER(rpchandle);
 	UNREFERENCED_PARAMETER(dirhandle);

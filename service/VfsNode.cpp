@@ -158,7 +158,7 @@ std::tstring VfsNode::GenerateTemporaryFileName(void)
 //-----------------------------------------------------------------------------
 // VfsNode::putGroupId
 
-void VfsNode::putGroupId(gid_t value)
+void VfsNode::putGroupId(uapi::gid_t value)
 {
 	UNREFERENCED_PARAMETER(value);
 	throw Exception(E_NOTIMPL);
@@ -167,7 +167,7 @@ void VfsNode::putGroupId(gid_t value)
 //-----------------------------------------------------------------------------
 // VfsNode::putMode
 
-void VfsNode::putMode(mode_t value)
+void VfsNode::putMode(uapi::mode_t value)
 {
 	UNREFERENCED_PARAMETER(value);
 	throw Exception(E_NOTIMPL);
@@ -176,7 +176,7 @@ void VfsNode::putMode(mode_t value)
 //-----------------------------------------------------------------------------
 // VfsNode::putUserId
 
-void VfsNode::putUserId(uid_t value)
+void VfsNode::putUserId(uapi::uid_t value)
 {
 	UNREFERENCED_PARAMETER(value);
 	throw Exception(E_NOTIMPL);

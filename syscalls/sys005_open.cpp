@@ -45,12 +45,14 @@ handle_t rpc_bind_thread(void);
 //	flags			- Flags passed into open()
 //	mode			- Mode passed into open()
 //
-int open_physical(const FsObject& object, int flags, mode_t mode)
+int open_physical(const FsObject& object, int flags, uapi::mode_t mode)
 {
 	DWORD		access;							// Win32 access mask
 	DWORD		share = 0;						// Win32 share mask
 	DWORD		disposition;					// Win32 disposition mask
 	DWORD		attributes = 0;					// Win32 attributes mask
+
+	UNREFERENCED_PARAMETER(mode);
 
 	// TODO
 	//SECURITY_ATTRIBUTES securityattrs;
@@ -58,7 +60,7 @@ int open_physical(const FsObject& object, int flags, mode_t mode)
 	//securityattrs.lpSecurityDescriptor = nullptr;
 	//securityattrs.bInheritHandle = TRUE;
 
-	const wchar_t* path = object.physical.ospath;
+	//const wchar_t* path = object.physical.ospath;
 
 	// Convert the Linux flags into a Windows access mask; this must exist
 	switch(flags & LINUX_O_ACCMODE) {
@@ -117,7 +119,7 @@ int sys005_open(PCONTEXT context)
 
 	FsObject				fsobject;				// fsobject_t from remote
 	int						flags;					// Flags argument value
-	mode_t					mode;					// Mode argument value
+	uapi::mode_t			mode;					// Mode argument value
 
 	// Get a bound RPC handle for the remote system calls service
 	handle_t rpc = rpc_bind_thread();
@@ -125,7 +127,7 @@ int sys005_open(PCONTEXT context)
 	
 	// Pull out the flags and mode parameters from the CONTEXT object
 	flags = static_cast<int>(context->Ecx);
-	mode = static_cast<mode_t>(context->Edx);
+	mode = static_cast<uapi::mode_t>(context->Edx);
 
 	// Invoke the remote method to get information about the requested object
 	__int3264 result = rpc005_open(rpc, reinterpret_cast<charptr_t>(context->Ebx), flags, mode, &fsobject);

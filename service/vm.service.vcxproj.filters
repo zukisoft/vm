@@ -78,6 +78,9 @@
     <Filter Include="External Libraries\lzma">
       <UniqueIdentifier>{e7bc0f43-14ed-4d23-93a0-7d9cc6815149}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common\linux">
+      <UniqueIdentifier>{b27f5fa3-9be1-4996-b101-e6a1707377df}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -270,6 +273,15 @@
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\LzmaStreamReader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\stat.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\types.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linuxtypes.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
@@ -498,6 +510,9 @@
   </ItemGroup>
   <ItemGroup>
     <Midl Include="vm.service.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="linuxtypes.idl">
       <Filter>Source Files</Filter>
     </Midl>
   </ItemGroup>

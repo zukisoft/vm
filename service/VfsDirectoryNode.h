@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 #include <linux/stat.h>
+#include <linux/types.h>
 #include "AutoReaderLock.h"
 #include "AutoWriterLock.h"
 #include "ReaderWriterLock.h"
@@ -54,8 +55,8 @@ public:
 
 	// Instance Constructors
 	//
-	VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode) : VfsDirectoryNode(parent, mode, 0, 0) {}
-	VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode, uid_t uid, gid_t gid);
+	VfsDirectoryNode(const VfsDirectoryNodePtr& parent, uapi::mode_t mode) : VfsDirectoryNode(parent, mode, 0, 0) {}
+	VfsDirectoryNode(const VfsDirectoryNodePtr& parent, uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid);
 
 	// Destructor
 	//

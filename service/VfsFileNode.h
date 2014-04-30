@@ -25,6 +25,7 @@
 #pragma once
 				
 #include <linux/stat.h>
+#include <linux/types.h>
 #include <memory>
 #include "tstring.h"
 #include "Exception.h"
@@ -53,10 +54,10 @@ public:
 
 	// Instance Constructors
 	//
-	VfsFileNode(mode_t mode) : VfsFileNode(mode, 0, 0) {}
-	VfsFileNode(mode_t mode, uid_t uid, gid_t gid);
-	VfsFileNode(mode_t mode, StreamReader& data) : VfsFileNode(mode, 0, 0, data) {}
-	VfsFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data);
+	VfsFileNode(uapi::mode_t mode) : VfsFileNode(mode, 0, 0) {}
+	VfsFileNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid);
+	VfsFileNode(uapi::mode_t mode, StreamReader& data) : VfsFileNode(mode, 0, 0, data) {}
+	VfsFileNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, StreamReader& data);
 
 	// Destructor
 	//

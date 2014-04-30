@@ -126,6 +126,7 @@
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
+      <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -169,6 +170,7 @@
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
+      <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -216,6 +218,7 @@
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
+      <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -263,6 +266,7 @@
       <ServerStubFile>$(ProjectName)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
       <DefaultCharType>Unsigned</DefaultCharType>
+      <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
       <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
@@ -310,6 +314,9 @@
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\GZipStreamReader.h" />
+    <ClInclude Include="..\common\linuxtypes.h" />
+    <ClInclude Include="..\common\linux\stat.h" />
+    <ClInclude Include="..\common\linux\types.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
     <ClInclude Include="..\common\LzmaStreamReader.h" />
     <ClInclude Include="..\common\LzopStreamReader.h" />
@@ -593,6 +600,12 @@
     <ResourceCompile Include="vm.service.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Midl Include="linuxtypes.idl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </Midl>
     <Midl Include="vm.service.idl" />
   </ItemGroup>
   <ItemGroup>

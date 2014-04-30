@@ -40,7 +40,7 @@ ReaderWriterLock VfsDirectoryNode::s_lock;
 //	uid			- Initial owner uid for the virtual directory
 //	gid			- Initial owner gid for the virtual directory
 
-VfsDirectoryNode::VfsDirectoryNode(const VfsDirectoryNodePtr& parent, mode_t mode, uid_t uid, gid_t gid) 
+VfsDirectoryNode::VfsDirectoryNode(const VfsDirectoryNodePtr& parent, uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid) 
 	: VfsNode(mode, uid, gid), m_parent(parent)
 {
 	_ASSERTE((mode & S_IFMT) == S_IFDIR);

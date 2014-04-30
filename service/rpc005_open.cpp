@@ -28,7 +28,7 @@
 //-----------------------------------------------------------------------------
 // open
 
-__int3264 rpc005_open(handle_t client, charptr_t pathname, int32_t flags, mode_t mode, fsobject_t* fsobject)
+__int3264 rpc005_open(handle_t client, charptr_t pathname, int32_t flags, uapi::mode_t mode, fsobject_t* fsobject)
 {
 	UNREFERENCED_PARAMETER(client);
 	UNREFERENCED_PARAMETER(flags);

@@ -20,34 +20,24 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-import "wtypes.idl";				// Import Win32 type declarations
+import "wtypes.idl";
+import "linuxtypes.idl";
 
 //-----------------------------------------------------------------------------
 // Type Declarations
-
-// stdint typedefs
-//
-typedef signed char					int8_t;
-typedef unsigned char				uint8_t;
-typedef short						int16_t;
-typedef unsigned short				uint16_t;
-typedef __int32						int32_t;
-typedef unsigned __int32			uint32_t;
-typedef __int64						int64_t;
-typedef unsigned __int64			uint64_t;
 
 // charptr_t / wcharptr_t - [unique] character string pointers
 //
 typedef [string, unique] char*		charptr_t;
 typedef [string, unique] wchar_t*	wcharptr_t;
 
-// LINUX
-// TODO: WORDS
-typedef unsigned __int32			dev_t;
-typedef unsigned __int32			gid_t;
-typedef unsigned __int32			mode_t;
-typedef unsigned __int32			uid_t;
-
+//// LINUX
+//// TODO: WORDS
+//typedef unsigned __int32			dev_t;
+//typedef unsigned __int32			gid_t;
+//typedef unsigned __int32			mode_t;
+//typedef unsigned __int32			uid_t;
+//
 //typedef __int32						off_t;
 typedef __int64						loff_t;
 
@@ -173,14 +163,14 @@ typedef struct {
 
 interface RemoteSystemCalls
 {
-	__int3264 rpc005_open		([in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out, ref] fsobject_t* fsnode);
+	__int3264 rpc005_open		([in] charptr_t pathname, [in] int32_t flags, [in] linux_mode_t mode, [out, ref] fsobject_t* fsnode);
 	__int3264 rpc006_close		([in] fshandle_t fshandle);
 	__int3264 rpc010_unlink		([in] charptr_t pathname);
 
-	__int3264 rpc014_mknod		([in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
+	__int3264 rpc014_mknod		([in] charptr_t pathname, [in] linux_mode_t mode, [in] linux_dev_t dev, [out] fshandle_t* fshandle);
 
-	__int3264 rpc295_openat		([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] int32_t flags, [in] mode_t mode, [out] fshandle_t* fshandle);
-	__int3264 rpc297_mknodat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] mode_t mode, [in] dev_t dev, [out] fshandle_t* fshandle);
+	__int3264 rpc295_openat		([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] int32_t flags, [in] linux_mode_t mode, [out] fshandle_t* fshandle);
+	__int3264 rpc297_mknodat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] linux_mode_t mode, [in] linux_dev_t dev, [out] fshandle_t* fshandle);
 }
 
 // RemoteSystemCalls endpoint constant

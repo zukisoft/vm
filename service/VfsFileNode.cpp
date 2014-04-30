@@ -34,7 +34,7 @@
 //	uid			- Initial owner uid for the virtual file
 //	gid			- Initial owner gid for the virtual file
 
-VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid, gid) 
+VfsFileNode::VfsFileNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid) : VfsNode(mode, uid, gid) 
 {
 	_ASSERTE((mode & S_IFMT) == S_IFREG);
 	if((mode & S_IFMT) != S_IFREG) throw Exception(E_VFS_INVALIDNODEMODE, mode);
@@ -58,7 +58,7 @@ VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid) : VfsNode(mode, uid,
 //	gid			- Initial owner gid for the virtual file
 //	data		- Initial data stream for the virtual file
 
-VfsFileNode::VfsFileNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) 
+VfsFileNode::VfsFileNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, StreamReader& data) 
 	: VfsFileNode(mode, uid, gid) 
 {
 	const int BUFFER_SIZE = (64 KiB);				// Local file buffer size

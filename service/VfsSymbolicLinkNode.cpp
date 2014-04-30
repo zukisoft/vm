@@ -35,7 +35,7 @@
 //	gid			- Initial owner gid for the symbolic link
 //	target		- Target path of the symbolic link
 
-VfsSymbolicLinkNode::VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, const char_t* target) 
+VfsSymbolicLinkNode::VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, const char_t* target) 
 	: VfsNode(mode | S_IRWXU | S_IRWXG | S_IRWXO, uid, gid), m_target(target)
 {
 	_ASSERTE((mode & S_IFMT) == S_IFLNK);
@@ -52,7 +52,7 @@ VfsSymbolicLinkNode::VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, cons
 //	gid			- Initial owner gid for the symbolic link
 //	data		- StreamReader instance containing the target string
 
-VfsSymbolicLinkNode::VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) 
+VfsSymbolicLinkNode::VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, StreamReader& data) 
 	: VfsNode(mode | S_IRWXU | S_IRWXG | S_IRWXO, uid, gid)
 {
 	const int BUFFER_SIZE = (1 KiB);				// Local file buffer size

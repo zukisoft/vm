@@ -20,25 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"					// Include project pre-compiled headers
-#include "vm.service.h"				// Include project RPC declarations
-
-#pragma warning(push, 4)			// Enable maximum compiler warnings
-
-//-----------------------------------------------------------------------------
-// mknod
-
-__int3264 rpc014_mknod(handle_t rpchandle, charptr_t pathname, uapi::mode_t mode, uapi::dev_t dev, fshandle_t* fshandle)
+[ local ]
+interface LinuxTypes
 {
-	UNREFERENCED_PARAMETER(rpchandle);
-	UNREFERENCED_PARAMETER(pathname);
-	UNREFERENCED_PARAMETER(mode);
-	UNREFERENCED_PARAMETER(dev);
-	UNREFERENCED_PARAMETER(fshandle);
-
-	return -LINUX_ENOSYS;
+	#include "linuxtypes.h"
 }
 
-//---------------------------------------------------------------------------
-
-#pragma warning(pop)
+//-----------------------------------------------------------------------------

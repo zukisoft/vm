@@ -81,7 +81,7 @@ VfsResolveResult VirtualFileSystem::ResolvePath(const VfsDirectoryNodePtr& root,
 		if(next == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
 
 		// Only directory and symbolic link nodes can be resolved as part of the branch
-		mode_t nodetype = next->Mode & S_IFMT;
+		uapi::mode_t nodetype = next->Mode & S_IFMT;
 		
 		if(nodetype == S_IFDIR) {
 

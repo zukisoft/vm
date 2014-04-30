@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 #include <linux/stat.h>
+#include <linux/types.h>
 #include "Exception.h"
 #include "StreamReader.h"
 #include "VfsNode.h"
@@ -52,10 +53,10 @@ public:
 
 	// Instance Constructors
 	//
-	VfsSymbolicLinkNode(mode_t mode, const char_t* target) : VfsSymbolicLinkNode(mode, 0, 0, target) {}
-	VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, const char_t* target);
-	VfsSymbolicLinkNode(mode_t mode, StreamReader& data) : VfsSymbolicLinkNode(mode, 0, 0, data) {}
-	VfsSymbolicLinkNode(mode_t mode, uid_t uid, gid_t gid, StreamReader& data) ;
+	VfsSymbolicLinkNode(uapi::mode_t mode, const char_t* target) : VfsSymbolicLinkNode(mode, 0, 0, target) {}
+	VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, const char_t* target);
+	VfsSymbolicLinkNode(uapi::mode_t mode, StreamReader& data) : VfsSymbolicLinkNode(mode, 0, 0, data) {}
+	VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, StreamReader& data) ;
 
 	// Destructor
 	//
