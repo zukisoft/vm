@@ -81,15 +81,15 @@ VfsResolveResult VirtualFileSystem::ResolvePath(const VfsDirectoryNodePtr& root,
 		if(next == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
 
 		// Only directory and symbolic link nodes can be resolved as part of the branch
-		uapi::mode_t nodetype = next->Mode & S_IFMT;
+		uapi::mode_t nodetype = next->Mode;
 		
-		if(nodetype == S_IFDIR) {
+		if(uapi::S_ISDIR(nodetype)) {
 
 			branch = std::dynamic_pointer_cast<VfsDirectoryNode>(next);
 			if(branch == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
 		}
 
-		else if(nodetype == S_IFLNK) {
+		else if(uapi::S_ISLNK(nodetype)) {
 
 			VfsSymbolicLinkNodePtr link = std::dynamic_pointer_cast<VfsSymbolicLinkNode>(next);
 			if(link == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
@@ -111,7 +111,7 @@ VfsResolveResult VirtualFileSystem::ResolvePath(const VfsDirectoryNodePtr& root,
 	if(leaf == nullptr) return VfsResolveResult(VfsResolveStatus::FoundBranch, branch, leaf, alias);
 
 	// If the leaf is a symbolic link and we are to chase it, try to now resolve that recursively
-	if(((leaf->Mode & S_IFMT) == S_IFLNK) && (followlink)) {
+	if(uapi::S_ISLNK(leaf->Mode) && (followlink)) {
 		
 		VfsSymbolicLinkNodePtr link = std::dynamic_pointer_cast<VfsSymbolicLinkNode>(leaf);
 		if(link == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
@@ -143,14 +143,14 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 		if(!resolved) { /* TODO: ERROR */ }
 		
 		// Depending on the type of node being enumerated, construct the appropriate object
-		switch(file.Mode & S_IFMT) {
+		switch(file.Mode & LINUX_S_IFMT) {
 
 			// S_IFREG
 			//
 			// FoundBranch	--> Create a new file node
 			// FoundLeaf	--> ERROR: The alias already exists
 			//	
-			case S_IFREG:
+			case LINUX_S_IFREG:
 
 				if(resolved.Status != VfsResolveStatus::FoundBranch) { /* TODO: ERROR - ALIAS EXISTS */ }
 				resolved.Branch->AddAlias(resolved.Alias, std::make_shared<VfsFileNode>(file.Mode, file.UserId, file.GroupId, file.Data));
@@ -161,7 +161,7 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 			// FoundBranch	--> Create a new directory node
 			// FoundLeaf	--> Directory exists, reset mode, uid and gid to match the new entry
 			//
-			case S_IFDIR:
+			case LINUX_S_IFDIR:
 
 				if(resolved.Status == VfsResolveStatus::FoundLeaf) break;  // <---- TODO: Change mode, uid and gid
 				resolved.Branch->AddAlias(resolved.Alias, std::make_shared<VfsDirectoryNode>(resolved.Branch, file.Mode, file.UserId, file.GroupId));
@@ -172,25 +172,25 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 			// FoundBranch	--> Create a new symbolic link node
 			// FoundLeaf	--> ERROR: The alias already exists
 			//
-			case S_IFLNK:
+			case LINUX_S_IFLNK:
 				
 				if(resolved.Status == VfsResolveStatus::FoundBranch) { /* TODO: ERROR - ALIAS EXISTS */ }
 				resolved.Branch->AddAlias(resolved.Alias, std::make_shared<VfsSymbolicLinkNode>(file.Mode, file.UserId, file.GroupId, file.Data));
 				break;
 
-			case S_IFCHR:
+			case LINUX_S_IFCHR:
 				_RPTF0(_CRT_ASSERT, "initramfs: S_IFCHR not implemented yet");
 				break;
 
-			case S_IFBLK:
+			case LINUX_S_IFBLK:
 				_RPTF0(_CRT_ASSERT, "initramfs: S_IFBLK not implemented yet");
 				break;
 
-			case S_IFIFO:
+			case LINUX_S_IFIFO:
 				_RPTF0(_CRT_ASSERT, "initramfs: S_IFIFO not implemented yet");
 				break;
 
-			case S_IFSOCK:
+			case LINUX_S_IFSOCK:
 				_RPTF0(_CRT_ASSERT, "initramfs: S_IFSOCK not implemented yet");
 				break;
 

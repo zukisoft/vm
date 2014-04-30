@@ -36,10 +36,10 @@
 //	target		- Target path of the symbolic link
 
 VfsSymbolicLinkNode::VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, const char_t* target) 
-	: VfsNode(mode | S_IRWXU | S_IRWXG | S_IRWXO, uid, gid), m_target(target)
+	: VfsNode(mode | LINUX_S_IRWXU | LINUX_S_IRWXG | LINUX_S_IRWXO, uid, gid), m_target(target)
 {
-	_ASSERTE((mode & S_IFMT) == S_IFLNK);
-	if((mode & S_IFMT) != S_IFLNK) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+	_ASSERTE(uapi::S_ISLNK(mode));
+	if(!uapi::S_ISLNK(mode)) throw Exception(E_VFS_INVALIDNODEMODE, mode);
 }
 
 //-----------------------------------------------------------------------------
@@ -53,12 +53,12 @@ VfsSymbolicLinkNode::VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uap
 //	data		- StreamReader instance containing the target string
 
 VfsSymbolicLinkNode::VfsSymbolicLinkNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid, StreamReader& data) 
-	: VfsNode(mode | S_IRWXU | S_IRWXG | S_IRWXO, uid, gid)
+	: VfsNode(mode | LINUX_S_IRWXU | LINUX_S_IRWXG | LINUX_S_IRWXO, uid, gid)
 {
 	const int BUFFER_SIZE = (1 KiB);				// Local file buffer size
 
-	_ASSERTE((mode & S_IFMT) == S_IFLNK);
-	if((mode & S_IFMT) != S_IFLNK) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+	_ASSERTE(uapi::S_ISLNK(mode));
+	if(!uapi::S_ISLNK(mode)) throw Exception(E_VFS_INVALIDNODEMODE, mode);
 
 	// Use a 1KiB buffer to read from the stream into the target string
 	uint8_t* buffer = new uint8_t[BUFFER_SIZE];

@@ -77,7 +77,7 @@ typedef __kernel_long_t				__kernel_time_t;
 typedef __kernel_long_t				__kernel_clock_t;
 typedef int							__kernel_timer_t;
 typedef int							__kernel_clockid_t;
-typedef char *						__kernel_caddr_t;
+typedef char*						__kernel_caddr_t;
 typedef unsigned short				__kernel_uid16_t;
 typedef unsigned short				__kernel_gid16_t;
 
@@ -104,6 +104,7 @@ typedef __kernel_uid32_t			linux_uid_t;
 typedef __kernel_gid32_t			linux_gid_t;
 typedef __kernel_uid16_t			linux_uid16_t;
 typedef __kernel_gid16_t			linux_gid16_t;
+typedef __kernel_loff_t				linux_loff_t;
 
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
@@ -125,6 +126,7 @@ namespace uapi {
 	typedef linux_gid_t				gid_t;
 	typedef linux_uid16_t			uid16_t;
 	typedef linux_gid16_t			gid16_t;
+	typedef linux_loff_t			loff_t;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)

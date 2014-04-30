@@ -95,7 +95,7 @@ private:
 	// ROOT_DIRECTORY_MODE
 	//
 	// Defines the mode_t value for the root directory (S_IFDIR | 0755)
-	const uapi::mode_t ROOT_DIRECTORY_MODE = (S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+	const uapi::mode_t ROOT_DIRECTORY_MODE = (LINUX_S_IFDIR | LINUX_S_IRWXU | LINUX_S_IRGRP | LINUX_S_IXGRP | LINUX_S_IROTH | LINUX_S_IXOTH);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

@@ -20,10 +20,11 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
-#include "FileDescriptor.h"				// Include FileDescriptor declarations
-#include "FileDescriptorTable.h"		// Include FileDescriptorTable decls
+#include "stdafx.h"
+#include <linux/fs.h>
+#include "uapi.h"
+#include "FileDescriptor.h"
+#include "FileDescriptorTable.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -70,7 +71,7 @@ int sys140__llseek(PCONTEXT context)
 	if(!SetFilePointerEx(fd.OsHandle, distance, &pointer, context->Edi)) return -LINUX_EINVAL;
 
 	// __llseek returns the new file pointer as a 64-bit signed integer
-	*reinterpret_cast<loff_t*>(context->Esi) = pointer.QuadPart;
+	*reinterpret_cast<uapi::loff_t*>(context->Esi) = pointer.QuadPart;
 
 	return 0;
 }

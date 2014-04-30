@@ -43,8 +43,8 @@ ReaderWriterLock VfsDirectoryNode::s_lock;
 VfsDirectoryNode::VfsDirectoryNode(const VfsDirectoryNodePtr& parent, uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid) 
 	: VfsNode(mode, uid, gid), m_parent(parent)
 {
-	_ASSERTE((mode & S_IFMT) == S_IFDIR);
-	if((mode & S_IFMT) != S_IFDIR) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+	_ASSERTE(uapi::S_ISDIR(mode));
+	if(!uapi::S_ISDIR(mode)) throw Exception(E_VFS_INVALIDNODEMODE, mode);
 }
 
 //-----------------------------------------------------------------------------

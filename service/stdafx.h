@@ -54,6 +54,10 @@
 #include "char_t.h"
 #include "tstring.h"
 
+// Linux
+#include <linux/types.h>
+#include <linux/errno.h>
+
 //---------------------------------------------------------------------------
 // Service Template Library (SVCTL)
 

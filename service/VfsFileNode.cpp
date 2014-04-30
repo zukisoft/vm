@@ -36,8 +36,8 @@
 
 VfsFileNode::VfsFileNode(uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid) : VfsNode(mode, uid, gid) 
 {
-	_ASSERTE((mode & S_IFMT) == S_IFREG);
-	if((mode & S_IFMT) != S_IFREG) throw Exception(E_VFS_INVALIDNODEMODE, mode);
+	_ASSERTE(uapi::S_ISREG(mode));
+	if(!uapi::S_ISREG(mode)) throw Exception(E_VFS_INVALIDNODEMODE, mode);
 
 	// Generate the underlying file name for this node in the temporary folder
 	std::tstring filename = VfsNode::GenerateTemporaryFileName();

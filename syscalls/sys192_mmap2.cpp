@@ -20,12 +20,14 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"						// Include project pre-compiled headers
-#include "uapi.h"						// Include Linux UAPI declarations
-#include "CriticalSection.h"			// Include CriticalSection declarations
-#include "FileDescriptor.h"				// Include FileDescriptor declarations
-#include "FileDescriptorTable.h"		// Include FileDescriptorTable decls
-#include "Thunk.h"						// Include Thunk class declarations
+#include "stdafx.h"
+#include <linux/fcntl.h>
+#include <linux/fs.h>
+#include "uapi.h"
+#include "CriticalSection.h"
+#include "FileDescriptor.h"
+#include "FileDescriptorTable.h"
+#include "Thunk.h"
 
 #pragma warning(push, 4)				// Enable maximum compiler warnings
 
@@ -105,7 +107,7 @@ int mmap2_private(void* addr, size_t length, uint32_t prot, uint32_t flags, int3
 	// Non-anonymous private mappings read memory contents from the source file
 	if((flags & MAP_ANONYMOUS) == 0) {
 
-		loff_t pointer;						// New file pointer position
+		uapi::loff_t pointer;				// New file pointer position
 		int result;							// Result from system call
 
 		// The region needs to be set to PAGE_READWRITE for the data to be loaded

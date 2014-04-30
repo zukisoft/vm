@@ -20,42 +20,21 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __LINUX_FS_H_
+#define __LINUX_FS_H_
 #pragma once
 
 //-----------------------------------------------------------------------------
-// Win32 Declarations
+// include/uapi/linux/fs.h
+//-----------------------------------------------------------------------------
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
-
-// Windows / CRT
-#include <windows.h>			// Include main Windows declarations
-#include <tchar.h>				// Include generic text mappings
-#include <stdint.h>				// Include standard integer declarations
-#include <functional>			// lambda support
-
-#include <rpc.h>
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
-
-#include "char_t.h"
-#include "vm.service.h"
-#include "messages.h"
-
-// Global Linux Declarations
-#include <linux/types.h>
-#include <linux/errno.h>
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
+#define LINUX_SEEK_SET		0	/* seek relative to beginning of file */
+#define LINUX_SEEK_CUR		1	/* seek relative to current file position */
+#define LINUX_SEEK_END		2	/* seek relative to end of file */
+#define LINUX_SEEK_DATA		3	/* seek to the next data */
+#define LINUX_SEEK_HOLE		4	/* seek to the next hole */
+#define LINUX_SEEK_MAX		LINUX_SEEK_HOLE
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#endif		// __LINUX_FS_H_

@@ -24,43 +24,55 @@
 #define __LINUX_STAT_H_
 #pragma once
 
-#pragma warning(push, 4)
+#include "types.h"
 
-#define S_IFMT		0170000
-#define S_IFSOCK	0140000
-#define S_IFLNK		0120000
-#define S_IFREG		0100000
-#define S_IFBLK		0060000
-#define S_IFDIR		0040000
-#define S_IFCHR		0020000
-#define S_IFIFO		0010000
-#define S_ISUID		0004000
-#define S_ISGID		0002000
-#define S_ISVTX		0001000
+//-----------------------------------------------------------------------------
+// include/uapi/linux/stat.h
+//-----------------------------------------------------------------------------
 
-#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
-#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
-#define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
-#define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
-#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
-#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
-#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
+// note: all these constants are in octal
+//
+#define LINUX_S_IFMT		0170000
+#define LINUX_S_IFSOCK		0140000
+#define LINUX_S_IFLNK		0120000
+#define LINUX_S_IFREG		0100000
+#define LINUX_S_IFBLK		0060000
+#define LINUX_S_IFDIR		0040000
+#define LINUX_S_IFCHR		0020000
+#define LINUX_S_IFIFO		0010000
+#define LINUX_S_ISUID		0004000
+#define LINUX_S_ISGID		0002000
+#define LINUX_S_ISVTX		0001000
 
-#define S_IRWXU		0700
-#define S_IRUSR		0400
-#define S_IWUSR		0200
-#define S_IXUSR		0100
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
 
-#define S_IRWXG		0070
-#define S_IRGRP		0040
-#define S_IWGRP		0020
-#define S_IXGRP		0010
+	inline bool S_ISLNK(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFLNK); }
+	inline bool S_ISREG(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFREG); }
+	inline bool S_ISDIR(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFDIR); }
+	inline bool S_ISCHR(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFCHR); }
+	inline bool S_ISBLK(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFBLK); }
+	inline bool S_ISFIFO(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFIFO); }
+	inline bool S_ISSOCK(mode_t mode)	{ return ((mode & LINUX_S_IFMT) == LINUX_S_IFSOCK); }
 
-#define S_IRWXO		0007
-#define S_IROTH		0004
-#define S_IWOTH		0002
-#define S_IXOTH		0001
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
 
-#pragma warning(pop)
+#define LINUX_S_IRWXU		0700
+#define LINUX_S_IRUSR		0400
+#define LINUX_S_IWUSR		0200
+#define LINUX_S_IXUSR		0100
+
+#define LINUX_S_IRWXG		0070
+#define LINUX_S_IRGRP		0040
+#define LINUX_S_IWGRP		0020
+#define LINUX_S_IXGRP		0010
+
+#define LINUX_S_IRWXO		0007
+#define LINUX_S_IROTH		0004
+#define LINUX_S_IWOTH		0002
+#define LINUX_S_IXOTH		0001
+
+//-----------------------------------------------------------------------------
 
 #endif		// __LINUX_STAT_H_
