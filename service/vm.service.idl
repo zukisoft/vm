@@ -74,16 +74,16 @@ typedef struct {
 } fsobject_t;
 
 //-----------------------------------------------------------------------------
-// Interface RemoteSystemCalls
+// Interface SystemCalls
 
 [
 	version(1.0),
-	uuid(65AF53FB-CA7B-43DA-886E-A5F501FBACA9),
+	uuid(AD8C308F-FB10-449A-807A-62547467A5E8),
 	pointer_default(unique),
-	endpoint("ncalrpc:[vm.service.RemoteSystemCalls]"),
+	endpoint("ncalrpc:[vm.service.SystemCalls]"),
 ]
 
-interface RemoteSystemCalls
+interface SystemCalls
 {
 	__int3264 rpc005_open		([in] charptr_t pathname, [in] int32_t flags, [in] linux_mode_t mode, [out, ref] fsobject_t* fsnode);
 	__int3264 rpc006_close		([in] fshandle_t fshandle);
@@ -95,11 +95,11 @@ interface RemoteSystemCalls
 	__int3264 rpc297_mknodat	([in] fshandle_t dirhandle, [in] charptr_t pathname, [in] linux_mode_t mode, [in] linux_dev_t dev, [out] fshandle_t* fshandle);
 }
 
-// RemoteSystemCalls endpoint constant
+// SystemCalls endpoint constant
 cpp_quote("#ifdef _UNICODE")
-cpp_quote("#define ENDPOINT_REMOTESYSTEMCALLS reinterpret_cast<unsigned short*>(L\"vm.service.RemoteSystemCalls\")")
+cpp_quote("#define ENDPOINT_SYSTEMCALLS reinterpret_cast<unsigned short*>(L\"vm.service.SystemCalls\")")
 cpp_quote("#else")
-cpp_quote("#define ENDPOINT_REMOTESYSTEMCALLS reinterpret_cast<unsigned char*>(\"vm.service.RemoteSystemCalls\")")
+cpp_quote("#define ENDPOINT_SYSTEMCALLS reinterpret_cast<unsigned char*>(\"vm.service.SystemCalls\")")
 cpp_quote("#endif")
 
 //---------------------------------------------------------------------------

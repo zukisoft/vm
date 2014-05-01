@@ -36,7 +36,7 @@ static RPC_BINDING_HANDLE_TEMPLATE_V1 REMOTESYSTEMCALLS_TEMPLATE = {
 	0,									// Flags
 	RPC_PROTSEQ_LRPC,					// ProtocolSequence
 	nullptr,							// NetworkAddress
-	ENDPOINT_REMOTESYSTEMCALLS,			// StringEndpoint
+	ENDPOINT_SYSTEMCALLS,				// StringEndpoint
 	nullptr,							// Reserved
 	GUID_NULL							// ObjectUuid
 };
@@ -76,7 +76,7 @@ handle_t rpc_bind_thread(void)
 	if(bound) return t_rpchandle;
 
 	// TODO: Just call Bind() every time for now
-	RPC_STATUS result = RpcBindingBind(nullptr, t_rpchandle, RemoteSystemCalls_v1_0_c_ifspec);
+	RPC_STATUS result = RpcBindingBind(nullptr, t_rpchandle, SystemCalls_v1_0_c_ifspec);
 	bound = 1;
 	return (result == RPC_S_OK) ? t_rpchandle : nullptr;
 }

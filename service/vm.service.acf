@@ -21,4 +21,4 @@
 //-----------------------------------------------------------------------------
 
 [explicit_handle]
-interface RemoteSystemCalls {}
+interface SystemCalls {}

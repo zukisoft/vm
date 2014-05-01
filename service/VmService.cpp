@@ -56,7 +56,7 @@ DWORD VmService::Init(DWORD dwArgc, LPTSTR *rgszArgv)
 	//DebugBreak();
 
 	// Attept to register the remote system call RPC interface
-	RPC_STATUS rpcresult = RpcServerRegisterIf(RemoteSystemCalls_v1_0_s_ifspec, nullptr, nullptr);
+	RPC_STATUS rpcresult = RpcServerRegisterIf(SystemCalls_v1_0_s_ifspec, nullptr, nullptr);
 	if(rpcresult != RPC_S_OK) return rpcresult;
 
 	// Attempt to create the service STOP kernel event object
@@ -110,7 +110,7 @@ void VmService::Term(void)
 	m_hevtStop = NULL;
 
 	// Unregister the remote system call RPC interface
-	RpcServerUnregisterIf(RemoteSystemCalls_v1_0_s_ifspec, nullptr, 1);
+	RpcServerUnregisterIf(SystemCalls_v1_0_s_ifspec, nullptr, 1);
 }
 
 //---------------------------------------------------------------------------

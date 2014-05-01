@@ -109,7 +109,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 #endif	// _DEBUG
 
-	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, RemoteSystemCalls_v1_0_s_ifspec, nullptr);
+	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls_v1_0_s_ifspec, nullptr);
 	if(rpcresult != RPC_S_OK) {
 	}
 
