@@ -56,7 +56,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	///////
 
 	// Use manual dispatching for now; haven't implemented a new ServiceModule<> class yet
-	ServiceTable services = { ServiceTableEntry<VmService>(L"Instance Service") };
+	ServiceTable services = { ServiceTableEntry<VmService>(IDS_VMSERVICE_NAME) };
 	services.Dispatch();
 
 	return 0;
