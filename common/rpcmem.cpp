@@ -35,8 +35,8 @@
 
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
 {
-	// Use the COM task memory allocator for RPC
-	return CoTaskMemAlloc(len);
+	// Use the C runtime library heap to participate in leak checking
+	return new uint8_t[len];
 }
 
 //-----------------------------------------------------------------------------
@@ -50,8 +50,8 @@ void __RPC_FAR * __RPC_USER midl_user_allocate(size_t len)
 
 void __RPC_USER midl_user_free(void __RPC_FAR* ptr)
 {
-	// Use the COM task memory allocator for RPC
-	CoTaskMemFree(ptr);
+	// Use the C runtime library to particpate in leak checking
+	delete[] reinterpret_cast<uint8_t*>(ptr);
 }
 
 //---------------------------------------------------------------------------
