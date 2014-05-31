@@ -34,21 +34,6 @@
       <UniqueIdentifier>{1edb1ceb-8d74-4ff5-b348-6a35554bf66f}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="External Libraries\svctl\Header Files">
-      <UniqueIdentifier>{999129cf-3136-484d-be75-38348ceb6f63}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="External Libraries\svctl\Resource Files">
-      <UniqueIdentifier>{dffdc1f5-f937-4d3e-84c1-cb8d97c7ef94}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="External Libraries\svctl\Source Files">
-      <UniqueIdentifier>{5c003310-8f7d-4496-977c-863b0361a784}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
     <Filter Include="External Libraries\zlib">
       <UniqueIdentifier>{d17e3b80-cbce-4317-8b0b-401f8eb5b9d9}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
@@ -85,66 +70,6 @@
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctl.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlapi.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlcom.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlcrt.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlctl.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlcui.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlevt.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlgui.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlhlr.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlins.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctllib.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctllog.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlmap.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlmgr.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlmui.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlreg.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlres.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlsts.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlsvc.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\svctl\svctlui.h">
-      <Filter>External Libraries\svctl\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VmService.h">
       <Filter>Header Files</Filter>
@@ -293,61 +218,13 @@
     <ClInclude Include="..\common\linux\errno.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\external\servicelib\servicelib.h">
+      <Filter>External Libraries\svctl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlapi.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlcom.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlctl.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlcui.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlevt.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlgui.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlhlr.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlins.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctllib.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctllog.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlmap.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlmgr.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlmui.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlreg.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlsts.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlsvc.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlui.cpp">
-      <Filter>External Libraries\svctl\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
@@ -502,11 +379,11 @@
     <ClCompile Include="..\common\LzmaStreamReader.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\external\servicelib\servicelib.cpp">
+      <Filter>External Libraries\svctl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\external\svctl\svctl.rc">
-      <Filter>External Libraries\svctl\Resource Files</Filter>
-    </ResourceCompile>
     <ResourceCompile Include="..\tmp\version\version.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>

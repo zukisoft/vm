@@ -31,63 +31,31 @@
 //---------------------------------------------------------------------------
 // Class VmService
 
-class VmService : public SVCTL::Service<VmService>
+class VmService : public Service<VmService>
 {
 public:
 
-	VmService();
+	VmService()=default;
 
-	//-----------------------------------------------------------------------
-	// SVCTL Declarations
-
-	DECLARE_SERVICE_NAME_ID(IDS_VMSERVICE_NAME)
-	DECLARE_SERVICE_DISPLAYNAME_ID(IDS_VMSERVICE_DISPLAYNAME)
-	DECLARE_SERVICE_DESCRIPTION_ID(IDS_VMSERVICE_DESCRIPTION)
-	DECLARE_SERVICE_TYPE(SERVICE_WIN32_OWN_PROCESS)
-	DECLARE_SERVICE_START_TYPE(SERVICE_DEMAND_START)
-
-	//-----------------------------------------------------------------------
-	// SVCTL Control Map
-
-	BEGIN_CONTROL_MAP(VmService)
-		HANDLER_EVENT(SERVICE_CONTROL_STOP, m_hevtStop)
-	END_CONTROL_MAP()
-
-	//-----------------------------------------------------------------------
-	// SVCTL Parameter Map
-
-	//BEGIN_PARAMETER_MAP()
-	//	DWORD_PARAMETER_ID(IDP_DISKACTIVITYSERVICE_INTERVAL, 2500)
-	//	BOOLEAN_PARAMETER_ID(IDP_DISKACTIVITYSERVICE_FILESIZE, 8)
-	//END_PARAMETER_MAP()
+	// CONTROL_HANDLER_MAP
+	BEGIN_CONTROL_HANDLER_MAP(VmService)
+		CONTROL_HANDLER(SERVICE_CONTROL_STOP, OnStop)
+	END_CONTROL_HANDLER_MAP()
 
 private:
 
 	VmService(const VmService &rhs)=delete;
 	VmService& operator=(const VmService &rhs)=delete;
 
-	//-----------------------------------------------------------------------
-	// Private Member Functions
-
-	// Init (Service)
+	// OnStart (Service)
 	//
-	// Performs service initializations
-	DWORD Init(DWORD dwArgc, LPTSTR *rgszArgv);
+	// Invoked when the service is started
+	void OnStart(int argc, LPTSTR* argv);
 
-	// Run (Service)
+	// OnStop
 	//
-	// Executes the main service loop
-	DWORD Run(void);
-
-	// Term (Service)
-	//
-	// Performs service shutdown
-	void Term(void);
-
-	//-----------------------------------------------------------------------
-	// Member Variables
-
-	HANDLE			m_hevtStop;			// Service STOP kernel event object
+	// Invoked when the service is stopped
+	void OnStop(void);
 };
 
 //---------------------------------------------------------------------------

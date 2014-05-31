@@ -39,7 +39,6 @@
 #include <memory>
 #include <string>
 
-
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "rpcns4.lib")
 
@@ -59,9 +58,9 @@
 #include <linux/errno.h>
 
 //---------------------------------------------------------------------------
-// Service Template Library (SVCTL)
+// Service Template Library
 
-#include <svctl.h>
+#include <servicelib.h>
 
 #include <vm.service.h>
 #include <messages.h>

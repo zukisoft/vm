@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,7 +142,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -188,7 +188,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -236,7 +236,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\svctl;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -283,26 +283,7 @@
     <ClInclude Include="..\..\external\minilzo\lzoconf.h" />
     <ClInclude Include="..\..\external\minilzo\lzodefs.h" />
     <ClInclude Include="..\..\external\minilzo\minilzo.h" />
-    <ClInclude Include="..\..\external\svctl\svctl.h" />
-    <ClInclude Include="..\..\external\svctl\svctlapi.h" />
-    <ClInclude Include="..\..\external\svctl\svctlcom.h" />
-    <ClInclude Include="..\..\external\svctl\svctlcrt.h" />
-    <ClInclude Include="..\..\external\svctl\svctlctl.h" />
-    <ClInclude Include="..\..\external\svctl\svctlcui.h" />
-    <ClInclude Include="..\..\external\svctl\svctlevt.h" />
-    <ClInclude Include="..\..\external\svctl\svctlgui.h" />
-    <ClInclude Include="..\..\external\svctl\svctlhlr.h" />
-    <ClInclude Include="..\..\external\svctl\svctlins.h" />
-    <ClInclude Include="..\..\external\svctl\svctllib.h" />
-    <ClInclude Include="..\..\external\svctl\svctllog.h" />
-    <ClInclude Include="..\..\external\svctl\svctlmap.h" />
-    <ClInclude Include="..\..\external\svctl\svctlmgr.h" />
-    <ClInclude Include="..\..\external\svctl\svctlmui.h" />
-    <ClInclude Include="..\..\external\svctl\svctlreg.h" />
-    <ClInclude Include="..\..\external\svctl\svctlres.h" />
-    <ClInclude Include="..\..\external\svctl\svctlsts.h" />
-    <ClInclude Include="..\..\external\svctl\svctlsvc.h" />
-    <ClInclude Include="..\..\external\svctl\svctlui.h" />
+    <ClInclude Include="..\..\external\servicelib\servicelib.h" />
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h" />
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
@@ -436,23 +417,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\external\svctl\svctlapi.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlcom.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlctl.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlcui.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlevt.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlgui.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlhlr.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlins.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctllib.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctllog.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlmap.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlmgr.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlmui.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlreg.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlsts.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlsvc.cpp" />
-    <ClCompile Include="..\..\external\svctl\svctlui.cpp" />
+    <ClCompile Include="..\..\external\servicelib\servicelib.cpp" />
     <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_crc32.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -597,7 +562,6 @@
     <ClCompile Include="VmService.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\external\svctl\svctl.rc" />
     <ResourceCompile Include="..\tmp\version\version.rc" />
     <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
     <ResourceCompile Include="vm.service.rc" />

@@ -26,90 +26,44 @@
 #pragma warning(push, 4)			
 
 //---------------------------------------------------------------------------
-// VmService Constructor
+// VmService::OnStart (private)
+//
+// Invoked when the service is started
+//
+// Arguments :
+//
+//	argc		- Number of command line arguments
+//	argv		- Array of command line argument strings
+
+void VmService::OnStart(int, LPTSTR*)
+{
+	RPC_STATUS					rpcresult;			// Result from function call
+
+	// Attept to register the remote system call RPC interface
+	rpcresult = RpcServerRegisterIf(SystemCalls_v1_0_s_ifspec, nullptr, nullptr);
+	if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
+
+	// Start the RPC listener for this process
+	rpcresult = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
+	if(rpcresult != RPC_S_OK) {
+		
+		RpcServerUnregisterIf(SystemCalls_v1_0_s_ifspec, nullptr, 1);
+		throw std::exception("RpcServerListen");
+	}
+}
+
+//-----------------------------------------------------------------------------
+// VmService::OnStop (private)
+//
+// Invoked when the service is stopped
 //
 // Arguments:
 //
 //	NONE
 
-VmService::VmService() : m_hevtStop(NULL)
+void VmService::OnStop(void)
 {
-}
-
-//---------------------------------------------------------------------------
-// VmService::Init (private)
-//
-// Initializes the service class object, in preparation for service start
-//
-// Arguments :
-//
-//	dwArgc		- Number of service command line arguments
-//	rgszArgv	- Array of service command line argument strings	
-
-DWORD VmService::Init(DWORD dwArgc, LPTSTR *rgszArgv)
-{
-	DWORD						dwResult;						// Result from function call
-
-	UNREFERENCED_PARAMETER(dwArgc);
-	UNREFERENCED_PARAMETER(rgszArgv);
-
-	//DebugBreak();
-
-	// Attept to register the remote system call RPC interface
-	RPC_STATUS rpcresult = RpcServerRegisterIf(SystemCalls_v1_0_s_ifspec, nullptr, nullptr);
-	if(rpcresult != RPC_S_OK) return rpcresult;
-
-	// Attempt to create the service STOP kernel event object
-	m_hevtStop = CreateEvent(NULL, FALSE, FALSE, NULL);
-	if(!m_hevtStop) { 
-		
-		dwResult = GetLastError();
-		//LogEvent(SVCTL::Win32Event(E_DISKACTIVITY_CREATESTOPEVENT, dwResult));
-		Term();
-		return dwResult;
-	}
-
-	return ERROR_SUCCESS;			// Service successfully initialized
-}
-
-//---------------------------------------------------------------------------
-// VmService::Run (private)
-//
-// Entry point for the main service thread
-//
-// Arguments :
-//
-//	NONE
-
-DWORD VmService::Run(void)
-{
-	RPC_STATUS result = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
-	if(result != RPC_S_OK) return result;
-
-	// For now, all we need is a simple idle loop waiting for the STOP event
-	WaitForSingleObject(m_hevtStop, INFINITE);
-
 	RpcMgmtStopServerListening(nullptr);
-
-	return ERROR_SUCCESS;
-}
-
-//---------------------------------------------------------------------------
-// VmService::Term (private)
-//
-// Uninitializes the service class object, after the service has been stopped
-//
-// Arguments :
-//
-//	NONE
-
-void VmService::Term(void)
-{
-	// Close and reset the STOP event object
-	if(m_hevtStop) CloseHandle(m_hevtStop);
-	m_hevtStop = NULL;
-
-	// Unregister the remote system call RPC interface
 	RpcServerUnregisterIf(SystemCalls_v1_0_s_ifspec, nullptr, 1);
 }
 
