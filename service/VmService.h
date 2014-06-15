@@ -39,8 +39,13 @@ public:
 
 	// CONTROL_HANDLER_MAP
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
-		CONTROL_HANDLER(SERVICE_CONTROL_STOP, OnStop)
+		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
 	END_CONTROL_HANDLER_MAP()
+
+	// PARAMETER_MAP
+	BEGIN_PARAMETER_MAP(VmService)
+		PARAMETER_ENTRY(_T("initramfs_test"), m_initramfs)
+	END_PARAMETER_MAP()
 
 private:
 
@@ -56,6 +61,11 @@ private:
 	//
 	// Invoked when the service is stopped
 	void OnStop(void);
+
+	// m_initramfs
+	//
+	// Path to the virtual machine's initramfs blob
+	StringParameter m_initramfs;
 };
 
 //---------------------------------------------------------------------------
