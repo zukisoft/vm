@@ -25,6 +25,7 @@
 #pragma once
 
 #include "resource.h"
+#include "VirtualFileSystem.h"
 
 #pragma warning(push, 4)			
 
@@ -44,7 +45,7 @@ public:
 
 	// PARAMETER_MAP
 	BEGIN_PARAMETER_MAP(VmService)
-		PARAMETER_ENTRY(_T("initramfs_test"), m_initramfs)
+		PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
 	END_PARAMETER_MAP()
 
 private:
@@ -66,6 +67,11 @@ private:
 	//
 	// Path to the virtual machine's initramfs blob
 	StringParameter m_initramfs;
+
+	// m_vfs
+	//
+	// Virtual file system instance
+	VirtualFileSystem m_vfs;
 };
 
 //---------------------------------------------------------------------------

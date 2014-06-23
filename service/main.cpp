@@ -53,11 +53,23 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls_v1_0_s_ifspec, nullptr);
 	if(rpcresult != RPC_S_OK) {
 	}
-	///////
-
+	
+	///// APPLICATION
+	ServiceHarness<VmService> harness;
+	try {
+		
+		harness.Start(IDS_VMSERVICE_NAME);
+		if(harness.CanStop) harness.Stop();
+	}
+	catch(ServiceException& ex)
+	{
+		MessageBoxA(nullptr, ex.what(), "Unexpected termination", MB_OK | MB_ICONSTOP);
+	}
+	
+	///// SERVICE
 	// Use manual dispatching for now; haven't implemented a new ServiceModule<> class yet
-	ServiceTable services = { ServiceTableEntry<VmService>(IDS_VMSERVICE_NAME) };
-	services.Dispatch();
+	//ServiceTable services = { ServiceTableEntry<VmService>(IDS_VMSERVICE_NAME) };
+	//services.Dispatch();
 
 	return 0;
 }

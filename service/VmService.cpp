@@ -39,6 +39,9 @@ void VmService::OnStart(int, LPTSTR*)
 {
 	RPC_STATUS					rpcresult;			// Result from function call
 
+	// Attempt to load the initial ramdisk file system
+	m_vfs.LoadInitialFileSystem(svctl::tstring(m_initramfs).c_str());
+
 	// Attept to register the remote system call RPC interface
 	rpcresult = RpcServerRegisterIf(SystemCalls_v1_0_s_ifspec, nullptr, nullptr);
 	if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
