@@ -30,10 +30,6 @@
       <UniqueIdentifier>{112c476e-5b78-461b-8544-44d331a06092}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="External Libraries\svctl">
-      <UniqueIdentifier>{1edb1ceb-8d74-4ff5-b348-6a35554bf66f}</UniqueIdentifier>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
     <Filter Include="External Libraries\zlib">
       <UniqueIdentifier>{d17e3b80-cbce-4317-8b0b-401f8eb5b9d9}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
@@ -65,6 +61,10 @@
     </Filter>
     <Filter Include="Header Files\Common\linux">
       <UniqueIdentifier>{b27f5fa3-9be1-4996-b101-e6a1707377df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External Libraries\servicelib">
+      <UniqueIdentifier>{1edb1ceb-8d74-4ff5-b348-6a35554bf66f}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -218,8 +218,11 @@
     <ClInclude Include="..\common\linux\errno.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\external\servicelib\servicelib.h">
-      <Filter>External Libraries\svctl</Filter>
+    <ClInclude Include="..\..\external\servicelib\Service.h">
+      <Filter>External Libraries\servicelib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\servicelib\ServiceHarness.h">
+      <Filter>External Libraries\servicelib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -379,8 +382,11 @@
     <ClCompile Include="..\common\LzmaStreamReader.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\external\servicelib\servicelib.cpp">
-      <Filter>External Libraries\svctl</Filter>
+    <ClCompile Include="..\..\external\servicelib\Service.cpp">
+      <Filter>External Libraries\servicelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\servicelib\ServiceHarness.cpp">
+      <Filter>External Libraries\servicelib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -283,7 +283,8 @@
     <ClInclude Include="..\..\external\minilzo\lzoconf.h" />
     <ClInclude Include="..\..\external\minilzo\lzodefs.h" />
     <ClInclude Include="..\..\external\minilzo\minilzo.h" />
-    <ClInclude Include="..\..\external\servicelib\servicelib.h" />
+    <ClInclude Include="..\..\external\servicelib\Service.h" />
+    <ClInclude Include="..\..\external\servicelib\ServiceHarness.h" />
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h" />
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
@@ -417,7 +418,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\external\servicelib\servicelib.cpp" />
+    <ClCompile Include="..\..\external\servicelib\Service.cpp" />
+    <ClCompile Include="..\..\external\servicelib\ServiceHarness.cpp" />
     <ClCompile Include="..\..\external\xz-embedded\linux\lib\xz\xz_crc32.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

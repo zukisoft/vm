@@ -39,8 +39,10 @@ void VmService::OnStart(int, LPTSTR*)
 {
 	RPC_STATUS					rpcresult;			// Result from function call
 
+	svctl::tstring initramfs = m_initramfs;
+
 	// Attempt to load the initial ramdisk file system
-	m_vfs.LoadInitialFileSystem(svctl::tstring(m_initramfs).c_str());
+	m_vfs.LoadInitialFileSystem(initramfs.c_str());
 
 	// Attept to register the remote system call RPC interface
 	rpcresult = RpcServerRegisterIf(SystemCalls_v1_0_s_ifspec, nullptr, nullptr);

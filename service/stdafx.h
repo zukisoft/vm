@@ -60,7 +60,8 @@
 //---------------------------------------------------------------------------
 // Service Template Library
 
-#include <servicelib.h>
+#include <Service.h>
+#include <ServiceHarness.h>
 
 #include <vm.service.h>
 #include <messages.h>
