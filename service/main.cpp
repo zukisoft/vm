@@ -56,8 +56,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	
 	///// APPLICATION
 	ServiceHarness<VmService> harness;
-	//harness.SetParameter(IDR_PARAM_INITRAMFS, _T("D:\\ramdisk.cpio.gz"));		// didn't implement unsigned int yet
-	harness.SetParameter(_T("initramfs"), _T("D:\\ramdisk.cpio.gz"));
+	harness.SetParameter(IDR_PARAM_INITRAMFS, _T("D:\\ramdisk.cpio.gz"));
 
 	try {
 		
