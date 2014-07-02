@@ -218,10 +218,7 @@
     <ClInclude Include="..\common\linux\errno.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\external\servicelib\Service.h">
-      <Filter>External Libraries\servicelib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\external\servicelib\ServiceHarness.h">
+    <ClInclude Include="..\..\external\servicelib\servicelib.h">
       <Filter>External Libraries\servicelib</Filter>
     </ClInclude>
   </ItemGroup>
@@ -382,10 +379,7 @@
     <ClCompile Include="..\common\LzmaStreamReader.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\external\servicelib\Service.cpp">
-      <Filter>External Libraries\servicelib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external\servicelib\ServiceHarness.cpp">
+    <ClCompile Include="..\..\external\servicelib\servicelib.cpp">
       <Filter>External Libraries\servicelib</Filter>
     </ClCompile>
   </ItemGroup>
