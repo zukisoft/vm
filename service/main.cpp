@@ -24,6 +24,8 @@
 #include "resource.h"
 #include "VmService.h"
 
+#include "CommandLine.h"
+
 #pragma warning(push, 4)			
 
 //---------------------------------------------------------------------------
@@ -48,6 +50,14 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
+
+	CommandLine cmdline(L"arg2 arg3 arg1");
+	for(auto arg : cmdline.Arguments) {
+
+		int x = arg.length();
+	}
+
+	return 0;
 
 	////////
 	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls_v1_0_s_ifspec, nullptr);
