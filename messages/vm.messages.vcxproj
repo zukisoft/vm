@@ -33,8 +33,8 @@ MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(Proje
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
 MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
 </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
