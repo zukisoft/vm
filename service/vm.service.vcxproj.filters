@@ -221,8 +221,8 @@
     <ClInclude Include="..\..\external\servicelib\servicelib.h">
       <Filter>External Libraries\servicelib</Filter>
     </ClInclude>
-    <ClInclude Include="CommandLine.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\common\CommandLine.h">
+      <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -385,7 +385,7 @@
     <ClCompile Include="..\..\external\servicelib\servicelib.cpp">
       <Filter>External Libraries\servicelib</Filter>
     </ClCompile>
-    <ClCompile Include="CommandLine.cpp">
+    <ClCompile Include="..\common\CommandLine.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>

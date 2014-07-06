@@ -290,6 +290,7 @@
     <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
     <ClInclude Include="..\common\char_t.h" />
+    <ClInclude Include="..\common\CommandLine.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
     <ClInclude Include="..\common\CpioArchive.h" />
     <ClInclude Include="..\common\Exception.h" />
@@ -315,7 +316,6 @@
     <ClInclude Include="..\tmp\vm.service\vm.service.h" />
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
-    <ClInclude Include="CommandLine.h" />
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="resource.h" />
@@ -522,6 +522,7 @@
     <ClCompile Include="..\common\BufferStreamReader.cpp" />
     <ClCompile Include="..\common\BZip2StreamReader.cpp" />
     <ClCompile Include="..\common\bz_internal_error.cpp" />
+    <ClCompile Include="..\common\CommandLine.cpp" />
     <ClCompile Include="..\common\CompressedStreamReader.cpp" />
     <ClCompile Include="..\common\CpioArchive.cpp" />
     <ClCompile Include="..\common\Exception.cpp" />
@@ -542,7 +543,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="CommandLine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />

@@ -22,9 +22,8 @@
 
 #include "stdafx.h"
 #include "resource.h"
-#include "VmService.h"
-
 #include "CommandLine.h"
+#include "VmService.h"
 
 #pragma warning(push, 4)			
 
@@ -40,7 +39,7 @@
 //	cmdline			- Pointer to application command line string
 //	show			- Application initial display flags
 
-int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
+int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 {
 
 #ifdef _DEBUG
@@ -51,37 +50,43 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 
 #endif	// _DEBUG
 
-	CommandLine cmdline(L"arg2 arg3 arg1");
-	for(auto arg : cmdline.Arguments) {
-
-		int x = arg.length();
-	}
-
-	return 0;
+	// Convert the provided command line into a CommandLine instance
+	CommandLine commandline(cmdline);
 
 	////////
 	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls_v1_0_s_ifspec, nullptr);
 	if(rpcresult != RPC_S_OK) {
 	}
-	
-	///// APPLICATION
-	ServiceHarness<VmService> harness;
-	harness.SetParameter(IDR_PARAM_INITRAMFS, _T("D:\\ramdisk.cpio.gz"));
+	///////
 
-	try {
-		
-		harness.Start(IDS_VMSERVICE_NAME);
-		if(harness.CanStop) harness.Stop();
+	// -console
+	//
+	// Run the service as a standalone console application rather than a service
+	if(commandline.Switches.Contains(L"console")) {
+
+		// todo: make sure -initramfs: switch and value exists
+		ServiceHarness<VmService> console;
+		console.SetParameter(IDR_PARAM_INITRAMFS, commandline.Switches.GetValue(L"initramfs"));
+
+		console.Start(IDS_VMSERVICE_NAME);
+		// TODO: need to actually create a console here and wait for it to close
+		if(console.CanStop) console.Stop();
 	}
-	catch(ServiceException& ex)
-	{
-		MessageBoxA(nullptr, ex.what(), "Unexpected termination", MB_OK | MB_ICONSTOP);
+
+	// -service
+	//
+	// Run the service normally, using the specified short name for the VmService instance
+	else if(commandline.Switches.Contains(L"service")) {
+
+		// todo: make sure the service name has been specified; this may change to a UUID for RPC binding instead
+		ServiceTable services = { ServiceTableEntry<VmService>(commandline.Switches.GetValue(L"service")) };
+		services.Dispatch();
 	}
-	
-	///// SERVICE
-	// Use manual dispatching for now; haven't implemented a new ServiceModule<> class yet
-	//ServiceTable services = { ServiceTableEntry<VmService>(IDS_VMSERVICE_NAME) };
-	//services.Dispatch();
+
+	else {
+
+		// TODO: invalid command line; requires -console or -service
+	}
 
 	return 0;
 }
