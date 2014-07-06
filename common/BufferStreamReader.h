@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef _BUFFERSTREAMREADER_H_
-#define _BUFFERSTREAMREADER_H_
+#ifndef __BUFFERSTREAMREADER_H_
+#define __BUFFERSTREAMREADER_H_
 #pragma once
 
 #include "Exception.h"
@@ -86,4 +86,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// _BUFFERSTREAMREADER_H_
+#endif	// __BUFFERSTREAMREADER_H_

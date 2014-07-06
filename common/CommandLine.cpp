@@ -229,6 +229,7 @@ std::vector<std::tstring> CommandLine::CommandLineSwitches::GetValues(const std:
 
 	return values;
 }
+
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
