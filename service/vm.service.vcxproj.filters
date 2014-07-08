@@ -224,6 +224,9 @@
     <ClInclude Include="..\common\CommandLine.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Console.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -387,6 +390,9 @@
     </ClCompile>
     <ClCompile Include="..\common\CommandLine.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Console.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

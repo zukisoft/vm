@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "resource.h"
 #include "CommandLine.h"
+#include "Console.h"
 #include "VmService.h"
 
 #pragma warning(push, 4)			
@@ -64,13 +65,25 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Run the service as a standalone console application rather than a service
 	if(commandline.Switches.Contains(L"console")) {
 
-		// todo: make sure -initramfs: switch and value exists
-		ServiceHarness<VmService> console;
-		console.SetParameter(IDR_PARAM_INITRAMFS, commandline.Switches.GetValue(L"initramfs"));
+		Console console(L"MyConsole"); // todo: ctor with a title
+		console.WriteLine(L"This is a test");
+		//console.Beep();
+		console.Title = L"Hello Console";
+		std::tstring temp = console.Title;
+		OutputDebugString(console.Title.c_str());
 
-		console.Start(IDS_VMSERVICE_NAME);
+		// todo: make sure -initramfs: switch and value exists
+		ServiceHarness<VmService> harness;
+		harness.SetParameter(IDR_PARAM_INITRAMFS, commandline.Switches.GetValue(L"initramfs"));
+
+		harness.Start(IDS_VMSERVICE_NAME);
 		// TODO: need to actually create a console here and wait for it to close
-		if(console.CanStop) console.Stop();
+		printf("CAN YOU SEE THIS IN THE WINDOW\n");
+		Sleep(5000);
+		console.Clear();
+		Sleep(5000);
+
+		if(harness.CanStop) harness.Stop();
 	}
 
 	// -service
