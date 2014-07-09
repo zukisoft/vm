@@ -65,12 +65,19 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Run the service as a standalone console application rather than a service
 	if(commandline.Switches.Contains(L"console")) {
 
-		Console console(L"MyConsole"); // todo: ctor with a title
+		Console console(L"MyConsole");
+		console.Write(true);
+		console.Write(0x12345678);
+		console.WriteLine();
 		console.WriteLine(L"This is a test");
-		//console.Beep();
-		console.Title = L"Hello Console";
-		std::tstring temp = console.Title;
-		OutputDebugString(console.Title.c_str());
+		console.WriteLine();
+		console.SetWindowPosition(1, 1);
+		////console.Beep();
+		//console.Title = L"Hello Console";
+		//std::tstring temp = console.Title;
+		//OutputDebugString(console.Title.c_str());
+
+		Sleep(5000);
 
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;
@@ -78,11 +85,6 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		// TODO: need to actually create a console here and wait for it to close
-		printf("CAN YOU SEE THIS IN THE WINDOW\n");
-		Sleep(5000);
-		console.Clear();
-		Sleep(5000);
-
 		if(harness.CanStop) harness.Stop();
 	}
 

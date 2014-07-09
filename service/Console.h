@@ -63,19 +63,73 @@ public:
 	// SetBufferSize
 	//
 	// Sets the console screen buffer size
-	void SetBufferSize(size_t width, size_t height) const;
+	void SetBufferSize(int16_t width, int16_t height) const;
 
 	// SetCursorPosition
 	//
 	// Sets the console cursor position
-	void SetCursorPosition(size_t left, size_t top) const;
+	void SetCursorPosition(int16_t left, int16_t top) const;
 
-	template <typename ... _remaining>
-	void WriteLine(const _remaining&... remaining)
+	// SetWindowPosition
+	//
+	// Sets the position of the console window relative to the screen buffer
+	void SetWindowPosition(int16_t left, int16_t right) const;
+
+	// Write (fundamental types)
+	//
+	// Writes a value to the console
+	template<typename _type> typename std::enable_if<std::is_fundamental<_type>::value, void>::type
+	Write(_type value) const { Write(std::to_tstring(value)); }
+
+	// Write (bool)
+	//
+	// Writes a value to the console
+	void Write(bool value) const { Write(std::tstring(value ? _T("true") : _T("false"))); }
+
+	// Write (const tchar_t*)
+	//
+	// Writes a value to the console
+	void Write(const tchar_t* value) const { Write(std::tstring(value)); }
+
+	// Write (tstring)
+	//
+	// Writes a value to the console
+	void Write(const std::tstring& value) const { WriteConsole(m_stdout, value.data(), value.size(), nullptr, nullptr); }
+
+	// TODO: Write (format string)
+	// TODO: Write (character iterator)
+
+	// WriteLine (void)
+	//
+	// Writes a blank line to the console
+	void WriteLine(void) const { WriteConsole(m_stdout, _T("\r\n"), 2, nullptr, nullptr); }
+
+	// WriteLine (fundamental types)
+	//
+	// Writes a value to the console and appends a CRLF pair
+	template<typename _type> typename std::enable_if<std::is_fundamental<_type>::value, void>::type
+	WriteLine(const _type& value) const { WriteLine(std::to_tstring(value)); }
+
+	// WriteLine (bool)
+	//
+	// Writes a value to the console and appends a CRLF pair
+	void WriteLine(bool value) const { WriteLine(std::tstring(value ? _T("true") : _T("false"))); }
+
+	// WriteLine (const tchar_t*)
+	void WriteLine(const tchar_t* value) const { WriteLine(std::tstring(value)); }
+
+	// WriteLine (tstring)
+	//
+	// Writes a value to the console with an appended CRLF pair
+	void WriteLine(const std::tstring& value) const
 	{
-		std::tstring value;
-		WriteLine(value, remaining...);
+		// Write the string in one call by pre-appending the CRLF
+		std::tstring formatted = value + _T("\r\n");
+		WriteConsole(m_stdout, formatted.data(), formatted.size(), nullptr, nullptr);
 	}
+
+	// TODO: WriteLine (format string)
+	// TODO: WriteLine (character iterator)
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -83,16 +137,16 @@ public:
 	// BufferHeight
 	//
 	// Gets/Sets the console screen buffer height
-	__declspec(property(get=getBufferHeight, put=putBufferHeight)) size_t BufferHeight;
-	size_t getBufferHeight(void) const;
-	void putBufferHeight(size_t value) const;
+	__declspec(property(get=getBufferHeight, put=putBufferHeight)) int16_t BufferHeight;
+	int16_t getBufferHeight(void) const;
+	void putBufferHeight(int16_t value) const;
 
 	// BufferWidth
 	//
 	// Gets/Sets the console screen buffer width
-	__declspec(property(get=getBufferWidth, put=putBufferWidth)) size_t BufferWidth;
-	size_t getBufferWidth(void) const;
-	void putBufferWidth(size_t value) const;
+	__declspec(property(get=getBufferWidth, put=putBufferWidth)) int16_t BufferWidth;
+	int16_t getBufferWidth(void) const;
+	void putBufferWidth(int16_t value) const;
 
 	// CapsLock
 	//
@@ -103,28 +157,28 @@ public:
 	// CursorLeft
 	//
 	// Gets/Sets the console screen buffer height
-	__declspec(property(get=getCursorLeft, put=putCursorLeft)) size_t CursorLeft;
-	size_t getCursorLeft(void) const;
-	void putCursorLeft(size_t value) const;
+	__declspec(property(get=getCursorLeft, put=putCursorLeft)) int16_t CursorLeft;
+	int16_t getCursorLeft(void) const;
+	void putCursorLeft(int16_t value) const;
 
 	// CursorTop
 	//
 	// Gets/Sets the console screen buffer width
-	__declspec(property(get=getCursorTop, put=putCursorTop)) size_t CursorTop;
-	size_t getCursorTop(void) const;
-	void putCursorTop(size_t value) const;
+	__declspec(property(get=getCursorTop, put=putCursorTop)) int16_t CursorTop;
+	int16_t getCursorTop(void) const;
+	void putCursorTop(int16_t value) const;
 
 	// LargestWindowHeight
 	//
 	// Gets the height of the largest possible console window
-	__declspec(property(get=getLargestWindowHeight)) size_t LargestWindowHeight;
-	size_t getLargestWindowHeight(void) const;
+	__declspec(property(get=getLargestWindowHeight)) int16_t LargestWindowHeight;
+	int16_t getLargestWindowHeight(void) const;
 
 	// LargestWindowWidth
 	//
 	// Gets the width of the largest possible console window
-	__declspec(property(get=getLargestWindowWidth)) size_t LargestWindowWidth;
-	size_t getLargestWindowWidth(void) const;
+	__declspec(property(get=getLargestWindowWidth)) int16_t LargestWindowWidth;
+	int16_t getLargestWindowWidth(void) const;
 
 	// NumLock
 	//
@@ -154,22 +208,6 @@ private:
 	{
 		explicit ScreenBufferInfo(const Console& parent);
 	};
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
-
-	template <typename _next, typename... _remaining>
-	void WriteLine(std::tstring& value, const _next& next, const _remaining&... remaining)
-	{
-		// append next to string
-		WriteLine(value, remaining...);
-	}
-
-	void WriteLine(std::tstring& value)
-	{
-		value.append(_T("WriteLine!!\r\n"));
-		WriteConsole(m_stdout, value.data(), value.size(), nullptr, nullptr);
-	}
 
 	//-------------------------------------------------------------------------
 	// Member Variables

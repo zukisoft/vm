@@ -31,8 +31,18 @@ namespace std {
 
 #ifdef _UNICODE
 	typedef wstring		tstring;
+	template <typename _type>
+	inline typename std::enable_if<std::is_fundamental<_type>::value, tstring>::type to_tstring(_type value) 
+	{
+		return std::to_wstring(value);
+	}
 #else
 	typedef string		tstring;
+	template <typename _type>
+	inline typename std::enable_if<std::is_fundamental<_type>::value, tstring>::type to_tstring(_type value) 
+	{
+		return std::to_string(value);
+	}
 #endif
 
 	// make_string (ANSI)

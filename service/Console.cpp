@@ -100,9 +100,9 @@ void Console::Beep(int frequency, int duration) const
 //
 // Gets the height of the attached console screen buffer
 
-size_t Console::getBufferHeight(void) const
+int16_t Console::getBufferHeight(void) const
 {
-	return static_cast<size_t>(ScreenBufferInfo(*this).dwSize.Y);
+	return ScreenBufferInfo(*this).dwSize.Y;
 }
 
 //-----------------------------------------------------------------------------
@@ -110,7 +110,7 @@ size_t Console::getBufferHeight(void) const
 //
 // Sets the height of the attach console screen buffer
 
-void Console::putBufferHeight(size_t value) const
+void Console::putBufferHeight(int16_t value) const
 {
 	SetBufferSize(BufferWidth, value);
 }
@@ -120,9 +120,9 @@ void Console::putBufferHeight(size_t value) const
 //
 // Gets the width of the attached console screen buffer
 
-size_t Console::getBufferWidth(void) const
+int16_t Console::getBufferWidth(void) const
 {
-	return static_cast<size_t>(ScreenBufferInfo(*this).dwSize.X);
+	return ScreenBufferInfo(*this).dwSize.X;
 }
 
 //-----------------------------------------------------------------------------
@@ -130,7 +130,7 @@ size_t Console::getBufferWidth(void) const
 //
 // Sets the width of the attach console screen buffer
 
-void Console::putBufferWidth(size_t value) const
+void Console::putBufferWidth(int16_t value) const
 {
 	SetBufferSize(value, BufferHeight);
 }
@@ -170,9 +170,9 @@ void Console::Clear(void) const
 //
 // Gets the X coordinate of the attached console's cursor
 
-size_t Console::getCursorLeft(void) const
+int16_t Console::getCursorLeft(void) const
 {
-	return static_cast<size_t>(ScreenBufferInfo(*this).dwCursorPosition.X);
+	return ScreenBufferInfo(*this).dwCursorPosition.X;
 }
 
 //-----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ size_t Console::getCursorLeft(void) const
 //
 // Sets the X coordinate of the attached console's cursor
 
-void Console::putCursorLeft(size_t value) const
+void Console::putCursorLeft(int16_t value) const
 {
 	SetCursorPosition(value, CursorTop);
 }
@@ -190,9 +190,9 @@ void Console::putCursorLeft(size_t value) const
 //
 // Gets the Y coordinate of the attached console's cursor
 
-size_t Console::getCursorTop(void) const
+int16_t Console::getCursorTop(void) const
 {
-	return static_cast<size_t>(ScreenBufferInfo(*this).dwCursorPosition.Y);
+	return ScreenBufferInfo(*this).dwCursorPosition.Y;
 }
 
 //-----------------------------------------------------------------------------
@@ -200,7 +200,7 @@ size_t Console::getCursorTop(void) const
 //
 // Sets the Y coordinate of the attached console's cursor
 
-void Console::putCursorTop(size_t value) const
+void Console::putCursorTop(int16_t value) const
 {
 	SetCursorPosition(CursorLeft, value);
 }
@@ -210,9 +210,9 @@ void Console::putCursorTop(size_t value) const
 //
 // Gets the height of the attached console screen LargestWindow
 
-size_t Console::getLargestWindowHeight(void) const
+int16_t Console::getLargestWindowHeight(void) const
 {
-	return static_cast<size_t>(GetLargestConsoleWindowSize(m_stdout).Y);
+	return GetLargestConsoleWindowSize(m_stdout).Y;
 }
 
 //-----------------------------------------------------------------------------
@@ -220,9 +220,9 @@ size_t Console::getLargestWindowHeight(void) const
 //
 // Gets the width of the attached console screen LargestWindow
 
-size_t Console::getLargestWindowWidth(void) const
+int16_t Console::getLargestWindowWidth(void) const
 {
-	return static_cast<size_t>(GetLargestConsoleWindowSize(m_stdout).X);
+	return GetLargestConsoleWindowSize(m_stdout).X;
 }
 
 //-----------------------------------------------------------------------------
@@ -236,27 +236,6 @@ bool Console::getNumLock(void) const
 }
 
 //-----------------------------------------------------------------------------
-// Console::SetCursorPosition
-//
-// Sets the position of the cursor in the attached console window
-//
-// Arguments:
-//
-//	left		- New cursor X coordinate
-//	top			- New cursor Y coordinate
-
-void Console::SetCursorPosition(size_t left, size_t top) const
-{
-	// Check the specified left and top coordinates against the console screen buffer
-	COORD buffer = ScreenBufferInfo(*this).dwSize;
-	if(left >= static_cast<size_t>(buffer.X)) throw Exception(E_INVALIDARG);
-	if(top >= static_cast<size_t>(buffer.Y)) throw Exception(E_INVALIDARG);
-
-	// Attempt to set the attached console's cursor position
-	if(!SetConsoleCursorPosition(m_stdout, { static_cast<SHORT>(left), static_cast<SHORT>(top) })) throw Win32Exception();
-}
-
-//-----------------------------------------------------------------------------
 // Console::SetBufferSize
 //
 // Sets the width and height of the attached console screen buffer
@@ -266,15 +245,60 @@ void Console::SetCursorPosition(size_t left, size_t top) const
 //	width		- New screen buffer width
 //	height		- New screen buffer height
 
-void Console::SetBufferSize(size_t width, size_t height) const
+void Console::SetBufferSize(int16_t width, int16_t height) const
 {
 	// Check the boundaries of the specified width and height values against the console window
 	SMALL_RECT window = ScreenBufferInfo(*this).srWindow;
-	if((width < static_cast<size_t>(window.Right + 1)) || (width >= INT16_MAX)) throw Exception(E_INVALIDARG);
-	if((height < static_cast<size_t>(window.Bottom + 1)) || (height >= INT16_MAX)) throw Exception(E_INVALIDARG);
+	if((width < window.Right + 1) || (height < window.Bottom + 1)) throw Exception(E_INVALIDARG);
 
 	// Attempt to set the attached console's screen buffer size
-	if(!SetConsoleScreenBufferSize(m_stdout, { static_cast<SHORT>(width), static_cast<SHORT>(height) })) throw Win32Exception();
+	if(!SetConsoleScreenBufferSize(m_stdout, { width, height })) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
+// Console::SetCursorPosition
+//
+// Sets the position of the cursor in the attached console window
+//
+// Arguments:
+//
+//	left		- New cursor X coordinate
+//	top			- New cursor Y coordinate
+
+void Console::SetCursorPosition(int16_t left, int16_t top) const
+{
+	// Check the specified left and top coordinates against the console screen buffer
+	COORD buffer = ScreenBufferInfo(*this).dwSize;
+	if((left >= buffer.X) || (top >= buffer.Y)) throw Exception(E_INVALIDARG);
+
+	// Attempt to set the attached console's cursor position
+	if(!SetConsoleCursorPosition(m_stdout, { left, top })) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
+// Console::SetWindowPosition
+//
+// Sets the position of the console window relative to the screen buffer
+//
+// Arguments:
+//
+//	left		- New window X coordinate
+//	top			- New window Y coordinate
+
+void Console::SetWindowPosition(int16_t left, int16_t top) const
+{
+	// Window position can never be negative
+	if((left < 0) || (top < 0)) throw Exception(E_INVALIDARG);
+
+	// Adjust the current window SMALL_RECT based on the new left and top
+	SMALL_RECT window = ScreenBufferInfo(*this).srWindow;
+	window.Bottom -= (window.Top - top);
+	window.Right -= (window.Left - left);
+	window.Left = left;
+	window.Top = top;
+
+	// Attempt to set the new console window position
+	if(!SetConsoleWindowInfo(m_stdout, TRUE, &window)) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
