@@ -206,6 +206,34 @@ void Console::putCursorTop(int16_t value) const
 }
 
 //-----------------------------------------------------------------------------
+// Console::getKeyAvailable
+//
+// Gets a flag if there is an input key available to be read
+
+bool Console::getKeyAvailable(void) const
+{
+	//INPUT_RECORD		input;			// INPUT_RECORD from PeekConsoleInput()
+	//DWORD				read;			// Number of input records read
+
+	// TODO: Check this
+	//while(true) {
+
+	//	// Peek at the next input record; false if nothing is available
+	//	if(!PeekConsoleInput(m_stdin, &input, 1, &read)) throw Win32Exception();
+	//	if(read == 0) return false;
+	//	
+	//	// If this is a key down event that isn't for a special key, we're done
+	//	if((input.EventType == KEY_EVENT) && (input.Event.KeyEvent.bKeyDown) && 
+	//		!IsSpecialKey(input.Event.KeyEvent.wVirtualKeyCode)) return true;
+
+	//	// Pop the INPUT_RECORD from the input queue and iterator again
+	//	if(!ReadConsoleInput(m_stdin, &input, 1, &read)) throw Win32Exception();
+	//}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
 // Console::getLargestWindowHeight
 //
 // Gets the height of the attached console screen LargestWindow
@@ -233,6 +261,54 @@ int16_t Console::getLargestWindowWidth(void) const
 bool Console::getNumLock(void) const
 {
 	return ((GetKeyState(VK_NUMLOCK) & 1) == 1);
+}
+
+tchar_t Console::Read(void)
+{
+	std::lock_guard<std::recursive_mutex> lock(m_readlock);
+
+	return 0;
+}
+
+//-----------------------------------------------------------------------------
+// Console::ReadLine
+//
+// Reads a line of text from the console
+// TODO: how to deal with EOF (CTRL+Z)???
+//
+// Arguments:
+//
+//	NONE
+
+std::tstring Console::ReadLine(void)
+{
+	std::vector<tchar_t>	accumulator;			// Character accumulator
+	DWORD					mode = 0;				// Original console mode
+	DWORD					read = 0;				// Characters read from the console
+	tchar_t					next;					// Next character read from console
+
+	// Prevent multiple threads
+	std::lock_guard<std::recursive_mutex> lock(m_readlock);
+
+	// Ensure LINE_INPUT and ECHO_INPUT are enabled for the input mode
+	if(!GetConsoleMode(m_stdin, &mode)) throw Win32Exception();
+	if(!SetConsoleMode(m_stdin, mode | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)) throw Win32Exception();
+
+	// Repeatedly read characters from the console until CR has been detected
+	if(!ReadConsole(m_stdin, &next, 1, &read, nullptr)) throw Win32Exception();
+	while(next != _T('\n')) { 
+		
+		if(next != _T('\r')) accumulator.push_back(next); 
+		if(!ReadConsole(m_stdin, &next, 1, &read, nullptr)) throw Win32Exception();
+	}
+
+	// TODO: this next line has to be called even if function throws
+
+	// Restore the previously set input mode flags
+	SetConsoleMode(m_stdin, mode);
+
+	// Convert the accumulated character data as a tstring instance
+	return std::tstring(accumulator.data(), accumulator.size());
 }
 
 //-----------------------------------------------------------------------------
@@ -302,6 +378,28 @@ void Console::SetWindowPosition(int16_t left, int16_t top) const
 }
 
 //-----------------------------------------------------------------------------
+// Console::SetWindowSize
+//
+// Sets the size of the console screen buffer window
+//
+// Arguments:
+//
+//	width		- New window width
+//	height		- New window height
+
+void Console::SetWindowSize(int16_t width, int16_t height) const
+{
+	ScreenBufferInfo info(*this);			// Current screen buffer information
+
+	if((width < 0) || (height < 0)) throw Exception(E_INVALIDARG);
+
+	//COORD size = info.dwSize;
+
+	// TODO
+	throw Exception(E_NOTIMPL);
+}
+
+//-----------------------------------------------------------------------------
 // Console::getTitle
 //
 // Gets the current console title
@@ -326,6 +424,76 @@ std::tstring Console::getTitle(void) const
 void Console::putTitle(const std::tstring& value) const
 {
 	SetConsoleTitle(value.c_str());
+}
+
+//-----------------------------------------------------------------------------
+// Console::getTreatControlCAsInput
+//
+// Gets the flag indicating that CTRL+C should be considered normal input
+
+bool Console::getTreatControlCAsInput(void) const
+{
+	DWORD mode = 0;
+	if(!GetConsoleMode(m_stdin, &mode)) throw Win32Exception();
+
+	return ((mode & ENABLE_PROCESSED_INPUT) == ENABLE_PROCESSED_INPUT);
+}
+
+//-----------------------------------------------------------------------------
+// Console::putTreatControlCAsInput
+//
+// Sets the flag indicating that CTRL+C should be considered normal input
+
+void Console::putTreatControlCAsInput(bool value) const
+{
+	DWORD mode = 0;
+	if(!GetConsoleMode(m_stdin, &mode)) throw Win32Exception();
+
+	// Set or clear ENABLED_PROCESSED_INPUT from the bitmask returned
+	if(!SetConsoleMode(m_stdin, (value) ? mode | ENABLE_PROCESSED_INPUT : 
+		mode & ~ENABLE_PROCESSED_INPUT)) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
+// Console::getWindowHeight
+//
+// Gets the height of the attached console screen buffer window
+
+int16_t Console::getWindowHeight(void) const
+{
+	ScreenBufferInfo info(*this);
+	return info.srWindow.Bottom - info.srWindow.Top + 1;
+}
+
+//-----------------------------------------------------------------------------
+// Console::putWindowHeight
+//
+// Sets the height of the attach console screen buffer window
+
+void Console::putWindowHeight(int16_t value) const
+{
+	SetWindowSize(WindowWidth, value);
+}
+
+//-----------------------------------------------------------------------------
+// Console::getWindowWidth
+//
+// Gets the width of the attached console screen buffer window
+
+int16_t Console::getWindowWidth(void) const
+{
+	ScreenBufferInfo info(*this);
+	return info.srWindow.Right - info.srWindow.Left + 1;
+}
+
+//-----------------------------------------------------------------------------
+// Console::putWindowWidth
+//
+// Sets the width of the attach console screen buffer window
+
+void Console::putWindowWidth(int16_t value) const
+{
+	SetWindowSize(value, WindowHeight);
 }
 
 //-----------------------------------------------------------------------------

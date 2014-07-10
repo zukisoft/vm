@@ -71,13 +71,14 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		console.WriteLine();
 		console.WriteLine(L"This is a test");
 		console.WriteLine();
-		console.SetWindowPosition(1, 1);
+
+		std::tstring result = console.ReadLine();
+		result = console.ReadLine();
+
 		////console.Beep();
 		//console.Title = L"Hello Console";
 		//std::tstring temp = console.Title;
 		//OutputDebugString(console.Title.c_str());
-
-		Sleep(5000);
 
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;

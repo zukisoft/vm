@@ -24,6 +24,7 @@
 #define __CONSOLE_H_
 #pragma once
 
+#include <mutex>
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)				
@@ -60,6 +61,16 @@ public:
 	// Clears the console contents
 	void Clear(void) const;
 
+	// Read
+	//
+	// Reads a single character from the console
+	tchar_t Read(void);
+
+	// ReadLine
+	//
+	// Reads a line of text from the console
+	std::tstring ReadLine(void);
+
 	// SetBufferSize
 	//
 	// Sets the console screen buffer size
@@ -74,6 +85,11 @@ public:
 	//
 	// Sets the position of the console window relative to the screen buffer
 	void SetWindowPosition(int16_t left, int16_t right) const;
+
+	// SetWindowSize
+	//
+	// Sets the size of the console screen buffer window
+	void SetWindowSize(int16_t width, int16_t height) const;
 
 	// Write (fundamental types)
 	//
@@ -168,6 +184,12 @@ public:
 	int16_t getCursorTop(void) const;
 	void putCursorTop(int16_t value) const;
 
+	// KeyAvailable
+	//
+	// Gets a flag if there is an input key available for input
+	__declspec(property(get=getKeyAvailable)) bool KeyAvailable;
+	bool getKeyAvailable(void) const;
+
 	// LargestWindowHeight
 	//
 	// Gets the height of the largest possible console window
@@ -193,6 +215,27 @@ public:
 	std::tstring getTitle(void) const;
 	void putTitle(const std::tstring& value) const;
 
+	// TreatControlCAsInput
+	//
+	// Gets/Sets the flag that allows CTRL+C to be an an input character
+	__declspec(property(get=getTreatControlCAsInput, put=putTreatControlCAsInput)) bool TreatControlCAsInput;
+	bool getTreatControlCAsInput(void) const;
+	void putTreatControlCAsInput(bool value) const;
+
+	// WindowHeight
+	//
+	// Gets/Sets the console screen buffer window height
+	__declspec(property(get=getWindowHeight, put=putWindowHeight)) int16_t WindowHeight;
+	int16_t getWindowHeight(void) const;
+	void putWindowHeight(int16_t value) const;
+
+	// WindowWidth
+	//
+	// Gets/Sets the console screen buffer window width
+	__declspec(property(get=getWindowWidth, put=putWindowWidth)) int16_t WindowWidth;
+	int16_t getWindowWidth(void) const;
+	void putWindowWidth(int16_t value) const;
+
 private:
 
 	Console(const Console&)=delete;
@@ -210,11 +253,26 @@ private:
 	};
 
 	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// IsSpecialKey
+	//
+	// todo: words
+	// todo: move to cpp file
+	static bool IsSpecialKey(WORD vk)
+	{
+		// ripped off from .NET
+		return (((vk >= VK_SHIFT) && (vk <= VK_MENU)) || (vk == VK_CAPITAL) ||
+			(vk == VK_NUMLOCK) || (vk == VK_SCROLL));
+	}
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HANDLE				m_stderr;				// STDERR stream handle
-	HANDLE				m_stdin;				// STDIN stream handle
-	HANDLE				m_stdout;				// STDOUT stream handle
+	HANDLE					m_stderr;			// STDERR stream handle
+	HANDLE					m_stdin;			// STDIN stream handle
+	HANDLE					m_stdout;			// STDOUT stream handle
+	std::recursive_mutex	m_readlock;			// STDIN read lock object
 };
 
 //-----------------------------------------------------------------------------
