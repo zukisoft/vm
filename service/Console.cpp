@@ -287,22 +287,26 @@ std::tstring Console::ReadLine(void)
 	DWORD					read = 0;				// Characters read from the console
 	tchar_t					next;					// Next character read from console
 
-	// Prevent multiple threads
+	// Prevent multiple threads from reading the console at the same time
 	std::lock_guard<std::recursive_mutex> lock(m_readlock);
 
 	// Ensure LINE_INPUT and ECHO_INPUT are enabled for the input mode
 	if(!GetConsoleMode(m_stdin, &mode)) throw Win32Exception();
 	if(!SetConsoleMode(m_stdin, mode | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)) throw Win32Exception();
 
-	// Repeatedly read characters from the console until CR has been detected
-	if(!ReadConsole(m_stdin, &next, 1, &read, nullptr)) throw Win32Exception();
-	while(next != _T('\n')) { 
-		
-		if(next != _T('\r')) accumulator.push_back(next); 
+	try {
+
+		// Repeatedly read characters from the console until CR has been detected
 		if(!ReadConsole(m_stdin, &next, 1, &read, nullptr)) throw Win32Exception();
+		while(next != _T('\n')) { 
+		
+			if(next != _T('\r')) accumulator.push_back(next); 
+			if(!ReadConsole(m_stdin, &next, 1, &read, nullptr)) throw Win32Exception();
+		}
 	}
 
-	// TODO: this next line has to be called even if function throws
+	// Be sure the restore the original console mode flags on any exception
+	catch(...) { SetConsoleMode(m_stdin, mode); throw; }
 
 	// Restore the previously set input mode flags
 	SetConsoleMode(m_stdin, mode);

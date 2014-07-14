@@ -26,7 +26,7 @@
 #include "Console.h"
 #include "VmService.h"
 
-#pragma warning(push, 4)			
+#pragma warning(push, 4)	
 
 //---------------------------------------------------------------------------
 // _tWinMain
@@ -65,27 +65,17 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Run the service as a standalone console application rather than a service
 	if(commandline.Switches.Contains(L"console")) {
 
-		Console console(L"MyConsole");
-		console.Write(true);
-		console.Write(0x12345678);
-		console.WriteLine();
-		console.WriteLine(L"This is a test");
-		console.WriteLine();
-
-		std::tstring result = console.ReadLine();
-		result = console.ReadLine();
-
-		////console.Beep();
-		//console.Title = L"Hello Console";
-		//std::tstring temp = console.Title;
-		//OutputDebugString(console.Title.c_str());
+		Console console(L"VM Service Console");
 
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;
 		harness.SetParameter(IDR_PARAM_INITRAMFS, commandline.Switches.GetValue(L"initramfs"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
-		// TODO: need to actually create a console here and wait for it to close
+
+		console.WriteLine(L"Press ENTER to exit");
+		console.ReadLine();
+
 		if(harness.CanStop) harness.Stop();
 	}
 
