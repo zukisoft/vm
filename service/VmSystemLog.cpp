@@ -132,15 +132,14 @@ size_t VmSystemLog::Print(VmSystemLogFormat format, char* buffer, size_t length,
 	if(buffer == nullptr) length = MAXSIZE_T;			// Count only
 	size_t written = 0;									// Bytes written
 
-	// TODO: various formats
-	(format);
-
 	// Iterate over the provided tail pointer and start dumping text
 	while((tailptr != m_head) && (length > 0)) {
 
 		// Write as much as possible into the output buffer; if the entry has been
 		// truncated, discard all characters after the previous entry and break;
-		size_t out = PrintStandardFormat(reinterpret_cast<LogEntry*>(tailptr), buffer, length);
+		size_t out = (format == VmSystemLogFormat::Device) ? 
+			PrintDeviceFormat(reinterpret_cast<LogEntry*>(tailptr), buffer, length) :
+			PrintStandardFormat(reinterpret_cast<LogEntry*>(tailptr), buffer, length);
 		if(out == _TRUNCATE) { if(buffer) *buffer = 0; break; }
 		
 		if(buffer) buffer += out;			// Increment the buffer pointer
@@ -151,6 +150,40 @@ size_t VmSystemLog::Print(VmSystemLogFormat format, char* buffer, size_t length,
 
 	// Add space for a final trailing null when just calculating length
 	return (buffer) ? written : written + 1;
+}
+
+//-----------------------------------------------------------------------------
+// VmSystemLog::PrintDeviceFormat (private)
+//
+// Prints the log entry in the /dev/kmsg character device format
+//
+// Arguments:
+//
+//	entry		- Current system log entry pointer
+//	buffer		- Current pointer into the output buffer or NULL
+//	length		- Space remaining in the output buffer
+
+size_t VmSystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_t length)
+{
+	//
+	// TODO: THIS IS JUST STANDARD FORMAT -- IMPLEMENT IT
+	//
+
+	// Check that there is at least one byte of buffer left to write into
+	if(length == 0) return 0;
+
+	// Convert the timestamp into a double representing seconds from bias
+	double time = (entry->timestamp - m_tsbias) / m_tsfreq;
+
+	// Convert the priority code into a 16-bit unsigned integer, VC does not support %hhu format
+	uint16_t priority = (entry->facility << 3 | entry->level);
+
+	// Determine if the entry ends with a line feed character or not
+	bool haslinefeed = ((entry->messagelength) && (entry->message[entry->messagelength - 1] == '\n'));
+
+	// If a buffer was specified, format directly into it, otherwise just count the characters that would be required
+	return (buffer) ? _snprintf_s(buffer, length, _TRUNCATE, "<%hu>[%#12.06f] %.*s%s", priority, time, entry->messagelength, entry->message, (haslinefeed) ? "\0" : "\n") : 
+		_scprintf("<%hu>[%#12.06f] %.*s%s", priority, time, entry->messagelength, entry->message, (haslinefeed) ? "\0" : "\n");
 }
 
 //-----------------------------------------------------------------------------

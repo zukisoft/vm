@@ -26,6 +26,7 @@
 
 #include "resource.h"
 #include "VirtualFileSystem.h"
+#include "VmSystemLog.h"
 
 #pragma warning(push, 4)			
 
@@ -46,6 +47,7 @@ public:
 	// PARAMETER_MAP
 	BEGIN_PARAMETER_MAP(VmService)
 		PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
+		PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
 	END_PARAMETER_MAP()
 
 private:
@@ -67,6 +69,12 @@ private:
 	//
 	// Path to the virtual machine's initramfs blob
 	StringParameter m_initramfs;
+
+	// m_syslog
+	//
+	// System log implementation
+	std::unique_ptr<VmSystemLog> m_syslog;
+	DWordParameter m_sysloglength { 512 KiB };
 
 	// m_vfs
 	//

@@ -42,7 +42,6 @@
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 {
-
 #ifdef _DEBUG
 
 	int nDbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);	// Get current flags
@@ -70,6 +69,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;
 		harness.SetParameter(IDR_PARAM_INITRAMFS, commandline.Switches.GetValue(L"initramfs"));
+
+		harness.SetParameter(IDR_PARAM_SYSLOGLENGTH, 1 MiB);
 
 		harness.Start(IDS_VMSERVICE_NAME);
 

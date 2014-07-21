@@ -38,6 +38,19 @@
 void VmService::OnStart(int, LPTSTR*)
 {
 	RPC_STATUS					rpcresult;			// Result from function call
+	LARGE_INTEGER				qpcbias;			// QueryPerformanceCounter bias
+
+	// The system log needs to know what value acts as zero for the timestamps
+	QueryPerformanceCounter(&qpcbias);
+
+	// Create the system log instance and seed the time bias to now
+	m_syslog = std::make_unique<VmSystemLog>(m_sysloglength);
+	m_syslog->TimestampBias = qpcbias.QuadPart;
+
+	// TODO: Put a real log here with the zero-time bias and the size of the
+	// configured system log
+	m_syslog->Push("System log initialized");
+	////
 
 	svctl::tstring initramfs = m_initramfs;
 
