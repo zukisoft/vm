@@ -227,6 +227,9 @@
     <ClInclude Include="Console.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VmSystemLog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -392,6 +395,9 @@
       <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="Console.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VmSystemLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

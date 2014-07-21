@@ -329,6 +329,7 @@
     <ClInclude Include="VfsSymbolicLinkNode.h" />
     <ClInclude Include="VirtualFileSystem.h" />
     <ClInclude Include="VmService.h" />
+    <ClInclude Include="VmSystemLog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\bzip2\blocksort.c">
@@ -564,6 +565,7 @@
     <ClCompile Include="VfsSymbolicLinkNode.cpp" />
     <ClCompile Include="VirtualFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
+    <ClCompile Include="VmSystemLog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
