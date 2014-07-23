@@ -26,6 +26,9 @@
 #include "Console.h"
 #include "VmService.h"
 
+#include "TempFileSystem.h"
+#include <concurrent_priority_queue.h>
+
 #pragma warning(push, 4)	
 
 //---------------------------------------------------------------------------
@@ -49,6 +52,24 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
+
+	Concurrency::concurrent_priority_queue<uint32_t, std::greater<uint32_t>> myqueue;
+
+	myqueue.push(UINT32_MAX);
+	myqueue.push(2);
+	myqueue.push(8);
+	myqueue.push(1000);
+	myqueue.push(6);
+	myqueue.push(40);
+
+	for(int index = 0; index < 6; index++) {
+
+		uint32_t next;
+		myqueue.try_pop(next);
+		int x= 123;
+	}
+
+	std::unique_ptr<FileSystem> fs = std::make_unique<TempFileSystem>();
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);

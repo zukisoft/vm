@@ -20,57 +20,45 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __ROOTFILESYSTEM_H_
+#define __ROOTFILESYSTEM_H_
 #pragma once
 
+#include "FileSystem.h"
+
+#pragma warning(push, 4)			
+
 //-----------------------------------------------------------------------------
-// Win32 Declarations
+// Class RootFileSystem
+//
+// Implements the / file system
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+class RootFileSystem : public FileSystem
+{
+public:
 
-// Windows / CRT
-#include <windows.h>
-#include <rpc.h>
-#include <stdint.h>
-#include <memory>
-#include <string>
+	RootFileSystem()=default;
+	~RootFileSystem()=default;
 
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
+	// Name (FileSystem)
+	//
+	// Gets the name of the file system
+	__declspec(property(get=getName)) const char_t* Name;
+	virtual const char_t* getName(void) const { return s_fsname; }
 
-// KiB / MiB / GiB
+private:
 
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
+	RootFileSystem(const RootFileSystem&)=delete;
+	RootFileSystem& operator=(const RootFileSystem&)=delete;
 
-// Generic Text Mappings
-#include <tchar.h>
-#include <char_t.h>
-#include <ssize_t.h>
-#include <tstring.h>
-
-// Linux
-#include <linux/types.h>
-#include <linux/errno.h>
-
-//---------------------------------------------------------------------------
-// Service Template Library
-
-#include <servicelib.h>
-
-#include <vm.service.h>
-#include <messages.h>
-
-//---------------------------------------------------------------------------
-// Project COM Declarations
-
-//#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
+	// s_fsname
+	//
+	// Name of the file system; returned through getName()
+	static const char_t* s_fsname;
+};
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)
+
+#endif	// __ROOTFILESYSTEM_H_

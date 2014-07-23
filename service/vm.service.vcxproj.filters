@@ -66,6 +66,15 @@
       <UniqueIdentifier>{1edb1ceb-8d74-4ff5-b348-6a35554bf66f}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Header Files\Character Devices">
+      <UniqueIdentifier>{178e848a-95c4-48bc-a014-a0cde2ef3b01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\File Systems">
+      <UniqueIdentifier>{ce8be77b-3a5a-4986-a7b9-3278d4901e91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\File Systems">
+      <UniqueIdentifier>{904732a2-c9b8-4969-b93a-83d5ebb5163d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -229,6 +238,30 @@
     </ClInclude>
     <ClInclude Include="VmSystemLog.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NullCharacterDevice.h">
+      <Filter>Header Files\Character Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="ZeroCharacterDevice.h">
+      <Filter>Header Files\Character Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ssize_t.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RootFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="TempFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -399,6 +432,18 @@
     </ClCompile>
     <ClCompile Include="VmSystemLog.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="RootFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="TempFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

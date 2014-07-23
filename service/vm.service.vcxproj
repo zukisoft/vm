@@ -308,6 +308,7 @@
     <ClInclude Include="..\common\MappedFile.h" />
     <ClInclude Include="..\common\MappedFileView.h" />
     <ClInclude Include="..\common\MemoryRegion.h" />
+    <ClInclude Include="..\common\ssize_t.h" />
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\tstring.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
@@ -317,9 +318,15 @@
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
     <ClInclude Include="Console.h" />
+    <ClInclude Include="Device.h" />
+    <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FsNode.h" />
+    <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
+    <ClInclude Include="ProcFileSystem.h" />
+    <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VfsDirectoryNode.h" />
@@ -330,6 +337,7 @@
     <ClInclude Include="VirtualFileSystem.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="VmSystemLog.h" />
+    <ClInclude Include="ZeroCharacterDevice.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\bzip2\blocksort.c">
@@ -546,7 +554,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Console.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProcFileSystem.cpp" />
+    <ClCompile Include="TempFileSystem.cpp" />
+    <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />
     <ClCompile Include="rpc010_unlink.cpp" />

@@ -20,34 +20,95 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __CHARACTERDEVICE_H_
-#define __CHARACTERDEVICE_H_
+#ifndef __FILESYSTEM_H_
+#define __FILESYSTEM_H_
 #pragma once
 
-#include "Device.h"
+#include <atomic>
+#include <concurrent_priority_queue.h>
 
 #pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
-// Class CharacterDevice
+// Class FileSystem
 //
-// Implements a virtual file system character device
+// Base class for all file system classes
 
-class CharacterDevice : public Device
+class FileSystem
 {
 public:
 
+	// Node
+	//
+	// words
+	class Node
+	{
+	public:
+
+	private:
+
+		Node(const Node&)=delete;
+		Node& operator=(const Node&)=delete;
+	};
+
+	// Directory
+	//
+	// words
+	class Directory
+	{
+	public:
+
+	private:
+
+		Directory(const Directory&)=delete;
+		Directory& operator=(const Directory&)=delete;
+	};
+
+	FileSystem()=default;
+	~FileSystem()=default;
+
+	// BlockSize
+	//
+	// Gets the file system block size
+	__declspec(property(get=getBlockSize)) size_t BlockSize;
+	virtual size_t getBlockSize(void) const = 0;
+	
+	// Name
+	//
+	// Gets the file system name
+	__declspec(property(get=getName)) const char_t* Name;
+	virtual const char_t* getName(void) const = 0;
+
+protected:
+
+	// AllocateNodeIndex
+	//
+	// Allocates a node index for this filesystem instance
+	uint32_t AllocateNodeIndex(void);
+
+	// ReleaseNodeIndex
+	//
+	// Releases a node index for reuse in this filesystem
+	void ReleaseNodeIndex(uint32_t index);
+
 private:
 
-	CharacterDevice(const CharacterDevice&)=delete;
-	CharacterDevice& operator=(const CharacterDevice&)=delete;
+	FileSystem(const FileSystem&)=delete;
+	FileSystem& operator=(const FileSystem&)=delete;
 
-	//-------------------------------------------------------------------------
-	// Member Variables
+	// m_nextindex
+	//
+	// Next sequential node index value
+	std::atomic<uint32_t> m_nextindex;
+
+	// m_spentindexes
+	//
+	// Priority queue used to recycle node indexes; lower values will be used first
+	Concurrency::concurrent_priority_queue<uint32_t, std::greater<uint32_t>> m_spentindexes;
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __CHARACTERDEVICE_H_
+#endif	// __FILESYSTEM_H_

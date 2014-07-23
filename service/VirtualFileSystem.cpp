@@ -179,19 +179,19 @@ void VirtualFileSystem::LoadInitialFileSystem(const tchar_t* path)
 				break;
 
 			case LINUX_S_IFCHR:
-				_RPTF0(_CRT_ASSERT, "initramfs: S_IFCHR not implemented yet");
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFCHR not implemented yet");
 				break;
 
 			case LINUX_S_IFBLK:
-				_RPTF0(_CRT_ASSERT, "initramfs: S_IFBLK not implemented yet");
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFBLK not implemented yet");
 				break;
 
 			case LINUX_S_IFIFO:
-				_RPTF0(_CRT_ASSERT, "initramfs: S_IFIFO not implemented yet");
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFIFO not implemented yet");
 				break;
 
 			case LINUX_S_IFSOCK:
-				_RPTF0(_CRT_ASSERT, "initramfs: S_IFSOCK not implemented yet");
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFSOCK not implemented yet");
 				break;
 
 			default:

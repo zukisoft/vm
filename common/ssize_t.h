@@ -20,57 +20,18 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __SSIZE_T_H
+#define __SSIZE_T_H
 #pragma once
 
-//-----------------------------------------------------------------------------
-// Win32 Declarations
-
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
-
-// Windows / CRT
-#include <windows.h>
-#include <rpc.h>
-#include <stdint.h>
-#include <memory>
-#include <string>
-
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Generic Text Mappings
-#include <tchar.h>
-#include <char_t.h>
-#include <ssize_t.h>
-#include <tstring.h>
-
-// Linux
-#include <linux/types.h>
-#include <linux/errno.h>
-
-//---------------------------------------------------------------------------
-// Service Template Library
-
-#include <servicelib.h>
-
-#include <vm.service.h>
-#include <messages.h>
-
-//---------------------------------------------------------------------------
-// Project COM Declarations
-
-//#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
+// ssize_t
+//
+#ifdef _WIN64
+typedef __int64			ssize_t;
+#else
+typedef __int32			ssize_t;
+#endif
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#endif	// __SSIZE_T_H

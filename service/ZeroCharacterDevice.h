@@ -20,57 +20,34 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __ZEROCHARACTERDEVICE_H_
+#define __ZEROCHARACTERDEVICE_H_
 #pragma once
 
+#include "CharacterDevice.h"
+
+#pragma warning(push, 4)			
+
 //-----------------------------------------------------------------------------
-// Win32 Declarations
+// Class ZeroCharacterDevice
+//
+// Implements the /dev/zero character device
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+class ZeroCharacterDevice : public CharacterDevice
+{
+public:
 
-// Windows / CRT
-#include <windows.h>
-#include <rpc.h>
-#include <stdint.h>
-#include <memory>
-#include <string>
+private:
 
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
+	ZeroCharacterDevice(const ZeroCharacterDevice&)=delete;
+	ZeroCharacterDevice& operator=(const ZeroCharacterDevice&)=delete;
 
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Generic Text Mappings
-#include <tchar.h>
-#include <char_t.h>
-#include <ssize_t.h>
-#include <tstring.h>
-
-// Linux
-#include <linux/types.h>
-#include <linux/errno.h>
-
-//---------------------------------------------------------------------------
-// Service Template Library
-
-#include <servicelib.h>
-
-#include <vm.service.h>
-#include <messages.h>
-
-//---------------------------------------------------------------------------
-// Project COM Declarations
-
-//#include <initguid.h>			// We need DECLARE_GUID support for the CLSIDs
+	//-------------------------------------------------------------------------
+	// Member Variables
+};
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)
+
+#endif	// __ZEROCHARACTERDEVICE_H_
