@@ -133,15 +133,15 @@ private:
 		// Base address of the chunk memory reservation
 		uintptr_t m_base;
 
-		// m_next
+		// m_nextblock
 		//
 		// Atomic counter indicating the next sequential unallocated block
-		std::atomic<int16_t> m_next = 0;
+		std::atomic<int16_t> m_nextblock = 0;
 
-		// m_spent
+		// m_spentblocks
 		//
 		// Queue used to store released block indexes for reuse
-		Concurrency::concurrent_queue<int16_t> m_spent;
+		Concurrency::concurrent_queue<int16_t> m_spentblocks;
 
 		// m_total
 		//
@@ -174,6 +174,16 @@ private:
 		Directory(const Directory&)=delete;
 		Directory& operator=(const Directory&)=delete;
 	};
+
+	// m_nextindex
+	//
+	// Next sequential node index value
+	std::atomic<int32_t> m_nextindex = 0;
+
+	// m_spentindexes
+	//
+	// Priority queue used to recycle node indexes; lower values will be used first
+	Concurrency::concurrent_queue<int32_t> m_spentindexes;
 
 	// s_fsname
 	//

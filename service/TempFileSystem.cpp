@@ -81,7 +81,7 @@ int16_t TempFileSystem::Chunk::AllocateBlock(void)
 void* TempFileSystem::Chunk::AllocateBlock(int16_t& index)
 {
 	// Try to grab a spent index first, otherwise grab a new one
-	if(!m_spent.try_pop(index)) index = m_next++;
+	if(!m_spentblocks.try_pop(index)) index = m_nextblock++;
 
 	// Check that the index is within the boundaries of this chunk
 	if((index < 0) || (index >= m_total)) throw Win32Exception(ERROR_INVALID_ADDRESS);
@@ -155,7 +155,7 @@ void TempFileSystem::Chunk::ReleaseBlock(int16_t index)
 
 	// Decommit the block from virtual memory and add the index to the spent blocks queue
 	if(!VirtualFree(address, BlockSize, MEM_DECOMMIT)) throw Win32Exception();
-	m_spent.push(index);
+	m_spentblocks.push(index);
 }
 
 //-----------------------------------------------------------------------------

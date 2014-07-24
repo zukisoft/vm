@@ -24,9 +24,6 @@
 #define __FILESYSTEM_H_
 #pragma once
 
-#include <atomic>
-#include <concurrent_priority_queue.h>
-
 #pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
@@ -64,6 +61,20 @@ public:
 		Directory& operator=(const Directory&)=delete;
 	};
 
+	// File
+	//
+	// words
+	class File
+	{
+	public:
+
+	private:
+
+		File(const File&)=delete;
+		File& operator=(const File&)=delete;
+	};
+
+
 	FileSystem()=default;
 	~FileSystem()=default;
 
@@ -81,30 +92,11 @@ public:
 
 protected:
 
-	// AllocateNodeIndex
-	//
-	// Allocates a node index for this filesystem instance
-	uint32_t AllocateNodeIndex(void);
-
-	// ReleaseNodeIndex
-	//
-	// Releases a node index for reuse in this filesystem
-	void ReleaseNodeIndex(uint32_t index);
 
 private:
 
 	FileSystem(const FileSystem&)=delete;
 	FileSystem& operator=(const FileSystem&)=delete;
-
-	// m_nextindex
-	//
-	// Next sequential node index value
-	std::atomic<uint32_t> m_nextindex;
-
-	// m_spentindexes
-	//
-	// Priority queue used to recycle node indexes; lower values will be used first
-	Concurrency::concurrent_priority_queue<uint32_t, std::greater<uint32_t>> m_spentindexes;
 };
 
 //-----------------------------------------------------------------------------
