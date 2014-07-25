@@ -20,14 +20,14 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __TEMPFILESYSTEM_H_
-#define __TEMPFILESYSTEM_H_
+#ifndef __RAMFILESYSTEM_H_
+#define __RAMFILESYSTEM_H_
 #pragma once
 
 #include <atomic>
 #include <concurrent_queue.h>
-//#include "FileSystem.h"
-#include "Win32Exception.h"
+#include <mutex>
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)		// inline specifier cannot be used (friend)
@@ -35,36 +35,102 @@
 //-----------------------------------------------------------------------------
 // Class RamFileSystem
 //
-// Implements a temporary, ram-based file system
-
+// Implements an in-memory file system
 //
-// FileSystem --> this is the superblock
+// Limits: INT32_MAX inodes
+// todo: document more
 
-class TempFileSystem //: public FileSystem
+class RamFileSystem : public FileSystem
 {
 public:
 
-	TempFileSystem()=default;
-	~TempFileSystem()=default;
-
-	// BlockSize (FileSystem)
+	// Destructor
 	//
-	// Gets the file system block size
-	__declspec(property(get=getBlockSize)) size_t BlockSize;
-	virtual size_t getBlockSize(void) const { return Chunk::BlockSize; }
+	virtual ~RamFileSystem()=default;
 
-	// Name (FileSystem)
+	class Directory : public FileSystem::Directory
+	{
+	public:
+
+		// Destructor
+		//
+		virtual ~Directory()=default;
+
+	private:
+
+		Directory(const Directory&)=delete;
+		Directory& operator=(const Directory&)=delete;
+
+		Directory()=default;
+	};
+
+	// Class Node
 	//
-	// Gets the name of the file system
-	__declspec(property(get=getName)) const char_t* Name;
-	virtual const char_t* getName(void) const { return s_fsname; }
+	// Node implementation for the file system
+	class Node : public FileSystem::Node
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		// TODO: needs type, mode and uid/gid arguments
+		Node(RamFileSystem& fs, int32_t index);
+		virtual ~Node();
+
+		// (FileSystem::Node)
+
+	private:
+
+		Node(const Node&)=delete;
+		Node& operator=(const Node&)=delete;
+
+		// m_fs
+		//
+		// Reference to the parent file system
+		RamFileSystem& m_fs;
+
+		// m_blocks
+		//
+		// TODO: this will hold the extent:block indexes
+
+		// m_lock
+		//
+		// Block data read/write access lock
+		std::recursive_mutex m_lock;
+	};
+
+	// this represents a view of the node by a process
+	//class File : public FileSystem::File
+	//{
+	//public:
+
+	//	// Destructor
+	//	//
+	//	virtual ~File()=default;
+
+	//private:
+
+	//	File(const File&)=delete;
+	//	File& operator=(const File&)=delete;
+
+	//	File()=default;
+	//};
+
+	// Mount (static)
+	//
+	// Mounts the file system on the specified device, returns the FileSystem instance
+	static std::unique_ptr<FileSystem> Mount(int flags, const char_t* devicename, void* data);
 
 private:
 
-	TempFileSystem(const TempFileSystem&)=delete;
-	TempFileSystem& operator=(const TempFileSystem&)=delete;
+	RamFileSystem(const RamFileSystem&)=delete;
+	RamFileSystem& operator=(const RamFileSystem&)=delete;
 
-	// Chunk
+	// Instance Constructor
+	RamFileSystem(size_t max);
+	friend std::unique_ptr<RamFileSystem> std::make_unique<RamFileSystem, size_t&>(size_t&);
+
+	// Class Extent
 	//
 	// Implements a chunk of virtual memory, divided up into blocks of data
 	// based on the system page size.  Allocation/release of individual blocks 
@@ -72,14 +138,14 @@ private:
 	// externally to this class.
 	//
 	// The number of blocks is limited to 32768 (INT16_MAX) to allow for a single 
-	// 32-bit variable to hold a CHUNK:BLOCK memory index in the outer class, this
-	// caps a single chunk to 128MiB with standard 4K memory pages
-	class Chunk
+	// 32-bit variable to hold an EXTENT:BLOCK memory index in the outer class, this
+	// caps a single extent to 128MiB with standard 4K memory pages
+	class Extent
 	{
 	public:
 
 		// Destructor
-		~Chunk();
+		~Extent();
 
 		// AllocateBlock
 		//
@@ -90,7 +156,7 @@ private:
 		// Create (static)
 		//
 		// Create a new Chunk with the specified number of blocks
-		static std::unique_ptr<Chunk> Create(int16_t blocks);
+		static std::unique_ptr<Extent> Create(int16_t blocks);
 
 		// ReleaseBlock
 		//
@@ -116,12 +182,12 @@ private:
 
 	private:
 
-		Chunk(const Chunk&)=delete;
-		Chunk& operator=(const Chunk&)=delete;
+		Extent(const Extent&)=delete;
+		Extent& operator=(const Extent&)=delete;
 
 		// Instance Constructor
-		Chunk(void* base, int16_t blocks) : m_base(uintptr_t(base)), m_total(blocks) {}
-		friend std::unique_ptr<Chunk> std::make_unique<Chunk, void*&, int16_t&>(void*&, int16_t&);
+		Extent(void* base, int16_t blocks) : m_base(uintptr_t(base)), m_total(blocks) {}
+		friend std::unique_ptr<Extent> std::make_unique<Extent, void*&, int16_t&>(void*&, int16_t&);
 
 		// ValidateBlock
 		//
@@ -149,50 +215,58 @@ private:
 		int16_t	m_total;
 	};
 
-	// Node
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// AllocateBlock
 	//
-	// todo: words
-	class Node //: public FileSystem::Node
-	{
-	public:
+	// Allocates a block of memory to use for node data
+	uint32_t AllocateBlock(void);
+	void* AllocateBlock(uint32_t& block);
 
-	private:
-
-		Node(const Node&)=delete;
-		Node& operator=(const Node&)=delete;
-	};
-
-	// Directory
+	// AllocateNodeIndex
 	//
-	// todo: words
-	class Directory //: public FileSystem::Directory
-	{
-	public:
+	// Allocates a node index from the pool
+	int32_t AllocateNodeIndex(void);
 
-	private:
+	// ReleaseBlock
+	//
+	// Releases a block of data back into the block pool
+	void ReleaseBlock(uint32_t block);
 
-		Directory(const Directory&)=delete;
-		Directory& operator=(const Directory&)=delete;
-	};
+	// ReleaseNodeIndex
+	//
+	// Releases a node index from the pool
+	void RelaseNodeIndex(int32_t index);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
 
 	// m_nextindex
 	//
 	// Next sequential node index value
-	std::atomic<int32_t> m_nextindex = 0;
+	std::atomic<int32_t> m_nextinode = 0;
 
 	// m_spentindexes
 	//
-	// Priority queue used to recycle node indexes; lower values will be used first
-	Concurrency::concurrent_queue<int32_t> m_spentindexes;
+	// Queue used to recycle node indexes
+	Concurrency::concurrent_queue<int32_t> m_spentinodes;
 
-	// s_fsname
+	// m_rootnode
 	//
-	// Name of the file system; returned through getName()
-	static const char_t* s_fsname;
+	// The root node of the file system
+	std::shared_ptr<Node> m_rootnode;
+
+	// m_extents
+	//
+	// TODO: I want this to be a vector<> of multiple extents
+	// to allow for a smaller amount of memory to be reserved
+	// than the original maximum
+	std::unique_ptr<Extent> m_tempextent;
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __TEMPFILESYSTEM_H_
+#endif	// __RAMFILESYSTEM_H_

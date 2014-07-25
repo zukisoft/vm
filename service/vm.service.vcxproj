@@ -323,10 +323,9 @@
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
-    <ClInclude Include="ProcFileSystem.h" />
+    <ClInclude Include="RamFileSystem.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VfsDirectoryNode.h" />
@@ -556,9 +555,8 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="ProcFileSystem.cpp" />
+    <ClCompile Include="RamFileSystem.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />
-    <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />
     <ClCompile Include="rpc010_unlink.cpp" />
