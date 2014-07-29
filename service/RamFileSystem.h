@@ -27,6 +27,7 @@
 #include <atomic>
 #include <concurrent_queue.h>
 #include <mutex>
+#include <vector>
 #include "FileSystem.h"
 
 #pragma warning(push, 4)
@@ -48,74 +49,6 @@ public:
 	//
 	virtual ~RamFileSystem()=default;
 
-	class Directory : public FileSystem::Directory
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~Directory()=default;
-
-	private:
-
-		Directory(const Directory&)=delete;
-		Directory& operator=(const Directory&)=delete;
-
-		Directory()=default;
-	};
-
-	// Class Node
-	//
-	// Node implementation for the file system
-	class Node : public FileSystem::Node
-	{
-	public:
-
-		// Constructor / Destructor
-		//
-		// TODO: needs type, mode and uid/gid arguments
-		Node(RamFileSystem& fs, int32_t index);
-		virtual ~Node();
-
-		// (FileSystem::Node)
-
-	private:
-
-		Node(const Node&)=delete;
-		Node& operator=(const Node&)=delete;
-
-		// m_fs
-		//
-		// Reference to the parent file system
-		RamFileSystem& m_fs;
-
-		// m_blocks
-		//
-		// TODO: this will hold the extent:block indexes
-
-		// m_lock
-		//
-		// Block data read/write access lock
-		std::recursive_mutex m_lock;
-	};
-
-	// this represents a view of the node by a process
-	//class File : public FileSystem::File
-	//{
-	//public:
-
-	//	// Destructor
-	//	//
-	//	virtual ~File()=default;
-
-	//private:
-
-	//	File(const File&)=delete;
-	//	File& operator=(const File&)=delete;
-
-	//	File()=default;
-	//};
-
 	// Mount (static)
 	//
 	// Mounts the file system on the specified device, returns the FileSystem instance
@@ -130,7 +63,7 @@ private:
 	RamFileSystem(size_t max);
 	friend std::unique_ptr<RamFileSystem> std::make_unique<RamFileSystem, size_t&>(size_t&);
 
-	// Class Extent
+	// Class Chunk
 	//
 	// Implements a chunk of virtual memory, divided up into blocks of data
 	// based on the system page size.  Allocation/release of individual blocks 
@@ -138,14 +71,14 @@ private:
 	// externally to this class.
 	//
 	// The number of blocks is limited to 32768 (INT16_MAX) to allow for a single 
-	// 32-bit variable to hold an EXTENT:BLOCK memory index in the outer class, this
-	// caps a single extent to 128MiB with standard 4K memory pages
-	class Extent
+	// 32-bit variable to hold a CHUNK:BLOCK memory index in the outer class, this
+	// caps a single chunk to 128MiB with standard 4K memory pages
+	class Chunk
 	{
 	public:
 
 		// Destructor
-		~Extent();
+		~Chunk();
 
 		// AllocateBlock
 		//
@@ -156,7 +89,7 @@ private:
 		// Create (static)
 		//
 		// Create a new Chunk with the specified number of blocks
-		static std::unique_ptr<Extent> Create(int16_t blocks);
+		static std::unique_ptr<Chunk> Create(int16_t blocks);
 
 		// ReleaseBlock
 		//
@@ -182,12 +115,12 @@ private:
 
 	private:
 
-		Extent(const Extent&)=delete;
-		Extent& operator=(const Extent&)=delete;
+		Chunk(const Chunk&)=delete;
+		Chunk& operator=(const Chunk&)=delete;
 
 		// Instance Constructor
-		Extent(void* base, int16_t blocks) : m_base(uintptr_t(base)), m_total(blocks) {}
-		friend std::unique_ptr<Extent> std::make_unique<Extent, void*&, int16_t&>(void*&, int16_t&);
+		Chunk(void* base, int16_t blocks) : m_base(uintptr_t(base)), m_total(blocks) {}
+		friend std::unique_ptr<Chunk> std::make_unique<Chunk, void*&, int16_t&>(void*&, int16_t&);
 
 		// ValidateBlock
 		//
@@ -213,6 +146,145 @@ private:
 		//
 		// Total number of blocks reserved for this chunk
 		int16_t	m_total;
+	};
+
+	// Class Node
+	//
+	// Node implementation for the file system
+	class Node : public FileSystem::Node
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		// TODO: needs type, mode and uid/gid arguments
+		Node(RamFileSystem& fs);
+		virtual ~Node();
+
+		// (FileSystem::Node)
+
+		//virtual FileSystem::AliasPtr Create(const std::shared_ptr<FileSystem::Alias>& parent, uapi::mode_t mode);
+
+		virtual uint32_t getIndex(void) const { return m_index; }
+
+	private:
+
+		Node(const Node&)=delete;
+		Node& operator=(const Node&)=delete;
+
+		uint32_t m_index;
+
+		// m_blocks
+		//
+		// Vector of blocks allocated for this node
+		std::vector<uint32_t> m_blocks;
+
+		// m_fs
+		//
+		// Reference to the parent file system
+		RamFileSystem& m_fs;
+
+		// m_lock
+		//
+		// Block data read/write access lock
+		std::recursive_mutex m_lock;
+	};
+
+	// Alias
+	//
+	// Implementation of FileSystem::Alias for this file system
+	class Alias : public FileSystem::Alias
+	{
+	public:
+
+		// Constructors
+		//
+		Alias(RamFileSystem& fs);
+		Alias(RamFileSystem& fs, const std::shared_ptr<FileSystem::Alias>& parent, const char_t* name);
+
+		// Destructor
+		//
+		~Alias()=default;
+
+		// AttachNode
+		//
+		// Attaches a Node instance to this Alias instance
+		virtual void AttachNode(const std::shared_ptr<FileSystem::Node>& node);
+
+		// DetachNode
+		//
+		// Detaches the node instance from this Alias
+		virtual void DetachNode(void) {}
+
+	private:
+
+		Alias(const Alias&)=delete;
+		Alias& operator=(const Alias&)=delete;
+
+		// m_children
+		//
+		// Collection of Aliases that are children of this alias,
+		// are not necessarily from this file system
+		std::vector<std::weak_ptr<FileSystem::Alias>> m_children;
+
+		// m_fs
+		//
+		// Reference to the parent file system instance
+		RamFileSystem& m_fs;
+
+		// m_name
+		//
+		// The alias name
+		std::string m_name;
+
+		// m_node
+		//
+		// The underlying Node instance this alias points to
+		std::weak_ptr<Node> m_node;
+
+		// m_parent
+		//
+		// The parent Alias for this alias
+		std::shared_ptr<FileSystem::Alias> m_parent;
+	};
+
+	class DirectoryEntry : public FileSystem::DirectoryEntry
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		DirectoryEntry(RamFileSystem& fs, const std::shared_ptr<Node>& node);
+		virtual ~DirectoryEntry()=default;
+
+	protected:
+
+		RamFileSystem& m_fs;
+		std::shared_ptr<Node> m_node;
+
+	private:
+
+		DirectoryEntry(const DirectoryEntry&)=delete;
+		DirectoryEntry& operator=(const DirectoryEntry&)=delete;
+	};
+
+	// this represents a view of the node by a process
+	class File : public FileSystem::File
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		File(RamFileSystem& fs, const std::shared_ptr<Node>& node);
+		virtual ~File()=default;
+
+	private:
+
+		File(const File&)=delete;
+		File& operator=(const File&)=delete;
+
+		RamFileSystem& m_fs;
+		std::shared_ptr<Node> m_node;
 	};
 
 	//-------------------------------------------------------------------------
@@ -252,17 +324,17 @@ private:
 	// Queue used to recycle node indexes
 	Concurrency::concurrent_queue<int32_t> m_spentinodes;
 
-	// m_rootnode
+	// m_root
 	//
-	// The root node of the file system
-	std::shared_ptr<Node> m_rootnode;
+	// The file system root object
+	std::shared_ptr<Node> m_root;
 
-	// m_extents
+	// m_chunks
 	//
-	// TODO: I want this to be a vector<> of multiple extents
+	// TODO: I want this to be a vector<> of multiple chunks
 	// to allow for a smaller amount of memory to be reserved
 	// than the original maximum
-	std::unique_ptr<Extent> m_tempextent;
+	std::unique_ptr<Chunk> m_tempchunk;
 };
 
 //-----------------------------------------------------------------------------

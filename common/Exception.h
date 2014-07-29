@@ -24,6 +24,7 @@
 #define __EXCEPTION_H_
 #pragma once
 
+#include <exception>
 #include "char_t.h"
 #include "tstring.h"
 
@@ -36,7 +37,7 @@
 // where any non-system RT_MESSAGETABLE resources are located; by default the
 // calling process executable will be checked for these resources.
 
-class Exception
+class Exception : public std::exception
 {
 public:
 

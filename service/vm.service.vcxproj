@@ -321,6 +321,8 @@
     <ClInclude Include="Device.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FsNode.h" />
+    <ClInclude Include="HostFileSystem.h" />
+    <ClInclude Include="LinuxException.h" />
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="RamFileSystem.h" />
@@ -554,6 +556,8 @@
     </ClCompile>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="HostFileSystem.cpp" />
+    <ClCompile Include="LinuxException.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RamFileSystem.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />

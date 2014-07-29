@@ -26,6 +26,8 @@
 #include "Console.h"
 #include "VmService.h"
 
+#include "HostFileSystem.h"
+
 #pragma warning(push, 4)	
 
 //---------------------------------------------------------------------------
@@ -49,6 +51,24 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
+
+	char msg[255];
+	strerror_s(msg, 255, EINVAL);
+
+	///std::unique_ptr<FileSystem> fs = RamFileSystem::Mount(0, nullptr, nullptr);
+
+	auto fs = HostFileSystem::Mount(0, "d:\\", nullptr);
+
+	/*std::shared_ptr<FileSystem::DirectoryEntry> dentry = std::make_shared<FileSystem::DirectoryEntry>();
+	std::shared_ptr<FileSystem::Node> node = std::make_shared<FileSystem::Node>();
+	dentry->Node = node;
+	node.reset();
+
+	std::shared_ptr<FileSystem::File> f = dentry->OpenFile();
+	dentry.reset();
+	f.reset();
+
+	*/return 0;
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);
