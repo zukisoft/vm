@@ -141,7 +141,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		delete executable;
 	}
 	catch(Exception& ex) {
-		MessageBox(NULL, ex, _T("Exception"), MB_OK | MB_ICONHAND);
+		MessageBox(NULL, ex.Message, _T("Exception"), MB_OK | MB_ICONHAND);
 		return (int)E_FAIL;
 	}
 

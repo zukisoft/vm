@@ -27,7 +27,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include "char_t.h"
+#include "generic_text.h"
 #include "StreamReader.h"
 
 #pragma warning(push, 4)			

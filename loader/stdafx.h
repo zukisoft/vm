@@ -48,9 +48,6 @@
 #include <string>
 #include <vector>
 
-#include <char_t.h>
-#include <tstring.h>
-
 #include <linux/types.h>
 #include <linux/errno.h>
 

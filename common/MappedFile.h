@@ -25,7 +25,7 @@
 #pragma once
 
 #include <memory>
-#include "char_t.h"
+#include "generic_text.h"
 #include "Exception.h"
 #include "File.h"
 #include "Win32Exception.h"

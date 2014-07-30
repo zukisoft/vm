@@ -27,8 +27,7 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include "char_t.h"
-#include "tstring.h"
+#include "generic_text.h"
 #include "Exception.h"
 
 #pragma warning(push, 4)				

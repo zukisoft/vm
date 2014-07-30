@@ -27,7 +27,7 @@
 #include <linux/stat.h>
 #include <linux/types.h>
 #include <memory>
-#include "tstring.h"
+#include "generic_text.h"
 #include "Exception.h"
 #include "StreamReader.h"
 #include "VfsNode.h"

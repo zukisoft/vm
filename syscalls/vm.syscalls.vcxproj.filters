@@ -64,12 +64,6 @@
     <ClInclude Include="..\common\AutoWriterLock.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\char_t.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\tstring.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\Win32Exception.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -77,6 +71,12 @@
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\ReaderWriterLock.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Exception.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\generic_text.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
@@ -166,6 +166,12 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="..\common\rpcmem.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Exception.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Win32Exception.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>

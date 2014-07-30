@@ -20,22 +20,32 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __CHAR_T_H_
-#define __CHAR_T_H_
-#pragma once
+#include "stdafx.h"
+#include "Win32Exception.h"
 
-// char_t
-//
-typedef char		char_t;
+#pragma warning(push, 4)
 
-// tchar_t
+//-----------------------------------------------------------------------------
+// Win32Exception::GetDefaultMessage (protected)
 //
-#ifdef _UNICODE
-typedef wchar_t		tchar_t;
-#else
-typedef char		tchar_t;
-#endif
+// Invoked when an HRESULT cannot be mapped to a message table string
+//
+// Arguments:
+//
+//	hresult		- Thrown HRESULT code
+
+std::tstring Win32Exception::GetDefaultMessage(const HRESULT& hresult)
+{
+	// Technically anything that gets in here came from HRESULT_FROM_WIN32(), but in case not ...
+	if(HRESULT_FACILITY(hresult) != FACILITY_WIN32) return Exception::GetDefaultMessage(hresult);
+
+	tchar_t buffer[256];			// Stack buffer to hold formatted string
+
+	// Format a default message for the HRESULT that just shows the result code as an integer
+	_sntprintf_s(buffer, 256, _TRUNCATE, _T("Win32 system error code %d\r\n"), HRESULT_CODE(hresult));
+	return std::tstring(buffer);
+}
 
 //-----------------------------------------------------------------------------
 
-#endif	// __CHAR_T_H
+#pragma warning(pop)

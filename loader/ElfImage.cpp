@@ -100,7 +100,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 		if(elfheader->e_type == LINUX_ET_EXEC) m_region = MemoryRegion::Reserve(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
 		else m_region = MemoryRegion::Reserve(maxvaddr - minvaddr, MEM_TOP_DOWN);
 
-	} catch(Exception& ex) { throw Exception(ex, E_RESERVEIMAGEREGION); }
+	} catch(Exception& ex) { throw Exception(E_RESERVEIMAGEREGION, ex); }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
 	intptr_t vaddrdelta = (elfheader->e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(m_region->Pointer) - minvaddr;
@@ -128,7 +128,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 			// Get the base address of the loadable segment and commit the virtual memory
 			uintptr_t segbase = progheader->p_vaddr + vaddrdelta;
 			try { m_region->Commit(reinterpret_cast<void*>(segbase), progheader->p_memsz, PAGE_READWRITE); }
-			catch(Exception& ex) { throw Exception(ex, E_COMMITIMAGESEGMENT); }
+			catch(Exception& ex) { throw Exception(E_COMMITIMAGESEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(progheader->p_filesz) {
@@ -143,7 +143,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 
 			// Attempt to apply the proper virtual memory protection flags to the segment
 			try { m_region->Protect(reinterpret_cast<void*>(segbase), progheader->p_memsz, FlagsToProtection(progheader->p_flags)); }
-			catch(Exception& ex) { throw Exception(ex, E_PROTECTIMAGESEGMENT); }
+			catch(Exception& ex) { throw Exception(E_PROTECTIMAGESEGMENT, ex); }
 		}
 	}
 
@@ -235,7 +235,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>* ElfImageT<ehdr_t, phdr_t, shdr_t, sym
 		// Construct a new ElfImage instance from the mapped image file view
 		return new ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>(view->Pointer, view->Length);
 	
-	} catch(Exception& ex) { throw Exception(ex, E_LOADELFIMAGEFAILED, path); }
+	} catch(Exception& ex) { throw Exception(E_LOADELFIMAGEFAILED, ex, path); }
 }
 
 //-----------------------------------------------------------------------------

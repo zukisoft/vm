@@ -155,9 +155,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\char_t.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\File.h" />
+    <ClInclude Include="..\common\generic_text.h" />
     <ClInclude Include="..\common\linux\auxvec.h" />
     <ClInclude Include="..\common\linux\elf.h" />
     <ClInclude Include="..\common\linux\elf-em.h" />
@@ -167,7 +167,6 @@
     <ClInclude Include="..\common\MappedFile.h" />
     <ClInclude Include="..\common\MappedFileView.h" />
     <ClInclude Include="..\common\MemoryRegion.h" />
-    <ClInclude Include="..\common\tstring.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="ElfArguments.h" />
@@ -182,6 +181,7 @@
     <ClCompile Include="..\common\MappedFile.cpp" />
     <ClCompile Include="..\common\MappedFileView.cpp" />
     <ClCompile Include="..\common\MemoryRegion.cpp" />
+    <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="stdafx.cpp">

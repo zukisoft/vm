@@ -26,7 +26,7 @@
 
 #include <queue>
 #include <linux/types.h>
-#include "tstring.h"
+#include "generic_text.h"
 #include "AutoCriticalSection.h"
 #include "CriticalSection.h"
 #include "Exception.h"

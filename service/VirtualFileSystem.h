@@ -28,8 +28,7 @@
 #include <memory>
 #include <linux/stat.h>
 
-#include "char_t.h"
-#include "tstring.h"
+#include "generic_text.h"
 #include "CompressedStreamReader.h"
 #include "CpioArchive.h"
 #include "Exception.h"

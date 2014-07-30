@@ -25,8 +25,7 @@
 #pragma once
 
 #include "FileSystem.h"
-#include "char_t.h"
-#include "tstring.h"
+#include "generic_text.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)		// inline specifier cannot be used (friend)

@@ -24,25 +24,49 @@
 #define __WIN32EXCEPTION_H_
 #pragma once
 
+#include <Windows.h>
 #include "Exception.h"
+#include "generic_text.h"
 
-#pragma warning(push, 4)				
+#pragma warning(push, 4)	
 
 //-----------------------------------------------------------------------------
-// Win32Exception
+// Class Win32Exception
 //
-// Exception class for Windows system error codes
+// Exception-based class used to wrap Windows system error codes.  Insertion
+// arguments are not supported nor is a module handle as these messages are
+// system defined and almost never have useful insertions
 
 class Win32Exception : public Exception
 {
 public:
 
-	// Instance Constructors
+	// Instance Constructor
 	//
 	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
-	Win32Exception(DWORD result) : Exception(HRESULT_FROM_WIN32(result)) {}
-	Win32Exception(Exception& inner) : Exception(inner, HRESULT_FROM_WIN32(GetLastError())) {}
-	Win32Exception(Exception& inner, DWORD result) : Exception(inner, HRESULT_FROM_WIN32(result)) {}
+
+	// Instance Constructor (Inner Exception)
+	//
+	Win32Exception(const Exception& inner) : Exception(HRESULT_FROM_WIN32(GetLastError()), inner) {}
+
+	// Instance Constructor (DWORD)
+	//
+	Win32Exception(const DWORD& result) : Exception(HRESULT_FROM_WIN32(result)) {}
+
+	// Instance Constructor (DWORD + Inner Exception)
+	//
+	Win32Exception(const DWORD& result, const Exception& inner) : Exception(HRESULT_FROM_WIN32(result), inner) {}
+
+	// Destructor
+	//
+	virtual ~Win32Exception()=default;
+
+protected:
+
+	// GetDefaultMessage (Exception)
+	//
+	// Invoked when an HRESULT code cannot be mapped to a message table string
+	virtual std::tstring GetDefaultMessage(const HRESULT& hresult);
 };
 
 //-----------------------------------------------------------------------------

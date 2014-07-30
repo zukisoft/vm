@@ -113,13 +113,7 @@
     <ClInclude Include="..\..\external\zlib\zlib.h">
       <Filter>External Libraries\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\char_t.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\Exception.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\tstring.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\Win32Exception.h">
@@ -262,6 +256,9 @@
     </ClInclude>
     <ClInclude Include="LinuxException.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\generic_text.h">
+      <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -447,6 +444,9 @@
     </ClCompile>
     <ClCompile Include="LinuxException.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Win32Exception.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

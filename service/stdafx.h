@@ -49,10 +49,8 @@
 #define GiB		*(1 << 30)		// GiB multiplier
 
 // Generic Text Mappings
-#include <tchar.h>
-#include <char_t.h>
+#include <generic_text.h>
 #include <ssize_t.h>
-#include <tstring.h>
 
 // Linux
 #include <linux/types.h>

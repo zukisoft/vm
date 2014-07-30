@@ -94,10 +94,10 @@ std::vector<std::tstring> CommandLine::MakeVector(const tchar_t* commandline)
 	if((commandline == nullptr) || (commandline[0] == 0)) return args;
 
 	// Convert the command line into an argc/argv array; no generic text version of this
-	wchar_t** wargv = CommandLineToArgvW(std::make_wstring(commandline).c_str(), &argc);
+	wchar_t** wargv = CommandLineToArgvW(std::to_wstring(commandline).c_str(), &argc);
 
 	// Convert each returned command line argument into a tstring for the vector<>
-	for(int index = 0; index < argc; index++) args.push_back(std::make_tstring(wargv[index]));
+	for(int index = 0; index < argc; index++) args.push_back(std::to_tstring(wargv[index]));
 
 	LocalFree(wargv);							// Release allocated string array
 	return args;								// Return generated vector<>

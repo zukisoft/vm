@@ -42,7 +42,7 @@
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "rpcns4.lib")
 
-#include "char_t.h"
+#include "generic_text.h"
 #include "vm.service.h"
 #include "messages.h"
 
