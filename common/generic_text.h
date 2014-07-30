@@ -28,6 +28,7 @@
 #include <type_traits>
 #include <vector>
 #include <tchar.h>
+#include <Windows.h>
 
 #pragma warning(push, 4)
 
