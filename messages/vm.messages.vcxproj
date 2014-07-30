@@ -22,21 +22,21 @@
     <CustomBuild Include="messages.mc">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
 </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\$(Filename).h;$(SolutionDir)tmp\$(ProjectName)\$(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Executing Message Compiler</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Executing Message Compiler</Message>
