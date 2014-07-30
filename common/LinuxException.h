@@ -42,7 +42,7 @@
 // Creates an HRESULT from a linux error code
 static inline HRESULT HRESULT_FROM_LINUX(int code)
 {
-	// Convert the code into an HRESULT value for Exception (0xE0000000 = S|R|C bits)
+	// Convert the code into an HRESULT value for Exception (0xE0000000 = SS|C bits)
 	return (0xE0000000 | (FACILITY_LINUX << 16) | code);
 }
 
