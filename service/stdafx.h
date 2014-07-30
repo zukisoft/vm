@@ -50,7 +50,6 @@
 
 // Generic Text Mappings
 #include <generic_text.h>
-#include <ssize_t.h>
 
 // Linux
 #include <linux/types.h>

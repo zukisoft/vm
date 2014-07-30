@@ -218,9 +218,6 @@
     <ClInclude Include="ZeroCharacterDevice.h">
       <Filter>Header Files\Character Devices</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\ssize_t.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="Device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
