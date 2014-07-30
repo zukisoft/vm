@@ -254,11 +254,11 @@
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="LinuxException.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\generic_text.h">
       <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\LinuxException.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -442,10 +442,10 @@
     <ClCompile Include="HostFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
     </ClCompile>
-    <ClCompile Include="LinuxException.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Win32Exception.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\LinuxException.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>

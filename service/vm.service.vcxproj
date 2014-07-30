@@ -296,6 +296,7 @@
     <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\generic_text.h" />
     <ClInclude Include="..\common\GZipStreamReader.h" />
+    <ClInclude Include="..\common\LinuxException.h" />
     <ClInclude Include="..\common\linuxtypes.h" />
     <ClInclude Include="..\common\linux\errno.h" />
     <ClInclude Include="..\common\linux\fcntl.h" />
@@ -321,7 +322,6 @@
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="HostFileSystem.h" />
-    <ClInclude Include="LinuxException.h" />
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="RamFileSystem.h" />
@@ -538,6 +538,7 @@
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\File.cpp" />
     <ClCompile Include="..\common\GZipStreamReader.cpp" />
+    <ClCompile Include="..\common\LinuxException.cpp" />
     <ClCompile Include="..\common\Lz4StreamReader.cpp" />
     <ClCompile Include="..\common\LzmaStreamReader.cpp" />
     <ClCompile Include="..\common\LzopStreamReader.cpp" />
@@ -557,7 +558,6 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
-    <ClCompile Include="LinuxException.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RamFileSystem.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />

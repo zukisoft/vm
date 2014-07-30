@@ -20,82 +20,32 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __LINUXEXCEPTION_H_
-#define __LINUXEXCEPTION_H_
-#pragma once
-
-#include <map>
-#include "generic_text.h"
-#include "Exception.h"
+#include "stdafx.h"
+#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// LinuxException
+// LinuxException::GetDefaultMessage (protected)
 //
-// Exception thrown using a Linux error code
+// Invoked when an HRESULT cannot be mapped to a message table string
+//
+// Arguments:
+//
+//	hresult		- Thrown HRESULT code
 
-class LinuxException : public Exception
+std::tstring LinuxException::GetDefaultMessage(const HRESULT& hresult)
 {
-public:
+	// Technically anything that gets in here came from HRESULT_FROM_LINUX(), but in case not ...
+	if(HRESULT_FACILITY(hresult) != FACILITY_LINUX) return Exception::GetDefaultMessage(hresult);
 
-	LinuxException(int err);
-	LinuxException(int err, DWORD win32);
-	LinuxException(int err, HRESULT win32);
+	tchar_t buffer[256];			// Stack buffer to hold formatted string
 
-private:
-
-	struct ErrorMapEntry
-	{
-		int				code;
-		const char_t* 	name;
-		const char_t*	message;
-	};
-
-	static const ErrorMapEntry s_map[];
-};
-
-	//// svctl::winexception
-	////
-	//// specialization of std::exception for Win32 error codes
-	//class winexception : public std::exception
-	//{
-	//public:
-	//	
-	//	// Instance Constructors
-	//	explicit winexception(DWORD result);
-	//	explicit winexception(HRESULT hresult) : winexception(static_cast<DWORD>(hresult)) {}
-	//	winexception() : winexception(GetLastError()) {}
-
-	//	// Destructor
-	//	virtual ~winexception()=default;
-
-	//	// code
-	//	//
-	//	// Exposes the Win32 error code used to construct the exception
-	//	DWORD code() const { return m_code; }
-
-	//	// std::exception::what
-	//	//
-	//	// Exposes a string-based representation of the exception (ANSI only)
-	//	virtual const char_t* what() const { return m_what.c_str(); }
-
-	//private:
-
-	//	// m_code
-	//	//
-	//	// Underlying error code
-	//	DWORD m_code;
-
-	//	// m_what
-	//	//
-	//	// Exception message string derived from the Win32 error code
-	//	std::string m_what;
-	//};
-
+	// Format a default message for the HRESULT that just shows the result code as an integer
+	_sntprintf_s(buffer, 256, _TRUNCATE, _T("Linux system error code %d\r\n"), HRESULT_CODE(hresult));
+	return std::tstring(buffer);
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __LINUXEXCEPTION_H_
