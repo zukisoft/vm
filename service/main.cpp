@@ -27,6 +27,8 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
+#include "HostFileSystem.h"
+
 #pragma warning(push, 4)	
 
 //---------------------------------------------------------------------------
@@ -53,6 +55,22 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
+
+	auto fs = HostFileSystem::Mount(0, "d:\\Linux Stuff", nullptr);
+	auto dir = fs->ResolvePath("/android/init.rc");
+
+	/*std::shared_ptr<FileSystem::DirectoryEntry> dentry = std::make_shared<FileSystem::DirectoryEntry>();
+	std::shared_ptr<FileSystem::Node> node = std::make_shared<FileSystem::Node>();
+	dentry->Node = node;
+	node.reset();
+
+	std::shared_ptr<FileSystem::File> f = dentry->OpenFile();
+	dentry.reset();
+	f.reset();
+
+	*/
+	return 0;	
+
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);

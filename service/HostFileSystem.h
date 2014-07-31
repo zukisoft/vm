@@ -24,8 +24,10 @@
 #define __HOSTFILESYSTEM_H_
 #pragma once
 
+#include <mutex>
 #include "FileSystem.h"
-#include "generic_text.h"
+#include "LinuxException.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)		// inline specifier cannot be used (friend)
@@ -62,8 +64,8 @@ private:
 
 	// Instance Constructor
 	//
-	HostFileSystem(const tchar_t* path);
-	friend std::unique_ptr<HostFileSystem> std::make_unique<HostFileSystem, const tchar_t*&>(const tchar_t*&);
+	HostFileSystem(const char_t* devicename);
+	friend std::unique_ptr<HostFileSystem> std::make_unique<HostFileSystem, const char_t*&>(const char_t*&);
 
 	// Forward Declarations
 	//
@@ -109,10 +111,15 @@ private:
 		std::tstring m_path;
 	};
 
-	// TODO: RootDirectoryEntry - specialized DirectoryEntry
-	//class RootDirectoryEntry : public FileSystem::DirectoryEntry
-	//{
-	//};
+	class RootDirectoryEntry : public DirectoryEntry
+	{
+	public:
+
+	private:
+
+		RootDirectoryEntry(const RootDirectoryEntry&)=delete;
+		RootDirectoryEntry& operator=(const RootDirectoryEntry&)=delete;
+	};
 
 	// Class File
 	//
@@ -158,6 +165,11 @@ private:
 		//
 		// Underlying operating system handle
 		HANDLE m_handle = INVALID_HANDLE_VALUE;
+
+		// m_lock
+		//
+		// Recursive mutex to control simultaneous access by multiple threads
+		std::recursive_mutex m_lock;
 
 		// m_position
 		//

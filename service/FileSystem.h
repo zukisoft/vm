@@ -56,6 +56,15 @@ public:
 	class DirectoryEntry;
 	class File;
 
+	// ResolvePath
+	//
+	// Resolves a path, optionally from an existing DirectoryEntry object
+	std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const char_t* path) { /* todo: use root node */ return nullptr; }
+	std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const std::shared_ptr<FileSystem::DirectoryEntry>& start, const char_t* path);
+
+	// going to need a way to access the master FileSystem object in the service
+	// but keep it instance-based, no statics; consider multiple services in one process
+
 	// DIRENTRY ---strong---> NODE      positive dentry; keeps node alive
 	// DIRENTRY ---strong---> <<NULL>>  negative dentry
 	// AttachNode() -- makes positive
@@ -79,11 +88,12 @@ public:
 		//
 		virtual ~DirectoryEntry()=default;
 
-		// Open
+		// OpenFile
 		//
 		// 
 		std::shared_ptr<FileSystem::File> OpenFile(void)
 		{
+			_ASSERTE(m_node);
 			if(!m_node) throw std::exception("TODO: new exception class");
 			return m_node->OpenFile(shared_from_this());
 		}
@@ -219,11 +229,24 @@ private:
 
 	FileSystem(const FileSystem&)=delete;
 	FileSystem& operator=(const FileSystem&)=delete;
+
+	// RootDirectoryEntry
+	//
+	// Represents the root directory entry of the entire file system
 	
+	// RootNode
+	//
+	// Represents the root node of the entire file system
+
 	// static methods/member variables
 	//
 	// --> const char *name;
 	// --> int fs_flags;
+
+	// m_rootdir
+	//
+	// Root node of the entire file system
+	// RootDirectoryEntry m_rootdir;
 	
 	// becomes Mount() in derived class
 	// --> struct dentry *(*mount) (struct file_system_type *, int flags, const char * devname, void * data);
