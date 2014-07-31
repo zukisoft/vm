@@ -25,7 +25,6 @@
 #pragma once
 
 #include "resource.h"
-#include "VirtualFileSystem.h"
 #include "VmSystemLog.h"
 
 #pragma warning(push, 4)			
@@ -79,7 +78,7 @@ private:
 	// m_vfs
 	//
 	// Virtual file system instance
-	VirtualFileSystem m_vfs;
+	// VirtualFileSystem m_vfs;
 };
 
 //---------------------------------------------------------------------------

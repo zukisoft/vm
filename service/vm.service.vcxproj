@@ -329,16 +329,9 @@
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="RamFileSystem.h" />
-    <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="VfsDirectoryNode.h" />
-    <ClInclude Include="VfsFileNode.h" />
-    <ClInclude Include="VfsNode.h" />
-    <ClInclude Include="VfsResolveResult.h" />
-    <ClInclude Include="VfsSymbolicLinkNode.h" />
-    <ClInclude Include="VirtualFileSystem.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
@@ -565,7 +558,6 @@
     <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RamFileSystem.cpp" />
-    <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />
     <ClCompile Include="rpc010_unlink.cpp" />
@@ -578,11 +570,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="VfsDirectoryNode.cpp" />
-    <ClCompile Include="VfsFileNode.cpp" />
-    <ClCompile Include="VfsNode.cpp" />
-    <ClCompile Include="VfsSymbolicLinkNode.cpp" />
-    <ClCompile Include="VirtualFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
     <ClCompile Include="VmSystemLog.cpp" />
   </ItemGroup>

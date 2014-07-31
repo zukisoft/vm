@@ -69,9 +69,6 @@
     <Filter Include="Header Files\File Systems">
       <UniqueIdentifier>{904732a2-c9b8-4969-b93a-83d5ebb5163d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="__obsolete">
-      <UniqueIdentifier>{89830410-cf51-4580-86e6-c0e75d22790a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -220,27 +217,6 @@
     </ClInclude>
     <ClInclude Include="Device.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsDirectoryNode.h">
-      <Filter>__obsolete</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsFileNode.h">
-      <Filter>__obsolete</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsNode.h">
-      <Filter>__obsolete</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsResolveResult.h">
-      <Filter>__obsolete</Filter>
-    </ClInclude>
-    <ClInclude Include="VfsSymbolicLinkNode.h">
-      <Filter>__obsolete</Filter>
-    </ClInclude>
-    <ClInclude Include="VirtualFileSystem.h">
-      <Filter>__obsolete</Filter>
-    </ClInclude>
-    <ClInclude Include="TempFileSystem.h">
-      <Filter>__obsolete</Filter>
     </ClInclude>
     <ClInclude Include="RamFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
@@ -397,21 +373,6 @@
     <ClCompile Include="..\common\rpcmem.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="VfsFileNode.cpp">
-      <Filter>__obsolete</Filter>
-    </ClCompile>
-    <ClCompile Include="VfsNode.cpp">
-      <Filter>__obsolete</Filter>
-    </ClCompile>
-    <ClCompile Include="VirtualFileSystem.cpp">
-      <Filter>__obsolete</Filter>
-    </ClCompile>
-    <ClCompile Include="VfsSymbolicLinkNode.cpp">
-      <Filter>__obsolete</Filter>
-    </ClCompile>
-    <ClCompile Include="VfsDirectoryNode.cpp">
-      <Filter>__obsolete</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\external\lzma\C\LzmaDec.c">
       <Filter>External Libraries\lzma</Filter>
     </ClCompile>
@@ -429,9 +390,6 @@
     </ClCompile>
     <ClCompile Include="VmSystemLog.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TempFileSystem.cpp">
-      <Filter>__obsolete</Filter>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp">
       <Filter>Source Files</Filter>
