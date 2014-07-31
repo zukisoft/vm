@@ -96,6 +96,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -112,6 +113,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -128,6 +130,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -146,6 +149,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -167,6 +171,7 @@
     <ClInclude Include="..\common\MappedFile.h" />
     <ClInclude Include="..\common\MappedFileView.h" />
     <ClInclude Include="..\common\MemoryRegion.h" />
+    <ClInclude Include="..\common\StructuredException.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="ElfArguments.h" />
@@ -181,6 +186,7 @@
     <ClCompile Include="..\common\MappedFile.cpp" />
     <ClCompile Include="..\common\MappedFileView.cpp" />
     <ClCompile Include="..\common\MemoryRegion.cpp" />
+    <ClCompile Include="..\common\StructuredException.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />

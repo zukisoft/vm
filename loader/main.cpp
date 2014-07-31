@@ -24,6 +24,7 @@
 #include <Exception.h>
 #include "resource.h"
 #include "ElfImage.h"
+#include "StructuredException.h"
 #include "SystemCall.h"
 
 LONG CALLBACK SysCallExceptionHandler(PEXCEPTION_POINTERS exception);
@@ -40,6 +41,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// Initialize the SEH to C++ exception translator
+	_set_se_translator(StructuredException::SeTranslator);
 
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
 	const tchar_t* exec_path = _T("D:\\android\\init");

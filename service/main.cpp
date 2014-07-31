@@ -24,9 +24,8 @@
 #include "resource.h"
 #include "CommandLine.h"
 #include "Console.h"
+#include "StructuredException.h"
 #include "VmService.h"
-
-#include "HostFileSystem.h"
 
 #pragma warning(push, 4)	
 
@@ -52,23 +51,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 #endif	// _DEBUG
 
-	char msg[255];
-	strerror_s(msg, 255, EINVAL);
-
-	///std::unique_ptr<FileSystem> fs = RamFileSystem::Mount(0, nullptr, nullptr);
-
-	auto fs = HostFileSystem::Mount(0, "d:\\", nullptr);
-
-	/*std::shared_ptr<FileSystem::DirectoryEntry> dentry = std::make_shared<FileSystem::DirectoryEntry>();
-	std::shared_ptr<FileSystem::Node> node = std::make_shared<FileSystem::Node>();
-	dentry->Node = node;
-	node.reset();
-
-	std::shared_ptr<FileSystem::File> f = dentry->OpenFile();
-	dentry.reset();
-	f.reset();
-
-	*/return 0;
+	// Initialize the SEH to C++ exception translator
+	_set_se_translator(StructuredException::SeTranslator);
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);
