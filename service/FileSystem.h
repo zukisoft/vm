@@ -62,6 +62,12 @@ public:
 	std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const char_t* path) { /* todo: use root node */ return nullptr; }
 	std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const std::shared_ptr<FileSystem::DirectoryEntry>& start, const char_t* path);
 
+	// MountPoint
+	//
+	// Exposes the mount point alias for the file system
+	__declspec(property(get=getMountPoint)) std::shared_ptr<FileSystem::DirectoryEntry> MountPoint;
+	virtual std::shared_ptr<FileSystem::DirectoryEntry> getMountPoint(void) const = 0;
+
 	// going to need a way to access the master FileSystem object in the service
 	// but keep it instance-based, no statics; consider multiple services in one process
 
@@ -88,6 +94,18 @@ public:
 		//
 		virtual ~DirectoryEntry()=default;
 
+		// operator bool()
+		//
+		// true if there is a node referenced by this directory entry
+		// maybe not, shared_ptr messes this up
+		//operator bool() const { return static_cast<bool>(m_node); }
+
+		// operator !()
+		//
+		// true if there is not a node referenced by this directory entry
+		// maybe not, shared_ptr messes this up
+		//bool operator !() const { return !m_node; }
+
 		// OpenFile
 		//
 		// 
@@ -98,9 +116,21 @@ public:
 			return m_node->OpenFile(shared_from_this());
 		}
 
+		// ResolvePath
+		//
+		// Resolves a path rooted from this directory entry
+		//virtual std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const tchar_t* path) = 0;
+
+		// Name
+		//
+		// Gets the name assigned to this DirectoryEntry
+		__declspec(property(get=getName)) const char_t* Name;
+		virtual const char_t* getName(void) const = 0;
+
 		// Node
 		//
 		// Gets/Sets the Node instance pointed to by this DirectoryEntry
+		// todo: is it ever valid to assign this after the fact -- yes, how else to turn negative alias to positive one?
 		__declspec(property(get=getNode, put=putNode)) std::shared_ptr<FileSystem::Node> Node;
 		std::shared_ptr<FileSystem::Node> getNode(void) const { return m_node; }
 		void putNode(const std::shared_ptr<FileSystem::Node>& value) { m_node = value; }
@@ -194,12 +224,21 @@ public:
 		//	return nullptr;
 		//}
 
+		// Index
+		//
+		// Gets the index value for this node
+		__declspec(property(get=getIndex)) uint32_t Index;
+		virtual uint32_t getIndex(void) const = 0;
+
 	protected:
 
 		// detached node
 		Node() {}
 
 		// attached node
+		// 
+		// todo: why do I care about knowing what aliases are associated with a node
+		// other than perhaps understanding how many links there are?  hmmmmm
 		Node(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry)
 		{
 			m_dentries.push_back(dentry);
@@ -243,11 +282,9 @@ private:
 	// --> const char *name;
 	// --> int fs_flags;
 
-	// m_rootdir
-	//
-	// Root node of the entire file system
-	// RootDirectoryEntry m_rootdir;
-	
+	// service creates the root filesystem on it's own
+	// m_rootfs = HostFileSystem::Mount(xxxxxxx)
+
 	// becomes Mount() in derived class
 	// --> struct dentry *(*mount) (struct file_system_type *, int flags, const char * devname, void * data);
 };

@@ -34,20 +34,86 @@
 
 HostFileSystem::HostFileSystem(const char_t* devicename)
 {
-	WIN32_FILE_ATTRIBUTE_DATA attributes;
+	FILE_BASIC_INFO				info;				// Basic file information
+
+	//
+	// TODO: Mounting options
+	//
 
 	// NULL or zero-length device names are not supported, has to be set to something
 	if((devicename == nullptr) || (*devicename == 0)) throw LinuxException(LINUX_ENOENT);
 
-	// Get the attributes for the path
-	std::tstring path = std::to_tstring(devicename);
-	if(!GetFileAttributesEx(path.c_str(), GetFileExInfoStandard, &attributes)) throw LinuxException(LINUX_ENOENT, Win32Exception());
+	// Attempt to open the specified path with query-only access to pass into the Node instance
+	HANDLE handle = CreateFile(std::to_tstring(devicename).c_str(), 0, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
 
-	// The path must point to a directory on the host system
-	if((attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
+	try {
 
-	// todo: make root directory and node now, pass in attributes to node and name to direntry
-	// todo: directory really needs to stay open as long as this mount exists - how when not admin
+		// Query the basic information about the object to determine if it's a directory or not
+		if(!GetFileInformationByHandleEx(handle, FileBasicInfo, &info, sizeof(FILE_BASIC_INFO))) throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// If this is not a directory, it's not a valid mount point
+		if((info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY)  throw LinuxException(LINUX_ENOTDIR);
+
+		// Create the root Node instance and hold a strong reference to it
+		m_rootnode = std::make_shared<Node>(*this, handle, AllocateNodeIndex());
+		
+		// Create the root directory entry, which has no name, and hold a strong reference to that as well
+		// todo: need to tell it that it's a mount point?
+		m_rootalias = std::make_shared<DirectoryEntry>("", m_rootnode);
+	}
+
+	catch(const std::exception& ex) { CloseHandle(handle); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem Destructor
+
+HostFileSystem::~HostFileSystem()
+{
+	// The file system objects must be destroyed before this object dies since
+	// they may be maintaining references that will have serious problems
+	// todo: kill everything here
+	m_rootalias.reset();
+	m_rootnode.reset();
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::AllocateNodeIndex (private)
+//
+// Allocates a node index from the pool of available indexes
+//
+// Arguments:
+//
+//	NONE
+
+int32_t HostFileSystem::AllocateNodeIndex(void)
+{
+	int32_t index;					// Allocated index value
+
+	// Try to reuse a spent node index first, otherwise grab a new one.
+	// If the returned value overflowed, there are no more indexes left
+	if(!m_spentinodes.try_pop(index)) index = m_nextinode++;
+	if(index < 0) throw LinuxException(LINUX_EDQUOT);
+
+	return index;
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::ReleaseNodeIndex (private)
+//
+// Releases a node index back into the pool of available indexes
+//
+// Arguments:
+//
+//	index		- Node index to be released
+
+void HostFileSystem::RelaseNodeIndex(int32_t index)
+{
+	// The node indexes are reused aggressively for this file system,
+	// push it into the spent index queue so that it will be grabbed
+	// by AllocateNodeIndex() before a new index is generated
+	m_spentinodes.push(index);
 }
 
 std::unique_ptr<FileSystem> HostFileSystem::Mount(int flags, const char_t* devicename, void* data)
@@ -55,10 +121,13 @@ std::unique_ptr<FileSystem> HostFileSystem::Mount(int flags, const char_t* devic
 	UNREFERENCED_PARAMETER(flags);
 	UNREFERENCED_PARAMETER(data);
 
+	// TODO: mounting options
+
 	return std::make_unique<HostFileSystem>(devicename);
 }
 
-HostFileSystem::DirectoryEntry::DirectoryEntry(const char_t* name, const tchar_t* path) : m_name(name), m_path(path)
+HostFileSystem::DirectoryEntry::DirectoryEntry(const char_t* name, const std::shared_ptr<HostFileSystem::Node>& node) : 
+	FileSystem::DirectoryEntry(node), m_name(name)
 {
 	// TODO: check for NULL unless root node, perhaps make a special RootDirectoryEntry object instead
 }
@@ -77,8 +146,8 @@ HostFileSystem::File::File(const std::shared_ptr<DirectoryEntry>& dentry, const 
 
 	// TODO: correct mode, access, sharing, etc.
 	// TODO: impersonation and whatnot too
-	m_handle = CreateFile(dentry->Path, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if(m_handle == INVALID_HANDLE_VALUE) throw std::exception("TODO: new exception object");
+	//m_handle = CreateFile(dentry->Path, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	///if(m_handle == INVALID_HANDLE_VALUE) throw std::exception("TODO: new exception object");
 
 	// file is now open
 }
@@ -212,6 +281,31 @@ uapi::size_t HostFileSystem::File::Write(void* buffer, uapi::size_t count, uapi:
 
 	m_position += written;				// Advance the cached file pointer
 	return written;						// Return number of bytes written
+}
+
+
+//HostFileSystem::Node::Node(HANDLE handle) : m_handle(handle)
+//{
+//}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Node Destructor
+
+HostFileSystem::Node::~Node()
+{
+	// Close the underlying operating system object handle
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+
+	// Release the node index from the parent file system instance
+	m_fs.RelaseNodeIndex(static_cast<int32_t>(m_index));
+}
+
+
+std::shared_ptr<FileSystem::File> HostFileSystem::Node::OpenFile(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry)
+{
+	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+
+	return nullptr;
 }
 
 //-----------------------------------------------------------------------------

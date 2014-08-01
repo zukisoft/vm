@@ -24,6 +24,8 @@
 #define __HOSTFILESYSTEM_H_
 #pragma once
 
+#include <atomic>
+#include <concurrent_queue.h>
 #include <mutex>
 #include "FileSystem.h"
 #include "LinuxException.h"
@@ -50,12 +52,18 @@ public:
 
 	// Destructor
 	//
-	virtual ~HostFileSystem()=default;
+	virtual ~HostFileSystem();
 
 	// Mount (static)
 	//
 	// Mounts the file system on the specified device, returns the FileSystem instance
 	static std::unique_ptr<FileSystem> Mount(int flags, const char_t* devicename, void* data);
+
+	// MountPoint (FileSystem)
+	//
+	// Exposes the file system mount point as a directory entry
+	__declspec(property(get=getMountPoint)) std::shared_ptr<FileSystem::DirectoryEntry> MountPoint;
+	virtual std::shared_ptr<FileSystem::DirectoryEntry> getMountPoint(void) const { return m_rootalias; }
 
 private:
 
@@ -67,11 +75,25 @@ private:
 	HostFileSystem(const char_t* devicename);
 	friend std::unique_ptr<HostFileSystem> std::make_unique<HostFileSystem, const char_t*&>(const char_t*&);
 
+	// AllocateNodeIndex
+	//
+	// Allocates a node index from the pool
+	int32_t AllocateNodeIndex(void);
+
+	// ReleaseNodeIndex
+	//
+	// Releases a node index from the pool
+	void RelaseNodeIndex(int32_t index);
+
 	// Forward Declarations
 	//
 	class DirectoryEntry;
 	class File;
 	class Node;
+
+	friend class Node;
+	friend class DirectoryEntry;
+	friend class File;
 
 	// Class DirectoryEntry
 	//
@@ -82,18 +104,18 @@ private:
 
 		// Instance Constructors
 		//
-		DirectoryEntry(const char_t* name, const tchar_t* path);
-		// TODO: need one that accepts Node
+		//DirectoryEntry(const char_t* name);
+		DirectoryEntry(const char_t* name, const std::shared_ptr<HostFileSystem::Node>& node);
 
 		// Destructor
 		//
 		virtual ~DirectoryEntry()=default;
 
-		// Path
+		// Name (FileSystem::DirectoryEntry)
 		//
-		// Exposes the full path to the host object
-		__declspec(property(get=getPath)) const tchar_t* Path;
-		const tchar_t* getPath(void) const { return m_path.c_str(); }
+		// Gets the name associated with this directory entry
+		__declspec(property(get=getName)) const char_t* Name;
+		virtual const char_t* getName(void) const { return m_name.c_str(); }
 
 	private:
 
@@ -104,16 +126,13 @@ private:
 		//
 		// ANSI directory entry name
 		std::string m_name;
-
-		// m_path
-		//
-		// Generic text complete path name
-		std::tstring m_path;
 	};
 
 	class RootDirectoryEntry : public DirectoryEntry
 	{
 	public:
+
+		RootDirectoryEntry(const char_t* path);
 
 	private:
 
@@ -184,11 +203,63 @@ private:
 	{
 	public:
 
+		// Instance Constructor
+		//
+		Node(HostFileSystem& fs, HANDLE handle, int32_t index) : m_fs(fs), m_handle(handle), m_index(index) {}
+
+		// Destructor
+		//
+		virtual ~Node();
+
+		// (FileSystem::Node impl)
+		virtual std::shared_ptr<FileSystem::File> OpenFile(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry);
+
+		// Index (FileSystem::Node)
+		//
+		// Gets the index value for this node
+		__declspec(property(get=getIndex)) uint32_t Index;
+		virtual uint32_t getIndex(void) const { return static_cast<uint32_t>(m_index); }
+
 	private:
 
 		Node(const Node&)=delete;
 		Node& operator=(const Node&)=delete;
+
+		// m_fs
+		//
+		// Reference to the parent HostFileSystem instance
+		HostFileSystem& m_fs;
+
+		// m_handle
+		//
+		// Handle to the underlying file system object
+		HANDLE m_handle = INVALID_HANDLE_VALUE;
+
+		// m_index
+		//
+		// This node's index (inode) value
+		const int32_t m_index;
 	};
+
+	// m_nextindex
+	//
+	// Next sequential node index value
+	std::atomic<int32_t> m_nextinode = 0;
+
+	// m_rootalias
+	//
+	// Maintains a strong reference to the root alias object
+	std::shared_ptr<DirectoryEntry> m_rootalias;
+
+	// m_rootnode
+	//
+	// Maintains a strong reference to the root node object
+	std::shared_ptr<Node> m_rootnode;
+
+	// m_spentindexes
+	//
+	// Queue used to recycle node indexes
+	Concurrency::concurrent_queue<int32_t> m_spentinodes;
 };
 
 //-----------------------------------------------------------------------------

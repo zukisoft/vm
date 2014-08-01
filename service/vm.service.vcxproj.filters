@@ -230,10 +230,10 @@
     <ClInclude Include="..\common\generic_text.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\LinuxException.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\StructuredException.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\LinuxException.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>

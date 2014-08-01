@@ -57,7 +57,10 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_set_se_translator(StructuredException::SeTranslator);
 
 	auto fs = HostFileSystem::Mount(0, "d:\\Linux Stuff", nullptr);
-	auto dir = fs->ResolvePath("/android/init.rc");
+	//auto dir = fs->ResolvePath("/android/init.rc");
+	auto index = fs->MountPoint->Node->Index;
+	//auto node = dir->Node;
+	//int32_t index = node->Index;
 
 	/*std::shared_ptr<FileSystem::DirectoryEntry> dentry = std::make_shared<FileSystem::DirectoryEntry>();
 	std::shared_ptr<FileSystem::Node> node = std::make_shared<FileSystem::Node>();
