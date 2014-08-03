@@ -63,7 +63,7 @@ public:
 	//
 	// Exposes the file system mount point as a directory entry
 	__declspec(property(get=getMountPoint)) std::shared_ptr<FileSystem::DirectoryEntry> MountPoint;
-	virtual std::shared_ptr<FileSystem::DirectoryEntry> getMountPoint(void) const { return m_rootalias; }
+	virtual std::shared_ptr<FileSystem::DirectoryEntry> getMountPoint(void) const { return m_rootentry; }
 
 private:
 
@@ -214,6 +214,15 @@ private:
 		// (FileSystem::Node impl)
 		virtual std::shared_ptr<FileSystem::File> OpenFile(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry);
 
+		// one of these should work
+		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const char_t* name, uapi::mode_t mode);
+
+		// will require a negative dentry
+		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry, uapi::mode_t mode)
+		{
+			return CreateDirectory(dentry->Name, mode);
+		}
+
 		// Index (FileSystem::Node)
 		//
 		// Gets the index value for this node
@@ -246,15 +255,10 @@ private:
 	// Next sequential node index value
 	std::atomic<int32_t> m_nextinode = 0;
 
-	// m_rootalias
+	// m_rootentry;
 	//
-	// Maintains a strong reference to the root alias object
-	std::shared_ptr<DirectoryEntry> m_rootalias;
-
-	// m_rootnode
-	//
-	// Maintains a strong reference to the root node object
-	std::shared_ptr<Node> m_rootnode;
+	// Maintains a strong reference to the root dir entry object
+	std::shared_ptr<DirectoryEntry> m_rootentry;
 
 	// m_spentindexes
 	//

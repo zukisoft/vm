@@ -224,6 +224,16 @@ public:
 		//	return nullptr;
 		//}
 
+		// one of these should work
+		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const char_t* name, uapi::mode_t mode) = 0;
+
+		// will require a negative dentry
+		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry, uapi::mode_t mode) = 0;
+
+		// requires a positive dentry
+		//virtual void rmdir(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry) = 0;
+		//virtual void rmdir(const char_t* name) = 0;
+
 		// Index
 		//
 		// Gets the index value for this node

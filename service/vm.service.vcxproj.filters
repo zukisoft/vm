@@ -236,6 +236,9 @@
     <ClInclude Include="..\common\LinuxException.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="TestFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -408,6 +411,9 @@
     </ClCompile>
     <ClCompile Include="..\common\StructuredException.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="TestFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

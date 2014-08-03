@@ -27,7 +27,7 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
-#include "HostFileSystem.h"
+#include "TestFileSystem.h"
 
 #pragma warning(push, 4)	
 
@@ -56,22 +56,17 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	auto fs = HostFileSystem::Mount(0, "d:\\Linux Stuff", nullptr);
-	//auto dir = fs->ResolvePath("/android/init.rc");
-	auto index = fs->MountPoint->Node->Index;
-	//auto node = dir->Node;
-	//int32_t index = node->Index;
+	std::shared_ptr<FileSystem::Alias> fsroot = std::make_shared<VmRootAlias>();
+	std::unique_ptr<FileSystem> fs = TestFileSystem::Mount(L"D:\\Linux Stuff");
+	//std::shared_ptr<FileSystem::Alias> dir = fs->RootAlias->Find(L"temp/busybox-x64");
 
-	/*std::shared_ptr<FileSystem::DirectoryEntry> dentry = std::make_shared<FileSystem::DirectoryEntry>();
-	std::shared_ptr<FileSystem::Node> node = std::make_shared<FileSystem::Node>();
-	dentry->Node = node;
-	node.reset();
+	fsroot->PushNode(fs->RootNode);
 
-	std::shared_ptr<FileSystem::File> f = dentry->OpenFile();
-	dentry.reset();
-	f.reset();
+	auto node = fsroot->getNode();
+	uint32_t index = node->Index;
 
-	*/
+	fsroot->PopNode();
+
 	return 0;	
 
 

@@ -35,9 +35,11 @@
 HostFileSystem::HostFileSystem(const char_t* devicename)
 {
 	FILE_BASIC_INFO				info;				// Basic file information
+	std::shared_ptr<Node>		rootnode;			// Root Node instance
 
 	//
-	// TODO: Mounting options
+	// TODO: Process mounting options - keep flags, can change dynamically
+	// what happens to open files at that time?
 	//
 
 	// NULL or zero-length device names are not supported, has to be set to something
@@ -55,15 +57,14 @@ HostFileSystem::HostFileSystem(const char_t* devicename)
 		// If this is not a directory, it's not a valid mount point
 		if((info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY)  throw LinuxException(LINUX_ENOTDIR);
 
-		// Create the root Node instance and hold a strong reference to it
-		m_rootnode = std::make_shared<Node>(*this, handle, AllocateNodeIndex());
-		
-		// Create the root directory entry, which has no name, and hold a strong reference to that as well
-		// todo: need to tell it that it's a mount point?
-		m_rootalias = std::make_shared<DirectoryEntry>("", m_rootnode);
+		// Allocate the root Node instance to take ownership of the HANDLE
+		rootnode = std::make_shared<Node>(*this, handle, AllocateNodeIndex());
 	}
 
 	catch(const std::exception& ex) { CloseHandle(handle); throw; }
+
+	// Create the root directory entry for the file system; no name is specified.
+	m_rootentry = std::make_shared<DirectoryEntry>("", rootnode);
 }
 
 //-----------------------------------------------------------------------------
@@ -73,9 +74,9 @@ HostFileSystem::~HostFileSystem()
 {
 	// The file system objects must be destroyed before this object dies since
 	// they may be maintaining references that will have serious problems
-	// todo: kill everything here
-	m_rootalias.reset();
-	m_rootnode.reset();
+
+	// todo: kill everything here -- close open files, etc.
+	m_rootentry.reset();
 }
 
 //-----------------------------------------------------------------------------
@@ -300,6 +301,43 @@ HostFileSystem::Node::~Node()
 	m_fs.RelaseNodeIndex(static_cast<int32_t>(m_index));
 }
 
+std::shared_ptr<FileSystem::DirectoryEntry> HostFileSystem::Node::CreateDirectory(const char_t* name, uapi::mode_t mode)
+{
+	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+
+	DWORD result = GetFinalPathNameByHandle(m_handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(result == 0) throw Win32Exception();
+
+	std::vector<tchar_t> buffer(result);
+	result = GetFinalPathNameByHandle(m_handle, buffer.data(), buffer.size(), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+
+	std::tstring t_name = std::to_tstring(name);
+
+	size_t old = buffer.size();
+	buffer.resize(buffer.size() + t_name.length() + 1);
+
+	buffer[old - 1] = _T('\\');
+
+	memcpy(buffer.data() + old, t_name.c_str(), (t_name.length() + 1) * sizeof(tchar_t));
+	// append
+	// call ::CreateDirectory
+
+	::CreateDirectory(buffer.data(), nullptr);
+	DWORD dw = GetLastError();
+	
+	FILE_BASIC_INFO basicinfo;
+	if(!GetFileInformationByHandleEx(m_handle, FileBasicInfo, &basicinfo, sizeof(basicinfo))) {
+		dw = GetLastError();
+	}
+
+	FILE_NAME_INFO nameinfo[6];
+	if(!GetFileInformationByHandleEx(m_handle, FileNameInfo, &nameinfo, sizeof(nameinfo) * 6)) {
+		dw = GetLastError();
+	}
+
+	int x = 123;
+	return nullptr;
+}
 
 std::shared_ptr<FileSystem::File> HostFileSystem::Node::OpenFile(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry)
 {

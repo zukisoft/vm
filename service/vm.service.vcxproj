@@ -332,6 +332,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TestFileSystem.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
@@ -570,6 +571,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TestFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
     <ClCompile Include="VmSystemLog.cpp" />
   </ItemGroup>
