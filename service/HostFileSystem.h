@@ -24,210 +24,230 @@
 #define __HOSTFILESYSTEM_H_
 #pragma once
 
+// todo: not using all of these
 #include <atomic>
 #include <concurrent_queue.h>
+#include <concurrent_vector.h>
+#include <memory>
 #include <mutex>
-#include "FileSystem.h"
+#include <stack>
+#include <linux/stat.h>
 #include "LinuxException.h"
 #include "Win32Exception.h"
 
+#include "FileSystem.h"
+
 #pragma warning(push, 4)
-#pragma warning(disable:4396)		// inline specifier cannot be used (friend)
+
+// Special alias to be incorporated into the service
+// move to RootFileSystem.h/cpp
+// Supports overmounting - yes
+
+class VmRootAlias : public FileSystem::Alias
+{
+public:
+
+	VmRootAlias()=default;
+	~VmRootAlias()=default;
+
+	virtual void PushNode(const std::shared_ptr<FileSystem::Node>& node)
+	{
+		std::lock_guard<std::mutex> critsec(m_nodelock);
+
+		// Push the node into the stack, this will mask any existing node
+		m_nodes.push(node);
+	}
+
+	virtual std::shared_ptr<FileSystem::Node> PopNode(void)
+	{
+		std::lock_guard<std::mutex> critsec(m_nodelock);
+
+		if(m_nodes.empty()) return nullptr; 
+
+		// Pull the top shared_ptr<> from the stack and pop it
+		auto result = m_nodes.top();
+		m_nodes.pop();
+		return result;
+	}
+
+	// name is always blank for the root alias
+	virtual const tchar_t* getName(void) { return _T(""); }
+
+	virtual std::shared_ptr<FileSystem::Node> getNode(void) 
+	{
+		std::lock_guard<std::mutex> critsec(m_nodelock);
+
+		// Return an empty shared_ptr<> if there is no attached node
+		return (m_nodes.empty()) ? nullptr : m_nodes.top();
+	}
+
+	// Parent
+	//
+	// Gets the parent alias for this alias instance
+	__declspec(property(get=getParent)) std::shared_ptr<FileSystem::Alias> Parent;
+	virtual std::shared_ptr<FileSystem::Alias> getParent(void) { return nullptr; }
+
+	// State
+	//
+	// Gets the state (attached/detached) of this alias instance
+	__declspec(property(get=getState)) FileSystem::AliasState State;
+	virtual FileSystem::AliasState getState(void) { 
+		
+		std::lock_guard<std::mutex> critsec(m_nodelock);
+		return m_nodes.size() == 0 ? FileSystem::AliasState::Detached : FileSystem::AliasState::Attached; 
+	}
+
+private:
+
+	VmRootAlias(const VmRootAlias&)=delete;
+	VmRootAlias& operator=(const VmRootAlias&)=delete;
+
+	std::stack<std::shared_ptr<FileSystem::Node>> m_nodes;
+	std::mutex m_nodelock;
+};
+/// END: MOVE ME
 
 //-----------------------------------------------------------------------------
-// Class HostFileSystem
+// HostFileSystem
 //
-// Implements a pass-through file system that operates against a source path
-// available on the host operating system.
-//
-// Mount Options:
-//
-//	TODO
-//
-// TODO: complete documentation goes here
+// todo: document
+// todo: list mount options
+// todo: list object lifetimes
 
 class HostFileSystem : public FileSystem
 {
 public:
 
-	// Destructor
+	// Constructor / Destructor
 	//
-	virtual ~HostFileSystem();
+	HostFileSystem()=default;
+	virtual ~HostFileSystem()=default;
 
-	// Mount (static)
+	// Mount
 	//
-	// Mounts the file system on the specified device, returns the FileSystem instance
-	static std::unique_ptr<FileSystem> Mount(int flags, const char_t* devicename, void* data);
-
-	// MountPoint (FileSystem)
-	//
-	// Exposes the file system mount point as a directory entry
-	__declspec(property(get=getMountPoint)) std::shared_ptr<FileSystem::DirectoryEntry> MountPoint;
-	virtual std::shared_ptr<FileSystem::DirectoryEntry> getMountPoint(void) const { return m_rootentry; }
+	// Mounts the file system
+	static NodePtr Mount(const tchar_t* device);
 
 private:
 
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
 
-	// Instance Constructor
-	//
-	HostFileSystem(const char_t* devicename);
-	friend std::unique_ptr<HostFileSystem> std::make_unique<HostFileSystem, const char_t*&>(const char_t*&);
-
-	// AllocateNodeIndex
-	//
-	// Allocates a node index from the pool
-	int32_t AllocateNodeIndex(void);
-
-	// ReleaseNodeIndex
-	//
-	// Releases a node index from the pool
-	void RelaseNodeIndex(int32_t index);
-
-	// Forward Declarations
-	//
-	class DirectoryEntry;
+	class Alias;
 	class File;
 	class Node;
 
-	friend class Node;
-	friend class DirectoryEntry;
-	friend class File;
-
-	// Class DirectoryEntry
+	// Alias
 	//
-	// Implementation of FileSystem::DirectoryEntry
-	class DirectoryEntry : public FileSystem::DirectoryEntry
+	// FileSystem::Alias implementation
+	class Alias : public FileSystem::Alias
 	{
 	public:
 
 		// Instance Constructors
 		//
-		//DirectoryEntry(const char_t* name);
-		DirectoryEntry(const char_t* name, const std::shared_ptr<HostFileSystem::Node>& node);
+		Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name) : m_parent(parent), m_name(name) {}
+		Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name, const std::shared_ptr<Node>& node) : m_parent(parent), m_name(name), m_node(node) {}
 
 		// Destructor
 		//
-		virtual ~DirectoryEntry()=default;
+		virtual ~Alias()=default;
 
-		// Name (FileSystem::DirectoryEntry)
+		// Name (FileSystem::Alias)
 		//
-		// Gets the name associated with this directory entry
-		__declspec(property(get=getName)) const char_t* Name;
-		virtual const char_t* getName(void) const { return m_name.c_str(); }
+		// Gets the name assigned to this alias instance
+		__declspec(property(get=getName)) const tchar_t* Name;
+		virtual const tchar_t* getName(void) const { return m_name.c_str(); }
+
+		// Parent (FileSystem::Alias)
+		//
+		// Gets the parent alias for this alias instance
+		__declspec(property(get=getParent)) std::shared_ptr<FileSystem::Alias> Parent;
+		virtual std::shared_ptr<FileSystem::Alias> getParent(void) const { return nullptr; }
+
+		// State (FileSystem::Alias)
+		//
+		// Gets the state (attached/detached) of this alias instance
+		__declspec(property(get=getState)) FileSystem::AliasState State;
+		virtual FileSystem::AliasState getState(void) const { return (m_node) ? AliasState::Attached : AliasState::Detached; }
 
 	private:
 
-		DirectoryEntry(const DirectoryEntry&)=delete;
-		DirectoryEntry& operator=(const DirectoryEntry&)=delete;
+		Alias(const Alias&)=delete;
+		Alias& operator=(const Alias&)=delete;
 
 		// m_name
 		//
-		// ANSI directory entry name
-		std::string m_name;
+		// The name assigned to this alias
+		std::tstring m_name;
+
+		// m_node
+		//
+		// The node that is attached to this alias
+		std::shared_ptr<Node> m_node;
+
+		// m_parent
+		//
+		// Strong reference to this alias' parent alias
+		std::shared_ptr<FileSystem::Alias> m_parent;
 	};
 
-	class RootDirectoryEntry : public DirectoryEntry
-	{
-	public:
-
-		RootDirectoryEntry(const char_t* path);
-
-	private:
-
-		RootDirectoryEntry(const RootDirectoryEntry&)=delete;
-		RootDirectoryEntry& operator=(const RootDirectoryEntry&)=delete;
-	};
-
-	// Class File
+	// File
 	//
-	// Implementation of FileSystem::File
+	// FileSystem::File implementation
 	class File : public FileSystem::File
 	{
 	public:
 
-		// Instance Constructor
-		//
-		File(const std::shared_ptr<DirectoryEntry>& dentry, const std::shared_ptr<Node>& node);
-
 		// Destructor
 		//
-		virtual ~File();
-
-		// Read (FileSystem::File)
-		//
-		// Reads data from the file
-		virtual uapi::size_t Read(void* buffer, uapi::size_t count, uapi::loff_t pos);
-
-		// Seek (FileSystem::File)
-		//
-		// Sets the file pointer
-		virtual uapi::loff_t Seek(uapi::loff_t offset, int origin);
-
-		// Sync (FileSystem::File)
-		//
-		// Flushes the file buffers to the underlying storage
-		virtual void Sync(void);
-
-		// Write (FileSystem::File)
-		//
-		// Synchronously writes data to the file
-		virtual uapi::size_t Write(void* buffer, uapi::size_t count, uapi::loff_t pos);
+		virtual ~File()=default;
 
 	private:
 
 		File(const File&)=delete;
 		File& operator=(const File&)=delete;
-
-		// m_handle
-		//
-		// Underlying operating system handle
-		HANDLE m_handle = INVALID_HANDLE_VALUE;
-
-		// m_lock
-		//
-		// Recursive mutex to control simultaneous access by multiple threads
-		std::recursive_mutex m_lock;
-
-		// m_position
-		//
-		// Cached file pointer position
-		uapi::loff_t m_position = 0;
 	};
 
-	// Class Node
+	// HostFileSystem::Node
 	//
-	// Implementation of FileSystem::Node
+	// Specialization of FileSystem::Node for a host file system instance
 	class Node : public FileSystem::Node
 	{
 	public:
 
-		// Instance Constructor
+		// Constructor / Destructor
 		//
-		Node(HostFileSystem& fs, HANDLE handle, int32_t index) : m_fs(fs), m_handle(handle), m_index(index) {}
-
-		// Destructor
-		//
+		Node(const std::shared_ptr<HostFileSystem>& fs, NodeType type, HANDLE handle);
 		virtual ~Node();
 
-		// (FileSystem::Node impl)
-		virtual std::shared_ptr<FileSystem::File> OpenFile(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry);
+		// CreateDirectory (FileSystem::Node)
+		//
+		// Creates a directory as a child of this node
+		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode);
 
-		// one of these should work
-		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const char_t* name, uapi::mode_t mode);
-
-		// will require a negative dentry
-		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry, uapi::mode_t mode)
-		{
-			return CreateDirectory(dentry->Name, mode);
-		}
+		// CreateSymbolicLink (FileSystem::Node)
+		//
+		// Creates a symbolic link node as a child of this node instance
+		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
 
 		// Index (FileSystem::Node)
 		//
-		// Gets the index value for this node
+		// Gets the node index
 		__declspec(property(get=getIndex)) uint32_t Index;
-		virtual uint32_t getIndex(void) const { return static_cast<uint32_t>(m_index); }
+		virtual uint32_t getIndex(void) { return static_cast<uint32_t>(m_index); }
+
+		// MountPoint (FileSystem::Node)
+		//
+		// Indicates if this node is a mount point
+		__declspec(property(get=getMountPoint)) bool MountPoint;
+		virtual bool getMountPoint(void) { return false; }
+
+		// Type (FileSystem::Node)
+		//
+		// Gets the node type
+		__declspec(property(get=getType)) NodeType Type;
+		virtual NodeType getType(void) { return m_type; }
 
 	private:
 
@@ -236,34 +256,81 @@ private:
 
 		// m_fs
 		//
-		// Reference to the parent HostFileSystem instance
-		HostFileSystem& m_fs;
+		// Weak reference to the parent file system object
+		std::weak_ptr<HostFileSystem> m_fs;
 
 		// m_handle
 		//
-		// Handle to the underlying file system object
+		// The underlying operating system object handle
 		HANDLE m_handle = INVALID_HANDLE_VALUE;
 
 		// m_index
 		//
-		// This node's index (inode) value
-		const int32_t m_index;
+		// The allocated node index for this object
+		int32_t m_index = -1;
+
+		// m_type
+		//
+		// The type of node being represented
+		const NodeType m_type;
 	};
+
+	// HostFileSystem::RootNode
+	//
+	// Specialization of HostFileSystem::Node for the mount point node
+	class RootNode : public Node
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		RootNode(const std::shared_ptr<HostFileSystem>& fs, NodeType type, HANDLE handle) : Node(fs, type, handle), m_fs(fs) {}
+		virtual ~RootNode()=default;
+		
+		// MountPoint (FileSystem::Node)
+		//
+		// Indicates if this node is a mount point
+		__declspec(property(get=getMountPoint)) bool MountPoint;
+		virtual bool getMountPoint(void) { return true; }
+
+	private:
+
+		// m_fs
+		//
+		// Strong reference to the parent file system instance, this keeps the
+		// parent HostFileSystem alive as long as the root node exists
+		std::shared_ptr<HostFileSystem> m_fs;
+	};
+
+	// AllocateNodeIndex
+	//
+	// Allocates a node index from the pool
+	int32_t AllocateNodeIndex(void);
+
+	// OpenHostDirectory
+	//
+	// Opens a directory object on the host file system
+	static HANDLE OpenHostDirectory(const tchar_t* path);
+
+	// OpenHostSymbolicLink
+	//
+	// Opens a symbolic link object on the host file system
+	static HANDLE OpenHostSymbolicLink(const tchar_t* path);
+
+	// ReleaseNodeIndex
+	//
+	// Releases a node index from the pool
+	void ReleaseNodeIndex(int32_t index);
 
 	// m_nextindex
 	//
 	// Next sequential node index value
-	std::atomic<int32_t> m_nextinode = 0;
-
-	// m_rootentry;
-	//
-	// Maintains a strong reference to the root dir entry object
-	std::shared_ptr<DirectoryEntry> m_rootentry;
+	std::atomic<int32_t> m_nextindex = 0;
 
 	// m_spentindexes
 	//
 	// Queue used to recycle node indexes
-	Concurrency::concurrent_queue<int32_t> m_spentinodes;
+	Concurrency::concurrent_queue<int32_t> m_spentindexes;
 };
 
 //-----------------------------------------------------------------------------

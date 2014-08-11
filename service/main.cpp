@@ -27,7 +27,7 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
-#include "TestFileSystem.h"
+#include "HostFileSystem.h"
 
 #pragma warning(push, 4)	
 
@@ -57,15 +57,19 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_set_se_translator(StructuredException::SeTranslator);
 
 	std::shared_ptr<FileSystem::Alias> fsroot = std::make_shared<VmRootAlias>();
-	std::unique_ptr<FileSystem> fs = TestFileSystem::Mount(L"D:\\Linux Stuff");
+	auto node = HostFileSystem::Mount(L"D:\\Linux Stuff");
 	//std::shared_ptr<FileSystem::Alias> dir = fs->RootAlias->Find(L"temp/busybox-x64");
 
-	fsroot->PushNode(fs->RootNode);
+	//fsroot->PushNode(fs->RootNode);
 
-	auto node = fsroot->getNode();
-	uint32_t index = node->Index;
+	//auto node = fsroot->getNode();
+	//uint32_t index = node->Index;
+	bool b = node->MountPoint;
 
-	fsroot->PopNode();
+	auto node2 = node->CreateDirectory(_T("Test Directory"), 0);
+	bool b2 = node2->MountPoint;
+
+	//fsroot->PopNode();
 
 	return 0;	
 

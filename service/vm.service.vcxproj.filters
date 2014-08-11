@@ -218,14 +218,8 @@
     <ClInclude Include="Device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RamFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
-    </ClInclude>
     <ClInclude Include="FileSystem.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HostFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
     </ClInclude>
     <ClInclude Include="..\common\generic_text.h">
       <Filter>Header Files\Common</Filter>
@@ -236,7 +230,7 @@
     <ClInclude Include="..\common\LinuxException.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="TestFileSystem.h">
+    <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
   </ItemGroup>
@@ -397,12 +391,6 @@
     <ClCompile Include="FileSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RamFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
-    </ClCompile>
-    <ClCompile Include="HostFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Win32Exception.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -412,7 +400,7 @@
     <ClCompile Include="..\common\StructuredException.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="TestFileSystem.cpp">
+    <ClCompile Include="HostFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>

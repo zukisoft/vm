@@ -24,279 +24,156 @@
 #define __FILESYSTEM_H_
 #pragma once
 
-#include <memory>
-#include <concurrent_vector.h>
-#include <linux/fs.h>
+#include <linux/stat.h>
 #include <linux/types.h>
 
 #pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// Class FileSystem
+// todo: document
 
-class FileSystem
+struct __declspec(novtable) FileSystem
 {
-public:
+	// AliasPtr
+	//
+	// Alias for an std::shared_ptr<Alias>
+	struct Alias;
+	using AliasPtr = std::shared_ptr<Alias>;
 
-	// #define FS_REQUIRES_DEV         1 
-	// #define FS_BINARY_MOUNTDATA     2
-	// #define FS_HAS_SUBTYPE          4
-	// #define FS_USERNS_MOUNT         8       /* Can be mounted by userns root */
-	// #define FS_USERNS_DEV_MOUNT     16 /* A userns mount does not imply MNT_NODEV */
-	// #define FS_RENAME_DOES_D_MOVE   32768   /* FS will handle d_move() during rename() internally. */
-	enum class Flags
+	// FilePtr
+	//
+	// Alias for an std::shared_ptr<File>
+	struct File;
+	using FilePtr = std::shared_ptr<File>;
+
+	// NodePtr
+	//
+	// Alias for an std::shared_ptr<Node>
+	struct Node;
+	using NodePtr = std::shared_ptr<Node>;
+
+	// AliasState
+	//
+	// Defines the state of an alias
+	enum class AliasState
 	{
+		Attached		= 0,		// Alias is attached to a Node
+		Detached		= 1,		// Alias is not attached to a Node
 	};
 
-	// Destructor
+	// NodeType
 	//
-	virtual ~FileSystem()=default;
-
-	class Node;
-	class DirectoryEntry;
-	class File;
-
-	// ResolvePath
-	//
-	// Resolves a path, optionally from an existing DirectoryEntry object
-	std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const char_t* path) { /* todo: use root node */ return nullptr; }
-	std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const std::shared_ptr<FileSystem::DirectoryEntry>& start, const char_t* path);
-
-	// MountPoint
-	//
-	// Exposes the mount point alias for the file system
-	__declspec(property(get=getMountPoint)) std::shared_ptr<FileSystem::DirectoryEntry> MountPoint;
-	virtual std::shared_ptr<FileSystem::DirectoryEntry> getMountPoint(void) const = 0;
-
-	// going to need a way to access the master FileSystem object in the service
-	// but keep it instance-based, no statics; consider multiple services in one process
-
-	// DIRENTRY ---strong---> NODE      positive dentry; keeps node alive
-	// DIRENTRY ---strong---> <<NULL>>  negative dentry
-	// AttachNode() -- makes positive
-	// DetachNode() -- makes negative
-	// DIRENTRY() --> negative at construct
-	// DIRENTRY(Node) --> positive at construct
-
-	// NODE ---weak---> DIRENTRY(S) can be none; will nullptr when they die
-	// NODE ---weak---> FILE(S) can be none; will nullptr when they die
-
-	// FILE ---strong---> NODE      keeps node alive
-	// FILE ---strong---> DIRENTRY  keeps dentry alive
-
-
-	class __declspec(novtable) DirectoryEntry : 
-		public std::enable_shared_from_this<FileSystem::DirectoryEntry>
+	// Strogly typed enumeration for the S_IFxxx inode type constants
+	enum NodeType
 	{
-	public:
+		BlockDevice			= LINUX_S_IFBLK,
+		CharacterDevice		= LINUX_S_IFCHR,
+		Directory			= LINUX_S_IFDIR,
+		File				= LINUX_S_IFREG,
+		Pipe				= LINUX_S_IFIFO,
+		Socket				= LINUX_S_IFSOCK,
+		SymbolicLink		= LINUX_S_IFLNK,
+		Unknown				= 0,
+	};
 
-		// Destructor
-		//
-		virtual ~DirectoryEntry()=default;
+	// ModeToNodeType
+	//
+	// Converts a mode_t bitmask into a NodeType enumeration value
+	static inline NodeType ModeToNodeType(const uapi::mode_t& mode)
+	{
+		// NodeType matches the bits from the S_IFMT mask
+		return static_cast<NodeType>(mode & LINUX_S_IFMT);
+	}
 
-		// operator bool()
+	// Alias
+	//
+	// Interface for a file system alias instance.  Similar in theory to the 
+	// linux dentry, an alias is a named pointer to a file system node.
+	//
+	// Alias objects can optionally support attaching to multiple nodes to allow 
+	// for mounting or otherwise masking an existing node; if this is not possible
+	// for the file system, the PushMode() method should throw an exception if there
+	// is already a node attached to the alias
+	struct __declspec(novtable) Alias
+	{
+		// PopNode
 		//
-		// true if there is a node referenced by this directory entry
-		// maybe not, shared_ptr messes this up
-		//operator bool() const { return static_cast<bool>(m_node); }
+		// Pops a node from this alias to unmask an underlying node
+		virtual NodePtr PopNode(void) = 0;
 
-		// operator !()
+		// PushNode
 		//
-		// true if there is not a node referenced by this directory entry
-		// maybe not, shared_ptr messes this up
-		//bool operator !() const { return !m_node; }
-
-		// OpenFile
-		//
-		// 
-		std::shared_ptr<FileSystem::File> OpenFile(void)
-		{
-			_ASSERTE(m_node);
-			if(!m_node) throw std::exception("TODO: new exception class");
-			return m_node->OpenFile(shared_from_this());
-		}
-
-		// ResolvePath
-		//
-		// Resolves a path rooted from this directory entry
-		//virtual std::shared_ptr<FileSystem::DirectoryEntry> ResolvePath(const tchar_t* path) = 0;
+		// Pushes a node into this alias that masks any current node
+		virtual void PushNode(const NodePtr& node) = 0;
 
 		// Name
 		//
-		// Gets the name assigned to this DirectoryEntry
-		__declspec(property(get=getName)) const char_t* Name;
-		virtual const char_t* getName(void) const = 0;
+		// Gets the name assigned to this alias instance
+		__declspec(property(get=getName)) const tchar_t* Name;
+		virtual const tchar_t* getName(void) = 0;
 
 		// Node
 		//
-		// Gets/Sets the Node instance pointed to by this DirectoryEntry
-		// todo: is it ever valid to assign this after the fact -- yes, how else to turn negative alias to positive one?
-		__declspec(property(get=getNode, put=putNode)) std::shared_ptr<FileSystem::Node> Node;
-		std::shared_ptr<FileSystem::Node> getNode(void) const { return m_node; }
-		void putNode(const std::shared_ptr<FileSystem::Node>& value) { m_node = value; }
+		// Gets a pointer to the underlying node for this alias
+		//__declspec(property(get=getNode)) std::shared_ptr<Node> Node;  todo - name clash
+		virtual NodePtr getNode(void) = 0;
 
-	protected:
+		// Parent
+		//
+		// Gets the parent alias for this alias instance
+		__declspec(property(get=getParent)) std::shared_ptr<Alias> Parent;
+		virtual AliasPtr getParent(void) = 0;
 
-		// negative
-		DirectoryEntry() {}
-
-		// positive
-		DirectoryEntry(const std::shared_ptr<FileSystem::Node>& node) : m_node(node)
-		{
-			_ASSERTE(node);						// Node must be alive
-		}
-
-	private:
-
-		DirectoryEntry(const DirectoryEntry&)=delete;
-		DirectoryEntry& operator=(const DirectoryEntry&)=delete;
-
-		// strong reference to node
-		std::shared_ptr<FileSystem::Node> m_node;
+		// State
+		//
+		// Gets the state (attached/detached) of this alias instance
+		__declspec(property(get=getState)) AliasState State;
+		virtual AliasState getState(void) = 0;
 	};
 
-	class __declspec(novtable) File : 
-		public std::enable_shared_from_this<FileSystem::File>
+	// File
+	//
+	// Interface for a file system file instance
+	struct __declspec(novtable) File
 	{
-	public:
-
-		// Destructor
-		//
-		virtual ~File()=default;
-
-		// Read
-		//
-		// Synchronously reads data from the file
-		virtual uapi::size_t Read(void* buffer, uapi::size_t count, uapi::loff_t pos) = 0;
-
-		// Seek
-		//
-		// Sets the file pointer
-		virtual uapi::loff_t Seek(uapi::loff_t offset, int origin) = 0;
-
-		// Sync
-		//
-		// Flushes any buffered data to the underlying storage medium	
-		virtual void Sync(void) = 0;
-
-		// Write
-		//
-		// Synchronously writes data to the file
-		virtual uapi::size_t Write(void* buffer, uapi::size_t count, uapi::loff_t pos) = 0;
-	
-	protected:
-
-		// file needs a dentry and a node
-		File(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry, const std::shared_ptr<FileSystem::Node>& node) :
-			m_dentry(dentry), m_node(node)
-		{
-			_ASSERTE(dentry && node);			// Both objects must be alive
-		}
-
-
-	private:
-
-		File(const File&)=delete;
-		File& operator=(const File&)=delete;
-
-		// strong references to dentry and node
-		std::shared_ptr<FileSystem::DirectoryEntry> m_dentry;
-		std::shared_ptr<FileSystem::Node> m_node;
 	};
 
-	class __declspec(novtable) Node : 
-		public std::enable_shared_from_this<FileSystem::Node>
+	// Node
+	//
+	// Interface for a file system node instance
+	struct __declspec(novtable) Node
 	{
-	public:
-
-		// Destructor
+		// CreateDirectory
 		//
-		virtual ~Node()=default;
+		// Creates a directory node as a child of this node instance
+		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode) = 0;
 
-		// Creates File against this Node
-		// 
-		virtual std::shared_ptr<FileSystem::File> OpenFile(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry) = 0;
-		//{
-		//	//// this can't be here, must be in derived class
-		//	//std::shared_ptr<FileSystem::File> result = std::make_shared<File>(dentry, shared_from_this());
-		//	//m_files.push_back(result);
-		//	//return result;
-		//	return nullptr;
-		//}
-
-		// one of these should work
-		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const char_t* name, uapi::mode_t mode) = 0;
-
-		// will require a negative dentry
-		virtual std::shared_ptr<FileSystem::DirectoryEntry> CreateDirectory(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry, uapi::mode_t mode) = 0;
-
-		// requires a positive dentry
-		//virtual void rmdir(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry) = 0;
-		//virtual void rmdir(const char_t* name) = 0;
+		// CreateSymbolicLink
+		//
+		// Creates a symbolic link node as a child of this node instance
+		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
 
 		// Index
 		//
-		// Gets the index value for this node
+		// Gets the node index
 		__declspec(property(get=getIndex)) uint32_t Index;
-		virtual uint32_t getIndex(void) const = 0;
+		virtual uint32_t getIndex(void) = 0;
 
-	protected:
-
-		// detached node
-		Node() {}
-
-		// attached node
-		// 
-		// todo: why do I care about knowing what aliases are associated with a node
-		// other than perhaps understanding how many links there are?  hmmmmm
-		Node(const std::shared_ptr<FileSystem::DirectoryEntry>& dentry)
-		{
-			m_dentries.push_back(dentry);
-		}
-
-	private:
-
-		Node(const Node&)=delete;
-		Node& operator=(const Node&)=delete;
-
-		// m_dentries
+		// MountPoint
 		//
-		// Collection of weak references to DirectoryEntry instances that point to this node
-		Concurrency::concurrent_vector<std::weak_ptr<FileSystem::DirectoryEntry>> m_dentries;
+		// Indicates if this node represents a mount point
+		__declspec(property(get=getMountPoint)) bool MountPoint;
+		virtual bool getMountPoint(void) = 0;
 
-		// m_files
+		// Type
 		//
-		// Collection of weak referecnes to File instance that point to this node
-		Concurrency::concurrent_vector<std::weak_ptr<FileSystem::File>> m_files;
+		// Gets the node type
+		__declspec(property(get=getType)) NodeType Type;
+		virtual NodeType getType(void) = 0;
 	};
 
-protected:
-
-	FileSystem()=default;
-
-private:
-
-	FileSystem(const FileSystem&)=delete;
-	FileSystem& operator=(const FileSystem&)=delete;
-
-	// RootDirectoryEntry
 	//
-	// Represents the root directory entry of the entire file system
-	
-	// RootNode
+	// FileSystem Members
 	//
-	// Represents the root node of the entire file system
-
-	// static methods/member variables
-	//
-	// --> const char *name;
-	// --> int fs_flags;
-
-	// service creates the root filesystem on it's own
-	// m_rootfs = HostFileSystem::Mount(xxxxxxx)
-
-	// becomes Mount() in derived class
-	// --> struct dentry *(*mount) (struct file_system_type *, int flags, const char * devname, void * data);
 };
 
 //-----------------------------------------------------------------------------
