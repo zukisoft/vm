@@ -28,6 +28,7 @@
 #include "VmService.h"
 
 #include "HostFileSystem.h"
+#include "RootFileSystem.h"
 
 #pragma warning(push, 4)	
 
@@ -56,20 +57,12 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	std::shared_ptr<FileSystem::Alias> fsroot = std::make_shared<VmRootAlias>();
-	auto node = HostFileSystem::Mount(L"D:\\Linux Stuff");
-	//std::shared_ptr<FileSystem::Alias> dir = fs->RootAlias->Find(L"temp/busybox-x64");
+	FileSystem::AliasPtr root = RootFileSystem::Mount(nullptr);
+	root->Mount(HostFileSystem::Mount(L"D:\\Linux Stuff"));
 
-	//fsroot->PushNode(fs->RootNode);
+	auto node = root->getNode();
 
-	//auto node = fsroot->getNode();
-	//uint32_t index = node->Index;
-	bool b = node->MountPoint;
-
-	auto node2 = node->CreateDirectory(_T("Test Directory"), 0);
-	bool b2 = node2->MountPoint;
-
-	//fsroot->PopNode();
+	root->Unmount();
 
 	return 0;	
 

@@ -60,9 +60,9 @@ FileSystem::NodePtr HostFileSystem::Mount(const tchar_t* device)
 	// The file system instance is required to exist as a shared_ptr
 	auto fs = std::make_shared<HostFileSystem>();
 
-	// Attempt to open the specified device as the host directory path, and
-	// pass that into the special RootNode object.  RootNode contains a strong
-	// reference to the file system parent to keep it alive
+	// Attempt to open the specified device as the host directory path, and pass
+	// that into the special RootNode object.  RootNode contains a strong reference
+	// to the file system parent object to keep it alive
 	HANDLE handle = OpenHostDirectory(device);
 	try { return std::make_shared<RootNode>(fs, NodeType::Directory, handle); }
 	catch(...) { CloseHandle(handle); throw; }

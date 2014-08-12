@@ -233,6 +233,9 @@
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
+    <ClInclude Include="RootFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -401,6 +404,9 @@
       <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="HostFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="RootFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>

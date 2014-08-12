@@ -39,74 +39,6 @@
 
 #pragma warning(push, 4)
 
-// Special alias to be incorporated into the service
-// move to RootFileSystem.h/cpp
-// Supports overmounting - yes
-
-class VmRootAlias : public FileSystem::Alias
-{
-public:
-
-	VmRootAlias()=default;
-	~VmRootAlias()=default;
-
-	virtual void PushNode(const std::shared_ptr<FileSystem::Node>& node)
-	{
-		std::lock_guard<std::mutex> critsec(m_nodelock);
-
-		// Push the node into the stack, this will mask any existing node
-		m_nodes.push(node);
-	}
-
-	virtual std::shared_ptr<FileSystem::Node> PopNode(void)
-	{
-		std::lock_guard<std::mutex> critsec(m_nodelock);
-
-		if(m_nodes.empty()) return nullptr; 
-
-		// Pull the top shared_ptr<> from the stack and pop it
-		auto result = m_nodes.top();
-		m_nodes.pop();
-		return result;
-	}
-
-	// name is always blank for the root alias
-	virtual const tchar_t* getName(void) { return _T(""); }
-
-	virtual std::shared_ptr<FileSystem::Node> getNode(void) 
-	{
-		std::lock_guard<std::mutex> critsec(m_nodelock);
-
-		// Return an empty shared_ptr<> if there is no attached node
-		return (m_nodes.empty()) ? nullptr : m_nodes.top();
-	}
-
-	// Parent
-	//
-	// Gets the parent alias for this alias instance
-	__declspec(property(get=getParent)) std::shared_ptr<FileSystem::Alias> Parent;
-	virtual std::shared_ptr<FileSystem::Alias> getParent(void) { return nullptr; }
-
-	// State
-	//
-	// Gets the state (attached/detached) of this alias instance
-	__declspec(property(get=getState)) FileSystem::AliasState State;
-	virtual FileSystem::AliasState getState(void) { 
-		
-		std::lock_guard<std::mutex> critsec(m_nodelock);
-		return m_nodes.size() == 0 ? FileSystem::AliasState::Detached : FileSystem::AliasState::Attached; 
-	}
-
-private:
-
-	VmRootAlias(const VmRootAlias&)=delete;
-	VmRootAlias& operator=(const VmRootAlias&)=delete;
-
-	std::stack<std::shared_ptr<FileSystem::Node>> m_nodes;
-	std::mutex m_nodelock;
-};
-/// END: MOVE ME
-
 //-----------------------------------------------------------------------------
 // HostFileSystem
 //
@@ -118,9 +50,8 @@ class HostFileSystem : public FileSystem
 {
 public:
 
-	// Constructor / Destructor
+	// Destructor
 	//
-	HostFileSystem()=default;
 	virtual ~HostFileSystem()=default;
 
 	// Mount
@@ -132,6 +63,11 @@ private:
 
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
+
+	// Instance Constructor
+	//
+	HostFileSystem()=default;
+	friend class std::_Ref_count_obj<HostFileSystem>;
 
 	class Alias;
 	class File;
@@ -146,8 +82,8 @@ private:
 
 		// Instance Constructors
 		//
-		Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name) : m_parent(parent), m_name(name) {}
-		Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name, const std::shared_ptr<Node>& node) : m_parent(parent), m_name(name), m_node(node) {}
+		//Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name) : m_parent(parent), m_name(name) {}
+		//Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name, const std::shared_ptr<Node>& node) : m_parent(parent), m_name(name), m_node(node) {}
 
 		// Destructor
 		//
@@ -158,12 +94,6 @@ private:
 		// Gets the name assigned to this alias instance
 		__declspec(property(get=getName)) const tchar_t* Name;
 		virtual const tchar_t* getName(void) const { return m_name.c_str(); }
-
-		// Parent (FileSystem::Alias)
-		//
-		// Gets the parent alias for this alias instance
-		__declspec(property(get=getParent)) std::shared_ptr<FileSystem::Alias> Parent;
-		virtual std::shared_ptr<FileSystem::Alias> getParent(void) const { return nullptr; }
 
 		// State (FileSystem::Alias)
 		//
@@ -185,11 +115,6 @@ private:
 		//
 		// The node that is attached to this alias
 		std::shared_ptr<Node> m_node;
-
-		// m_parent
-		//
-		// Strong reference to this alias' parent alias
-		std::shared_ptr<FileSystem::Alias> m_parent;
 	};
 
 	// File
@@ -237,12 +162,6 @@ private:
 		__declspec(property(get=getIndex)) uint32_t Index;
 		virtual uint32_t getIndex(void) { return static_cast<uint32_t>(m_index); }
 
-		// MountPoint (FileSystem::Node)
-		//
-		// Indicates if this node is a mount point
-		__declspec(property(get=getMountPoint)) bool MountPoint;
-		virtual bool getMountPoint(void) { return false; }
-
 		// Type (FileSystem::Node)
 		//
 		// Gets the node type
@@ -277,7 +196,9 @@ private:
 
 	// HostFileSystem::RootNode
 	//
-	// Specialization of HostFileSystem::Node for the mount point node
+	// Specialization of HostFileSystem::Node for the mount point node.  Unlike Node,
+	// this class maintains a strong reference to the HostFileSystem instance to keep
+	// it alive as long as the file system is mounted
 	class RootNode : public Node
 	{
 	public:
@@ -286,19 +207,12 @@ private:
 		//
 		RootNode(const std::shared_ptr<HostFileSystem>& fs, NodeType type, HANDLE handle) : Node(fs, type, handle), m_fs(fs) {}
 		virtual ~RootNode()=default;
-		
-		// MountPoint (FileSystem::Node)
-		//
-		// Indicates if this node is a mount point
-		__declspec(property(get=getMountPoint)) bool MountPoint;
-		virtual bool getMountPoint(void) { return true; }
 
 	private:
 
 		// m_fs
 		//
-		// Strong reference to the parent file system instance, this keeps the
-		// parent HostFileSystem alive as long as the root node exists
+		// Strong reference to the parent file system instance
 		std::shared_ptr<HostFileSystem> m_fs;
 	};
 

@@ -75,35 +75,26 @@ struct __declspec(novtable) FileSystem
 		Unknown				= 0,
 	};
 
-	// ModeToNodeType
-	//
-	// Converts a mode_t bitmask into a NodeType enumeration value
-	static inline NodeType ModeToNodeType(const uapi::mode_t& mode)
-	{
-		// NodeType matches the bits from the S_IFMT mask
-		return static_cast<NodeType>(mode & LINUX_S_IFMT);
-	}
-
 	// Alias
 	//
-	// Interface for a file system alias instance.  Similar in theory to the 
-	// linux dentry, an alias is a named pointer to a file system node.
-	//
-	// Alias objects can optionally support attaching to multiple nodes to allow 
-	// for mounting or otherwise masking an existing node; if this is not possible
-	// for the file system, the PushMode() method should throw an exception if there
-	// is already a node attached to the alias
+	// todo: document when done
 	struct __declspec(novtable) Alias
 	{
-		// PopNode
+		// Mount
 		//
-		// Pops a node from this alias to unmask an underlying node
-		virtual NodePtr PopNode(void) = 0;
+		// Mounts a node instance to this alias instance
+		virtual void Mount(const NodePtr& node) = 0;
 
-		// PushNode
+		// Unmount
 		//
-		// Pushes a node into this alias that masks any current node
-		virtual void PushNode(const NodePtr& node) = 0;
+		// Removes a mounted node from this alias instance
+		virtual void Unmount(void) = 0;
+
+		// MountPoint
+		//
+		// Determines if this alias is acting as a mount point
+		__declspec(property(get=getMountPoint)) bool MountPoint;
+		virtual bool getMountPoint(void) = 0;
 
 		// Name
 		//
@@ -117,12 +108,6 @@ struct __declspec(novtable) FileSystem
 		//__declspec(property(get=getNode)) std::shared_ptr<Node> Node;  todo - name clash
 		virtual NodePtr getNode(void) = 0;
 
-		// Parent
-		//
-		// Gets the parent alias for this alias instance
-		__declspec(property(get=getParent)) std::shared_ptr<Alias> Parent;
-		virtual AliasPtr getParent(void) = 0;
-
 		// State
 		//
 		// Gets the state (attached/detached) of this alias instance
@@ -132,25 +117,25 @@ struct __declspec(novtable) FileSystem
 
 	// File
 	//
-	// Interface for a file system file instance
+	// todo: document when done
 	struct __declspec(novtable) File
 	{
 	};
 
 	// Node
 	//
-	// Interface for a file system node instance
+	// todo: document when done
 	struct __declspec(novtable) Node
 	{
 		// CreateDirectory
 		//
 		// Creates a directory node as a child of this node instance
-		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode) = 0;
+		//virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode) = 0;
 
 		// CreateSymbolicLink
 		//
 		// Creates a symbolic link node as a child of this node instance
-		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
+		//virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
 
 		// Index
 		//
@@ -161,8 +146,9 @@ struct __declspec(novtable) FileSystem
 		// MountPoint
 		//
 		// Indicates if this node represents a mount point
-		__declspec(property(get=getMountPoint)) bool MountPoint;
-		virtual bool getMountPoint(void) = 0;
+		// todo: don't need this
+		//__declspec(property(get=getMountPoint)) bool MountPoint;
+		//virtual bool getMountPoint(void) = 0;
 
 		// Type
 		//
