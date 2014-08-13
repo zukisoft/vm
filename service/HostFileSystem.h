@@ -69,53 +69,8 @@ private:
 	HostFileSystem()=default;
 	friend class std::_Ref_count_obj<HostFileSystem>;
 
-	class Alias;
 	class File;
 	class Node;
-
-	// Alias
-	//
-	// FileSystem::Alias implementation
-	class Alias : public FileSystem::Alias
-	{
-	public:
-
-		// Instance Constructors
-		//
-		//Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name) : m_parent(parent), m_name(name) {}
-		//Alias(const std::shared_ptr<FileSystem::Alias>& parent, const tchar_t* name, const std::shared_ptr<Node>& node) : m_parent(parent), m_name(name), m_node(node) {}
-
-		// Destructor
-		//
-		virtual ~Alias()=default;
-
-		// Name (FileSystem::Alias)
-		//
-		// Gets the name assigned to this alias instance
-		__declspec(property(get=getName)) const tchar_t* Name;
-		virtual const tchar_t* getName(void) const { return m_name.c_str(); }
-
-		// State (FileSystem::Alias)
-		//
-		// Gets the state (attached/detached) of this alias instance
-		__declspec(property(get=getState)) FileSystem::AliasState State;
-		virtual FileSystem::AliasState getState(void) const { return (m_node) ? AliasState::Attached : AliasState::Detached; }
-
-	private:
-
-		Alias(const Alias&)=delete;
-		Alias& operator=(const Alias&)=delete;
-
-		// m_name
-		//
-		// The name assigned to this alias
-		std::tstring m_name;
-
-		// m_node
-		//
-		// The node that is attached to this alias
-		std::shared_ptr<Node> m_node;
-	};
 
 	// File
 	//
@@ -148,13 +103,13 @@ private:
 
 		// CreateDirectory (FileSystem::Node)
 		//
-		// Creates a directory as a child of this node
-		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode);
+		// Creates a directory node as a child of this node on the file system
+		virtual NodePtr CreateDirectory(const DirectoryEntryPtr& dentry, uapi::mode_t mode);
 
 		// CreateSymbolicLink (FileSystem::Node)
 		//
-		// Creates a symbolic link node as a child of this node instance
-		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
+		// Creates a symbolic link node as a child of this node on the file system
+		virtual NodePtr CreateSymbolicLink(const DirectoryEntryPtr& dentry, const tchar_t* target);
 
 		// Index (FileSystem::Node)
 		//

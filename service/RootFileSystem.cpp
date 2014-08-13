@@ -34,73 +34,13 @@
 //
 //	device		- Unused for root file system
 
-FileSystem::AliasPtr RootFileSystem::Mount(const tchar_t* device)
+FileSystem::NodePtr RootFileSystem::Mount(const tchar_t* device)
 {
 	UNREFERENCED_PARAMETER(device);
 
 	// Mounting the root file system just creates an instance of it
 	// and returns the FileSystem::Alias interface pointer
 	return std::make_shared<RootFileSystem>();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Mount (private)
-//
-// Mounts a node in this alias instance
-//
-// Arguments:
-//
-//	node		- Node to be mounted in this alias
-
-void RootFileSystem::Mount(const NodePtr& node)
-{
-	_ASSERTE(node);
-	if(node == nullptr) throw LinuxException(LINUX_ENOENT);
-
-	// Push the new mounted node onto the stack
-	std::lock_guard<std::mutex> critsec(m_lock);
-	m_nodes.push(node);
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::getMountPoint (private)
-//
-// Determines if this alias is serving as a mount point
-
-bool RootFileSystem::getMountPoint(void)
-{
-	// If any nodes have been mounted, this alias is a mount point
-	std::lock_guard<std::mutex> critsec(m_lock);
-	return !m_nodes.empty();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::getNode (private)
-//
-// Retrieves a pointer to the Node attached to this Alias instance
-
-FileSystem::NodePtr RootFileSystem::getNode(void)
-{
-	// If there are no over-mounted nodes, return this root instance
-	std::lock_guard<std::mutex> critsec(m_lock);
-	return (m_nodes.empty()) ? shared_from_this() : m_nodes.top();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Unmount (private)
-//
-// Removes the topmost mounted node from this alias instance
-//
-// Arguments:
-//
-//	NONE
-
-void RootFileSystem::Unmount(void)
-{
-	// Throw EINVAL if this alias is not serving as a mount point
-	std::lock_guard<std::mutex> critsec(m_lock);
-	if(m_nodes.empty()) throw LinuxException(LINUX_EINVAL);
-	m_nodes.pop();
 }
 
 //-----------------------------------------------------------------------------

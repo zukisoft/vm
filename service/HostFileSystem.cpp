@@ -183,20 +183,9 @@ HostFileSystem::Node::~Node()
 	if(auto fs = m_fs.lock()) fs->ReleaseNodeIndex(m_index);
 }
 
-//-----------------------------------------------------------------------------
-// HostFileSystem::Node::CreateDirectory
-//
-// Creates a new directory node as a child of this node
-//
-// Arguments:
-//
-//	name		- Name to assign when creating the new node
-//	mode		- Mode flags for the new node
-
-FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const tchar_t* name, uapi::mode_t mode)
+FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const DirectoryEntryPtr& dentry, uapi::mode_t mode)
 {
 	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
-	_ASSERTE((name) && (*name));
 
 	// The parent file system instance must be accessible during node construction
 	auto fs = m_fs.lock();
@@ -206,6 +195,7 @@ FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const tchar_t* name, u
 	if(m_type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// The name must be non-NULL when creating a child node object
+	const tchar_t* name = dentry->Name;
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 	size_t namelen = _tcslen(name);
 
@@ -244,21 +234,9 @@ FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const tchar_t* name, u
 	catch(...) { CloseHandle(handle); throw; }
 }
 
-//-----------------------------------------------------------------------------
-// HostFileSystem::Node::CreateSymbolicLink
-//
-// Creates a new symbolic link node as a child of this node
-//
-// Arguments:
-//
-//	name		- Name to assign when creating the new node
-//	mode		- Mode flags for the new node
-
-FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
+FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const DirectoryEntryPtr& dentry, const tchar_t* target)
 {
 	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
-	_ASSERTE((name) && (*name));
-	_ASSERTE((target) && (*target));
 
 	// The parent file system instance must be accessible during node construction
 	auto fs = m_fs.lock();
@@ -268,6 +246,7 @@ FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name
 	if(m_type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// The name must be non-NULL when creating a child node object
+	const tchar_t* name = dentry->Name;
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 	size_t namelen = _tcslen(name);
 
@@ -288,7 +267,12 @@ FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name
 	// TODO: adjust target for host
 	// todo: flags, 0 = file
 	// todo: exception codes
-	if(!::CreateSymbolicLink(buffer.data(), target, 0)) throw LinuxException(LINUX_EINVAL, Win32Exception());
+	if(!::CreateSymbolicLink(buffer.data(), target, 0)) {
+		
+		DWORD dw = GetLastError();
+		// 1314 = required privilege not held
+		throw LinuxException(LINUX_EINVAL, Win32Exception());
+	}
 
 	return nullptr;
 	// todo

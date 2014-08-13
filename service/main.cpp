@@ -57,12 +57,20 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	FileSystem::AliasPtr root = RootFileSystem::Mount(nullptr);
-	root->Mount(HostFileSystem::Mount(L"D:\\Linux Stuff"));
+	FileSystem::s_root->Mount(RootFileSystem::Mount(nullptr));
 
-	auto node = root->getNode();
+	auto node = FileSystem::s_root->getNode();
+	FileSystem::s_root->Mount(HostFileSystem::Mount(L"D:\\Linux Stuff"));
 
-	root->Unmount();
+	FileSystem::s_root->CreateDirectory(L"TEST FROM MIKE", 0);
+	FileSystem::s_root->CreateSymbolicLink(L"testlink", L"D:\\Linux Stuff\\bzImage");
+
+	auto root = FileSystem::s_root->getName();
+
+	//FileSystem::s_root->Unmount();
+
+	//FileSystem::s_root->CreateDirectory(L"TEST FROM MIKE", 0);
+	//FileSystem::s_root->Unmount();
 
 	return 0;	
 

@@ -35,12 +35,12 @@
 //-----------------------------------------------------------------------------
 // RootFileSystem
 //
-// RootFileSystem implements the specialized file system that serves as the 
-// root node for everything else.  All that exists is the root Alias that allows
-// for another file system to be mounted on top of it.
+// RootFileSystem implements a file system that contains one and only one node
+// that does not support creation of any child objects.  The intent behind this
+// file system is to provide a default master root that would be overmounted by
+// another file system when the virtual machine is starting up
 
-class RootFileSystem : public FileSystem, public FileSystem::Alias, public FileSystem::Node,
-	public std::enable_shared_from_this<RootFileSystem>
+class RootFileSystem : public FileSystem, public FileSystem::Node
 {
 public:
 
@@ -50,9 +50,9 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	// TODO: should be something else or return NodePtr, perhaps NodePtr
-	// will work, just need a special alias to wrap it in the service?
-	static AliasPtr Mount(const tchar_t* device);
+	// + unsigned long flags
+	// + const void* data
+	static NodePtr Mount(const tchar_t* device /*todo: mount options -- must be RO*/);
 
 private:
 
@@ -64,15 +64,15 @@ private:
 	RootFileSystem()=default;
 	friend class std::_Ref_count_obj<RootFileSystem>;
 
-	// Mount (FileSystem::Alias)
+	// CreateDirectory (FileSystem::Node)
 	//
-	// Mounts (pushes) a node instance to this alias
-	virtual void Mount(const NodePtr& node);
+	// Creates a directory node as a child of this node on the file system
+	virtual NodePtr CreateDirectory(const DirectoryEntryPtr&, uapi::mode_t) { throw LinuxException(LINUX_EPERM); }
 
-	// Unmount (FileSystem::Alias)
+	// CreateSymbolicLink (FileSystem::Node)
 	//
-	// Unmounts (pops) a node instance from this alias
-	virtual void Unmount(void);
+	// Creates a symbolic link node as a child of this node on the file system
+	virtual NodePtr CreateSymbolicLink(const DirectoryEntryPtr&, const tchar_t*) { throw LinuxException(LINUX_EPERM); }
 
 	// Index (FileSystem::Node)
 	//
@@ -80,45 +80,11 @@ private:
 	__declspec(property(get=getIndex)) uint32_t Index;
 	virtual uint32_t getIndex(void) { return 0; }
 
-	// MountPoint
-	//
-	// Determines if this alias is acting as a mount point
-	__declspec(property(get=getMountPoint)) bool MountPoint;
-	virtual bool getMountPoint(void);
-
-	// Name (FileSystem::Alias)
-	//
-	// Gets the name assigned to this alias instance
-	__declspec(property(get=getName)) const tchar_t* Name;
-	virtual const tchar_t* getName(void) { return _T("/"); }
-
-	// Node (FileSystem::Alias)
-	//
-	// Gets the node attached to this alias, or nullptr if not attached
-	__declspec(property(get=getNode)) NodePtr Node;
-	virtual NodePtr getNode(void);
-
-	// State (FileSystem::Alias)
-	//
-	// Gets the state (attached/detached) of this alias instance
-	__declspec(property(get=getState)) AliasState State;
-	virtual AliasState getState(void) { return AliasState::Attached; }
-
 	// Type (FileSystem::Node)
 	//
 	// Gets the node type
 	__declspec(property(get=getType)) NodeType Type;
 	virtual NodeType getType(void) { return NodeType::Directory; }
-
-	// m_lock
-	//
-	// Mutex to control access to the nodes collection
-	std::mutex m_lock;
-
-	// m_nodes
-	//
-	// Collection of nodes attached to this Alias instance
-	std::stack<NodePtr> m_nodes;
 };
 
 //-----------------------------------------------------------------------------
