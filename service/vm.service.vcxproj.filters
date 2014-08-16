@@ -236,6 +236,15 @@
     <ClInclude Include="RootFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
+    <ClInclude Include="VmFileSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectoryEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\IndexPool.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -391,9 +400,6 @@
     <ClCompile Include="VmSystemLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FileSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Win32Exception.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -408,6 +414,12 @@
     </ClCompile>
     <ClCompile Include="RootFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="VmFileSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectoryEntry.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

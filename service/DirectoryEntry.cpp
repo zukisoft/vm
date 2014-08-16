@@ -21,12 +21,12 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "FileSystem.h"
+#include "DirectoryEntry.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// FileSystem::DirectoryEntry Constructor (private)
+// DirectoryEntry Constructor (private)
 //
 // Arguments:
 //
@@ -34,7 +34,7 @@
 //	parent		- Parent DirectoryEntry or nullptr if this is a root node
 //	node		- Node to attach or nullptr to create a detached entry
 
-FileSystem::DirectoryEntry::DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent, const NodePtr& node)
+DirectoryEntry::DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent, const FileSystem::NodePtr& node)
 {
 	// test name - throw if no good; root should use "/" I think
 
@@ -43,7 +43,7 @@ FileSystem::DirectoryEntry::DirectoryEntry(const tchar_t* name, const DirectoryE
 	if(node) m_nodes.push(node);
 }
 
-FileSystem::DirectoryEntryPtr FileSystem::DirectoryEntry::CreateDirectory(const tchar_t* name, uapi::mode_t mode)
+DirectoryEntryPtr DirectoryEntry::CreateDirectory(const tchar_t* name, uapi::mode_t mode)
 {
 	std::lock_guard<std::recursive_mutex> critsec(m_lock);
 
@@ -51,14 +51,14 @@ FileSystem::DirectoryEntryPtr FileSystem::DirectoryEntry::CreateDirectory(const 
 	//if(m_nodes.empty()) throw something;
 
 	DirectoryEntryPtr child = std::make_shared<DirectoryEntry>(name, shared_from_this());
-	child->PushNode(m_nodes.top()->CreateDirectory(child, mode));
+	child->PushNode(m_nodes.top()->CreateDirectory(name, mode));
 
 	// add to collection
 	m_children.push_back(child);
 	return child;
 }
 
-FileSystem::DirectoryEntryPtr FileSystem::DirectoryEntry::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
+DirectoryEntryPtr DirectoryEntry::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
 {
 	std::lock_guard<std::recursive_mutex> critsec(m_lock);
 
@@ -66,21 +66,21 @@ FileSystem::DirectoryEntryPtr FileSystem::DirectoryEntry::CreateSymbolicLink(con
 	//if(m_nodes.empty()) throw something;
 
 	DirectoryEntryPtr child = std::make_shared<DirectoryEntry>(name, shared_from_this());
-	child->PushNode(m_nodes.top()->CreateSymbolicLink(child, target));
+	child->PushNode(m_nodes.top()->CreateSymbolicLink(name, target));
 
 	// add to collection
 	m_children.push_back(child);
 	return child;
 }
 
-void FileSystem::DirectoryEntry::PushNode(const NodePtr& node)
+void DirectoryEntry::PushNode(const FileSystem::NodePtr& node)
 {
 	// check node for nullptr
 	std::lock_guard<std::recursive_mutex> critsec(m_lock);
 	m_nodes.push(node);
 }
 
-void FileSystem::DirectoryEntry::PopNode(void)
+void DirectoryEntry::PopNode(void)
 {
 	std::lock_guard<std::recursive_mutex> critsec(m_lock);
 

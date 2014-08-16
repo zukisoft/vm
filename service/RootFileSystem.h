@@ -38,9 +38,11 @@
 // RootFileSystem implements a file system that contains one and only one node
 // that does not support creation of any child objects.  The intent behind this
 // file system is to provide a default master root that would be overmounted by
-// another file system when the virtual machine is starting up
+// another file system when the virtual machine is starting up if no other
+// more robust default file system is available
 
-class RootFileSystem : public FileSystem, public FileSystem::Node
+class RootFileSystem : public FileSystem, public FileSystem::Node,
+	public std::enable_shared_from_this<RootFileSystem>
 {
 public:
 
@@ -52,7 +54,7 @@ public:
 	// Mounts the file system
 	// + unsigned long flags
 	// + const void* data
-	static NodePtr Mount(const tchar_t* device /*todo: mount options -- must be RO*/);
+	static FileSystemPtr Mount(const tchar_t* device /*todo: mount options -- must be RO*/);
 
 private:
 
@@ -60,27 +62,38 @@ private:
 	RootFileSystem& operator=(const RootFileSystem&)=delete;
 
 	// Instance Constructor
-	//
 	RootFileSystem()=default;
 	friend class std::_Ref_count_obj<RootFileSystem>;
 
-	// CreateDirectory (FileSystem::Node)
+	//-------------------------------------------------------------------------
+	// FileSystem Implementation
+
+	// RootNode
+	//
+	// Gets the root node instance
+	__declspec(property(get=getRootNode)) NodePtr RootNode;
+	virtual NodePtr getRootNode(void) { return shared_from_this(); }
+
+	//-------------------------------------------------------------------------
+	// FileSystem::Node Implementation
+
+	// CreateDirectory
 	//
 	// Creates a directory node as a child of this node on the file system
-	virtual NodePtr CreateDirectory(const DirectoryEntryPtr&, uapi::mode_t) { throw LinuxException(LINUX_EPERM); }
+	virtual NodePtr CreateDirectory(const tchar_t*, uapi::mode_t) { throw LinuxException(LINUX_EPERM); }
 
-	// CreateSymbolicLink (FileSystem::Node)
+	// CreateSymbolicLink
 	//
 	// Creates a symbolic link node as a child of this node on the file system
-	virtual NodePtr CreateSymbolicLink(const DirectoryEntryPtr&, const tchar_t*) { throw LinuxException(LINUX_EPERM); }
+	virtual NodePtr CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM); }
 
-	// Index (FileSystem::Node)
+	// Index
 	//
 	// Gets the node index
 	__declspec(property(get=getIndex)) uint32_t Index;
 	virtual uint32_t getIndex(void) { return 0; }
 
-	// Type (FileSystem::Node)
+	// Type
 	//
 	// Gets the node type
 	__declspec(property(get=getType)) NodeType Type;

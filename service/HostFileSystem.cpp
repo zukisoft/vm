@@ -25,25 +25,14 @@
 
 #pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// HostFileSystem::AllocateNodeIndex
-//
-// Allocates a node index from the pool
-//
-// Arguments:
-//
-//	NONE
-
-int32_t HostFileSystem::AllocateNodeIndex(void)
+HostFileSystem::HostFileSystem(const std::shared_ptr<_indexpool_t>& indexpool, const tchar_t* device) : m_indexpool(indexpool)
 {
-	int32_t index;				// Allocated index value
-
-	// Try to use a spent index first before grabbing a new one; if the
-	// return value overflowed, there are no more indexes left to use
-	if(!m_spentindexes.try_pop(index)) index = m_nextindex++;
-	if(index < 0) throw LinuxException(LINUX_EDQUOT);
-
-	return index;
+	// Attempt to open the specified device as the host directory path, and pass
+	// that into the special RootNode object.  RootNode contains a strong reference
+	// to the file system parent object to keep it alive
+	HANDLE handle = OpenHostDirectory(device);
+	try { m_rootnode = std::make_shared<Node>(indexpool, NodeType::Directory, handle); }
+	catch(...) { CloseHandle(handle); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -55,17 +44,10 @@ int32_t HostFileSystem::AllocateNodeIndex(void)
 //
 //	device		- Path to the root file system node on the host
 
-FileSystem::NodePtr HostFileSystem::Mount(const tchar_t* device)
+FileSystemPtr HostFileSystem::Mount(const tchar_t* device)
 {
-	// The file system instance is required to exist as a shared_ptr
-	auto fs = std::make_shared<HostFileSystem>();
-
-	// Attempt to open the specified device as the host directory path, and pass
-	// that into the special RootNode object.  RootNode contains a strong reference
-	// to the file system parent object to keep it alive
-	HANDLE handle = OpenHostDirectory(device);
-	try { return std::make_shared<RootNode>(fs, NodeType::Directory, handle); }
-	catch(...) { CloseHandle(handle); throw; }
+	std::shared_ptr<_indexpool_t> indexpool = std::make_shared<_indexpool_t>();
+	return std::make_shared<HostFileSystem>(indexpool, device);
 }
 
 //-----------------------------------------------------------------------------
@@ -132,21 +114,6 @@ HANDLE HostFileSystem::OpenHostSymbolicLink(const tchar_t* path)
 	catch(...) { CloseHandle(handle); throw; }
 }
 
-//-----------------------------------------------------------------------------
-// HostFileSystem::ReleaseNodeIndex
-//
-// Releases a node index from the pool
-//
-// Arguments:
-//
-//	index		- Node index to be released
-
-void HostFileSystem::ReleaseNodeIndex(int32_t index)
-{
-	// This class reuses indexes aggressively, push it into the spent queue
-	// so that it be grabbed before allocating a new one
-	m_spentindexes.push(index);
-}
 
 //
 // TESTFILESYSTEM::NODE IMPLEMENTATION
@@ -161,14 +128,14 @@ void HostFileSystem::ReleaseNodeIndex(int32_t index)
 //	type		- Type associated with the node handle
 //	handle		- Operating System handle for the node
 
-HostFileSystem::Node::Node(const std::shared_ptr<HostFileSystem>& fs, NodeType type, HANDLE handle) : 
-	m_type(type), m_handle(handle), m_fs(fs) 
+HostFileSystem::Node::Node(const std::shared_ptr<_indexpool_t>& indexpool, NodeType type, HANDLE handle) : 
+	m_type(type), m_handle(handle), m_indexpool(indexpool) 
 {
-	_ASSERTE(fs);								// The parent must be alive during construction
+	_ASSERTE(indexpool);						// The pool must be alive during construction
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);	// This must be set to something valid
 
 	// Allocate the index for this node from the parent file system instance
-	m_index = fs->AllocateNodeIndex();
+	m_index = indexpool->Allocate();
 }
 
 //-----------------------------------------------------------------------------
@@ -180,22 +147,21 @@ HostFileSystem::Node::~Node()
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 
 	// Relase the index that was allocated for this node instance
-	if(auto fs = m_fs.lock()) fs->ReleaseNodeIndex(m_index);
+	if(auto indexpool = m_indexpool.lock()) indexpool->Release(m_index);
 }
 
-FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const DirectoryEntryPtr& dentry, uapi::mode_t mode)
+FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const tchar_t* name, uapi::mode_t mode)
 {
 	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
 
-	// The parent file system instance must be accessible during node construction
-	auto fs = m_fs.lock();
-	if(fs == nullptr) throw LinuxException(LINUX_ENOENT);
+	// The index pool instance must be accessible during node construction
+	auto indexpool = m_indexpool.lock();
+	if(indexpool == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// If this isn't a directory node, a new node cannot be created underneath it
 	if(m_type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// The name must be non-NULL when creating a child node object
-	const tchar_t* name = dentry->Name;
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 	size_t namelen = _tcslen(name);
 
@@ -230,23 +196,22 @@ FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const DirectoryEntryPt
 	// The handle to the directory is not returned, it must be opened specifically for use
 	// by the Node instance ...
 	HANDLE handle = OpenHostDirectory(buffer.data());
-	try { return std::make_shared<Node>(fs, NodeType::Directory, handle); }
+	try { return std::make_shared<Node>(indexpool, NodeType::Directory, handle); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 
-FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const DirectoryEntryPtr& dentry, const tchar_t* target)
+FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
 {
 	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
 
-	// The parent file system instance must be accessible during node construction
-	auto fs = m_fs.lock();
-	if(fs == nullptr) throw LinuxException(LINUX_ENOENT);
+	// The index pool instance must be accessible during node construction
+	auto indexpool = m_indexpool.lock();
+	if(indexpool == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// If this isn't a directory node, a new node cannot be created underneath it
 	if(m_type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// The name must be non-NULL when creating a child node object
-	const tchar_t* name = dentry->Name;
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 	size_t namelen = _tcslen(name);
 
@@ -279,7 +244,7 @@ FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const DirectoryEntr
 	//// The handle to the directory is not returned, it must be opened specifically for use
 	//// by the Node instance ...
 	//HANDLE handle = OpenHostDirectory(buffer.data());
-	//try { return std::make_shared<Node>(fs, NodeType::Directory, handle); }
+	//try { return std::make_shared<Node>(indexpool, NodeType::Directory, handle); }
 	//catch(...) { CloseHandle(handle); throw; }
 }
 

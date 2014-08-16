@@ -94,6 +94,13 @@ Parameter %1 was out of the range of valid values.
 MessageId=1
 Severity=Error
 Facility=Common
+SymbolicName=E_INDEXPOOL_EXHAUSTED
+Language=English
+The index pool has been exhausted; no more sequential index values can be allocated
+.
+
+MessageId=
+Severity=Error
 SymbolicName=E_DECOMPRESS_INIT
 Language=English
 The decompression stream cannot be initialized (method: %1)

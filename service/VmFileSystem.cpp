@@ -21,29 +21,23 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "RootFileSystem.h"
+#include "VmFileSystem.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount (static)
-//
-// Mounts the root file system
+// VmFileSystem Constructor
 //
 // Arguments:
 //
-//	device		- Unused for root file system
-//	todo: mount options arguments
+//	rootfs		- Mounted FileSystem instance to serve as the root
 
-FileSystemPtr RootFileSystem::Mount(const tchar_t* device)
+VmFileSystem::VmFileSystem(const FileSystemPtr& rootfs)
 {
-	UNREFERENCED_PARAMETER(device);
-
-	// Mounting the root file system is as simple as creating an instance of it
-	// todo: any mount flags that need to be obeyed??
-	return std::make_shared<RootFileSystem>();
+	_ASSERTE(rootfs);
+	m_rootfs = rootfs;
 }
 
-//-----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)

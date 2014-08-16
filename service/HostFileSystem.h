@@ -32,6 +32,7 @@
 #include <mutex>
 #include <stack>
 #include <linux/stat.h>
+#include "IndexPool.h"
 #include "LinuxException.h"
 #include "Win32Exception.h"
 
@@ -51,22 +52,27 @@ class HostFileSystem : public FileSystem
 public:
 
 	// Destructor
-	//
 	virtual ~HostFileSystem()=default;
 
-	// Mount
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Mount (static)
 	//
 	// Mounts the file system
-	static NodePtr Mount(const tchar_t* device);
+	static FileSystemPtr Mount(const tchar_t* device);
 
 private:
 
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
+	
+	// _indexpool_t
+	using _indexpool_t = IndexPool<int32_t>;
 
 	// Instance Constructor
 	//
-	HostFileSystem()=default;
+	HostFileSystem(const std::shared_ptr<_indexpool_t>& indexpool, const tchar_t* device);
 	friend class std::_Ref_count_obj<HostFileSystem>;
 
 	class File;
@@ -98,18 +104,18 @@ private:
 
 		// Constructor / Destructor
 		//
-		Node(const std::shared_ptr<HostFileSystem>& fs, NodeType type, HANDLE handle);
+		Node(const std::shared_ptr<_indexpool_t>& indexpool, NodeType type, HANDLE handle);
 		virtual ~Node();
 
 		// CreateDirectory (FileSystem::Node)
 		//
 		// Creates a directory node as a child of this node on the file system
-		virtual NodePtr CreateDirectory(const DirectoryEntryPtr& dentry, uapi::mode_t mode);
+		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode);
 
 		// CreateSymbolicLink (FileSystem::Node)
 		//
 		// Creates a symbolic link node as a child of this node on the file system
-		virtual NodePtr CreateSymbolicLink(const DirectoryEntryPtr& dentry, const tchar_t* target);
+		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
 
 		// Index (FileSystem::Node)
 		//
@@ -128,10 +134,10 @@ private:
 		Node(const Node&)=delete;
 		Node& operator=(const Node&)=delete;
 
-		// m_fs
+		// m_indexpool
 		//
-		// Weak reference to the parent file system object
-		std::weak_ptr<HostFileSystem> m_fs;
+		// Weak reference to the index pool
+		std::weak_ptr<_indexpool_t> m_indexpool;
 
 		// m_handle
 		//
@@ -149,33 +155,6 @@ private:
 		const NodeType m_type;
 	};
 
-	// HostFileSystem::RootNode
-	//
-	// Specialization of HostFileSystem::Node for the mount point node.  Unlike Node,
-	// this class maintains a strong reference to the HostFileSystem instance to keep
-	// it alive as long as the file system is mounted
-	class RootNode : public Node
-	{
-	public:
-
-		// Constructor / Destructor
-		//
-		RootNode(const std::shared_ptr<HostFileSystem>& fs, NodeType type, HANDLE handle) : Node(fs, type, handle), m_fs(fs) {}
-		virtual ~RootNode()=default;
-
-	private:
-
-		// m_fs
-		//
-		// Strong reference to the parent file system instance
-		std::shared_ptr<HostFileSystem> m_fs;
-	};
-
-	// AllocateNodeIndex
-	//
-	// Allocates a node index from the pool
-	int32_t AllocateNodeIndex(void);
-
 	// OpenHostDirectory
 	//
 	// Opens a directory object on the host file system
@@ -186,20 +165,14 @@ private:
 	// Opens a symbolic link object on the host file system
 	static HANDLE OpenHostSymbolicLink(const tchar_t* path);
 
-	// ReleaseNodeIndex
-	//
-	// Releases a node index from the pool
-	void ReleaseNodeIndex(int32_t index);
+	virtual NodePtr getRootNode(void) { return m_rootnode; }
 
-	// m_nextindex
-	//
-	// Next sequential node index value
-	std::atomic<int32_t> m_nextindex = 0;
+	//-------------------------------------------------------------------------
+	// Member Variables
 
-	// m_spentindexes
-	//
-	// Queue used to recycle node indexes
-	Concurrency::concurrent_queue<int32_t> m_spentindexes;
+	NodePtr m_rootnode;
+
+	std::shared_ptr<_indexpool_t> m_indexpool;
 };
 
 //-----------------------------------------------------------------------------

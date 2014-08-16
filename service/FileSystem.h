@@ -24,25 +24,26 @@
 #define __FILESYSTEM_H_
 #pragma once
 
-#include <atomic>
-#include <stack>
-#include <vector>
 #include <linux/stat.h>
 #include <linux/types.h>
-#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
 // todo: document
 
+struct FileSystem;
+using FileSystemPtr = std::shared_ptr<FileSystem>;
+
+//-----------------------------------------------------------------------------
+// FileSystem
+//
+// FileSystem represents the interface that must be implemented by all file system
+// classes.
+//
+// todo: more words
+
 struct __declspec(novtable) FileSystem
 {
-	// DirectoryEntryPtr
-	//
-	// s for an std::shared_ptr<DirectoryEntry>
-	class DirectoryEntry;
-	using DirectoryEntryPtr = std::shared_ptr<DirectoryEntry>;
-
 	// FilePtr
 	//
 	// Alias for an std::shared_ptr<File>
@@ -73,112 +74,6 @@ struct __declspec(novtable) FileSystem
 		Unknown				= 0,
 	};
 
-	// DirectoryEntry
-	//
-	// todo: could create static buckets for objects/locks, consider hashing this
-	// and linking to a critical section; would save a lot of memory at a 
-	// minimal performance impact
-	class DirectoryEntry : public std::enable_shared_from_this<DirectoryEntry>
-	{
-	public:
-
-		~DirectoryEntry()=default;
-
-		// need a static create method
-
-		// need something to iterate children, pass in a lambda to allow
-		// for thread safety
-
-		// pushes a node; sets mountpoint flag
-		// may need an atomic counter for this to clear flag
-		void Mount(const NodePtr& node)
-		{
-			return PushNode(node);
-		}
-
-		// pops a node; optionally clears mountpoint flag
-		// may need atomic counter for this
-		void Unmount(void)
-		{
-			PopNode();
-		}
-
-		// determines if this dentry is acting as a mount point; this can
-		// be used to prevent the entry from ever dying off? that would be bad
-		bool getMountPoint(void) const { return m_mounts > 0; }
-
-		__declspec(property(get=getName)) const tchar_t* Name;
-		const tchar_t* getName(void) const 
-		{ 
-			// how to deal with thread-safety during renames; could make this const
-			// and force creation of a new directory entry instead, how would that
-			// work if the node is attached
-			return m_name.c_str(); 
-		}
-
-		std::shared_ptr<Node> getNode(void)
-		{
-			std::lock_guard<std::recursive_mutex> critsec(m_lock);
-			return (m_nodes.empty()) ? nullptr : m_nodes.top();
-		}
-
-		std::shared_ptr<DirectoryEntry> getParent(void) const 
-		{ 
-			return m_parent; 
-		}
-
-		// operations
-		// todo: could be useful when Find() gets a non-existent leaf node, and can call from tchar_t* version?
-		// DirectoryEntryPtr CreateDirectory(const DirectoryEntryPtr& dentry, uapi::mode_t mode);
-		DirectoryEntryPtr CreateDirectory(const tchar_t* name, uapi::mode_t mode);
-		DirectoryEntryPtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
-
-	private:
-
-		DirectoryEntry(const DirectoryEntry&)=delete;
-		DirectoryEntry& operator=(const DirectoryEntry&)=delete;
-
-		// Instance Constructors
-		//
-		DirectoryEntry(const tchar_t* name) : DirectoryEntry(name, nullptr, nullptr) {}
-		DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent) : DirectoryEntry(name, parent, nullptr) {}
-		DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent, const NodePtr& node);
-		friend class std::_Ref_count_obj<DirectoryEntry>;
-
-		// adds a node
-		void PushNode(const NodePtr& node);
-
-		// removes a node - throws if empty
-		void PopNode(void);
-
-		// m_lock
-		//
-		// Synchronization object
-		std::recursive_mutex m_lock;
-
-		// m_mounts
-		//
-		// The number of nodes in the stack that are mount points
-		std::atomic<uint8_t> m_mounts = 0;
-
-		// name
-		// can this be const; how to deal with renames
-		// what happens when we are a parent object, can't clone, perhaps could swap
-		std::tstring m_name;
-
-		// strong reference to parent, this is why an entry must
-		// be able to be renamed in-place
-		std::shared_ptr<DirectoryEntry> m_parent;
-
-		// strong references to all nodes
-		// todo: thread-safe
-		std::stack<std::shared_ptr<Node>> m_nodes;
-
-		// weak references to all known children
-		// todo: thread-safe
-		std::vector<std::weak_ptr<DirectoryEntry>> m_children;
-	};
-
 	// File
 	//
 	// todo: document when done
@@ -194,12 +89,12 @@ struct __declspec(novtable) FileSystem
 		// CreateDirectory
 		//
 		// Creates a directory node as a child of this node on the file system
-		virtual NodePtr CreateDirectory(const DirectoryEntryPtr& dentry, uapi::mode_t mode) = 0;
+		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode) = 0;
 
 		// CreateSymbolicLink
 		//
 		// Creates a symbolic link node as a child of this node on the file system
-		virtual NodePtr CreateSymbolicLink(const DirectoryEntryPtr& dentry, const tchar_t* target) = 0;
+		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
 
 		// Index
 		//
@@ -218,11 +113,12 @@ struct __declspec(novtable) FileSystem
 	// FileSystem Members
 	//
 
-	static DirectoryEntryPtr s_root;
+	// RootNode
+	//
+	// Returns the root node for the file system
+	__declspec(property(get=getRootNode)) NodePtr RootNode;
+	virtual NodePtr getRootNode(void) = 0;
 };
-
-__declspec(selectany) 
-FileSystem::DirectoryEntryPtr FileSystem::s_root = std::make_shared<DirectoryEntry>(_T("TEST"));
 
 //-----------------------------------------------------------------------------
 

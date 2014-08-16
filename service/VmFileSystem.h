@@ -20,30 +20,49 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "RootFileSystem.h"
+#ifndef __VMFILESYSTEM_H_
+#define __VMFILESYSTEM_H_
+#pragma once
+
+#include <memory>
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount (static)
+// VmFileSystem
 //
-// Mounts the root file system
-//
-// Arguments:
-//
-//	device		- Unused for root file system
-//	todo: mount options arguments
+// todo: words
 
-FileSystemPtr RootFileSystem::Mount(const tchar_t* device)
+class VmFileSystem
 {
-	UNREFERENCED_PARAMETER(device);
+public:
 
-	// Mounting the root file system is as simple as creating an instance of it
-	// todo: any mount flags that need to be obeyed??
-	return std::make_shared<RootFileSystem>();
-}
+	// Constructor / Destructor
+	VmFileSystem(const FileSystemPtr& rootfs);
+	~VmFileSystem()=default;
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Create (static)
+	//
+	// Creates a new VmFileSystem instance based on a mounted root file system
+	static std::unique_ptr<VmFileSystem> Create(const FileSystemPtr& rootfs);
+
+private:
+
+	VmFileSystem(const VmFileSystem&)=delete;
+	VmFileSystem& operator=(const VmFileSystem&)=delete;
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	std::shared_ptr<FileSystem>		m_rootfs;		// Root file system
+};
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __VMFILESYSTEM_H_
