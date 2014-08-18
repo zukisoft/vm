@@ -43,6 +43,22 @@ DirectoryEntry::DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& par
 	if(node) m_nodes.push(node);
 }
 
+DirectoryEntryPtr DirectoryEntry::Create(const tchar_t* name)
+{
+	return Create(name, nullptr, nullptr);
+}
+
+DirectoryEntryPtr DirectoryEntry::Create(const tchar_t* name, const DirectoryEntryPtr& parent)
+{
+	return Create(name, parent, nullptr);
+}
+
+DirectoryEntryPtr DirectoryEntry::Create(const tchar_t* name, const DirectoryEntryPtr& parent, const FileSystem::NodePtr& node)
+{
+	return std::make_shared<DirectoryEntry>(name, parent, node);
+}
+
+
 DirectoryEntryPtr DirectoryEntry::CreateDirectory(const tchar_t* name, uapi::mode_t mode)
 {
 	std::lock_guard<std::recursive_mutex> critsec(m_lock);
@@ -50,7 +66,7 @@ DirectoryEntryPtr DirectoryEntry::CreateDirectory(const tchar_t* name, uapi::mod
 	// must be attached
 	//if(m_nodes.empty()) throw something;
 
-	DirectoryEntryPtr child = std::make_shared<DirectoryEntry>(name, shared_from_this());
+	DirectoryEntryPtr child = Create(name, shared_from_this());
 	child->PushNode(m_nodes.top()->CreateDirectory(name, mode));
 
 	// add to collection
@@ -65,7 +81,7 @@ DirectoryEntryPtr DirectoryEntry::CreateSymbolicLink(const tchar_t* name, const 
 	// must be attached
 	//if(m_nodes.empty()) throw something;
 
-	DirectoryEntryPtr child = std::make_shared<DirectoryEntry>(name, shared_from_this());
+	DirectoryEntryPtr child = Create(name, shared_from_this());
 	child->PushNode(m_nodes.top()->CreateSymbolicLink(name, target));
 
 	// add to collection

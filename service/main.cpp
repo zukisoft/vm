@@ -59,6 +59,13 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_set_se_translator(StructuredException::SeTranslator);
 
 	std::unique_ptr<VmFileSystem> vfs = std::make_unique<VmFileSystem>(RootFileSystem::Mount(nullptr));
+	//auto rootdir = vfs->RootDirectory;
+	//auto rootnode = rootdir->getNode();
+
+	vfs->CreateDirectory(L"Hello World", 0);
+
+	//vfs->Mount(nullptr, HostFileSystem::Mount(_T("D:\\Linux Stuff")));
+	//vfs->Unmount();
 
 	//FileSystem::s_root->Mount(RootFileSystem::Mount(nullptr));
 

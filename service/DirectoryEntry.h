@@ -34,6 +34,7 @@
 
 #pragma warning(push, 4)
 
+//-----------------------------------------------------------------------------
 // DirectoryEntryPtr
 //
 // Alias for an std::shared_ptr<DirectoryEntry>
@@ -53,17 +54,15 @@ class DirectoryEntry : public std::enable_shared_from_this<DirectoryEntry>
 {
 public:
 
-	// Instance Constructors
-	//
-	DirectoryEntry(const tchar_t* name) : DirectoryEntry(name, nullptr, nullptr) {}
-	DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent) : DirectoryEntry(name, parent, nullptr) {}
-	DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent, const FileSystem::NodePtr& node);
-
 	// Destructor
 	//
 	~DirectoryEntry()=default;
 
-	// need a static create method
+	// need a static create method?
+
+	static DirectoryEntryPtr Create(const tchar_t* name);
+	static DirectoryEntryPtr Create(const tchar_t* name, const DirectoryEntryPtr& parent);
+	static DirectoryEntryPtr Create(const tchar_t* name, const DirectoryEntryPtr& parent, const FileSystem::NodePtr& node);
 
 	// need something to iterate children, pass in a lambda to allow
 	// for thread safety
@@ -101,6 +100,7 @@ public:
 		return (m_nodes.empty()) ? nullptr : m_nodes.top();
 	}
 
+	__declspec(property(get=getParent)) DirectoryEntryPtr Parent;
 	DirectoryEntryPtr getParent(void) const 
 	{ 
 		return m_parent; 
@@ -116,6 +116,11 @@ private:
 
 	DirectoryEntry(const DirectoryEntry&)=delete;
 	DirectoryEntry& operator=(const DirectoryEntry&)=delete;
+
+	// Instance Constructors
+	//
+	DirectoryEntry(const tchar_t* name, const DirectoryEntryPtr& parent, const FileSystem::NodePtr& node);
+	friend class std::_Ref_count_obj<DirectoryEntry>;	
 
 	// adds a node
 	void PushNode(const FileSystem::NodePtr& node);
