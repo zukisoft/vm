@@ -58,29 +58,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	std::unique_ptr<VmFileSystem> vfs = std::make_unique<VmFileSystem>(RootFileSystem::Mount(nullptr));
-	//auto rootdir = vfs->RootDirectory;
-	//auto rootnode = rootdir->getNode();
-
-	vfs->CreateDirectory(L"Hello World", 0);
-
-	//vfs->Mount(nullptr, HostFileSystem::Mount(_T("D:\\Linux Stuff")));
-	//vfs->Unmount();
-
-	//FileSystem::s_root->Mount(RootFileSystem::Mount(nullptr));
-
-	//auto node = FileSystem::s_root->getNode();
-	//FileSystem::s_root->Mount(HostFileSystem::Mount(L"D:\\Linux Stuff"));
-
-	//FileSystem::s_root->CreateDirectory(L"TEST FROM MIKE", 0);
-	//FileSystem::s_root->CreateSymbolicLink(L"testlink", L"D:\\Linux Stuff\\bzImage");
-
-	//auto root = FileSystem::s_root->getName();
-
-	////FileSystem::s_root->Unmount();
-
-	////FileSystem::s_root->CreateDirectory(L"TEST FROM MIKE", 0);
-	////FileSystem::s_root->Unmount();
+	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(HostFileSystem::Mount(L"D:\\Linux Stuff"));
 
 	return 0;	
 

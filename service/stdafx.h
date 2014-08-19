@@ -27,13 +27,13 @@
 //-----------------------------------------------------------------------------
 // Win32 Declarations
 
-#define NTDDI_VERSION			NTDDI_WIN7
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
-#define WINVER					_WIN32_WINNT_WIN7
-#define	_WIN32_IE				_WIN32_IE_IE80
+#define NTDDI_VERSION			NTDDI_WIN8
+#define	_WIN32_WINNT			_WIN32_WINNT_WIN8
+#define WINVER					_WIN32_WINNT_WIN8
+#define	_WIN32_IE				_WIN32_IE_IE100
 
 // Windows / CRT
-#include <windows.h>
+#include <Windows.h>
 #include <rpc.h>
 #include <stdint.h>
 #include <memory>

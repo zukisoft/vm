@@ -40,8 +40,22 @@ FileSystemPtr RootFileSystem::Mount(const tchar_t* device)
 	UNREFERENCED_PARAMETER(device);
 
 	// Mounting the root file system is as simple as creating an instance of it
-	// todo: any mount flags that need to be obeyed??
 	return std::make_shared<RootFileSystem>();
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::ResolvePath (private, static)
+//
+// Resolves a FileSystem::Alias from a relative object path
+//
+// Arguments:
+//
+//	path		- Relative file system object path string
+
+FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
+{
+	(path);
+	throw LinuxException(LINUX_ENOENT);
 }
 
 //-----------------------------------------------------------------------------

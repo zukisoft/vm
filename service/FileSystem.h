@@ -37,24 +37,27 @@ using FileSystemPtr = std::shared_ptr<FileSystem>;
 //-----------------------------------------------------------------------------
 // FileSystem
 //
-// FileSystem represents the interface that must be implemented by all file system
-// classes.
-//
-// todo: more words
+// todo: words
 
 struct __declspec(novtable) FileSystem
 {
-	// FilePtr
+	// AliasPtr
 	//
-	// Alias for an std::shared_ptr<File>
-	struct File;
-	using FilePtr = std::shared_ptr<File>;
+	// Alias for an std::shared_ptr<Alias>
+	struct Alias;
+	using AliasPtr = std::shared_ptr<Alias>;
 
 	// NodePtr
 	//
 	// Alias for an std::shared_ptr<Node>
 	struct Node;
 	using NodePtr = std::shared_ptr<Node>;
+
+	// ViewPtr
+	//
+	// Alias for an std::shared_ptr<View>
+	struct View;
+	using ViewPtr = std::shared_ptr<View>;
 
 	// need typedef for Mount(const tchar_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
@@ -74,11 +77,37 @@ struct __declspec(novtable) FileSystem
 		Unknown				= 0,
 	};
 
-	// File
+	// NODE_INDEX_ROOT
+	//
+	// Constant indicating the node index for a file system root node
+	static const uint32_t NODE_INDEX_ROOT = 2;
+
+	// NODE_INDEX_LOSTANDFOUND
+	//
+	// Constant indicating the node index for a lost+found directory node
+	static const uint32_t NODE_INDEX_LOSTANDFOUND = 3;
+
+	// NODE_INDEX_FIRSTDYNAMIC
+	//
+	// Constant indicating the first dynamic node index that should be used
+	static const uint32_t NODE_INDEX_FIRSTDYNAMIC = 4;
+
+	// Alias
 	//
 	// todo: document when done
-	struct __declspec(novtable) File
+	struct __declspec(novtable) Alias
 	{
+		// Name
+		//
+		// Gets the name associated with this alias
+		__declspec(property(get=getName)) const tchar_t* Name;
+		virtual const tchar_t* getName(void) = 0;
+
+		// Node
+		//
+		// Gets the node instance that this alias references
+		__declspec(property(get=getNode)) NodePtr Node;
+		virtual NodePtr getNode(void) = 0;
 	};
 
 	// Node
@@ -86,15 +115,10 @@ struct __declspec(novtable) FileSystem
 	// todo: document when done
 	struct __declspec(novtable) Node
 	{
-		// CreateDirectory
+		// ResolvePath
 		//
-		// Creates a directory node as a child of this node on the file system
-		virtual NodePtr CreateDirectory(const tchar_t* name, uapi::mode_t mode) = 0;
-
-		// CreateSymbolicLink
-		//
-		// Creates a symbolic link node as a child of this node on the file system
-		virtual NodePtr CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
+		// Resolves a relative path from this node to an Alias instance
+		virtual AliasPtr ResolvePath(const tchar_t* path) = 0;
 
 		// Index
 		//
@@ -107,6 +131,13 @@ struct __declspec(novtable) FileSystem
 		// Gets the node type
 		__declspec(property(get=getType)) NodeType Type;
 		virtual NodeType getType(void) = 0;
+	};
+
+	// View
+	//
+	// todo: document when done
+	struct __declspec(novtable) View
+	{
 	};
 
 	//

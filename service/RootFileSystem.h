@@ -41,7 +41,7 @@
 // another file system when the virtual machine is starting up if no other
 // more robust default file system is available
 
-class RootFileSystem : public FileSystem, public FileSystem::Node,
+class RootFileSystem : public FileSystem, public FileSystem::Node, public FileSystem::Alias,
 	public std::enable_shared_from_this<RootFileSystem>
 {
 public:
@@ -52,51 +52,55 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	// + unsigned long flags
-	// + const void* data
-	static FileSystemPtr Mount(const tchar_t* device /*todo: mount options -- must be RO*/);
+	static FileSystemPtr Mount(const tchar_t* device);
 
 private:
 
 	RootFileSystem(const RootFileSystem&)=delete;
 	RootFileSystem& operator=(const RootFileSystem&)=delete;
 
-	// Instance Constructor
+	// Constructor
+	//
 	RootFileSystem()=default;
 	friend class std::_Ref_count_obj<RootFileSystem>;
 
 	//-------------------------------------------------------------------------
 	// FileSystem Implementation
 
-	// RootNode
+	// getRootNode
 	//
 	// Gets the root node instance
-	__declspec(property(get=getRootNode)) NodePtr RootNode;
 	virtual NodePtr getRootNode(void) { return shared_from_this(); }
+
+	//-------------------------------------------------------------------------
+	// FileSystem::Alias Implementation
+
+	// getName
+	//
+	// Gets the name associated with this alias
+	virtual const tchar_t* getName(void) { return _T(""); }
+
+	// getNode
+	//
+	// Accesses the node pointed to by this alias
+	virtual FileSystem::NodePtr getNode(void) { return shared_from_this(); }
 
 	//-------------------------------------------------------------------------
 	// FileSystem::Node Implementation
 
-	// CreateDirectory
+	// ResolvePath
 	//
-	// Creates a directory node as a child of this node on the file system
-	virtual NodePtr CreateDirectory(const tchar_t*, uapi::mode_t) { throw LinuxException(LINUX_EPERM); }
+	// Resolves a path for an alias that is a child of this alias
+	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
 
-	// CreateSymbolicLink
-	//
-	// Creates a symbolic link node as a child of this node on the file system
-	virtual NodePtr CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM); }
-
-	// Index
+	// getIndex
 	//
 	// Gets the node index
-	__declspec(property(get=getIndex)) uint32_t Index;
-	virtual uint32_t getIndex(void) { return 0; }
+	virtual uint32_t getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
 
-	// Type
+	// getType
 	//
 	// Gets the node type
-	__declspec(property(get=getType)) NodeType Type;
 	virtual NodeType getType(void) { return NodeType::Directory; }
 };
 

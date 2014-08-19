@@ -24,16 +24,16 @@
 #define __VMFILESYSTEM_H_
 #pragma once
 
-#include <filesystem>
 #include <memory>
 #include <type_traits>
 #include <concurrent_unordered_map.h>
 #include <linux/fs.h>
 #include <linux/types.h>
-#include "DirectoryEntry.h"
+#include "LinuxException.h"
 #include "FileSystem.h"
 
 #pragma warning(push, 4)
+#pragma warning(disable:4396)	// inline specifier cannot be used when a friend ...
 
 //-----------------------------------------------------------------------------
 // VmFileSystem
@@ -56,8 +56,8 @@ public:
 	// Creates a new VmFileSystem instance based on a mounted root file system
 	static std::unique_ptr<VmFileSystem> Create(const FileSystemPtr& rootfs);
 
-	// mkdir
-	void CreateDirectory(const tchar_t* path, uapi::mode_t mode);
+	//// mkdir
+	//void CreateDirectory(const tchar_t* path, uapi::mode_t mode);
 
 	// Mount
 	//
@@ -86,32 +86,33 @@ private:
 	// Instance Constructor
 	//
 	VmFileSystem(const FileSystemPtr& rootfs);
-	friend std::unique_ptr<VmFileSystem> std::make_unique<VmFileSystem, FileSystemPtr>(FileSystemPtr&&);
+	friend std::unique_ptr<VmFileSystem> std::make_unique<VmFileSystem, const FileSystemPtr&>(const FileSystemPtr&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	DirectoryEntryPtr ResolvePath(const tchar_t* path) { return ResolvePath(m_rootdir, path); }
-	DirectoryEntryPtr ResolvePath(const DirectoryEntryPtr& base, const tchar_t* path);
-
-	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	// tpath
+	// ResolvePath
 	//
-	// Typedef for a generic text std::tr2::sys::[w]path
-	using tpath = std::conditional<sizeof(TCHAR) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
+	// Resolves an alias instance based on a path
+	FileSystem::AliasPtr ResolvePath(const tchar_t* absolute);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative);
 
-	using mounts_collection = Concurrency::concurrent_unordered_map<DirectoryEntryPtr, FileSystemPtr>;
+	////-------------------------------------------------------------------------
+	//// Private Type Declarations
 
-	//-------------------------------------------------------------------------
-	// Member Variables
+	//// tpath
+	////
+	//// Typedef for a generic text std::tr2::sys::[w]path
+	//using tpath = std::conditional<sizeof(TCHAR) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
 
-	std::shared_ptr<FileSystem>		m_rootfs;		// Root file system
+	//using mount_map_t = Concurrency::concurrent_unordered_map<DirectoryEntryPtr, FileSystemPtr>;
 
-	DirectoryEntryPtr m_rootdir;
+	////-------------------------------------------------------------------------
+	//// Member Variables
 
-	mounts_collection m_mounts;
+	FileSystemPtr						m_rootfs;		// Root file system
+	//mount_map_t m_mounts;
 };
 
 //-----------------------------------------------------------------------------

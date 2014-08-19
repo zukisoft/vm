@@ -324,7 +324,6 @@
     <ClInclude Include="CharacterDevice.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="Device.h" />
-    <ClInclude Include="DirectoryEntry.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="NullCharacterDevice.h" />
@@ -557,7 +556,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Console.cpp" />
-    <ClCompile Include="DirectoryEntry.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="rpc005_open.cpp" />

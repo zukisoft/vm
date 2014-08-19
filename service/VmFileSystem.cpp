@@ -32,88 +32,77 @@
 //
 //	rootfs		- Mounted FileSystem instance to serve as the root
 
-VmFileSystem::VmFileSystem(const FileSystemPtr& rootfs)
+VmFileSystem::VmFileSystem(const FileSystemPtr& rootfs) : m_rootfs(rootfs)
 {
 	_ASSERTE(rootfs);
-	m_rootfs = rootfs;
-	m_rootdir = DirectoryEntry::Create(_T(""), nullptr, rootfs->RootNode);
 }
 
-void VmFileSystem::CreateDirectory(const tchar_t* path, uapi::mode_t mode)
-{
-	(mode);
-	(path);
-
-	DirectoryEntryPtr dentry = ResolvePath(path);
-	// dentry == null --> cannot resolve path
-	// dentry with a node --> found
-	// dentry without a node --> not found, parent is valid
-}
-
-// Find
+//-----------------------------------------------------------------------------
+// VmFileSystem::Create (static)
 //
-// nullptr --> path could not be resolved
-// dentry with a node --> path was fully resolved
-// dentry without a node --> path was resolved to parent only
-DirectoryEntryPtr VmFileSystem::ResolvePath(const DirectoryEntryPtr& base, const tchar_t* path)
+// Creates a new file system using the provided mount as the absolute root
+//
+// Arguments:
+//
+//	rootfs		- FileSystem instance to serve as the absolute root
+
+std::unique_ptr<VmFileSystem> VmFileSystem::Create(const FileSystemPtr& rootfs)
 {
-	tpath pathstr(path);
+	_ASSERTE(rootfs);
+	if(rootfs == nullptr) throw LinuxException(LINUX_EINVAL);
 
-	// Determine the starting point for the search, if the provided path is rooted, use
-	// the master root node, otherwise begin the search at the provided directory entry
-	DirectoryEntryPtr branch = (pathstr.has_root_directory() ? m_rootdir : base);
+	// todo: register the mount point?
+	return std::make_unique<VmFileSystem>(rootfs);
+}
 
-	// Pull out the desired leaf name string and remove it from the branch path
-	std::tstring leafstr = pathstr.filename();
-	pathstr = pathstr.relative_path().parent_path();
+//-----------------------------------------------------------------------------
+// VmFileSystem::ResolvePath (private)
+//
+// Resolves an alias from an absolute file system path
+//
+// Arguments:
+//
+//	absolute	- Absolute path to the alias to resolve
 
-	// Iterate over the branch path first
-	for(tpath::iterator it = pathstr.begin(); it != pathstr.end(); it++) {
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
+{
+	if(absolute == nullptr) throw LinuxException(LINUX_ENOENT);
 
-		// .
-		// Special case indicating the current directory
-		if(it->compare(_T(".")) == 0) continue;
+	// Remove leading slashes from the provided path and start at the root node
+	while((*absolute) && (*absolute == _T('/'))) absolute++;
+	return ResolvePath(m_rootfs->RootNode, absolute);
+}
 
-		// ..
-		// Special case indicating the parent of the current directory
-		else if(it->compare(_T("..")) == 0) { 
-		
-			// Move up to the branch's parent, if one exists.  If there is no
-			// parent this is the root node so behave the same as "." would
-			if(branch->Parent != nullptr) branch = branch->Parent;
-			continue; 
-		}
+//-----------------------------------------------------------------------------
+// VmFileSystem::ResolvePath (private)
+//
+// Resolves an alias from a path relative to an existing alias
+//
+// Arguments:
+//
+//	base		- Base alias instance to use for resolution
+//	relative	- Relative path to resolve
 
-		// CONTINUE HERE - more code in github
-		//// Get the next node in the branch path
-		//VfsNodePtr next = branch->GetAlias(it->c_str());
-		//if(next == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotFound);
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
+{
+	_ASSERTE(base);
+	return ResolvePath(base->Node, relative);
+}
 
-		//// Only directory and symbolic link nodes can be resolved as part of the branch
-		//uapi::mode_t nodetype = next->Mode;
-		//
-		//if(uapi::S_ISDIR(nodetype)) {
+//-----------------------------------------------------------------------------
+// VmFileSystem::ResolvePath (private)
+//
+// Resolves an alias from a path relative to an existing node
+//
+// Arguments:
+//
+//	base		- Base node instance to use for resolution
+//	relative	- Relative path to resolve
 
-		//	branch = std::dynamic_pointer_cast<VfsDirectoryNode>(next);
-		//	if(branch == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
-		//}
-
-		//else if(uapi::S_ISLNK(nodetype)) {
-
-		//	VfsSymbolicLinkNodePtr link = std::dynamic_pointer_cast<VfsSymbolicLinkNode>(next);
-		//	if(link == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
-
-		//	// Chase the symbolic link (this isn't optional for branch paths)
-		//	VfsResolveResult chase = ResolvePath(branch, link->Target, true, level);
-		//	if(!chase) return chase;
-
-		//	// The symbolic link must ultimately end in resolution of a directory
-		//	branch = std::dynamic_pointer_cast<VfsDirectoryNode>(chase.Leaf);
-		//	if(branch == nullptr) return VfsResolveResult(VfsResolveStatus::BranchNotDirectory);
-		//}
-	}
-
-	return nullptr;
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative)
+{
+	_ASSERTE(base);
+	return base->ResolvePath(relative);
 }
 
 //---------------------------------------------------------------------------

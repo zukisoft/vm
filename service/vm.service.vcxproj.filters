@@ -239,9 +239,6 @@
     <ClInclude Include="VmFileSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DirectoryEntry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\IndexPool.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -416,9 +413,6 @@
       <Filter>Source Files\File Systems</Filter>
     </ClCompile>
     <ClCompile Include="VmFileSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectoryEntry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
