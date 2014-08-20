@@ -54,7 +54,9 @@ FileSystemPtr RootFileSystem::Mount(const tchar_t* device)
 
 FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
 {
-	(path);
+	UNREFERENCED_PARAMETER(path);
+
+	// The RootFileSystem node doesn't support any child objects
 	throw LinuxException(LINUX_ENOENT);
 }
 

@@ -25,8 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <stack>
-#include <linux/stat.h>
 #include "LinuxException.h"
 #include "FileSystem.h"
 
@@ -88,6 +86,18 @@ private:
 	//-------------------------------------------------------------------------
 	// FileSystem::Node Implementation
 
+	// CreateDirectory
+	//
+	// Creates a directory node as a child of this node
+	virtual void CreateDirectory(const tchar_t*) 
+		{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+
+	// CreateSymbolicLink
+	//
+	// Creates a new symbolic link as a child of this node
+	virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) 
+		{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	
 	// ResolvePath
 	//
 	// Resolves a path for an alias that is a child of this alias

@@ -60,6 +60,14 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(HostFileSystem::Mount(L"D:\\Linux Stuff"));
 
+	try {
+		vfs->CreateDirectory(L"/symdirlink/linkpoint/mike 123");
+	}
+	catch(std::exception& ex)
+	{
+		int x = 123;
+	}
+
 	return 0;	
 
 

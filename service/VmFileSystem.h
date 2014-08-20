@@ -24,6 +24,7 @@
 #define __VMFILESYSTEM_H_
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <type_traits>
 #include <concurrent_unordered_map.h>
@@ -56,8 +57,8 @@ public:
 	// Creates a new VmFileSystem instance based on a mounted root file system
 	static std::unique_ptr<VmFileSystem> Create(const FileSystemPtr& rootfs);
 
-	//// mkdir
-	//void CreateDirectory(const tchar_t* path, uapi::mode_t mode);
+	// mkdir
+	void CreateDirectory(const tchar_t* path);
 
 	// Mount
 	//
@@ -101,10 +102,10 @@ private:
 	////-------------------------------------------------------------------------
 	//// Private Type Declarations
 
-	//// tpath
-	////
-	//// Typedef for a generic text std::tr2::sys::[w]path
-	//using tpath = std::conditional<sizeof(TCHAR) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
+	// tpath
+	//
+	// Typedef for a generic text std::tr2::sys::[w]path
+	using tpath = std::conditional<sizeof(tchar_t) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
 
 	//using mount_map_t = Concurrency::concurrent_unordered_map<DirectoryEntryPtr, FileSystemPtr>;
 

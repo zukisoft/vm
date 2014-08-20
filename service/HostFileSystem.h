@@ -45,6 +45,11 @@
 // todo: use something else for inode numbers than the pool; removed for now
 // could do something like hashing the path with the instance address, or get
 // fancy and have a static allocator that works across instances (yes?)
+//
+// todo: prevent cross-volume/cross-mount opens; will need to check the path
+// of the opened object against the mounted root path to ensure that people
+// can't create a symlink to C:\Windows or something.  If there is already
+// a hard link on the host, there isn't much that can be done about that
 
 class HostFileSystem : public FileSystem
 {
@@ -123,6 +128,16 @@ private:
 		//---------------------------------------------------------------------
 		// FileSystem::Node Implementation
 
+		// CreateDirectory
+		//
+		// Creates a new directory node as a child of this node
+		virtual void CreateDirectory(const tchar_t* name);
+
+		// CreateSymbolicLink
+		//
+		// Creates a new symbolic link as a child of this node
+		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
+	
 		// ResolvePath
 		//
 		// Resolves a path for an alias that is a child of this alias
@@ -137,6 +152,14 @@ private:
 		//
 		// Gets the node type
 		virtual NodeType getType(void) { return m_type; }
+
+		//---------------------------------------------------------------------
+		// Private Member Functions
+
+		// AppendToPath
+		//
+		// Appends additional path information to this node's path
+		std::vector<tchar_t> AppendToPath(const tchar_t* more);
 
 		//---------------------------------------------------------------------
 		// Member Variables

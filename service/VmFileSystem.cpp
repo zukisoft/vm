@@ -56,6 +56,35 @@ std::unique_ptr<VmFileSystem> VmFileSystem::Create(const FileSystemPtr& rootfs)
 }
 
 //-----------------------------------------------------------------------------
+// VmFileSystem::CreateDirectory
+//
+// Creates a directory within the file system
+//
+// Arguments:
+//
+//	path		- Path to the directory to be created
+//	(todo: mode flags)
+
+void VmFileSystem::CreateDirectory(const tchar_t* path)
+{
+	_ASSERTE(path);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	tpath pathstr(path);
+
+	// Pull out the desired leaf name string and remove it from the branch path
+	std::tstring leafstr = pathstr.filename();
+	pathstr = pathstr.relative_path().parent_path();
+
+	// <filesystem> is way too inefficient I think - it will do for testing
+
+	FileSystem::AliasPtr branch = ResolvePath(pathstr.string().c_str());
+	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	branch->Node->CreateDirectory(leafstr.c_str());
+}
+
+//-----------------------------------------------------------------------------
 // VmFileSystem::ResolvePath (private)
 //
 // Resolves an alias from an absolute file system path

@@ -162,6 +162,88 @@ HostFileSystem::Node::~Node()
 }
 
 //-----------------------------------------------------------------------------
+// HostFileSystem::Node::AppendToPath (private)
+//
+// Appends additional path information to this node's underlying path
+//
+// Arguments:
+//
+//	more		- Additional path information to be appended
+
+std::vector<tchar_t> HostFileSystem::Node::AppendToPath(const tchar_t* more)
+{
+	// A null or zero-length string will result in a copy of the node path
+	if((more == nullptr) || (*more == 0)) return std::vector<tchar_t>(m_path);
+	
+	// Copy the path to this node and add space for a possible "\\?\" prefix in the
+	// event that the combined path will require it (if it now exceeds MAX_PATH)
+	std::vector<tchar_t> pathvec(m_path);
+	pathvec.resize(pathvec.size() + _tcslen(more) + 5);
+
+	// Append the provided path to this node's path
+	HRESULT hresult = PathCchAppendEx(pathvec.data(), pathvec.size(), more, PATHCCH_ALLOW_LONG_PATHS);
+	if(FAILED(hresult)) throw LinuxException(LINUX_ENAMETOOLONG, Exception(hresult));
+	
+	// Trim the excess from the end of the path string before returning it
+	pathvec.resize(_tcslen(pathvec.data()) + 1);
+	return pathvec;
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Node::CreateDirectory (private)
+//
+// Creates a new directory node as a child of this node
+//
+// Arguments:
+//
+//	name		- Name to assign to the new directory name
+
+void HostFileSystem::Node::CreateDirectory(const tchar_t* name)
+{
+	// Cannot create a directory with a null or zero-length name
+	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
+
+	// Combine the name with the base path for this node and attempt to create it
+	std::vector<tchar_t> pathvec = AppendToPath(name);
+	if(!::CreateDirectory(pathvec.data(), nullptr)) {
+
+		DWORD result = GetLastError();			// Get Windows error code
+
+		// Try to map the Windows error into something more appropriate
+		if(result == ERROR_ALREADY_EXISTS) throw LinuxException(LINUX_EEXIST, Win32Exception(result));
+		else if(result == ERROR_PATH_NOT_FOUND) throw LinuxException(LINUX_ENOENT, Win32Exception(result));
+		else throw LinuxException(LINUX_EINVAL, Win32Exception(result));
+	}
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Node::CreateSymbolicLink (private)
+//
+// Creates a new symbolic link node as a child of this node
+//
+// Arguments:
+//
+//	name		- Name to assign to the new symbolic link
+//	target		- Symbolic link target path; must be within this file system
+
+void HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
+{
+	// TODO: This is actually going to be a little complicated.  The target needs
+	// to be adjusted such that it's relative to the mount point for this
+	// HostFileSystem instance, cannot allow links outside of this since people
+	// could get outside the mounted file system root, and that would be bad.
+	//
+	// Will also need to verify that when things are opened up from the file
+	// system that they are contained in the mount point, so perhaps I need to
+	// pass the HostFileSystem instance along after all, which would allow it
+	// to hold code to deal with the node numbers again too.  hmmmmmmm
+
+	(name);
+	(target);
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
 // HostFileSystem::Node::ResolvePath (private)
 //
 // Resolves a FileSystem::Alias from a relative object path
@@ -172,122 +254,13 @@ HostFileSystem::Node::~Node()
 
 FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
 {
-	_ASSERTE(path);
+	// Cannot resolve a null or zero-length child path
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
 
-	// Copy the path to this node and add space for a possible "\\?\" prefix in the
-	// event that the combined path will require it
-	std::vector<tchar_t> pathvec(m_path);
-	pathvec.resize(pathvec.size() + _tcslen(path) + 5);
-
-	// Append the provided path to this node's path
-	HRESULT hresult = PathCchAppendEx(pathvec.data(), pathvec.size(), path, PATHCCH_ALLOW_LONG_PATHS);
-	if(FAILED(hresult)) throw LinuxException(LINUX_ENAMETOOLONG, Exception(hresult));
-	
-	// Trim the excess from the end of the path string and create a new Node instance
-	pathvec.resize(_tcslen(pathvec.data()) + 1);
-	return HostFileSystem::NodeFromPath(std::move(pathvec));
+	// No need for recursion/searching for host file systems, just attempt to
+	// create a new node instance from the combined base and relative path
+	return HostFileSystem::NodeFromPath(AppendToPath(path));
 }
-
-//-----------------------------------------------------------------------------
-
-//FileSystem::NodePtr HostFileSystem::Node::CreateDirectory(const tchar_t* name, uapi::mode_t mode)
-//{
-//	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
-//
-//	// The index pool instance must be accessible during node construction
-//	auto indexpool = m_indexpool.lock();
-//	if(indexpool == nullptr) throw LinuxException(LINUX_ENOENT);
-//
-//	// If this isn't a directory node, a new node cannot be created underneath it
-//	if(m_type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-//
-//	// The name must be non-NULL when creating a child node object
-//	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
-//	size_t namelen = _tcslen(name);
-//
-//	// Force the mode to represent a directory object
-//	mode = (mode & ~LINUX_S_IFMT) | LINUX_S_IFDIR;
-//
-//	// Determine the amount of space that needs to be allocated for the directory path name string; when 
-//	// providing NULL for the output, this will include the count for the NULL terminator
-//	size_t pathlen = GetFinalPathNameByHandle(m_handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-//	if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-//
-//	// Retrieve the path to the directory object based on the handle
-//	std::vector<tchar_t> buffer(pathlen + 1 + namelen);
-//	pathlen = GetFinalPathNameByHandle(m_handle, buffer.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-//	if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-//
-//	// Append a path separator character and copy in the new node name
-//	buffer[pathlen] = _T('\\');
-//	_tcsncat_s(buffer.data(), buffer.size(), name, namelen);
-//
-//	// TODO: SECURITY_ATTRIBUTES based on mode
-//	if(!::CreateDirectory(buffer.data(), nullptr)) {
-//		
-//		DWORD result = GetLastError();						// Get the windows error that occurred
-//
-//		// The exception that can be thrown differs based on the result from ::CreateDirectory()
-//		if(result == ERROR_ALREADY_EXISTS) throw LinuxException(LINUX_EEXIST, Win32Exception(result));
-//		else if(result == ERROR_PATH_NOT_FOUND) throw LinuxException(LINUX_ENOENT, Win32Exception(result));
-//		else throw LinuxException(LINUX_EINVAL, Win32Exception(result));
-//	}
-//
-//	// The handle to the directory is not returned, it must be opened specifically for use
-//	// by the Node instance ...
-//	HANDLE handle = OpenHostDirectory(buffer.data());
-//	try { return std::make_shared<Node>(indexpool, NodeType::Directory, handle); }
-//	catch(...) { CloseHandle(handle); throw; }
-//}
-
-//FileSystem::NodePtr HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
-//{
-//	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
-//
-//	// The index pool instance must be accessible during node construction
-//	auto indexpool = m_indexpool.lock();
-//	if(indexpool == nullptr) throw LinuxException(LINUX_ENOENT);
-//
-//	// If this isn't a directory node, a new node cannot be created underneath it
-//	if(m_type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-//
-//	// The name must be non-NULL when creating a child node object
-//	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
-//	size_t namelen = _tcslen(name);
-//
-//	// Determine the amount of space that needs to be allocated for the directory path name string; when 
-//	// providing NULL for the output, this will include the count for the NULL terminator
-//	size_t pathlen = GetFinalPathNameByHandle(m_handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-//	if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-//
-//	// Retrieve the path to the directory object based on the handle
-//	std::vector<tchar_t> buffer(pathlen + 1 + namelen);
-//	pathlen = GetFinalPathNameByHandle(m_handle, buffer.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-//	if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-//
-//	// Append a path separator character and copy in the new node name
-//	buffer[pathlen] = _T('\\');
-//	_tcsncat_s(buffer.data(), buffer.size(), name, namelen);
-//
-//	// TODO: adjust target for host
-//	// todo: flags, 0 = file
-//	// todo: exception codes
-//	if(!::CreateSymbolicLink(buffer.data(), target, 0)) {
-//		
-//		DWORD dw = GetLastError();
-//		// 1314 = required privilege not held
-//		throw LinuxException(LINUX_EINVAL, Win32Exception());
-//	}
-//
-//	return nullptr;
-//	// todo
-//	//// The handle to the directory is not returned, it must be opened specifically for use
-//	//// by the Node instance ...
-//	//HANDLE handle = OpenHostDirectory(buffer.data());
-//	//try { return std::make_shared<Node>(indexpool, NodeType::Directory, handle); }
-//	//catch(...) { CloseHandle(handle); throw; }
-//}
 
 //-----------------------------------------------------------------------------
 

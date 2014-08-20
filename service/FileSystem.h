@@ -112,9 +112,19 @@ struct __declspec(novtable) FileSystem
 
 	// Node
 	//
-	// todo: document when done
+	// todo: need permission arguments (mode_t)
 	struct __declspec(novtable) Node
 	{
+		// CreateDirectory
+		//
+		// Creates a new directory node as a child of this node
+		virtual void CreateDirectory(const tchar_t* name) = 0;
+
+		// CreateSymbolicLink
+		//
+		// Creates a new symbolic link as a child of this node
+		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
+
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance
