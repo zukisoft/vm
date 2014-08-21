@@ -50,6 +50,7 @@
 // of the opened object against the mounted root path to ensure that people
 // can't create a symlink to C:\Windows or something.  If there is already
 // a hard link on the host, there isn't much that can be done about that
+// ^^^^ make this a mount option
 
 class HostFileSystem : public FileSystem
 {

@@ -33,8 +33,11 @@
 #include "LinuxException.h"
 #include "FileSystem.h"
 
+// remove me
+#include <PathCch.h>
+
 #pragma warning(push, 4)
-#pragma warning(disable:4396)	// inline specifier cannot be used when a friend ...
+#pragma warning(disable:4396)		// inline specifier cannot be used when a friend ...
 
 //-----------------------------------------------------------------------------
 // VmFileSystem
@@ -60,6 +63,9 @@ public:
 	// mkdir
 	void CreateDirectory(const tchar_t* path);
 
+	// symlink
+	void CreateSymbolicLink(const tchar_t* path, const tchar_t* target);
+
 	// Mount
 	//
 	// Mounts a file system at the specified path
@@ -69,15 +75,6 @@ public:
 	//
 	// Unmounts a file system from the specified path
 	//void Unmount(const tchar_t* path);
-
-	//-------------------------------------------------------------------------
-	// Propertes
-	
-	// RootDirectory
-	// todo: this probably doesn't need to be exposed at all
-	// Accesses the file system root directory entry instance
-	//__declspec(property(get=getRootDirectory)) DirectoryEntryPtr RootDirectory;
-	//DirectoryEntryPtr getRootDirectory(void) { return m_rootdir; }
 
 private:
 
@@ -99,8 +96,8 @@ private:
 	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative);
 	FileSystem::AliasPtr ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative);
 
-	////-------------------------------------------------------------------------
-	//// Private Type Declarations
+	//-------------------------------------------------------------------------
+	// Private Type Declarations
 
 	// tpath
 	//
@@ -109,8 +106,8 @@ private:
 
 	//using mount_map_t = Concurrency::concurrent_unordered_map<DirectoryEntryPtr, FileSystemPtr>;
 
-	////-------------------------------------------------------------------------
-	//// Member Variables
+	//-------------------------------------------------------------------------
+	// Member Variables
 
 	FileSystemPtr						m_rootfs;		// Root file system
 	//mount_map_t m_mounts;

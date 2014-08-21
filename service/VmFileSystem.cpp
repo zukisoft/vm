@@ -70,6 +70,37 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	_ASSERTE(path);
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
+	// <filesystem> is way too inefficient I think - it will do for testing
+	// yes, it makes a lot of unnecessary copies
+
+	tpath pathstr(path);
+
+	// Pull out the desired leaf name string and remove it from the branch path
+	std::tstring leafstr = pathstr.filename();
+	pathstr = pathstr.parent_path();
+
+
+	FileSystem::AliasPtr branch = ResolvePath(pathstr.relative_path().string().c_str());
+	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	branch->Node->CreateDirectory(leafstr.c_str());
+}
+
+//-----------------------------------------------------------------------------
+// VmFileSystem::CreateSymbolicLink
+//
+// Creates a symbolic link within the file system
+//
+// Arguments:
+//
+//	path		- Path to the directory to be created
+//	target		- Symbolic link target
+
+void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target)
+{
+	_ASSERTE(path);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+
 	tpath pathstr(path);
 
 	// Pull out the desired leaf name string and remove it from the branch path
@@ -81,7 +112,7 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	FileSystem::AliasPtr branch = ResolvePath(pathstr.string().c_str());
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	branch->Node->CreateDirectory(leafstr.c_str());
+	branch->Node->CreateSymbolicLink(leafstr.c_str(), target);
 }
 
 //-----------------------------------------------------------------------------
