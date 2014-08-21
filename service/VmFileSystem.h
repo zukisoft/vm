@@ -76,6 +76,16 @@ public:
 	// Unmounts a file system from the specified path
 	//void Unmount(const tchar_t* path);
 
+	void TestMountRoot(const FileSystemPtr& fs)
+	{
+		m_rootfs->Root->Mount(fs->Root->Node);
+	}
+
+	void TestUnmountRoot(void)
+	{
+		m_rootfs->Root->Unmount();
+	}
+
 private:
 
 	VmFileSystem(const VmFileSystem&)=delete;

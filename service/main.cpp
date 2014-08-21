@@ -58,7 +58,12 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(HostFileSystem::Mount(L"D:\\Linux Stuff"));
+	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
+	FileSystemPtr hfs = HostFileSystem::Mount(L"D:\\Linux Stuff");
+	vfs->TestMountRoot(hfs);
+	vfs->CreateDirectory(L"HELLO");
+	vfs->TestUnmountRoot();
+	vfs->CreateDirectory(L"HELLO2 - should fail");
 
 	try {
 		vfs->CreateDirectory(L"mike");

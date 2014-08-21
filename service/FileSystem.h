@@ -95,8 +95,19 @@ struct __declspec(novtable) FileSystem
 	// Alias
 	//
 	// todo: document when done
+	// > needs a stack ADT for handling Mount/Unmount
 	struct __declspec(novtable) Alias
 	{
+		// Mount
+		//
+		// Mounts/binds a foreign node to this alias, obscuring the previous node
+		virtual void Mount(const NodePtr& node) = 0;
+
+		// Unmount
+		//
+		// Unmounts/unbinds a node from this alias, revealing the previously bound node
+		virtual void Unmount(void) = 0;
+
 		// Name
 		//
 		// Gets the name associated with this alias
@@ -154,11 +165,11 @@ struct __declspec(novtable) FileSystem
 	// FileSystem Members
 	//
 
-	// RootNode
+	// Root
 	//
-	// Returns the root node for the file system
-	__declspec(property(get=getRootNode)) NodePtr RootNode;
-	virtual NodePtr getRootNode(void) = 0;
+	// Returns the root alias for the file system
+	__declspec(property(get=getRoot)) AliasPtr Root;
+	virtual AliasPtr getRoot(void) = 0;
 };
 
 //-----------------------------------------------------------------------------

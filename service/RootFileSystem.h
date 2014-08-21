@@ -25,6 +25,8 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
+#include <stack>
 #include "LinuxException.h"
 #include "FileSystem.h"
 
@@ -65,14 +67,24 @@ private:
 	//-------------------------------------------------------------------------
 	// FileSystem Implementation
 
-	// getRootNode
+	// getRoot
 	//
-	// Gets the root node instance
-	virtual NodePtr getRootNode(void) { return shared_from_this(); }
+	// Gets the root alias instance
+	virtual AliasPtr getRoot(void) { return shared_from_this(); }
 
 	//-------------------------------------------------------------------------
 	// FileSystem::Alias Implementation
 
+	// Mount
+	//
+	// Mounts/binds a foreign node to this alias, obscuring the previous node
+	virtual void Mount(const FileSystem::NodePtr& node);
+
+	// Unmount
+	//
+	// Unmounts/unbinds a node from this alias, revealing the previously bound node
+	virtual void Unmount(void);	
+	
 	// getName
 	//
 	// Gets the name associated with this alias
@@ -81,7 +93,7 @@ private:
 	// getNode
 	//
 	// Accesses the node pointed to by this alias
-	virtual FileSystem::NodePtr getNode(void) { return shared_from_this(); }
+	virtual FileSystem::NodePtr getNode(void);
 
 	//-------------------------------------------------------------------------
 	// FileSystem::Node Implementation
@@ -89,14 +101,12 @@ private:
 	// CreateDirectory
 	//
 	// Creates a directory node as a child of this node
-	virtual void CreateDirectory(const tchar_t*) 
-		{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void CreateDirectory(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 
 	// CreateSymbolicLink
 	//
 	// Creates a new symbolic link as a child of this node
-	virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) 
-		{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	
 	// ResolvePath
 	//
@@ -112,6 +122,12 @@ private:
 	//
 	// Gets the node type
 	virtual NodeType getType(void) { return NodeType::Directory; }
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	std::mutex							m_lock;		// Synchronization object
+	std::stack<FileSystem::NodePtr>		m_mounted;	// Stack of mounted nodes
 };
 
 //-----------------------------------------------------------------------------

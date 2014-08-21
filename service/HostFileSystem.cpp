@@ -30,11 +30,11 @@
 //
 // Arguments:
 //
-//	rootnode		- Pointer to the root node for the file system
+//	root		- Pointer to the root node for the file system
 
-HostFileSystem::HostFileSystem(const std::shared_ptr<Node>& rootnode) : m_rootnode(rootnode)
+HostFileSystem::HostFileSystem(const std::shared_ptr<Node>& root) : m_root(root)
 {
-	_ASSERTE(rootnode);
+	_ASSERTE(root);
 }
 
 //-----------------------------------------------------------------------------
@@ -49,12 +49,12 @@ HostFileSystem::HostFileSystem(const std::shared_ptr<Node>& rootnode) : m_rootno
 FileSystemPtr HostFileSystem::Mount(const tchar_t* device)
 {
 	// Attempt to create the root node from the specified path; must be a directory
-	std::shared_ptr<Node> rootnode = NodeFromPath(device);
-	if(rootnode->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+	std::shared_ptr<Node> root = NodeFromPath(device);
+	if(root->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// todo: this will need volume and quota information eventually when the
 	// superblock-style functions are written
-	return std::make_shared<HostFileSystem>(rootnode);
+	return std::make_shared<HostFileSystem>(root);
 }
 
 //-----------------------------------------------------------------------------
@@ -254,8 +254,8 @@ void HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t
 
 FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
 {
-	// Cannot resolve a null or zero-length child path
-	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
+	// Cannot resolve a null path
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// No need for recursion/searching for host file systems, just attempt to
 	// create a new node instance from the combined base and relative path

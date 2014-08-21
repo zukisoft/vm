@@ -130,7 +130,7 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 
 	// Remove leading slashes from the provided path and start at the root node
 	while((*absolute) && (*absolute == _T('/'))) absolute++;
-	return ResolvePath(m_rootfs->RootNode, absolute);
+	return ResolvePath(m_rootfs->Root, absolute);
 }
 
 //-----------------------------------------------------------------------------

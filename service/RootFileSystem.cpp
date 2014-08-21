@@ -26,6 +26,17 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
+// RootFileSystem::getNode (private)
+//
+// Accesses the topmost node referenced by this alias
+
+FileSystem::NodePtr RootFileSystem::getNode(void) 
+{ 
+	std::lock_guard<std::mutex> critsec(m_lock);
+	return m_mounted.empty() ? shared_from_this() : m_mounted.top();
+}
+	
+//-----------------------------------------------------------------------------
 // RootFileSystem::Mount (static)
 //
 // Mounts the root file system
@@ -43,6 +54,40 @@ FileSystemPtr RootFileSystem::Mount(const tchar_t* device)
 	return std::make_shared<RootFileSystem>();
 }
 
+//-----------------------------------------------------------------------------
+// RootFileSystem::Mount (private)
+//
+// Mounts/binds a foreign node to this alias, obscuring the previous node
+//
+// Arguments:
+//
+//	node		- Foreign node to be mounted on this alias
+
+void RootFileSystem::Mount(const FileSystem::NodePtr& node)
+{
+	_ASSERTE(node);
+
+	// All that needs to be done for this file system is push the node
+	std::lock_guard<std::mutex> critsec(m_lock);
+	m_mounted.push(node);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Unmount (private)
+//
+// Unmounts/unbinds a node from this alias, revealing the previously bound node
+//
+// Arguments:
+//
+//	NONE
+
+void RootFileSystem::Unmount(void)
+{
+	// Pop the topmost node instance from the stack, if one even exists
+	std::lock_guard<std::mutex> critsec(m_lock);
+	if(!m_mounted.empty()) m_mounted.pop();
+}
+	
 //-----------------------------------------------------------------------------
 // RootFileSystem::ResolvePath (private, static)
 //

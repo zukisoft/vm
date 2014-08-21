@@ -51,6 +51,8 @@
 // can't create a symlink to C:\Windows or something.  If there is already
 // a hard link on the host, there isn't much that can be done about that
 // ^^^^ make this a mount option
+//
+// todo: note that this does not support overmounting within the file system (yet?)
 
 class HostFileSystem : public FileSystem
 {
@@ -116,6 +118,16 @@ private:
 		//---------------------------------------------------------------------
 		// FileSystem::Alias Implementation
 
+		// Mount
+		//
+		// Mounts/binds a foreign node to this alias, obscuring the previous node
+		virtual void Mount(const NodePtr&) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+
+		// Unmount
+		//
+		// Unmounts/unbinds a node from this alias, revealing the previously bound node
+		virtual void Unmount(void) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+
 		// getName
 		//
 		// Gets the name associated with this alias
@@ -173,16 +185,16 @@ private:
 
 	// Instance Constructor
 	//
-	HostFileSystem(const std::shared_ptr<Node>& rootnode);
+	HostFileSystem(const std::shared_ptr<Node>& root);
 	friend class std::_Ref_count_obj<HostFileSystem>;
 
 	//-------------------------------------------------------------------------
 	// FileSystem Implementation
 
-	// getRootNode
+	// getRoot
 	//
-	// Accesses the root node for the file system
-	virtual NodePtr getRootNode(void) { return m_rootnode; }
+	// Accesses the root alias for the file system
+	virtual AliasPtr getRoot(void) { return m_root; }
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -201,7 +213,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<Node>		m_rootnode;		// Mounted root node object
+	std::shared_ptr<Node>		m_root;			// Mounted root object
 };
 
 //-----------------------------------------------------------------------------
