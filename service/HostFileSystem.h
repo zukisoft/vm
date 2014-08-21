@@ -68,34 +68,28 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const tchar_t* source);
+	static FileSystemPtr Mount(const tchar_t* source, uint32_t flags, void* data);
 
 private:
 
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
 
-	// View
+	// SuperBlock
 	//
-	// Specialization of FileSystem::View for a host file system instance
-	class View : public FileSystem::View
+	// Internal state and metadata about the mounted file system, all file
+	// system objects will hold a reference to this object
+	class SuperBlock
 	{
 	public:
 
-		// Destructor
-		//
-		virtual ~View()=default;
+		SuperBlock()=default;
+		~SuperBlock()=default;
 
 	private:
 
-		View(const View&)=delete;
-		View& operator=(const View&)=delete;
-
-		//---------------------------------------------------------------------
-		// FileSystem::View Implementation
-
-		//---------------------------------------------------------------------
-		// Member Variables
+		SuperBlock(const SuperBlock&)=delete;
+		SuperBlock& operator=(const SuperBlock&)=delete;
 	};
 
 	// Node
@@ -107,7 +101,7 @@ private:
 
 		// Constructor / Destructor
 		//
-		Node(std::vector<tchar_t>&& path, FileSystem::NodeType type, HANDLE handle);
+		Node(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path, FileSystem::NodeType type, HANDLE handle);
 		virtual ~Node();
 
 	private:
@@ -180,12 +174,36 @@ private:
 		HANDLE							m_handle;		// Operating system handle
 		const tchar_t*					m_name;			// Name portion of the path
 		std::vector<tchar_t>			m_path;			// Full path to the host node
+		std::shared_ptr<SuperBlock>		m_superblock;	// Reference to the superblock
 		const FileSystem::NodeType		m_type;			// Represented node type
+	};
+
+	// View
+	//
+	// Specialization of FileSystem::View for a host file system instance
+	class View : public FileSystem::View
+	{
+	public:
+
+		// Destructor
+		//
+		virtual ~View()=default;
+
+	private:
+
+		View(const View&)=delete;
+		View& operator=(const View&)=delete;
+
+		//---------------------------------------------------------------------
+		// FileSystem::View Implementation
+
+		//---------------------------------------------------------------------
+		// Member Variables
 	};
 
 	// Instance Constructor
 	//
-	HostFileSystem(const std::shared_ptr<Node>& root);
+	HostFileSystem(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& root);
 	friend class std::_Ref_count_obj<HostFileSystem>;
 
 	//-------------------------------------------------------------------------
@@ -202,8 +220,8 @@ private:
 	// NodeFromPath
 	//
 	// Creates a HostFileSystem::Node instance from a path string
-	static std::shared_ptr<Node> NodeFromPath(const tchar_t* path);
-	static std::shared_ptr<Node> NodeFromPath(std::vector<tchar_t>&& path);
+	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, const tchar_t* path);
+	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path);
 
 	// NodeTypeFromPath
 	//
@@ -213,6 +231,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
+	std::shared_ptr<SuperBlock>	m_superblock;	// Contained superblock
 	std::shared_ptr<Node>		m_root;			// Mounted root object
 };
 

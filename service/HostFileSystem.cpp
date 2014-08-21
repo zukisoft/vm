@@ -30,10 +30,13 @@
 //
 // Arguments:
 //
+//	superblock	- Reference to the superblock instance for this file system
 //	root		- Pointer to the root node for the file system
 
-HostFileSystem::HostFileSystem(const std::shared_ptr<Node>& root) : m_root(root)
+HostFileSystem::HostFileSystem(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& root) 
+	: m_superblock(superblock), m_root(root)
 {
+	_ASSERTE(superblock);
 	_ASSERTE(root);
 }
 
@@ -45,16 +48,31 @@ HostFileSystem::HostFileSystem(const std::shared_ptr<Node>& root) : m_root(root)
 // Arguments:
 //
 //	source		- Path to the root file system node on the host
+//	flags		- Mounting flags and attributes
+//	data		- Additional file-system specific mounting options
 
-FileSystemPtr HostFileSystem::Mount(const tchar_t* source)
+FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void* data)
 {
+	// TODO: Want special flag for preventing cross-mount access
+
+	(flags);
+	(data);
+
+	// Create the superblock (metadata and state) for the file system
+	std::shared_ptr<SuperBlock> superblock = std::make_shared<SuperBlock>();
+
+	// todo: initialize superblock
+	// need: root path on host
+	// need: mounting flags
+	// need: node index allocation
+
 	// Attempt to create the root node from the specified path; must be a directory
-	std::shared_ptr<Node> root = NodeFromPath(source);
+	std::shared_ptr<Node> root = NodeFromPath(superblock, source);
 	if(root->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// todo: this will need volume and quota information eventually when the
 	// superblock-style functions are written
-	return std::make_shared<HostFileSystem>(root);
+	return std::make_shared<HostFileSystem>(superblock, root);
 }
 
 //-----------------------------------------------------------------------------
@@ -64,9 +82,10 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source)
 //
 // Arguments:
 //
+//	superblock	- Reference to the superblock instance for this file system
 //	path		- Host operating system path to construct the node against
 
-std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const tchar_t* path)
+std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, const tchar_t* path)
 {
 	_ASSERTE(path);
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
@@ -75,7 +94,7 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const tchar_t
 	std::vector<tchar_t> pathvec(_tcslen(path) + 1);
 	memcpy(pathvec.data(), path, pathvec.size() * sizeof(tchar_t));
 
-	return NodeFromPath(std::move(pathvec));
+	return NodeFromPath(superblock, std::move(pathvec));
 }
 
 //-----------------------------------------------------------------------------
@@ -85,9 +104,10 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const tchar_t
 //
 // Arguments:
 //
+//	superblock	- Reference to the superblock instance for this file system
 //	path		- Host operating system path to construct the node against
 
-std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(std::vector<tchar_t>&& path)
+std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path)
 {
 	// Determine the type of node that the path represents; throws if path is bad
 	FileSystem::NodeType type = NodeTypeFromPath(path.data());
@@ -102,7 +122,7 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(std::vector<t
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
 
 	// Return a new node instance that represents the path 
-	try { return std::make_shared<Node>(std::move(path), type, handle); }
+	try { return std::make_shared<Node>(superblock, std::move(path), type, handle); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 
@@ -139,12 +159,13 @@ FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path)
 //
 // Arguments:
 //
+//	superblock	- Reference to the mounted file system superblock
 //	path		- vector<> containing the operating system path
 //	type		- Type of node being constructed
 //	handle		- Open operating system handle for the node (query access)
 
-HostFileSystem::Node::Node(std::vector<tchar_t>&& path, FileSystem::NodeType type, HANDLE handle)
-	: m_path(std::move(path)), m_type(type), m_handle(handle)
+HostFileSystem::Node::Node(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path, FileSystem::NodeType type, HANDLE handle)
+	: m_superblock(superblock), m_path(std::move(path)), m_type(type), m_handle(handle)
 {
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);
 
@@ -259,7 +280,7 @@ FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
 
 	// No need for recursion/searching for host file systems, just attempt to
 	// create a new node instance from the combined base and relative path
-	return HostFileSystem::NodeFromPath(AppendToPath(path));
+	return HostFileSystem::NodeFromPath(m_superblock, AppendToPath(path));
 }
 
 //-----------------------------------------------------------------------------

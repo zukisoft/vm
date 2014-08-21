@@ -133,15 +133,13 @@ void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tch
 {
 	(source);
 	(filesystem); // <--- ENODEV if filesystem is bad/unknown
-	(flags);
-	(data);
 
 	// Resolve the target alias and check that it's referencing a directory object
 	FileSystem::AliasPtr alias = ResolvePath(target);
 	if(alias->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	/// TESTING
-	FileSystemPtr hfs = HostFileSystem::Mount(source /*, flags, data */);
+	FileSystemPtr hfs = HostFileSystem::Mount(source, flags, data);
 
 	// Overmount the target alias with the new file system's root node
 	alias->Mount(hfs->Root->Node);

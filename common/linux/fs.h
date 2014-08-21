@@ -28,12 +28,36 @@
 // include/uapi/linux/fs.h
 //-----------------------------------------------------------------------------
 
-#define LINUX_SEEK_SET		0	/* seek relative to beginning of file */
-#define LINUX_SEEK_CUR		1	/* seek relative to current file position */
-#define LINUX_SEEK_END		2	/* seek relative to end of file */
-#define LINUX_SEEK_DATA		3	/* seek to the next data */
-#define LINUX_SEEK_HOLE		4	/* seek to the next hole */
-#define LINUX_SEEK_MAX		LINUX_SEEK_HOLE
+#define LINUX_SEEK_SET			0		/* seek relative to beginning of file */
+#define LINUX_SEEK_CUR			1		/* seek relative to current file position */
+#define LINUX_SEEK_END			2		/* seek relative to end of file */
+#define LINUX_SEEK_DATA			3		/* seek to the next data */
+#define LINUX_SEEK_HOLE			4		/* seek to the next hole */
+#define LINUX_SEEK_MAX			LINUX_SEEK_HOLE
+
+#define LINUX_MS_RDONLY			1		/* Mount read-only */
+#define LINUX_MS_NOSUID			2		/* Ignore suid and sgid bits */
+#define LINUX_MS_NODEV			4		/* Disallow access to device special files */
+#define LINUX_MS_NOEXEC			8		/* Disallow program execution */
+#define LINUX_MS_SYNCHRONOUS	16		/* Writes are synced at once */
+#define LINUX_MS_REMOUNT		32		/* Alter flags of a mounted FS */
+#define LINUX_MS_MANDLOCK		64		/* Allow mandatory locks on an FS */
+#define LINUX_MS_DIRSYNC		128		/* Directory modifications are synchronous */
+#define LINUX_MS_NOATIME		1024	/* Do not update access times. */
+#define LINUX_MS_NODIRATIME		2048	/* Do not update directory access times */
+#define LINUX_MS_BIND			4096
+#define LINUX_MS_MOVE			8192
+#define LINUX_MS_REC			16384
+#define LINUX_MS_SILENT			32768
+#define LINUX_MS_POSIXACL		(1<<16)	/* VFS does not apply the umask */
+#define LINUX_MS_UNBINDABLE		(1<<17)	/* change to unbindable */
+#define LINUX_MS_PRIVATE		(1<<18)	/* change to private */
+#define LINUX_MS_SLAVE			(1<<19)	/* change to slave */
+#define LINUX_MS_SHARED			(1<<20)	/* change to shared */
+#define LINUX_MS_RELATIME		(1<<21)	/* Update atime relative to mtime/ctime. */
+#define LINUX_MS_KERNMOUNT		(1<<22)	/* this is a kern_mount call */
+#define LINUX_MS_I_VERSION		(1<<23)	/* Update inode I_version field */
+#define LINUX_MS_STRICTATIME	(1<<24)	/* Always perform atime updates */
 
 //-----------------------------------------------------------------------------
 
