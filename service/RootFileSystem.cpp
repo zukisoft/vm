@@ -43,12 +43,11 @@ FileSystem::NodePtr RootFileSystem::getNode(void)
 //
 // Arguments:
 //
-//	device		- Unused for root file system
-//	todo: mount options arguments
+//	source		- Unused for root file system
 
-FileSystemPtr RootFileSystem::Mount(const tchar_t* device)
+FileSystemPtr RootFileSystem::Mount(const tchar_t* source)
 {
-	UNREFERENCED_PARAMETER(device);
+	UNREFERENCED_PARAMETER(source);
 
 	// Mounting the root file system is as simple as creating an instance of it
 	return std::make_shared<RootFileSystem>();
@@ -99,9 +98,11 @@ void RootFileSystem::Unmount(void)
 
 FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
 {
-	UNREFERENCED_PARAMETER(path);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	// The RootFileSystem node doesn't support any child objects
+	// The RootFileSystem node doesn't support any child objects; if the
+	// name provided is an empty string, return ourselves otherwise fail
+	if(*path == 0) return shared_from_this();
 	throw LinuxException(LINUX_ENOENT);
 }
 

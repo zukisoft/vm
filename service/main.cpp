@@ -60,10 +60,13 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
 	FileSystemPtr hfs = HostFileSystem::Mount(L"D:\\Linux Stuff");
-	vfs->TestMountRoot(hfs);
+	vfs->Mount(L"D:\\Linux Stuff", L"/", L"hostfs", 0, nullptr);
+	vfs->Mount(L"D:\\temp", L"/", L"hostfs", 0, nullptr);
+
+	//vfs->TestMountRoot(hfs);
 	vfs->CreateDirectory(L"HELLO");
-	vfs->TestUnmountRoot();
-	vfs->CreateDirectory(L"HELLO2 - should fail");
+	//vfs->TestUnmountRoot();
+	//vfs->CreateDirectory(L"HELLO2 - should fail");
 
 	try {
 		vfs->CreateDirectory(L"mike");

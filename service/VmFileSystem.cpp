@@ -73,7 +73,7 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	// <filesystem> is way too inefficient I think - it will do for testing
 	// yes, it makes a lot of unnecessary copies
 
-	tpath pathstr(path);
+	tpath_t pathstr(path);
 
 	// Pull out the desired leaf name string and remove it from the branch path
 	std::tstring leafstr = pathstr.filename();
@@ -101,7 +101,7 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 	_ASSERTE(path);
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	tpath pathstr(path);
+	tpath_t pathstr(path);
 
 	// Pull out the desired leaf name string and remove it from the branch path
 	std::tstring leafstr = pathstr.filename();
@@ -113,6 +113,42 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	branch->Node->CreateSymbolicLink(leafstr.c_str(), target);
+}
+
+//-----------------------------------------------------------------------------
+// VmFileSystem::Mount
+//
+// Mounts a file system at the specified target alias
+//
+// Arguments:
+//
+//	source		- Source device/directory to be mounted
+//	target		- Target alias to mount the file system on
+//	filesystem	- Short name of the filesystem to mount
+//	flags		- Mounting flags
+//	data		- File-system specific mounting options/data
+
+#include "HostFileSystem.h"	// todo: remove me
+void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data)
+{
+	(source);
+	(filesystem); // <--- ENODEV if filesystem is bad/unknown
+	(flags);
+	(data);
+
+	// Resolve the target alias and check that it's referencing a directory object
+	FileSystem::AliasPtr alias = ResolvePath(target);
+	if(alias->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+	/// TESTING
+	FileSystemPtr hfs = HostFileSystem::Mount(source /*, flags, data */);
+
+	// Overmount the target alias with the new file system's root node
+	alias->Mount(hfs->Root->Node);
+
+	// File system was successfully mounted, insert it into the member collection.
+	// This will keep both the alias and the file system alive
+	m_mounts.insert(std::make_pair(alias, hfs));
 }
 
 //-----------------------------------------------------------------------------
@@ -163,6 +199,22 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, 
 {
 	_ASSERTE(base);
 	return base->ResolvePath(relative);
+}
+
+//-----------------------------------------------------------------------------
+// VmFileSystem::Unmount
+//
+// Unmounts a mounted file system from it's target alias
+//
+// Arguments:
+//
+//	target		- Target alias where file system is mounted
+//	flags		- Flags to control unmounting operation
+
+void VmFileSystem::Unmount(const tchar_t* target, uint32_t flags)
+{
+	UNREFERENCED_PARAMETER(target);
+	UNREFERENCED_PARAMETER(flags);
 }
 
 //---------------------------------------------------------------------------

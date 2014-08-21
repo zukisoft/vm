@@ -44,12 +44,12 @@ HostFileSystem::HostFileSystem(const std::shared_ptr<Node>& root) : m_root(root)
 //
 // Arguments:
 //
-//	device		- Path to the root file system node on the host
+//	source		- Path to the root file system node on the host
 
-FileSystemPtr HostFileSystem::Mount(const tchar_t* device)
+FileSystemPtr HostFileSystem::Mount(const tchar_t* source)
 {
 	// Attempt to create the root node from the specified path; must be a directory
-	std::shared_ptr<Node> root = NodeFromPath(device);
+	std::shared_ptr<Node> root = NodeFromPath(source);
 	if(root->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// todo: this will need volume and quota information eventually when the

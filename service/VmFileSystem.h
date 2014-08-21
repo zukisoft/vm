@@ -66,25 +66,11 @@ public:
 	// symlink
 	void CreateSymbolicLink(const tchar_t* path, const tchar_t* target);
 
-	// Mount
-	//
-	// Mounts a file system at the specified path
-	//void Mount(const tchar_t* path, const FileSystemPtr& mountfs);
+	// mount
+	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);
 
-	// Unmount
-	//
-	// Unmounts a file system from the specified path
-	//void Unmount(const tchar_t* path);
-
-	void TestMountRoot(const FileSystemPtr& fs)
-	{
-		m_rootfs->Root->Mount(fs->Root->Node);
-	}
-
-	void TestUnmountRoot(void)
-	{
-		m_rootfs->Root->Unmount();
-	}
+	// umount
+	void Unmount(const tchar_t* target, uint32_t flags);
 
 private:
 
@@ -109,18 +95,21 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
-	// tpath
+	// mount_map_t
+	//
+	// Typedef for a concurrent map<> of mounted file systems and the alias they are mounted in
+	using mount_map_t = Concurrency::concurrent_unordered_map<FileSystem::AliasPtr, FileSystemPtr>;
+
+	// tpath_t
 	//
 	// Typedef for a generic text std::tr2::sys::[w]path
-	using tpath = std::conditional<sizeof(tchar_t) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
-
-	//using mount_map_t = Concurrency::concurrent_unordered_map<DirectoryEntryPtr, FileSystemPtr>;
+	using tpath_t = std::conditional<sizeof(tchar_t) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	FileSystemPtr						m_rootfs;		// Root file system
-	//mount_map_t m_mounts;
+	FileSystemPtr				m_rootfs;		// Root file system
+	mount_map_t					m_mounts;		// Collection of mounted file systems
 };
 
 //-----------------------------------------------------------------------------

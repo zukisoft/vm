@@ -68,7 +68,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const tchar_t* device);
+	static FileSystemPtr Mount(const tchar_t* source);
 
 private:
 
