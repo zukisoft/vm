@@ -31,6 +31,7 @@
 #include "LinuxException.h"
 #include "Win32Exception.h"
 #include "FileSystem.h"
+#include "MountOptions.h"
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "pathcch.lib")
@@ -79,7 +80,7 @@ private:
 
 		// Constructor / Destructor
 		//
-		SuperBlock(const std::vector<tchar_t>& path) : m_path(path) {}
+		SuperBlock(const std::vector<tchar_t>& path, uint32_t flags, const void* data) : m_path(path), m_options(flags, data) {}
 		~SuperBlock()=default;
 
 		//---------------------------------------------------------------------
@@ -90,6 +91,21 @@ private:
 		// Verifies that a newly opened handle meets all mount criteria
 		void ValidateHandle(HANDLE handle);
 
+		//---------------------------------------------------------------------
+		// Properties
+
+		// BasePath
+		//
+		// The base host operating system path provided during construction
+		__declspec(property(get=getBasePath)) const tchar_t* BasePath;
+		const tchar_t* getBasePath(void) { return m_path.data(); }
+
+		// Options
+		//
+		// Gets a reference to the contained MountOptions instance
+		__declspec(property(get=getOptions)) MountOptions& Options;
+		MountOptions& getOptions(void) { return m_options; }
+
 	private:
 
 		SuperBlock(const SuperBlock&)=delete;
@@ -99,6 +115,7 @@ private:
 		// Member Variables
 
 		bool					m_verifypath = true;	// Flag to verify the path
+		MountOptions			m_options;				// Mounting options
 		std::vector<tchar_t>	m_path;					// Path to the mount point
 	};
 

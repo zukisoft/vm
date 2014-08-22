@@ -55,11 +55,6 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 {
 	// TODO: Want special flag for preventing cross-mount access
 
-	(flags);
-	(data);
-
-	// todo: initialize superblock
-	// need: mounting flags
 	// need: node index allocation
 
 	// Determine the type of node that the path represents; must be a directory for mounting
@@ -83,7 +78,7 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 		// Construct the superblock that will be used for this instance of the file system
-		std::shared_ptr<SuperBlock> superblock = std::make_shared<SuperBlock>(path);
+		std::shared_ptr<SuperBlock> superblock = std::make_shared<SuperBlock>(path, flags, data);
 
 		// Construct the HostFileSystem instance as well as the root node object
 		return std::make_shared<HostFileSystem>(superblock, std::make_shared<Node>(superblock, std::move(path), type, handle));
@@ -289,11 +284,13 @@ void HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t
 	// to be adjusted such that it's relative to the mount point for this
 	// HostFileSystem instance, cannot allow links outside of this since people
 	// could get outside the mounted file system root, and that would be bad.
-	//
-	// Will also need to verify that when things are opened up from the file
-	// system that they are contained in the mount point, so perhaps I need to
-	// pass the HostFileSystem instance along after all, which would allow it
-	// to hold code to deal with the node numbers again too.  hmmmmmmm
+
+	// there is also a problem with deciding if a symlink should be a directory link
+	// or a file link, sadly Windows needs to know this
+
+	// It may be best to not support this at all for HostFileSystem, they can't be
+	// created or opened unless the user is an administrator anyway.  it would be
+	// a simple matter to just ignore the 'follow' flag passed into ResolvePath.
 
 	(name);
 	(target);
@@ -339,7 +336,6 @@ void HostFileSystem::SuperBlock::ValidateHandle(HANDLE handle)
 	// If path verification is active, get the canonicalized name associated with this
 	// handle and ensure that it is a child of the mounted root directory; this prevents
 	// access outside of the mountpoint by symbolic links or ".." parent path components
-
 	if(m_verifypath) {
 
 		// Determine the amount of space that needs to be allocated for the directory path name string; when 
