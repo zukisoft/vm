@@ -59,6 +59,9 @@
 #define LINUX_MS_I_VERSION		(1<<23)	/* Update inode I_version field */
 #define LINUX_MS_STRICTATIME	(1<<24)	/* Always perform atime updates */
 
+// MS_RMT_MASK - Mount options that can be changed during an MS_REMOUNT operation
+#define LINUX_MS_RMT_MASK     (LINUX_MS_RDONLY | LINUX_MS_SYNCHRONOUS | LINUX_MS_MANDLOCK | LINUX_MS_I_VERSION)
+
 //-----------------------------------------------------------------------------
 
 #endif		// __LINUX_FS_H_
