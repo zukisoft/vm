@@ -24,6 +24,9 @@
 #define __GENERIC_TEXT_H_
 #pragma once
 
+#include <algorithm>
+#include <cctype>
+#include <cwctype>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -100,6 +103,53 @@ namespace std {
 #else
 		return to_string(value);
 #endif
+	}
+
+	// std::ltrim
+	//
+	// Performs a left trim of a string
+	inline string ltrim(const string& str)
+	{
+		auto left = find_if_not(str.begin(), str.end(), isspace);
+		return string(left, str.end());
+	}
+
+	inline wstring ltrim(const wstring& str)
+	{
+		auto left = find_if_not(str.begin(), str.end(), iswspace);
+		return wstring(left, str.end());
+	}
+
+	// std::rtrim
+	//
+	// Performs a right trim of a string
+	inline string rtrim(const string& str)
+	{
+		auto right = find_if_not(str.rbegin(), str.rend(), isspace);
+		return string(str.begin(), right.base());
+	}
+
+	inline wstring rtrim(const wstring& str)
+	{
+		auto right = find_if_not(str.rbegin(), str.rend(), iswspace);
+		return wstring(str.begin(), right.base());
+	}
+
+	// std::trim
+	//
+	// Performs a full trim of a string
+	inline string trim(const string& str)
+	{
+		auto left = find_if_not(str.begin(), str.end(), isspace);
+		auto right = find_if_not(str.rbegin(), str.rend(), isspace);
+		return (right.base() <= left) ? string() : string(left, right.base());
+	}
+
+	inline wstring trim(const wstring& str)
+	{
+		auto left = find_if_not(str.begin(), str.end(), iswspace);
+		auto right = find_if_not(str.rbegin(), str.rend(), iswspace);
+		return (right.base() <= left) ? wstring() : wstring(left, right.base());
 	}
 
 } // namespace std
