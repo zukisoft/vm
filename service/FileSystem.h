@@ -138,8 +138,9 @@ struct __declspec(novtable) FileSystem
 
 		// ResolvePath
 		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual AliasPtr ResolvePath(const tchar_t* path) = 0;
+		// Resolves a relative path from this node to an Alias instance.  The follow argument
+		// indicates how to handle the leaf of the path if it's a symbolic link node
+		virtual AliasPtr ResolvePath(const tchar_t* path, bool follow) = 0;
 
 		// Index
 		//

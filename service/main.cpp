@@ -59,18 +59,18 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_set_se_translator(StructuredException::SeTranslator);
 
 	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
-	FileSystemPtr hfs = HostFileSystem::Mount(L"D:\\Linux Stuff", 0, nullptr);
+	FileSystemPtr hfs = HostFileSystem::Mount(L"d:\\linux Stuff\\android\\..\\", 0, nullptr);
 	vfs->Mount(L"D:\\Linux Stuff", L"/", L"hostfs", 0, nullptr);
-	vfs->Mount(L"D:\\temp", L"/", L"hostfs", 0, nullptr);
+	//vfs->Mount(L"D:\\temp", L"/", L"hostfs", 0, nullptr);
 
 	//vfs->TestMountRoot(hfs);
-	vfs->CreateDirectory(L"HELLO");
+	//vfs->CreateDirectory(L"HELLO");
 	//vfs->TestUnmountRoot();
 	//vfs->CreateDirectory(L"HELLO2 - should fail");
 
 	try {
-		vfs->CreateDirectory(L"mike");
-		vfs->CreateDirectory(L"/symdirlink/linkpoint/mike 123");
+		//vfs->CreateDirectory(L"mike");
+		vfs->CreateDirectory(L"/symdirlink/mike");
 	}
 	catch(std::exception& ex)
 	{

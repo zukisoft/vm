@@ -46,12 +46,6 @@
 // could do something like hashing the path with the instance address, or get
 // fancy and have a static allocator that works across instances (yes?)
 //
-// todo: prevent cross-volume/cross-mount opens; will need to check the path
-// of the opened object against the mounted root path to ensure that people
-// can't create a symlink to C:\Windows or something.  If there is already
-// a hard link on the host, there isn't much that can be done about that
-// ^^^^ make this a mount option
-//
 // todo: note that this does not support overmounting within the file system (yet?)
 
 class HostFileSystem : public FileSystem
@@ -83,13 +77,29 @@ private:
 	{
 	public:
 
-		SuperBlock()=default;
+		// Constructor / Destructor
+		//
+		SuperBlock(const std::vector<tchar_t>& path) : m_path(path) {}
 		~SuperBlock()=default;
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// ValidateHandle
+		//
+		// Verifies that a newly opened handle meets all mount criteria
+		void ValidateHandle(HANDLE handle);
 
 	private:
 
 		SuperBlock(const SuperBlock&)=delete;
 		SuperBlock& operator=(const SuperBlock&)=delete;
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		bool					m_verifypath = true;	// Flag to verify the path
+		std::vector<tchar_t>	m_path;					// Path to the mount point
 	};
 
 	// Node
@@ -148,7 +158,7 @@ private:
 		// ResolvePath
 		//
 		// Resolves a path for an alias that is a child of this alias
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path, bool follow);
 
 		// getIndex
 		//
@@ -220,13 +230,13 @@ private:
 	// NodeFromPath
 	//
 	// Creates a HostFileSystem::Node instance from a path string
-	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, const tchar_t* path);
-	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path);
+	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, const tchar_t* path, bool follow);
+	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path, bool follow);
 
 	// NodeTypeFromPath
 	//
 	// Gets the FileSystem::NodeType for an object from its path
-	static FileSystem::NodeType NodeTypeFromPath(const tchar_t* path);
+	static FileSystem::NodeType NodeTypeFromPath(const tchar_t* path, DWORD* attributes = nullptr);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

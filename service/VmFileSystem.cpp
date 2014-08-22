@@ -79,7 +79,6 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	std::tstring leafstr = pathstr.filename();
 	pathstr = pathstr.parent_path();
 
-
 	FileSystem::AliasPtr branch = ResolvePath(pathstr.relative_path().string().c_str());
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
@@ -157,14 +156,15 @@ void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tch
 // Arguments:
 //
 //	absolute	- Absolute path to the alias to resolve
+//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute, bool follow)
 {
 	if(absolute == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// Remove leading slashes from the provided path and start at the root node
 	while((*absolute) && (*absolute == _T('/'))) absolute++;
-	return ResolvePath(m_rootfs->Root, absolute);
+	return ResolvePath(m_rootfs->Root, absolute, follow);
 }
 
 //-----------------------------------------------------------------------------
@@ -176,11 +176,12 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 //
 //	base		- Base alias instance to use for resolution
 //	relative	- Relative path to resolve
+//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, bool follow)
 {
 	_ASSERTE(base);
-	return ResolvePath(base->Node, relative);
+	return ResolvePath(base->Node, relative, follow);
 }
 
 //-----------------------------------------------------------------------------
@@ -192,11 +193,12 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base,
 //
 //	base		- Base node instance to use for resolution
 //	relative	- Relative path to resolve
+//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative, bool follow)
 {
 	_ASSERTE(base);
-	return base->ResolvePath(relative);
+	return base->ResolvePath(relative, follow);
 }
 
 //-----------------------------------------------------------------------------

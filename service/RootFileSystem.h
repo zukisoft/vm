@@ -111,7 +111,7 @@ private:
 	// ResolvePath
 	//
 	// Resolves a path for an alias that is a child of this alias
-	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
+	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path, bool follow);
 
 	// getIndex
 	//

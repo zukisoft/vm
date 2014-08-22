@@ -88,9 +88,9 @@ private:
 	// ResolvePath
 	//
 	// Resolves an alias instance based on a path
-	FileSystem::AliasPtr ResolvePath(const tchar_t* absolute);
-	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative);
-	FileSystem::AliasPtr ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative);
+	FileSystem::AliasPtr ResolvePath(const tchar_t* absolute, bool follow = true);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, bool follow = true);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative, bool follow = true);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

@@ -58,21 +58,38 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 	(flags);
 	(data);
 
-	// Create the superblock (metadata and state) for the file system
-	std::shared_ptr<SuperBlock> superblock = std::make_shared<SuperBlock>();
-
 	// todo: initialize superblock
-	// need: root path on host
 	// need: mounting flags
 	// need: node index allocation
 
-	// Attempt to create the root node from the specified path; must be a directory
-	std::shared_ptr<Node> root = NodeFromPath(superblock, source);
-	if(root->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+	// Determine the type of node that the path represents; must be a directory for mounting
+	FileSystem::NodeType type = NodeTypeFromPath(source);
+	if(type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
-	// todo: this will need volume and quota information eventually when the
-	// superblock-style functions are written
-	return std::make_shared<HostFileSystem>(superblock, root);
+	// Attempt to open a query-only handle against the file system object
+	HANDLE handle = CreateFile(source, 0, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
+
+	try {
+
+		// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
+		// providing NULL for the output, this will include the count for the NULL terminator
+		size_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+		// Retrieve the canonicalized path to the directory object based on the handle; this will serve as the base
+		std::vector<tchar_t> path(pathlen);
+		pathlen = GetFinalPathNameByHandle(handle, path.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+		// Construct the superblock that will be used for this instance of the file system
+		std::shared_ptr<SuperBlock> superblock = std::make_shared<SuperBlock>(path);
+
+		// Construct the HostFileSystem instance as well as the root node object
+		return std::make_shared<HostFileSystem>(superblock, std::make_shared<Node>(superblock, std::move(path), type, handle));
+	} 
+	
+	catch(...) { CloseHandle(handle); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -84,8 +101,10 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 //
 //	superblock	- Reference to the superblock instance for this file system
 //	path		- Host operating system path to construct the node against
+//	follow		- Flag to follow the final path component if a symbolic link
 
-std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, const tchar_t* path)
+std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, 
+	const tchar_t* path, bool follow)
 {
 	_ASSERTE(path);
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
@@ -94,7 +113,7 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 	std::vector<tchar_t> pathvec(_tcslen(path) + 1);
 	memcpy(pathvec.data(), path, pathvec.size() * sizeof(tchar_t));
 
-	return NodeFromPath(superblock, std::move(pathvec));
+	return NodeFromPath(superblock, std::move(pathvec), follow);
 }
 
 //-----------------------------------------------------------------------------
@@ -106,23 +125,36 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 //
 //	superblock	- Reference to the superblock instance for this file system
 //	path		- Host operating system path to construct the node against
+//	follow		- Flag to follow the final path component if a symbolic link
 
-std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path)
+std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, 
+	std::vector<tchar_t>&& path, bool follow)
 {
-	// Determine the type of node that the path represents; throws if path is bad
-	FileSystem::NodeType type = NodeTypeFromPath(path.data());
+	DWORD				attributes;							// Windows file/directory attributes
+	DWORD				flags = FILE_ATTRIBUTE_NORMAL;		// CreateFile() flags
 
-	// Different node types require different flags to CreateFile() in order to get the handle
-	DWORD flags = FILE_ATTRIBUTE_NORMAL;
-	if(type == FileSystem::NodeType::Directory) flags |= FILE_FLAG_BACKUP_SEMANTICS;
-	else if(type == FileSystem::NodeType::SymbolicLink) flags |= FILE_FLAG_OPEN_REPARSE_POINT;
+	// Determine the attributes and type of node that the path represents; throws if path is bad
+	FileSystem::NodeType type = NodeTypeFromPath(path.data(), &attributes);
+
+	// Directories require FILE_FLAG_BACKUP_SEMANTICS to be set
+	if(attributes & FILE_ATTRIBUTE_DIRECTORY) flags |= FILE_FLAG_BACKUP_SEMANTICS;
+
+	// If not following a final symbolic link, set FILE_FLAG_OPEN_REPARSE_POINT to access it
+	if(!follow) flags |= FILE_FLAG_OPEN_REPARSE_POINT;
 
 	// Attempt to open a query-only handle against the file system object
 	HANDLE handle = CreateFile(path.data(), 0, 0, nullptr, OPEN_EXISTING, flags, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
 
-	// Return a new node instance that represents the path 
-	try { return std::make_shared<Node>(superblock, std::move(path), type, handle); }
+	try { 
+
+		// Validate that the handle meets the necessary criteria for this mount
+		superblock->ValidateHandle(handle);
+
+		// Generate and return the new Node instance
+		return std::make_shared<Node>(superblock, std::move(path), type, handle); 
+	}
+
 	catch(...) { CloseHandle(handle); throw; }
 }
 
@@ -135,18 +167,22 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 // Arguments:
 //
 //	path		- Host operating system path to the node to query
+//	attributes	- Optional variable to receive the windows attribute flags
 
-FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path)
+FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path, DWORD* attributes)
 {
 	_ASSERTE(path);
 
 	// Query the basic attributes about the specified path
-	DWORD attributes = GetFileAttributes(path);
-	if(attributes == INVALID_FILE_ATTRIBUTES) throw LinuxException(LINUX_ENOENT, Win32Exception());
+	DWORD attrs = GetFileAttributes(path);
+	if(attrs == INVALID_FILE_ATTRIBUTES) throw LinuxException(LINUX_ENOENT, Win32Exception());
+
+	// The caller may need the underlying windows file attribute mask
+	if(attributes) *attributes = attrs;
 
 	// Check for REPARSE_POINT first as it will be combined with other flags indicating if this is a directory or a file
-	if((attributes & FILE_ATTRIBUTE_REPARSE_POINT) == FILE_ATTRIBUTE_REPARSE_POINT) return FileSystem::NodeType::SymbolicLink;
-	else if((attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) return FileSystem::NodeType::Directory;
+	if((attrs & FILE_ATTRIBUTE_REPARSE_POINT) == FILE_ATTRIBUTE_REPARSE_POINT) return FileSystem::NodeType::SymbolicLink;
+	else if((attrs & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) return FileSystem::NodeType::Directory;
 	else return FileSystem::NodeType::File;
 }
 
@@ -272,15 +308,56 @@ void HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t
 // Arguments:
 //
 //	path		- Relative file system object path string
+//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
+FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path, bool follow)
 {
 	// Cannot resolve a null path
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// No need for recursion/searching for host file systems, just attempt to
 	// create a new node instance from the combined base and relative path
-	return HostFileSystem::NodeFromPath(m_superblock, AppendToPath(path));
+	return HostFileSystem::NodeFromPath(m_superblock, AppendToPath(path), follow);
+}
+
+//
+// HOSTFILESYSTEM::SUPERBLOCK
+//
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::SuperBlock::ValidateHandle
+//
+// Validates that a newly opened file system handle meets the criteria set
+// for this host mount point
+//
+// Arguments:
+//
+//	handle		- Operating system handle to validate
+
+void HostFileSystem::SuperBlock::ValidateHandle(HANDLE handle)
+{
+	// If path verification is active, get the canonicalized name associated with this
+	// handle and ensure that it is a child of the mounted root directory; this prevents
+	// access outside of the mountpoint by symbolic links or ".." parent path components
+
+	if(m_verifypath) {
+
+		// Determine the amount of space that needs to be allocated for the directory path name string; when 
+		// providing NULL for the output, this will include the count for the NULL terminator
+		size_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+		// If the path is at least as long as the original mountpoint name, it cannot be a child
+		if(pathlen < m_path.size()) throw LinuxException(LINUX_EPERM);
+
+		// Retrieve the path to the directory object based on the handle
+		std::vector<tchar_t> path(pathlen);
+		pathlen = GetFinalPathNameByHandle(handle, path.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+		// Verify that the canonicalized path starts with the mount point, don't ignore case
+		if(_tcsncmp(m_path.data(), path.data(), m_path.size()) != 0) throw LinuxException(LINUX_EPERM);
+	}
 }
 
 //-----------------------------------------------------------------------------

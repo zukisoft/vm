@@ -95,9 +95,12 @@ void RootFileSystem::Unmount(void)
 // Arguments:
 //
 //	path		- Relative file system object path string
+//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
+FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path, bool follow)
 {
+	UNREFERENCED_PARAMETER(follow);
+
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// The RootFileSystem node doesn't support any child objects; if the
