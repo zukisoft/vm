@@ -53,11 +53,11 @@ struct __declspec(novtable) FileSystem
 	struct Node;
 	using NodePtr = std::shared_ptr<Node>;
 
-	// ViewPtr
+	// HandlePtr
 	//
-	// Alias for an std::shared_ptr<View>
-	struct View;
-	using ViewPtr = std::shared_ptr<View>;
+	// Alias for an std::shared_ptr<Handle>
+	struct Handle;
+	using HandlePtr = std::shared_ptr<Handle>;
 
 	// need typedef for Mount(const tchar_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
@@ -155,10 +155,10 @@ struct __declspec(novtable) FileSystem
 		virtual NodeType getType(void) = 0;
 	};
 
-	// View
+	// Handle
 	//
 	// todo: document when done
-	struct __declspec(novtable) View
+	struct __declspec(novtable) Handle
 	{
 	};
 

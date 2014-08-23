@@ -24,8 +24,6 @@
 #define __HOSTFILESYSTEM_H_
 #pragma once
 
-#include <atomic>
-#include <concurrent_queue.h>
 #include <memory>
 #include <Shlwapi.h>
 #include <PathCch.h>
@@ -209,24 +207,24 @@ private:
 		const FileSystem::NodeType		m_type;			// Represented node type
 	};
 
-	// View
+	// Handle
 	//
-	// Specialization of FileSystem::View for a host file system instance
-	class View : public FileSystem::View
+	// Specialization of FileSystem::Handle for a host file system instance
+	class Handle : public FileSystem::Handle
 	{
 	public:
 
 		// Destructor
 		//
-		virtual ~View()=default;
+		virtual ~Handle()=default;
 
 	private:
 
-		View(const View&)=delete;
-		View& operator=(const View&)=delete;
+		Handle(const Handle&)=delete;
+		Handle& operator=(const Handle&)=delete;
 
 		//---------------------------------------------------------------------
-		// FileSystem::View Implementation
+		// FileSystem::Handle Implementation
 
 		//---------------------------------------------------------------------
 		// Member Variables
