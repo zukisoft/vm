@@ -255,6 +255,9 @@ void HostFileSystem::Node::CreateDirectory(const tchar_t* name)
 	// Cannot create a directory with a null or zero-length name
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 
+	// Check that the file system is not mounted as read-only
+	if(m_superblock->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
+
 	// Combine the name with the base path for this node and attempt to create it
 	std::vector<tchar_t> pathvec = AppendToPath(name);
 	if(!::CreateDirectory(pathvec.data(), nullptr)) {

@@ -54,6 +54,7 @@ public:
 
 	// Constructor
 	IndexPool()=default;
+	IndexPool(_index_t base) : m_next(base) {}
 
 	//-------------------------------------------------------------------------
 	// Member Functions

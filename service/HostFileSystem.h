@@ -24,6 +24,8 @@
 #define __HOSTFILESYSTEM_H_
 #pragma once
 
+#include <atomic>
+#include <concurrent_queue.h>
 #include <memory>
 #include <Shlwapi.h>
 #include <PathCch.h>
@@ -48,6 +50,8 @@
 // fancy and have a static allocator that works across instances (yes?)
 //
 // todo: note that this does not support overmounting within the file system (yet?)
+//
+// need to decide on symbolic link behavior
 
 class HostFileSystem : public FileSystem
 {
@@ -114,9 +118,9 @@ private:
 		//---------------------------------------------------------------------
 		// Member Variables
 
-		bool					m_verifypath = true;	// Flag to verify the path
-		MountOptions			m_options;				// Mounting options
-		std::vector<tchar_t>	m_path;					// Path to the mount point
+		bool						m_verifypath = true;	// Flag to verify the path
+		MountOptions				m_options;				// Mounting options
+		std::vector<tchar_t>		m_path;					// Path to the mount point
 	};
 
 	// Node
@@ -180,7 +184,7 @@ private:
 		// getIndex
 		//
 		// Gets the node index
-		virtual uint32_t getIndex(void) { return 12345; /* TODO */ }
+		virtual uapi::ino_t getIndex(void) { return 12345; /* TODO */ }
 
 		// getType
 		//

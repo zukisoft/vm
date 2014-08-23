@@ -80,17 +80,17 @@ struct __declspec(novtable) FileSystem
 	// NODE_INDEX_ROOT
 	//
 	// Constant indicating the node index for a file system root node
-	static const uint32_t NODE_INDEX_ROOT = 2;
+	static const uapi::ino_t NODE_INDEX_ROOT = 2;
 
 	// NODE_INDEX_LOSTANDFOUND
 	//
 	// Constant indicating the node index for a lost+found directory node
-	static const uint32_t NODE_INDEX_LOSTANDFOUND = 3;
+	static const uapi::ino_t NODE_INDEX_LOSTANDFOUND = 3;
 
 	// NODE_INDEX_FIRSTDYNAMIC
 	//
 	// Constant indicating the first dynamic node index that should be used
-	static const uint32_t NODE_INDEX_FIRSTDYNAMIC = 4;
+	static const uapi::ino_t NODE_INDEX_FIRSTDYNAMIC = 4;
 
 	// Alias
 	//
@@ -145,8 +145,8 @@ struct __declspec(novtable) FileSystem
 		// Index
 		//
 		// Gets the node index
-		__declspec(property(get=getIndex)) uint32_t Index;
-		virtual uint32_t getIndex(void) = 0;
+		__declspec(property(get=getIndex)) uapi::ino_t Index;
+		virtual uapi::ino_t getIndex(void) = 0;
 
 		// Type
 		//
@@ -165,6 +165,11 @@ struct __declspec(novtable) FileSystem
 	//
 	// FileSystem Members
 	//
+
+	// Remount
+	//
+	// Changes the options used for the file system mount
+	//// virtual void Remount(uint32_t flags, const void* data) = 0;
 
 	// Root
 	//

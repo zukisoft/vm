@@ -28,6 +28,7 @@
 #include <memory>
 #include <type_traits>
 #include <concurrent_unordered_map.h>
+#include <linux/fcntl.h>
 #include <linux/fs.h>
 #include <linux/types.h>
 #include "LinuxException.h"
@@ -65,6 +66,10 @@ public:
 
 	// symlink
 	void CreateSymbolicLink(const tchar_t* path, const tchar_t* target);
+
+	// open
+	// (return value is a handle, what to do with that?)
+	int Open(const tchar_t* path, int flags, uapi::mode_t mode);
 
 	// mount
 	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);

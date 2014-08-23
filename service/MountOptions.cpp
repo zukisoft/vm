@@ -65,7 +65,7 @@ std::vector<std::tstring> MountOptions::MakeVector(const void* data)
 //
 // Arguments:
 //
-//	rawargs		- Vector<> of all raw command line argument strings
+//	rawargs		- Vector<> of all raw mount argument strings
 
 MountOptions::MountArguments::MountArguments(const std::vector<std::tstring>& rawargs)
 {

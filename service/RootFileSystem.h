@@ -116,7 +116,7 @@ private:
 	// getIndex
 	//
 	// Gets the node index
-	virtual uint32_t getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
+	virtual uapi::ino_t getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
 
 	// getType
 	//
