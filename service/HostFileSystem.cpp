@@ -69,7 +69,7 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 
 		// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
 		// providing NULL for the output, this will include the count for the NULL terminator
-		size_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
 		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 		// Retrieve the canonicalized path to the directory object based on the handle; this will serve as the base
@@ -343,7 +343,7 @@ void HostFileSystem::SuperBlock::ValidateHandle(HANDLE handle)
 
 		// Determine the amount of space that needs to be allocated for the directory path name string; when 
 		// providing NULL for the output, this will include the count for the NULL terminator
-		size_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
 		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 		// If the path is at least as long as the original mountpoint name, it cannot be a child

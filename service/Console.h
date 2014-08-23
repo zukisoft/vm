@@ -110,7 +110,7 @@ public:
 	// Write (tstring)
 	//
 	// Writes a value to the console
-	void Write(const std::tstring& value) const { WriteConsole(m_stdout, value.data(), value.size(), nullptr, nullptr); }
+	void Write(const std::tstring& value) const { WriteConsole(m_stdout, value.data(), static_cast<DWORD>(value.size()), nullptr, nullptr); }
 
 	// TODO: Write (format string)
 	// TODO: Write (character iterator)
@@ -141,7 +141,7 @@ public:
 	{
 		// Write the string in one call by pre-appending the CRLF
 		std::tstring formatted = value + _T("\r\n");
-		WriteConsole(m_stdout, formatted.data(), formatted.size(), nullptr, nullptr);
+		WriteConsole(m_stdout, formatted.data(), static_cast<DWORD>(formatted.size()), nullptr, nullptr);
 	}
 
 	// TODO: WriteLine (format string)

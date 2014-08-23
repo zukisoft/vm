@@ -41,7 +41,7 @@ __int3264 rpc005_open(handle_t client, charptr_t pathname, int32_t flags, uapi::
 	fsobject->physical.ospath = (wcharptr_t)midl_user_allocate(len * sizeof(wchar_t));
 
 	wcscpy_s(fsobject->physical.ospath, len, L"D:\\android");
-	MultiByteToWideChar(CP_UTF8, 0, pathname, -1, &fsobject->physical.ospath[10], len-10);
+	MultiByteToWideChar(CP_UTF8, 0, pathname, -1, &fsobject->physical.ospath[10], static_cast<int>(len-10));
 
 	wchar_t* iterator = fsobject->physical.ospath;
 	while(*iterator) {

@@ -55,7 +55,7 @@ CommandLine::CommandLine(const tchar_t* commandline) : CommandLine(MakeVector(co
 	do { 
 		// GetModuleFileName() is horrible and doesn't have a way to find out how much
 		// space you actually need; call it repeatedly doubling the buffer each time
-		length = GetModuleFileName(nullptr, buffer.data(), buffer.size());
+		length = GetModuleFileName(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
 		if(GetLastError() == ERROR_INSUFFICIENT_BUFFER) buffer.resize(buffer.size() << 1);
 
 	} while(GetLastError() == ERROR_INSUFFICIENT_BUFFER);

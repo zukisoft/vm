@@ -49,7 +49,7 @@ GZipStreamReader::GZipStreamReader(const void* base, size_t length)
 
 	// Initialize the zlib stream structure
 	memset(&m_stream, 0, sizeof(z_stream));
-	m_stream.avail_in = length;
+	m_stream.avail_in = static_cast<uInt>(length);
 	m_stream.next_in  = reinterpret_cast<Bytef*>(const_cast<void*>(base));;
 
 	// inflateInit2() must be used when working with a GZIP stream

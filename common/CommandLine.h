@@ -106,7 +106,7 @@ private:
 		//
 		// Gets the number of unswitched arguments
 		__declspec(property(get=getCount)) int Count;
-		int getCount(void) const { return m_args.size(); }
+		int getCount(void) const { return static_cast<int>(m_args.size()); }
 
 	private:
 

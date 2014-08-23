@@ -413,7 +413,7 @@ std::tstring Console::getTitle(void) const
 	std::vector<tchar_t> title(_MAX_PATH);
 	
 	// Get the attach console's title string
-	size_t length = GetConsoleTitle(title.data(), title.size());
+	size_t length = GetConsoleTitle(title.data(), static_cast<DWORD>(title.size()));
 	if(length == 0) throw Win32Exception();
 
 	// Use either the returned length or the buffer length

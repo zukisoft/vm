@@ -279,12 +279,12 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const wchar_t* key
 	if(!key) throw Exception(E_ARGUMENTNULL, _T("key"));
 
 	// Get the number of bytes required to hold the converted key string
-	int required = WideCharToMultiByte(CP_UTF8, 0, key, wcslen(key), NULL, 0, NULL, NULL);
+	int required = WideCharToMultiByte(CP_UTF8, 0, key, static_cast<int>(wcslen(key)), NULL, 0, NULL, NULL);
 	if(required == 0) throw Win32Exception();
 
 	// Append the converted key and an equal sign to the information block
 	addr_t variable = AppendInfo(NULL, required);
-	WideCharToMultiByte(CP_UTF8, 0, key, wcslen(key), reinterpret_cast<char_t*>(variable), required, NULL, NULL);
+	WideCharToMultiByte(CP_UTF8, 0, key, static_cast<int>(wcslen(key)), reinterpret_cast<char_t*>(variable), required, NULL, NULL);
 	AppendInfo("=", 1);
 
 	// If a value was specified, convert and append that with it's NULL terminator

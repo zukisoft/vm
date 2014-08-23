@@ -35,7 +35,7 @@
 //	value		- value to be aligned
 //	alignment	- Alignment boundary
 
-static uint32_t AlignUp(uint32_t value, size_t alignment)
+static uint32_t AlignUp(uint32_t value, uint32_t alignment)
 {
 	if(value == 0) return 0;
 	else return value + ((alignment - (value % alignment)) % alignment);

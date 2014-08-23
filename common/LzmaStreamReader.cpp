@@ -53,7 +53,7 @@ static ISzAlloc g_szalloc = { LzmaAlloc, LzmaFree };
 //	base		- Pointer to the start of the LZMA stream
 //	length		- Length of the input stream, in bytes
 
-LzmaStreamReader::LzmaStreamReader(const void* base, size_t length) : m_baseptr(uintptr_t(base)), m_length(length)
+LzmaStreamReader::LzmaStreamReader(const void* base, size_t length) : m_baseptr(uintptr_t(base)), m_length(static_cast<uint32_t>(length))
 {
 	if(!base) throw Exception(E_POINTER);
 	if(length == 0) throw Exception(E_INVALIDARG);
@@ -126,9 +126,15 @@ uint32_t LzmaStreamReader::Read(void* buffer, uint32_t length)
 	ELzmaFinishMode finishMode = LZMA_FINISH_ANY;
 	if(m_position + length >= m_streamlen) finishMode = LZMA_FINISH_END;
 
+	// LzmaDec_DecodeToBuf needs a size_t pointer, not a uint32_t pointer
+	size_t sizet_length = length;
+	
 	// Attempt to decode the next block of compressed data into the output buffer
-	SRes result = LzmaDec_DecodeToBuf(&m_state, reinterpret_cast<uint8_t*>(buffer), &length,
+	SRes result = LzmaDec_DecodeToBuf(&m_state, reinterpret_cast<uint8_t*>(buffer), &sizet_length,
 		reinterpret_cast<uint8_t*>(m_inputptr), &inputlen, finishMode, &status);
+
+	// Cast the length back after the function call
+	length = static_cast<uint32_t>(sizet_length);
 	
 	// Always release a locally allocated output buffer and check for SZ_ERROR_DATA
 	if(freemem) free(buffer);
