@@ -182,6 +182,35 @@ FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path, DWORD
 }
 
 //
+// HOSTFILESYSTEM::HANDLE
+//
+
+HostFileSystem::Handle::Handle(const std::shared_ptr<SuperBlock>& superblock, HANDLE handle, int flags)
+	: m_superblock(superblock), m_handle(handle), m_flags(flags)
+{
+}
+
+HostFileSystem::Handle::~Handle()
+{
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Handle::Close
+//
+// Closes the handle instance
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::Handle::Close(void)
+{
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+	m_handle = INVALID_HANDLE_VALUE;
+}
+	
+//
 // HOSTFILESYSTEM::NODE
 //
 
@@ -301,6 +330,74 @@ void HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t
 }
 
 //-----------------------------------------------------------------------------
+// HostFileSystem::Node::FlagsToAccess (static, private)
+//
+// Converts linux fnctl flags to Windows access mode flags for CreateFile
+//
+// Arguments:
+//
+//	flags		- Linux fnctl flags to be converted
+
+inline DWORD HostFileSystem::Node::FlagsToAccess(int flags)
+{
+	switch(flags & LINUX_O_ACCMODE) {
+
+		// O_RDONLY --> GENERIC_READ
+		case LINUX_O_RDONLY: return GENERIC_READ;
+
+		// O_WRONLY --> GENERIC_WRITE
+		case LINUX_O_WRONLY: return GENERIC_WRITE;
+
+		// O_RDWR --> GENERIC_READ | GENERIC_WRITE;
+		case LINUX_O_RDWR: return GENERIC_READ | GENERIC_WRITE;
+	}
+
+	// Possible exception if both O_WRONLY (1) and O_RDWR (2) are set
+	throw LinuxException(LINUX_EINVAL);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Node::OpenHandle
+//
+// Creates a FileSystem::Handle instance for this node on the specified alias
+//
+// Arguments:
+//
+//	alias		- Reference to the Alias instance that was resolved
+//	flags		- Open flags from the caller
+
+FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPtr& alias, int flags)
+{
+	UNREFERENCED_PARAMETER(alias);
+
+	// The host file system cannot support unnamed temporary files via O_TMPFILE
+	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
+
+	// Convert the file control flags into the access flags and check for read-only file system
+	DWORD access = FlagsToAccess(flags);
+	if((m_superblock->Options.ReadOnly) && (access & GENERIC_WRITE)) throw LinuxException(LINUX_EROFS);
+
+	// Convert the file control flags into a disposition code (create/open/truncate/etc)
+	DWORD disposition = OPEN_EXISTING;
+	if((flags & (LINUX_O_CREAT | LINUX_O_EXCL)) == (LINUX_O_CREAT | LINUX_O_EXCL)) disposition = CREATE_NEW;
+	else if(flags & LINUX_O_CREAT) disposition = OPEN_ALWAYS;
+
+	// TODO: O_TRUNC - File needs to exist and be a regular for this to work, otherwise this is ignored
+	// (it would become TRUNCATE_EXISTING for disposition)
+
+	DWORD attributes = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_POSIX_SEMANTICS;
+	// todo: BACKUP_SEMANTICS
+	// todo: OPEN_REPARSE_POINT
+	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
+
+	HANDLE handle = CreateFile(m_path.data(), access, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, disposition, attributes, nullptr);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EPERM);	// <--- todo
+
+	try { return std::make_shared<Handle>(m_superblock, handle, flags); }
+	catch(...) { CloseHandle(handle); throw; }
+}
+		
+//-----------------------------------------------------------------------------
 // HostFileSystem::Node::ResolvePath (private)
 //
 // Resolves a FileSystem::Alias from a relative object path
@@ -355,7 +452,7 @@ void HostFileSystem::SuperBlock::ValidateHandle(HANDLE handle)
 		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 		// Verify that the canonicalized path starts with the mount point, don't ignore case
-		if(_tcsncmp(m_path.data(), path.data(), m_path.size()) != 0) throw LinuxException(LINUX_EPERM);
+		if(_tcsncmp(m_path.data(), path.data(), m_path.size() - 1) != 0) throw LinuxException(LINUX_EPERM);
 	}
 }
 

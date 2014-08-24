@@ -27,6 +27,7 @@
 #include <memory>
 #include <Shlwapi.h>
 #include <PathCch.h>
+#include <linux/fcntl.h>
 #include <linux/stat.h>
 #include "LinuxException.h"
 #include "Win32Exception.h"
@@ -174,6 +175,11 @@ private:
 		// Creates a new symbolic link as a child of this node
 		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
 	
+		// OpenHandle
+		//
+		// Creates a FileSystem::Handle instance for this node on the specified alias
+		virtual FileSystem::HandlePtr OpenHandle(const FileSystem::AliasPtr& alias, int flags);
+
 		// ResolvePath
 		//
 		// Resolves a path for an alias that is a child of this alias
@@ -197,6 +203,11 @@ private:
 		// Appends additional path information to this node's path
 		std::vector<tchar_t> AppendToPath(const tchar_t* more);
 
+		// FlagsToAccess
+		//
+		// Converts linux fnctl flags to a Windows access mode
+		static DWORD FlagsToAccess(int flags);
+		
 		//---------------------------------------------------------------------
 		// Member Variables
 
@@ -214,9 +225,10 @@ private:
 	{
 	public:
 
-		// Destructor
+		// Constructor / Destructor
 		//
-		virtual ~Handle()=default;
+		Handle(const std::shared_ptr<SuperBlock>& superblock, HANDLE handle, int flags);
+		virtual ~Handle();
 
 	private:
 
@@ -226,8 +238,17 @@ private:
 		//---------------------------------------------------------------------
 		// FileSystem::Handle Implementation
 
+		// Close
+		//
+		// Closes this Handle instance
+		virtual void Close(void);
+
 		//---------------------------------------------------------------------
 		// Member Variables
+
+		int							m_flags;			// File control flags
+		HANDLE						m_handle;			// Operating system handle
+		std::shared_ptr<SuperBlock>	m_superblock;		// Reference to the superblock
 	};
 
 	// Instance Constructor

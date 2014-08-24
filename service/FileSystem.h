@@ -136,6 +136,11 @@ struct __declspec(novtable) FileSystem
 		// Creates a new symbolic link as a child of this node
 		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
 
+		// OpenHandle
+		//
+		// Creates a FileSystem::Handle instance for this node on the specified alias
+		virtual HandlePtr OpenHandle(const AliasPtr& alias, int flags) = 0;
+
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance.  The follow argument
@@ -160,6 +165,10 @@ struct __declspec(novtable) FileSystem
 	// todo: document when done
 	struct __declspec(novtable) Handle
 	{
+		// Close
+		//
+		// Closes the Handle instance
+		virtual void Close(void) = 0;
 	};
 
 	//

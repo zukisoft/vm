@@ -49,6 +49,12 @@ class VmFileSystem
 {
 public:
 
+	// Handle
+	//
+	// Simplification of the FileSystem::HandlePtr type, this is the name that
+	// should be used by external callers
+	using Handle = FileSystem::HandlePtr;
+
 	// Destructor
 	//
 	~VmFileSystem()=default;
@@ -68,8 +74,8 @@ public:
 	void CreateSymbolicLink(const tchar_t* path, const tchar_t* target);
 
 	// open
-	// (return value is a handle, what to do with that?)
-	int Open(const tchar_t* path, int flags, uapi::mode_t mode);
+	//
+	Handle Open(const tchar_t* path, int flags);
 
 	// mount
 	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);

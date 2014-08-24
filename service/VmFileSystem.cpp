@@ -157,35 +157,15 @@ void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tch
 //
 //	path		- Path to the object to be opened/created
 //	flags		- Flags indicating how the object should be opened
-//	mode		- Mode to use if the object is created
 
-int VmFileSystem::Open(const tchar_t* path, int flags, uapi::mode_t mode)
+VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags)
 {
-	(flags);
-	(mode);
-
 	_ASSERTE(path);
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	FileSystem::AliasPtr alias;
-
-	try { alias = ResolvePath(path); }
-	catch(...) {
-
-		if(flags & LINUX_O_CREAT) {
-		}
-	}
-
-	//tpath_t pathstr(path);
-
-	//// Pull out the desired leaf name string and remove it from the branch path
-	//std::tstring leafstr = pathstr.filename();
-	//pathstr = pathstr.parent_path();
-
-	//FileSystem::AliasPtr branch = ResolvePath(pathstr.relative_path().string().c_str());
-	//if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
-
-	return 0;
+	// placeholder code
+	FileSystem::AliasPtr alias = ResolvePath(path);
+	return alias->Node->OpenHandle(alias, flags);
 }
 
 //-----------------------------------------------------------------------------

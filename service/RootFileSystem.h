@@ -101,13 +101,27 @@ private:
 	// CreateDirectory
 	//
 	// Creates a directory node as a child of this node
-	virtual void CreateDirectory(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void CreateDirectory(const tchar_t*)
+	{ 
+		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
+	}
 
 	// CreateSymbolicLink
 	//
 	// Creates a new symbolic link as a child of this node
-	virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*)
+	{ 
+		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
+	}
 	
+	// OpenHandle
+	//
+	// Creates a FileSystem::Handle instance for this node on the specified alias
+	virtual FileSystem::HandlePtr OpenHandle(const FileSystem::AliasPtr&, int)
+	{ 
+		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
+	}
+		
 	// ResolvePath
 	//
 	// Resolves a path for an alias that is a child of this alias
