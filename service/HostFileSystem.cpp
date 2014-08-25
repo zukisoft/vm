@@ -67,6 +67,8 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 
 	try {
 
+		// this could be moved to Superblock consructor ////
+
 		// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
 		// providing NULL for the output, this will include the count for the NULL terminator
 		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
@@ -185,8 +187,8 @@ FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path, DWORD
 // HOSTFILESYSTEM::HANDLE
 //
 
-HostFileSystem::Handle::Handle(const std::shared_ptr<SuperBlock>& superblock, HANDLE handle, int flags)
-	: m_superblock(superblock), m_handle(handle), m_flags(flags)
+HostFileSystem::Handle::Handle(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& node, HANDLE handle, int flags)
+	: m_superblock(superblock), m_node(node), m_handle(handle), m_flags(flags)
 {
 }
 
@@ -195,21 +197,68 @@ HostFileSystem::Handle::~Handle()
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 }
 
-//-----------------------------------------------------------------------------
-// HostFileSystem::Handle::Close
-//
-// Closes the handle instance
-//
-// Arguments:
-//
-//	NONE
-
-void HostFileSystem::Handle::Close(void)
-{
-	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
-	m_handle = INVALID_HANDLE_VALUE;
-}
 	
+uapi::size_t HostFileSystem::Handle::Read(void* buffer, uapi::size_t count)
+{
+	DWORD				read;			// Bytes read from the file
+
+	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+	_ASSERTE(m_node);
+
+	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF);
+
+	// Host file system does not support reading from directories or symbolic links
+	if(m_node->Type == FileSystem::NodeType::Directory) throw LinuxException(LINUX_EISDIR);
+	else if(m_node->Type != FileSystem::NodeType::File) throw LinuxException(LINUX_EINVAL);
+
+	// Todo: Check O_DIRECT and alignments here
+
+	// Attempt to read the specified number of bytes from the file into the buffer
+	if(!ReadFile(m_handle, buffer, count, &read, nullptr)) throw LinuxException(LINUX_EIO, Win32Exception());
+
+	return static_cast<uapi::size_t>(read);
+}
+
+//-----------------------------------------------------------------------------
+
+
+void HostFileSystem::Handle::Sync(void)
+{
+	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+
+	// The closest equivalent of fsync/fdatasync on Windows is FlushFileBuffers()
+	if(!FlushFileBuffers(m_handle)) throw LinuxException(LINUX_EIO, Win32Exception());
+}
+
+uapi::size_t HostFileSystem::Handle::Write(const void* buffer, uapi::size_t count)
+{
+	DWORD				written;		// Bytes written to the file
+
+	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+	_ASSERTE(m_node);
+
+	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF);
+
+	// Host file system does not support writing to directories or symbolic links
+	if(m_node->Type == FileSystem::NodeType::Directory) throw LinuxException(LINUX_EISDIR);
+	else if(m_node->Type != FileSystem::NodeType::File) throw LinuxException(LINUX_EINVAL);
+
+	// There is no way to make O_APPEND atomic on the host file system, just move it and hope for the best
+	if((m_flags & LINUX_O_APPEND) && (SetFilePointer(m_handle, 0, 0, FILE_END) == INVALID_SET_FILE_POINTER))
+		throw LinuxException(LINUX_EIO, Win32Exception());
+
+	// todo: check O_DIRECT and alignments here
+
+	// Attempt to write the specified number of bytes from the buffer into the file
+	if(!WriteFile(m_handle, buffer, count, &written, nullptr)) throw LinuxException(LINUX_EIO, Win32Exception());
+
+	// When the handle was opened with O_SYNC or O_DSYNC, call FlushFileBuffers() after each WriteFile()
+	// TODO: unnecessary; check FILE_FLAG_WRITE_THROUGH on the handle open, but this needs to be documented
+	///if((m_flags & LINUX_O_SYNC) && (!FlushFileBuffers(m_handle))) throw LinuxException(LINUX_EIO, Win32Exception());
+
+	return static_cast<uapi::size_t>(written);
+}
+
 //
 // HOSTFILESYSTEM::NODE
 //
@@ -393,7 +442,7 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPt
 	HANDLE handle = CreateFile(m_path.data(), access, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, disposition, attributes, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EPERM);	// <--- todo
 
-	try { return std::make_shared<Handle>(m_superblock, handle, flags); }
+	try { return std::make_shared<Handle>(m_superblock, shared_from_this(), handle, flags); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 		

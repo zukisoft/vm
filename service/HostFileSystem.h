@@ -51,6 +51,13 @@
 // todo: note that this does not support overmounting within the file system (yet?)
 //
 // need to decide on symbolic link behavior
+//
+// O_APPEND: The mode O_APPEND is supported and will be obeyed for file object
+// writes, however there is no way to prevent a race condition with other
+// processes that may be doing the same.
+//
+// Metadata cannot be synchronized separately from the file data, a call to 
+// fdatasync() will result in the same operation as a call to fsync()
 
 class HostFileSystem : public FileSystem
 {
@@ -227,7 +234,7 @@ private:
 
 		// Constructor / Destructor
 		//
-		Handle(const std::shared_ptr<SuperBlock>& superblock, HANDLE handle, int flags);
+		Handle(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& node, HANDLE handle, int flags);
 		virtual ~Handle();
 
 	private:
@@ -238,16 +245,32 @@ private:
 		//---------------------------------------------------------------------
 		// FileSystem::Handle Implementation
 
-		// Close
+		// Read
 		//
-		// Closes this Handle instance
-		virtual void Close(void);
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
+
+		// Sync
+		//
+		// Synchronizes all metadata and data associated with the file to storage
+		virtual void Sync(void);
+
+		// SyncData
+		//
+		// Synchronizes all data associated with the file to storage
+		virtual void SyncData(void) { Sync(); }
+
+		// Write
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
 
 		//---------------------------------------------------------------------
 		// Member Variables
 
 		int							m_flags;			// File control flags
 		HANDLE						m_handle;			// Operating system handle
+		std::shared_ptr<Node>		m_node;				// Reference to the node instance
 		std::shared_ptr<SuperBlock>	m_superblock;		// Reference to the superblock
 	};
 

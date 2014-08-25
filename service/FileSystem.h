@@ -165,10 +165,25 @@ struct __declspec(novtable) FileSystem
 	// todo: document when done
 	struct __declspec(novtable) Handle
 	{
-		// Close
+		// Read
 		//
-		// Closes the Handle instance
-		virtual void Close(void) = 0;
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t Read(void* buffer, uapi::size_t count) = 0;
+
+		// Sync
+		//
+		// Synchronizes all metadata and data associated with the file to storage
+		virtual void Sync(void) = 0;
+
+		// SyncData
+		//
+		// Synchronizes all data associated with the file to storage, not metadata
+		virtual void SyncData(void) = 0;
+
+		// Write
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t Write(const void* buffer, uapi::size_t count) = 0;
 	};
 
 	//

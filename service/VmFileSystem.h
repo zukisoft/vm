@@ -80,6 +80,9 @@ public:
 	// mount
 	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);
 
+	// fsync
+	//void 
+
 	// umount
 	void Unmount(const tchar_t* target, uint32_t flags);
 
