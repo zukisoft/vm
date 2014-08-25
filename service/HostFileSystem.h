@@ -54,7 +54,13 @@
 //
 // O_APPEND: The mode O_APPEND is supported and will be obeyed for file object
 // writes, however there is no way to prevent a race condition with other
-// processes that may be doing the same.
+// processes that may be doing the same
+//
+// O_DIRECT: The mode O_DIRECT is supported and requires the caller to provide
+// a properly aligned buffer, count and offset for reads and writes to file objects.
+// The alignment is checked when the file handle is opened with O_DIRECT specified
+// rather than once in the superblock metadata, as symbolic/hard links on the host
+// could potentially redirect the path to another volume outside the mount point.
 //
 // Metadata cannot be synchronized separately from the file data, a call to 
 // fdatasync() will result in the same operation as a call to fsync()
@@ -266,8 +272,17 @@ private:
 		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
 
 		//---------------------------------------------------------------------
+		// Private Member Functions
+
+		// ValidateAlignment
+		//
+		// Verifies that the data used when O_DIRECT is used is valid
+		void ValidateAlignment(const void* buffer, uapi::size_t count);
+
+		//---------------------------------------------------------------------
 		// Member Variables
 
+		uint32_t					m_alignment;		// File alignment info
 		int							m_flags;			// File control flags
 		HANDLE						m_handle;			// Operating system handle
 		std::shared_ptr<Node>		m_node;				// Reference to the node instance

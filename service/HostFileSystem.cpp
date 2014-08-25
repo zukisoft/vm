@@ -67,8 +67,6 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 
 	try {
 
-		// this could be moved to Superblock consructor ////
-
 		// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
 		// providing NULL for the output, this will include the count for the NULL terminator
 		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
@@ -188,8 +186,19 @@ FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path, DWORD
 //
 
 HostFileSystem::Handle::Handle(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& node, HANDLE handle, int flags)
-	: m_superblock(superblock), m_node(node), m_handle(handle), m_flags(flags)
+	: m_alignment(1), m_superblock(superblock), m_node(node), m_handle(handle), m_flags(flags)
 {
+	FILE_STORAGE_INFO			storageinfo;			// Information about underyling storage
+
+	// Handles opened with O_DIRECT require the data to be aligned to the physical sector size
+	if(flags & LINUX_O_DIRECT) {
+
+		if(!GetFileInformationByHandleEx(handle, FileStorageInfo, &storageinfo, sizeof(storageinfo))) 
+			throw LinuxException(LINUX_EIO, Win32Exception());
+
+		// Reset the required O_DIRECT alignment based on the file system physical sector size
+		m_alignment = storageinfo.FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
+	}
 }
 
 HostFileSystem::Handle::~Handle()
@@ -211,7 +220,8 @@ uapi::size_t HostFileSystem::Handle::Read(void* buffer, uapi::size_t count)
 	if(m_node->Type == FileSystem::NodeType::Directory) throw LinuxException(LINUX_EISDIR);
 	else if(m_node->Type != FileSystem::NodeType::File) throw LinuxException(LINUX_EINVAL);
 
-	// Todo: Check O_DIRECT and alignments here
+	// If the handle was opened with O_DIRECT, the buffer, count and current offset must be aligned
+	if(m_flags & LINUX_O_DIRECT) ValidateAlignment(buffer, count);
 
 	// Attempt to read the specified number of bytes from the file into the buffer
 	if(!ReadFile(m_handle, buffer, count, &read, nullptr)) throw LinuxException(LINUX_EIO, Win32Exception());
@@ -247,16 +257,28 @@ uapi::size_t HostFileSystem::Handle::Write(const void* buffer, uapi::size_t coun
 	if((m_flags & LINUX_O_APPEND) && (SetFilePointer(m_handle, 0, 0, FILE_END) == INVALID_SET_FILE_POINTER))
 		throw LinuxException(LINUX_EIO, Win32Exception());
 
-	// todo: check O_DIRECT and alignments here
+	// If the handle was opened with O_DIRECT, the buffer, count and current offset must be aligned
+	if(m_flags & LINUX_O_DIRECT) ValidateAlignment(buffer, count);
 
 	// Attempt to write the specified number of bytes from the buffer into the file
 	if(!WriteFile(m_handle, buffer, count, &written, nullptr)) throw LinuxException(LINUX_EIO, Win32Exception());
 
-	// When the handle was opened with O_SYNC or O_DSYNC, call FlushFileBuffers() after each WriteFile()
-	// TODO: unnecessary; check FILE_FLAG_WRITE_THROUGH on the handle open, but this needs to be documented
-	///if((m_flags & LINUX_O_SYNC) && (!FlushFileBuffers(m_handle))) throw LinuxException(LINUX_EIO, Win32Exception());
-
 	return static_cast<uapi::size_t>(written);
+}
+
+void HostFileSystem::Handle::ValidateAlignment(const void* buffer, uapi::size_t count)
+{
+	LARGE_INTEGER pointer = { 0, 0 };
+
+	if(!buffer) throw LinuxException(LINUX_EINVAL, Exception(E_POINTER));
+
+	// Retrieve the current file pointer offset so that it can be validated with the other criteria
+	if(!SetFilePointerEx(m_handle, pointer, &pointer, FILE_CURRENT)) throw LinuxException(LINUX_EIO, Win32Exception());
+
+	// The memory buffer, the current file offset and the number of bytes to operate on must all be
+	// a multiple of the host file system's alignment requirement
+	if((uintptr_t(buffer) % m_alignment) || (pointer.QuadPart % m_alignment) || (count % m_alignment)) 
+		throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_OFFSET_ALIGNMENT_VIOLATION));
 }
 
 //
@@ -438,6 +460,7 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPt
 	// todo: BACKUP_SEMANTICS
 	// todo: OPEN_REPARSE_POINT
 	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
+	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
 
 	HANDLE handle = CreateFile(m_path.data(), access, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, disposition, attributes, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EPERM);	// <--- todo

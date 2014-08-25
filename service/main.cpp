@@ -63,7 +63,18 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	vfs->Mount(L"D:\\Linux Stuff", L"/", L"hostfs", 0, nullptr);
 	//vfs->Mount(L"D:\\temp", L"/", L"hostfs", 0, nullptr);
 
-	VmFileSystem::Handle handle = vfs->Open(L"bionicapp", 0);
+	try {
+		void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	//std::vector<uint8_t> buffer(4096);
+	VmFileSystem::Handle handle = vfs->Open(L"bionicapp", LINUX_O_RDWR | LINUX_O_DIRECT | LINUX_O_SYNC);
+	auto result = handle->Read(p, 4096); //buffer.size());
+	
+
+	}
+	catch(const std::exception& ex) {
+
+		int x = 123;
+	}
 
 	//vfs->TestMountRoot(hfs);
 	//vfs->CreateDirectory(L"HELLO");
