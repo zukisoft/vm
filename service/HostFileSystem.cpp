@@ -62,7 +62,7 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 	if(type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	// Attempt to open a query-only handle against the file system object
-	HANDLE handle = CreateFile(source, 0, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+	HANDLE handle = CreateFile(source, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
 
 	try {
@@ -126,7 +126,7 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 	std::vector<tchar_t>&& path, bool follow)
 {
 	DWORD				attributes;							// Windows file/directory attributes
-	DWORD				flags = FILE_ATTRIBUTE_NORMAL;		// CreateFile() flags
+	DWORD				flags = FILE_FLAG_POSIX_SEMANTICS;	// CreateFile() flags
 
 	// Determine the attributes and type of node that the path represents; throws if path is bad
 	FileSystem::NodeType type = NodeTypeFromPath(path.data(), &attributes);
@@ -138,7 +138,7 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 	if(!follow) flags |= FILE_FLAG_OPEN_REPARSE_POINT;
 
 	// Attempt to open a query-only handle against the file system object
-	HANDLE handle = CreateFile(path.data(), 0, 0, nullptr, OPEN_EXISTING, flags, nullptr);
+	HANDLE handle = CreateFile(path.data(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, flags, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
 
 	try { 
@@ -448,24 +448,28 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPt
 	DWORD access = FlagsToAccess(flags);
 	if((m_superblock->Options.ReadOnly) && (access & GENERIC_WRITE)) throw LinuxException(LINUX_EROFS);
 
-	// Convert the file control flags into a disposition code (create/open/truncate/etc)
-	DWORD disposition = OPEN_EXISTING;
-	if((flags & (LINUX_O_CREAT | LINUX_O_EXCL)) == (LINUX_O_CREAT | LINUX_O_EXCL)) disposition = CREATE_NEW;
-	else if(flags & LINUX_O_CREAT) disposition = OPEN_ALWAYS;
-
-	// TODO: O_TRUNC - File needs to exist and be a regular for this to work, otherwise this is ignored
-	// (it would become TRUNCATE_EXISTING for disposition)
-
-	DWORD attributes = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_POSIX_SEMANTICS;
-	// todo: BACKUP_SEMANTICS
-	// todo: OPEN_REPARSE_POINT
+	// Generate the attributes for the open operation based on the node type and provided flags
+	DWORD attributes = FILE_FLAG_POSIX_SEMANTICS;
+	if(m_type == FileSystem::NodeType::Directory) attributes |= FILE_FLAG_BACKUP_SEMANTICS;
+	else if(m_type == FileSystem::NodeType::SymbolicLink) attributes |= FILE_FLAG_OPEN_REPARSE_POINT);
 	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
 	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
 
-	HANDLE handle = CreateFile(m_path.data(), access, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, disposition, attributes, nullptr);
-	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EPERM);	// <--- todo
+	// Use the existing handle to generate a new file handle with the proper access and attributes
+	HANDLE handle = ReOpenFile(m_handle, access, FILE_SHARE_READ | FILE_SHARE_WRITE, attributes);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
-	try { return std::make_shared<Handle>(m_superblock, shared_from_this(), handle, flags); }
+	try {
+
+		// By using ReOpenFile() rather than CreateFile() to generate the handle, there is no opportunity
+		// to specify TRUNCATE_EXISTING in the disposition flags; do that now
+		if((access & GENERIC_WRITE) && (flags & LINUX_O_TRUNC))
+			if(!SetEndOfFile(handle)) throw LinuxException(LINUX_EIO, Win32Exception());
+
+		// Generate a new Handle instance around the new object handle and flags
+		return std::make_shared<Handle>(m_superblock, shared_from_this(), handle, flags);
+	}
+	
 	catch(...) { CloseHandle(handle); throw; }
 }
 		
