@@ -451,7 +451,7 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPt
 	// Generate the attributes for the open operation based on the node type and provided flags
 	DWORD attributes = FILE_FLAG_POSIX_SEMANTICS;
 	if(m_type == FileSystem::NodeType::Directory) attributes |= FILE_FLAG_BACKUP_SEMANTICS;
-	else if(m_type == FileSystem::NodeType::SymbolicLink) attributes |= FILE_FLAG_OPEN_REPARSE_POINT);
+	else if(m_type == FileSystem::NodeType::SymbolicLink) attributes |= FILE_FLAG_OPEN_REPARSE_POINT;
 	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
 	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
 
