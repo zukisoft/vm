@@ -30,13 +30,13 @@
 //
 // Arguments:
 //
-//	superblock	- Reference to the superblock instance for this file system
+//	mountpoint	- Reference to the mountpoint instance for this file system
 //	root		- Pointer to the root node for the file system
 
-HostFileSystem::HostFileSystem(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& root) 
-	: m_superblock(superblock), m_root(root)
+HostFileSystem::HostFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& root) 
+	: m_mountpoint(mountpoint), m_root(root)
 {
-	_ASSERTE(superblock);
+	_ASSERTE(mountpoint);
 	_ASSERTE(root);
 }
 
@@ -53,9 +53,11 @@ HostFileSystem::HostFileSystem(const std::shared_ptr<SuperBlock>& superblock, co
 
 FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void* data)
 {
-	// TODO: Want special flag for preventing cross-mount access
+	std::shared_ptr<MountPoint>			mountpoint;			// MountPoint instance
 
-	// need: node index allocation
+	//
+	// TODO: how will this behave if a symbolic link to a directory is provided?
+	//
 
 	// Determine the type of node that the path represents; must be a directory for mounting
 	FileSystem::NodeType type = NodeTypeFromPath(source);
@@ -65,26 +67,12 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 	HANDLE handle = CreateFile(source, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
 
-	try {
-
-		// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
-		// providing NULL for the output, this will include the count for the NULL terminator
-		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-
-		// Retrieve the canonicalized path to the directory object based on the handle; this will serve as the base
-		std::vector<tchar_t> path(pathlen);
-		pathlen = GetFinalPathNameByHandle(handle, path.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-
-		// Construct the superblock that will be used for this instance of the file system
-		std::shared_ptr<SuperBlock> superblock = std::make_shared<SuperBlock>(path, flags, data);
-
-		// Construct the HostFileSystem instance as well as the root node object
-		return std::make_shared<HostFileSystem>(superblock, std::make_shared<Node>(superblock, std::move(path), type, handle));
-	} 
-	
+	// Attempt to create the MountPoint instance for this file system against the handle
+	try { mountpoint = std::make_shared<MountPoint>(handle, flags, data); }
 	catch(...) { CloseHandle(handle); throw; }
+
+	// Construct the HostFileSystem instance with a root Node instance that references the base path
+	return std::make_shared<HostFileSystem>(mountpoint, NodeFromPath(mountpoint, mountpoint->BasePath));
 }
 
 //-----------------------------------------------------------------------------
@@ -94,12 +82,10 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 //
 // Arguments:
 //
-//	superblock	- Reference to the superblock instance for this file system
+//	mountpoint	- Reference to the mountpoint instance for this file system
 //	path		- Host operating system path to construct the node against
-//	follow		- Flag to follow the final path component if a symbolic link
 
-std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, 
-	const tchar_t* path, bool follow)
+std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path)
 {
 	_ASSERTE(path);
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
@@ -108,7 +94,7 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 	std::vector<tchar_t> pathvec(_tcslen(path) + 1);
 	memcpy(pathvec.data(), path, pathvec.size() * sizeof(tchar_t));
 
-	return NodeFromPath(superblock, std::move(pathvec), follow);
+	return NodeFromPath(mountpoint, std::move(pathvec));
 }
 
 //-----------------------------------------------------------------------------
@@ -118,39 +104,13 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::sh
 //
 // Arguments:
 //
-//	superblock	- Reference to the superblock instance for this file system
+//	mountpoint	- Reference to the mountpoint instance for this file system
 //	path		- Host operating system path to construct the node against
-//	follow		- Flag to follow the final path component if a symbolic link
 
-std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, 
-	std::vector<tchar_t>&& path, bool follow)
+std::shared_ptr<HostFileSystem::Node> HostFileSystem::NodeFromPath(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path)
 {
-	DWORD				attributes;							// Windows file/directory attributes
-	DWORD				flags = FILE_FLAG_POSIX_SEMANTICS;	// CreateFile() flags
-
-	// Determine the attributes and type of node that the path represents; throws if path is bad
-	FileSystem::NodeType type = NodeTypeFromPath(path.data(), &attributes);
-
-	// Directories require FILE_FLAG_BACKUP_SEMANTICS to be set
-	if(attributes & FILE_ATTRIBUTE_DIRECTORY) flags |= FILE_FLAG_BACKUP_SEMANTICS;
-
-	// If not following a final symbolic link, set FILE_FLAG_OPEN_REPARSE_POINT to access it
-	if(!follow) flags |= FILE_FLAG_OPEN_REPARSE_POINT;
-
-	// Attempt to open a query-only handle against the file system object
-	HANDLE handle = CreateFile(path.data(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, flags, nullptr);
-	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT, Win32Exception());
-
-	try { 
-
-		// Validate that the handle meets the necessary criteria for this mount
-		superblock->ValidateHandle(handle);
-
-		// Generate and return the new Node instance
-		return std::make_shared<Node>(superblock, std::move(path), type, handle); 
-	}
-
-	catch(...) { CloseHandle(handle); throw; }
+	// All nodes in the host file system are detached, no operating system handle is opened
+	return std::make_shared<Node>(mountpoint, std::move(path), NodeTypeFromPath(path.data()));
 }
 
 //-----------------------------------------------------------------------------
@@ -168,9 +128,21 @@ FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path, DWORD
 {
 	_ASSERTE(path);
 
+	if(attributes) *attributes = 0;						// Initialize [out] argument
+
 	// Query the basic attributes about the specified path
 	DWORD attrs = GetFileAttributes(path);
-	if(attrs == INVALID_FILE_ATTRIBUTES) throw LinuxException(LINUX_ENOENT, Win32Exception());
+	if(attrs == INVALID_FILE_ATTRIBUTES) {
+
+		// If the path does not exist, FILE_NOT_FOUND or PATH_NOT_FOUND would be set, anything
+		// else raise as an ENOENT exception to the caller
+		DWORD winerror = GetLastError();
+		if((winerror == ERROR_FILE_NOT_FOUND) || (winerror == ERROR_PATH_NOT_FOUND)) return FileSystem::NodeType::Empty;
+		// todo: need LinuxExceptionFromWin32() that maps things like error 5 to EACCES
+		// ERROR_BAD_NETPATH? this API doesn't work on shares like \\SERVER\SHARE, which should be OK, BUT that would
+		// be the mountpoint, so ... dunno
+		else throw LinuxException(LINUX_ENOENT, Win32Exception(winerror));
+	}
 
 	// The caller may need the underlying windows file attribute mask
 	if(attributes) *attributes = attrs;
@@ -185,8 +157,8 @@ FileSystem::NodeType HostFileSystem::NodeTypeFromPath(const tchar_t* path, DWORD
 // HOSTFILESYSTEM::HANDLE
 //
 
-HostFileSystem::Handle::Handle(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& node, HANDLE handle, int flags)
-	: m_alignment(1), m_superblock(superblock), m_node(node), m_handle(handle), m_flags(flags)
+HostFileSystem::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, HANDLE handle, int flags)
+	: m_alignment(1), m_mountpoint(mountpoint), m_node(node), m_handle(handle), m_flags(flags)
 {
 	FILE_STORAGE_INFO			storageinfo;			// Information about underyling storage
 
@@ -282,6 +254,72 @@ void HostFileSystem::Handle::ValidateAlignment(const void* buffer, uapi::size_t 
 }
 
 //
+// HOSTFILESYSTEM::MOUNTPOINT
+//
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::MountPoint Constructor
+
+HostFileSystem::MountPoint::MountPoint(HANDLE handle, uint32_t flags, const void* data) : m_handle(handle), m_options(flags, data)
+{
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+
+	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
+	// providing NULL for the output, this will include the count for the NULL terminator
+	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+	// Retrieve the canonicalized path to the directory object based on the handle; this will serve as the base
+	m_path.resize(pathlen);
+	pathlen = GetFinalPathNameByHandle(handle, m_path.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::MountPoint Destructor
+
+HostFileSystem::MountPoint::~MountPoint()
+{
+	// Close the operating system handle that references the mount point
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::MountPoint::ValidateHandle
+//
+// Validates that a newly opened file system handle meets the criteria set
+// for this host mount point
+//
+// Arguments:
+//
+//	handle		- Operating system handle to validate
+
+void HostFileSystem::MountPoint::ValidateHandle(HANDLE handle)
+{
+	// If path verification is active, get the canonicalized name associated with this
+	// handle and ensure that it is a child of the mounted root directory; this prevents
+	// access outside of the mountpoint by symbolic links or ".." parent path components
+	if(m_verifypath) {
+
+		// Determine the amount of space that needs to be allocated for the directory path name string; when 
+		// providing NULL for the output, this will include the count for the NULL terminator
+		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+		// If the path is at least as long as the original mountpoint name, it cannot be a child
+		if(pathlen < m_path.size()) throw LinuxException(LINUX_EPERM);
+
+		// Retrieve the path to the directory object based on the handle
+		std::vector<tchar_t> path(pathlen);
+		pathlen = GetFinalPathNameByHandle(handle, path.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+		// Verify that the canonicalized path starts with the mount point, don't ignore case
+		if(_tcsncmp(m_path.data(), path.data(), m_path.size() - 1) != 0) throw LinuxException(LINUX_EPERM);
+	}
+}
+
+//
 // HOSTFILESYSTEM::NODE
 //
 
@@ -290,27 +328,16 @@ void HostFileSystem::Handle::ValidateAlignment(const void* buffer, uapi::size_t 
 //
 // Arguments:
 //
-//	superblock	- Reference to the mounted file system superblock
+//	mountpoint	- Reference to the file system mountpoint instance
 //	path		- vector<> containing the operating system path
 //	type		- Type of node being constructed
 //	handle		- Open operating system handle for the node (query access)
 
-HostFileSystem::Node::Node(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path, FileSystem::NodeType type, HANDLE handle)
-	: m_superblock(superblock), m_path(std::move(path)), m_type(type), m_handle(handle)
+HostFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, FileSystem::NodeType type)
+	: m_mountpoint(mountpoint), m_path(std::move(path)), m_type(type)
 {
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-
 	// Get a pointer to the path leaf name to satisfy the FileSystem::Alias interface
 	m_name = PathFindFileName(m_path.data());
-}
-
-//-----------------------------------------------------------------------------
-// HostFileSystem::Node Destructor
-
-HostFileSystem::Node::~Node()
-{
-	// Close the underlying operating system handle
-	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 }
 
 //-----------------------------------------------------------------------------
@@ -356,7 +383,7 @@ void HostFileSystem::Node::CreateDirectory(const tchar_t* name)
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 
 	// Check that the file system is not mounted as read-only
-	if(m_superblock->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
+	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
 	// Combine the name with the base path for this node and attempt to create it
 	std::vector<tchar_t> pathvec = AppendToPath(name);
@@ -371,33 +398,23 @@ void HostFileSystem::Node::CreateDirectory(const tchar_t* name)
 	}
 }
 
-//-----------------------------------------------------------------------------
-// HostFileSystem::Node::CreateSymbolicLink (private)
-//
-// Creates a new symbolic link node as a child of this node
-//
-// Arguments:
-//
-//	name		- Name to assign to the new symbolic link
-//	target		- Symbolic link target path; must be within this file system
-
-void HostFileSystem::Node::CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
+FileSystem::AliasPtr HostFileSystem::Node::CreateFile(const tchar_t* name)
 {
-	// TODO: This is actually going to be a little complicated.  The target needs
-	// to be adjusted such that it's relative to the mount point for this
-	// HostFileSystem instance, cannot allow links outside of this since people
-	// could get outside the mounted file system root, and that would be bad.
+	// Cannot create a directory with a null or zero-length name
+	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 
-	// there is also a problem with deciding if a symlink should be a directory link
-	// or a file link, sadly Windows needs to know this
+	// Check that the file system is not mounted as read-only
+	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
-	// It may be best to not support this at all for HostFileSystem, they can't be
-	// created or opened unless the user is an administrator anyway.  it would be
-	// a simple matter to just ignore the 'follow' flag passed into ResolvePath.
+	// Combine the name with the base path for this node and attempt to create it
+	std::vector<tchar_t> pathvec = AppendToPath(name);
 
-	(name);
-	(target);
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	// need something like Node::CreateFromHandle, which returns not only a node
+	// or alias pointer, but also a Handle pointer.  Then I can call CreateFile
+	// here and not need to reopen the stupid thing
+
+	// todo
+	return nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -446,28 +463,32 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPt
 
 	// Convert the file control flags into the access flags and check for read-only file system
 	DWORD access = FlagsToAccess(flags);
-	if((m_superblock->Options.ReadOnly) && (access & GENERIC_WRITE)) throw LinuxException(LINUX_EROFS);
+	if((m_mountpoint->Options.ReadOnly) && (access & GENERIC_WRITE)) throw LinuxException(LINUX_EROFS);
+
+	// Generate the disposition flags for the open operation
+	DWORD disposition = 0;
 
 	// Generate the attributes for the open operation based on the node type and provided flags
-	DWORD attributes = FILE_FLAG_POSIX_SEMANTICS;
+	DWORD attributes = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_POSIX_SEMANTICS;
 	if(m_type == FileSystem::NodeType::Directory) attributes |= FILE_FLAG_BACKUP_SEMANTICS;
 	else if(m_type == FileSystem::NodeType::SymbolicLink) attributes |= FILE_FLAG_OPEN_REPARSE_POINT;
 	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
 	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
 
-	// Use the existing handle to generate a new file handle with the proper access and attributes
-	HANDLE handle = ReOpenFile(m_handle, access, FILE_SHARE_READ | FILE_SHARE_WRITE, attributes);
+	// Open a handle ... todo words
+	HANDLE handle = ::CreateFile(m_path.data(), access, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, disposition, attributes, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 	try {
 
-		// By using ReOpenFile() rather than CreateFile() to generate the handle, there is no opportunity
-		// to specify TRUNCATE_EXISTING in the disposition flags; do that now
-		if((access & GENERIC_WRITE) && (flags & LINUX_O_TRUNC))
-			if(!SetEndOfFile(handle)) throw LinuxException(LINUX_EIO, Win32Exception());
+		// This goes in disposition now
+		//// By using ReOpenFile() rather than CreateFile() to generate the handle, there is no opportunity
+		//// to specify TRUNCATE_EXISTING in the disposition flags; do that now
+		//if((access & GENERIC_WRITE) && (flags & LINUX_O_TRUNC))
+		//	if(!SetEndOfFile(handle)) throw LinuxException(LINUX_EIO, Win32Exception());
 
 		// Generate a new Handle instance around the new object handle and flags
-		return std::make_shared<Handle>(m_superblock, shared_from_this(), handle, flags);
+		return std::make_shared<Handle>(m_mountpoint, shared_from_this(), handle, flags);
 	}
 	
 	catch(...) { CloseHandle(handle); throw; }
@@ -481,55 +502,25 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(const FileSystem::AliasPt
 // Arguments:
 //
 //	path		- Relative file system object path string
-//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path, bool follow)
+FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
 {
 	// Cannot resolve a null path
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// No need for recursion/searching for host file systems, just attempt to
 	// create a new node instance from the combined base and relative path
-	return HostFileSystem::NodeFromPath(m_superblock, AppendToPath(path), follow);
+	return HostFileSystem::NodeFromPath(m_mountpoint, AppendToPath(path));
 }
 
-//
-// HOSTFILESYSTEM::SUPERBLOCK
-//
-
-//-----------------------------------------------------------------------------
-// HostFileSystem::SuperBlock::ValidateHandle
-//
-// Validates that a newly opened file system handle meets the criteria set
-// for this host mount point
-//
-// Arguments:
-//
-//	handle		- Operating system handle to validate
-
-void HostFileSystem::SuperBlock::ValidateHandle(HANDLE handle)
+bool HostFileSystem::Node::TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias)
 {
-	// If path verification is active, get the canonicalized name associated with this
-	// handle and ensure that it is a child of the mounted root directory; this prevents
-	// access outside of the mountpoint by symbolic links or ".." parent path components
-	if(m_verifypath) {
+	// Cannot resolve a null path
+	if(path == nullptr) return false;
 
-		// Determine the amount of space that needs to be allocated for the directory path name string; when 
-		// providing NULL for the output, this will include the count for the NULL terminator
-		uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
+	// TODO
 
-		// If the path is at least as long as the original mountpoint name, it cannot be a child
-		if(pathlen < m_path.size()) throw LinuxException(LINUX_EPERM);
-
-		// Retrieve the path to the directory object based on the handle
-		std::vector<tchar_t> path(pathlen);
-		pathlen = GetFinalPathNameByHandle(handle, path.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-		if(pathlen == 0) throw LinuxException(LINUX_EINVAL, Win32Exception());
-
-		// Verify that the canonicalized path starts with the mount point, don't ignore case
-		if(_tcsncmp(m_path.data(), path.data(), m_path.size() - 1) != 0) throw LinuxException(LINUX_EPERM);
-	}
+	return false;
 }
 
 //-----------------------------------------------------------------------------

@@ -95,18 +95,37 @@ void RootFileSystem::Unmount(void)
 // Arguments:
 //
 //	path		- Relative file system object path string
-//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path, bool follow)
+FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
 {
-	UNREFERENCED_PARAMETER(follow);
-
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// The RootFileSystem node doesn't support any child objects; if the
 	// name provided is an empty string, return ourselves otherwise fail
 	if(*path == 0) return shared_from_this();
 	throw LinuxException(LINUX_ENOENT);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::TryResolvePath (private, static)
+//
+// Attempts to resolve a FileSystem::Alias from a relative path and return
+// a boolean flag rather than throwing an exception if the operation fails
+//
+// Arguments:
+//
+//	path		- Relative file system object path string
+//	alias		- On success, initialized to a FileSystem::AliasPtr for the node
+
+bool RootFileSystem::TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias)
+{
+	// The RootFileSystem node doesn't support any child objects; if the name provided
+	// is not an empty string, the path does not exist
+	if((path == nullptr) || (*path != 0)) return false;
+
+	// Provided path is an empty string, return this instance's shared_this()
+	alias = shared_from_this();
+	return true;
 }
 
 //-----------------------------------------------------------------------------

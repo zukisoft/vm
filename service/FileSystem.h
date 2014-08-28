@@ -67,6 +67,7 @@ struct __declspec(novtable) FileSystem
 	// Strogly typed enumeration for the S_IFxxx inode type constants
 	enum NodeType
 	{
+		Empty				= 0,
 		BlockDevice			= LINUX_S_IFBLK,
 		CharacterDevice		= LINUX_S_IFCHR,
 		Directory			= LINUX_S_IFDIR,
@@ -74,7 +75,6 @@ struct __declspec(novtable) FileSystem
 		Pipe				= LINUX_S_IFIFO,
 		Socket				= LINUX_S_IFSOCK,
 		SymbolicLink		= LINUX_S_IFLNK,
-		Unknown				= 0,
 	};
 
 	// NODE_INDEX_ROOT
@@ -131,6 +131,11 @@ struct __declspec(novtable) FileSystem
 		// Creates a new directory node as a child of this node
 		virtual void CreateDirectory(const tchar_t* name) = 0;
 
+		// CreateFile
+		//
+		// Creates a new regular file node as a child of this node
+		virtual AliasPtr CreateFile(const tchar_t* name) = 0;
+
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
@@ -143,9 +148,14 @@ struct __declspec(novtable) FileSystem
 
 		// ResolvePath
 		//
-		// Resolves a relative path from this node to an Alias instance.  The follow argument
-		// indicates how to handle the leaf of the path if it's a symbolic link node
-		virtual AliasPtr ResolvePath(const tchar_t* path, bool follow) = 0;
+		// Resolves a relative path from this node to an Alias instance
+		virtual AliasPtr ResolvePath(const tchar_t* path) = 0;
+
+		// TryResolvePath
+		//
+		// Attempts to resolve a relative path from this node to an Alias instance,
+		// will not throw any exceptions and return a true/false flag instead
+		virtual bool TryResolvePath(const tchar_t* path, AliasPtr& alias) = 0;
 
 		// Index
 		//

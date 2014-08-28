@@ -164,6 +164,7 @@ VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags)
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// placeholder code
+	// this may return a detached alias ... oops
 	FileSystem::AliasPtr alias = ResolvePath(path);
 	return alias->Node->OpenHandle(alias, flags);
 }
@@ -217,8 +218,10 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base,
 
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative, bool follow)
 {
+	// todo: Remove follow, don't think you would ever do that since we resolve the parent 
+	// directory for an object and then call Open(), which would have the follow flag there
 	_ASSERTE(base);
-	return base->ResolvePath(relative, follow);
+	return base->ResolvePath(relative);
 }
 
 //-----------------------------------------------------------------------------

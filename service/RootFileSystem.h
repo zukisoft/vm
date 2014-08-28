@@ -106,6 +106,14 @@ private:
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
 	}
 
+	// CreateFile
+	//
+	// Creates a new regular file node as a child of this node
+	virtual FileSystem::AliasPtr CreateFile(const tchar_t*)
+	{
+		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	}
+
 	// CreateSymbolicLink
 	//
 	// Creates a new symbolic link as a child of this node
@@ -125,7 +133,13 @@ private:
 	// ResolvePath
 	//
 	// Resolves a path for an alias that is a child of this alias
-	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path, bool follow);
+	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
+
+	// TryResolvePath
+	//
+	// Attempts to resolve a path for an alias that is a child of this alias, but
+	// will return a boolean flag rather than throwing an exception on failure
+	virtual bool TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias);
 
 	// getIndex
 	//

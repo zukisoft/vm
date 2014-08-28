@@ -59,7 +59,7 @@
 // O_DIRECT: The mode O_DIRECT is supported and requires the caller to provide
 // a properly aligned buffer, count and offset for reads and writes to file objects.
 // The alignment is checked when the file handle is opened with O_DIRECT specified
-// rather than once in the superblock metadata, as symbolic/hard links on the host
+// rather than once in the mountpoint metadata, as symbolic/hard links on the host
 // could potentially redirect the path to another volume outside the mount point.
 //
 // Metadata cannot be synchronized separately from the file data, a call to 
@@ -86,18 +86,20 @@ private:
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
 
-	// SuperBlock
+	// MountPoint
 	//
 	// Internal state and metadata about the mounted file system, all file
-	// system objects will hold a reference to this object
-	class SuperBlock
+	// system objects will hold a reference to this object.  An operating
+	// system handle to the mount point is also held to ensure that it 
+	// can't be deleted as long as the file system has open objects
+	class MountPoint
 	{
 	public:
 
 		// Constructor / Destructor
 		//
-		SuperBlock(const std::vector<tchar_t>& path, uint32_t flags, const void* data) : m_path(path), m_options(flags, data) {}
-		~SuperBlock()=default;
+		MountPoint(HANDLE handle, uint32_t flags, const void* data);
+		~MountPoint();
 
 		//---------------------------------------------------------------------
 		// Member Functions
@@ -124,15 +126,16 @@ private:
 
 	private:
 
-		SuperBlock(const SuperBlock&)=delete;
-		SuperBlock& operator=(const SuperBlock&)=delete;
+		MountPoint(const MountPoint&)=delete;
+		MountPoint& operator=(const MountPoint&)=delete;
 
 		//---------------------------------------------------------------------
 		// Member Variables
 
-		bool						m_verifypath = true;	// Flag to verify the path
+		HANDLE						m_handle;				// Mount point handle
 		MountOptions				m_options;				// Mounting options
 		std::vector<tchar_t>		m_path;					// Path to the mount point
+		bool						m_verifypath = true;	// Flag to verify the path
 	};
 
 	// Node
@@ -142,10 +145,10 @@ private:
 	{
 	public:
 
-		// Constructor / Destructor
+		// Constructors / Destructor
 		//
-		Node(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path, FileSystem::NodeType type, HANDLE handle);
-		virtual ~Node();
+		Node(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, FileSystem::NodeType type);
+		virtual ~Node()=default;
 
 	private:
 
@@ -183,10 +186,15 @@ private:
 		// Creates a new directory node as a child of this node
 		virtual void CreateDirectory(const tchar_t* name);
 
+		// CreateFile
+		//
+		// Creates a new regular file node as a child of this node
+		virtual FileSystem::AliasPtr CreateFile(const tchar_t* name);
+
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
+		virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	
 		// OpenHandle
 		//
@@ -196,7 +204,13 @@ private:
 		// ResolvePath
 		//
 		// Resolves a path for an alias that is a child of this alias
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path, bool follow);
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
+
+		// TryResolvePath
+		//
+		// Attempts to resolve a path for an alias that is a child of this alias, but
+		// will return a boolean flag rather than throwing an exception on failure
+		virtual bool TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias);
 
 		// getIndex
 		//
@@ -224,10 +238,9 @@ private:
 		//---------------------------------------------------------------------
 		// Member Variables
 
-		HANDLE							m_handle;		// Operating system handle
+		std::shared_ptr<MountPoint>		m_mountpoint;	// Reference to the mountpoint
 		const tchar_t*					m_name;			// Name portion of the path
 		std::vector<tchar_t>			m_path;			// Full path to the host node
-		std::shared_ptr<SuperBlock>		m_superblock;	// Reference to the superblock
 		const FileSystem::NodeType		m_type;			// Represented node type
 	};
 
@@ -240,7 +253,7 @@ private:
 
 		// Constructor / Destructor
 		//
-		Handle(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& node, HANDLE handle, int flags);
+		Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, HANDLE handle, int flags);
 		virtual ~Handle();
 
 	private:
@@ -285,13 +298,13 @@ private:
 		uint32_t					m_alignment;		// File alignment info
 		int							m_flags;			// File control flags
 		HANDLE						m_handle;			// Operating system handle
+		std::shared_ptr<MountPoint>	m_mountpoint;		// Reference to the mountpoint
 		std::shared_ptr<Node>		m_node;				// Reference to the node instance
-		std::shared_ptr<SuperBlock>	m_superblock;		// Reference to the superblock
 	};
 
 	// Instance Constructor
 	//
-	HostFileSystem(const std::shared_ptr<SuperBlock>& superblock, const std::shared_ptr<Node>& root);
+	HostFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& root);
 	friend class std::_Ref_count_obj<HostFileSystem>;
 
 	//-------------------------------------------------------------------------
@@ -305,11 +318,17 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
+	// NodeFromHandle
+	//
+	// Creates a HostFileSystem::Node instance from an operating system handle
+	static std::shared_ptr<Node> NodeFromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+	static std::shared_ptr<Node> NodeFromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, std::shared_ptr<Handle>* out);
+
 	// NodeFromPath
 	//
 	// Creates a HostFileSystem::Node instance from a path string
-	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, const tchar_t* path, bool follow);
-	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<SuperBlock>& superblock, std::vector<tchar_t>&& path, bool follow);
+	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path);
+	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path);
 
 	// NodeTypeFromPath
 	//
@@ -319,7 +338,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<SuperBlock>	m_superblock;	// Contained superblock
+	std::shared_ptr<MountPoint>	m_mountpoint;	// Contained mountpoint
 	std::shared_ptr<Node>		m_root;			// Mounted root object
 };
 
