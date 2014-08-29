@@ -135,12 +135,6 @@ private:
 	// Resolves a path for an alias that is a child of this alias
 	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
 
-	// TryResolvePath
-	//
-	// Attempts to resolve a path for an alias that is a child of this alias, but
-	// will return a boolean flag rather than throwing an exception on failure
-	virtual bool TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias);
-
 	// getIndex
 	//
 	// Gets the node index

@@ -70,6 +70,11 @@ public:
 	// mkdir
 	void CreateDirectory(const tchar_t* path);
 
+	// CreateFile
+	//
+	//
+	Handle CreateFile(const tchar_t* path, int flags, uapi::mode_t mode);
+
 	// symlink
 	void CreateSymbolicLink(const tchar_t* path, const tchar_t* target);
 

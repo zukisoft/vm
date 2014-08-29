@@ -150,12 +150,6 @@ struct __declspec(novtable) FileSystem
 		// Resolves a relative path from this node to an Alias instance
 		virtual AliasPtr ResolvePath(const tchar_t* path) = 0;
 
-		// TryResolvePath
-		//
-		// Attempts to resolve a relative path from this node to an Alias instance,
-		// will not throw any exceptions and return a true/false flag instead
-		virtual bool TryResolvePath(const tchar_t* path, AliasPtr& alias) = 0;
-
 		// Index
 		//
 		// Gets the node index

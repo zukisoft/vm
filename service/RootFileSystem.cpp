@@ -107,27 +107,5 @@ FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::TryResolvePath (private, static)
-//
-// Attempts to resolve a FileSystem::Alias from a relative path and return
-// a boolean flag rather than throwing an exception if the operation fails
-//
-// Arguments:
-//
-//	path		- Relative file system object path string
-//	alias		- On success, initialized to a FileSystem::AliasPtr for the node
-
-bool RootFileSystem::TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias)
-{
-	// The RootFileSystem node doesn't support any child objects; if the name provided
-	// is not an empty string, the path does not exist
-	if((path == nullptr) || (*path != 0)) return false;
-
-	// Provided path is an empty string, return this instance's shared_this()
-	alias = shared_from_this();
-	return true;
-}
-
-//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

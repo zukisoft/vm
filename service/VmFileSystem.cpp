@@ -85,6 +85,22 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	branch->Node->CreateDirectory(leafstr.c_str());
 }
 
+VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, uapi::mode_t mode)
+{
+	_ASSERTE(path);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	tpath_t pathstr(path);
+	std::tstring leafstr = pathstr.filename();
+	pathstr = pathstr.relative_path().parent_path();
+
+	FileSystem::AliasPtr branch = ResolvePath(pathstr.string().c_str());
+	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	(mode);
+	return branch->Node->CreateFile(leafstr.c_str(), flags);
+}
+
 //-----------------------------------------------------------------------------
 // VmFileSystem::CreateSymbolicLink
 //

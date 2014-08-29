@@ -52,6 +52,7 @@ LinuxException HostFileSystem::MapException(DWORD code)
 
 		case ERROR_FILE_NOT_FOUND : linuxcode = LINUX_ENOENT; break;
 		case ERROR_PATH_NOT_FOUND : linuxcode = LINUX_ENOENT; break;
+		case ERROR_FILE_EXISTS : linuxcode = LINUX_EEXIST; break;
 		case ERROR_INVALID_PARAMETER : linuxcode = LINUX_EINVAL; break;
 		case ERROR_ALREADY_EXISTS : linuxcode = LINUX_EEXIST; break;
 	}
@@ -610,16 +611,6 @@ FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
 	// No need for recursion/searching for host file systems, just attempt to
 	// create a new node instance from the combined base and relative path
 	return Node::Construct(m_mountpoint, AppendToPath(path));
-}
-
-bool HostFileSystem::Node::TryResolvePath(const tchar_t* path, FileSystem::AliasPtr& alias)
-{
-	// Cannot resolve a null path
-	if(path == nullptr) return false;
-
-	// TODO
-
-	return false;
 }
 
 //-----------------------------------------------------------------------------
