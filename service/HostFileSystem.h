@@ -145,15 +145,31 @@ private:
 	{
 	public:
 
-		// Constructors / Destructor
+		// Destructor
 		//
-		Node(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, FileSystem::NodeType type);
-		virtual ~Node()=default;
+		virtual ~Node();
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Construct (static)
+		//
+		// Constructs a new Node instance
+		static std::shared_ptr<Node> Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path);
+		static std::shared_ptr<Node> Construct(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path);
+		static std::shared_ptr<Node> Construct(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+		static std::shared_ptr<Node> Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path, HANDLE handle);
+		static std::shared_ptr<Node> Construct(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, HANDLE handle);
 
 	private:
 
 		Node(const Node&)=delete;
 		Node& operator=(const Node&)=delete;
+
+		// Instance Constructor
+		//
+		Node(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, HANDLE handle);
+		friend class std::_Ref_count_obj<Node>;
 
 		//---------------------------------------------------------------------
 		// FileSystem::Alias Implementation
@@ -189,7 +205,7 @@ private:
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual FileSystem::AliasPtr CreateFile(const tchar_t* name);
+		virtual FileSystem::HandlePtr CreateFile(const tchar_t* name, int flags);
 
 		// CreateSymbolicLink
 		//
@@ -198,8 +214,8 @@ private:
 	
 		// OpenHandle
 		//
-		// Creates a FileSystem::Handle instance for this node on the specified alias
-		virtual FileSystem::HandlePtr OpenHandle(const FileSystem::AliasPtr& alias, int flags);
+		// Creates a FileSystem::Handle instance for this node
+		virtual FileSystem::HandlePtr OpenHandle(int flags);
 
 		// ResolvePath
 		//
@@ -215,7 +231,7 @@ private:
 		// getIndex
 		//
 		// Gets the node index
-		virtual uapi::ino_t getIndex(void) { return 12345; /* TODO */ }
+		virtual uint64_t getIndex(void) { return (static_cast<uint64_t>(m_info.nFileIndexHigh) << 32) || m_info.nFileIndexLow; }
 
 		// getType
 		//
@@ -238,10 +254,12 @@ private:
 		//---------------------------------------------------------------------
 		// Member Variables
 
+		HANDLE							m_handle;		// Operating system handle
+		BY_HANDLE_FILE_INFORMATION		m_info;			// Basic node information
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Reference to the mountpoint
 		const tchar_t*					m_name;			// Name portion of the path
 		std::vector<tchar_t>			m_path;			// Full path to the host node
-		const FileSystem::NodeType		m_type;			// Represented node type
+		FileSystem::NodeType			m_type;			// Type of the node instance
 	};
 
 	// Handle
@@ -251,15 +269,30 @@ private:
 	{
 	public:
 
-		// Constructor / Destructor
+		// Destructor
 		//
-		Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, HANDLE handle, int flags);
 		virtual ~Handle();
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Construct (static)
+		//
+		// Constructs a new Handle instance
+		static std::shared_ptr<Handle> Construct(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, HANDLE handle, int flags)
+		{
+			return std::make_shared<Handle>(mountpoint, node, handle, flags);
+		}
 
 	private:
 
 		Handle(const Handle&)=delete;
 		Handle& operator=(const Handle&)=delete;
+
+		// Instance Constructor
+		//
+		Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, HANDLE handle, int flags);
+		friend class std::_Ref_count_obj<Handle>;
 
 		//---------------------------------------------------------------------
 		// FileSystem::Handle Implementation
@@ -318,22 +351,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// NodeFromHandle
+	// MapException (static)
 	//
-	// Creates a HostFileSystem::Node instance from an operating system handle
-	static std::shared_ptr<Node> NodeFromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
-	static std::shared_ptr<Node> NodeFromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, std::shared_ptr<Handle>* out);
-
-	// NodeFromPath
-	//
-	// Creates a HostFileSystem::Node instance from a path string
-	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path);
-	static std::shared_ptr<Node> NodeFromPath(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path);
-
-	// NodeTypeFromPath
-	//
-	// Gets the FileSystem::NodeType for an object from its path
-	static FileSystem::NodeType NodeTypeFromPath(const tchar_t* path, DWORD* attributes = nullptr);
+	// Returns a mapped LinuxException based on a Win32 error code
+	static LinuxException MapException(void) { return MapException(GetLastError()); }
+	static LinuxException MapException(DWORD code);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

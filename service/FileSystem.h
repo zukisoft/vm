@@ -67,7 +67,6 @@ struct __declspec(novtable) FileSystem
 	// Strogly typed enumeration for the S_IFxxx inode type constants
 	enum NodeType
 	{
-		Empty				= 0,
 		BlockDevice			= LINUX_S_IFBLK,
 		CharacterDevice		= LINUX_S_IFCHR,
 		Directory			= LINUX_S_IFDIR,
@@ -134,7 +133,7 @@ struct __declspec(novtable) FileSystem
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual AliasPtr CreateFile(const tchar_t* name) = 0;
+		virtual HandlePtr CreateFile(const tchar_t* name, int flags) = 0;
 
 		// CreateSymbolicLink
 		//
@@ -143,8 +142,8 @@ struct __declspec(novtable) FileSystem
 
 		// OpenHandle
 		//
-		// Creates a FileSystem::Handle instance for this node on the specified alias
-		virtual HandlePtr OpenHandle(const AliasPtr& alias, int flags) = 0;
+		// Creates a FileSystem::Handle instance for this node
+		virtual HandlePtr OpenHandle(int flags) = 0;
 
 		// ResolvePath
 		//
@@ -160,8 +159,8 @@ struct __declspec(novtable) FileSystem
 		// Index
 		//
 		// Gets the node index
-		__declspec(property(get=getIndex)) uapi::ino_t Index;
-		virtual uapi::ino_t getIndex(void) = 0;
+		__declspec(property(get=getIndex)) uint64_t Index;
+		virtual uint64_t getIndex(void) = 0;
 
 		// Type
 		//

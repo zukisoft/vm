@@ -109,7 +109,7 @@ private:
 	// CreateFile
 	//
 	// Creates a new regular file node as a child of this node
-	virtual FileSystem::AliasPtr CreateFile(const tchar_t*)
+	virtual FileSystem::HandlePtr CreateFile(const tchar_t*, int)
 	{
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
 	}
@@ -124,8 +124,8 @@ private:
 	
 	// OpenHandle
 	//
-	// Creates a FileSystem::Handle instance for this node on the specified alias
-	virtual FileSystem::HandlePtr OpenHandle(const FileSystem::AliasPtr&, int)
+	// Creates a FileSystem::Handle instance for this node
+	virtual FileSystem::HandlePtr OpenHandle(int)
 	{ 
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
 	}
@@ -144,7 +144,7 @@ private:
 	// getIndex
 	//
 	// Gets the node index
-	virtual uapi::ino_t getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
+	virtual uint64_t getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
 
 	// getType
 	//

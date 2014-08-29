@@ -63,7 +63,7 @@ std::unique_ptr<VmFileSystem> VmFileSystem::Create(const FileSystemPtr& rootfs)
 // Arguments:
 //
 //	path		- Path to the directory to be created
-//	(todo: mode flags)
+//	(todo: mode and flags)
 
 void VmFileSystem::CreateDirectory(const tchar_t* path)
 {
@@ -166,7 +166,7 @@ VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags)
 	// placeholder code
 	// this may return a detached alias ... oops
 	FileSystem::AliasPtr alias = ResolvePath(path);
-	return alias->Node->OpenHandle(alias, flags);
+	return alias->Node->OpenHandle(flags);
 }
 
 //-----------------------------------------------------------------------------

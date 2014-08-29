@@ -66,7 +66,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	try {
 		void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	//std::vector<uint8_t> buffer(4096);
-	VmFileSystem::Handle handle = vfs->Open(L"mike11\\bionicapp123\\", LINUX_O_RDWR | LINUX_O_DIRECT | LINUX_O_SYNC);
+	VmFileSystem::Handle handle = vfs->Open(L"bionicapp", LINUX_O_RDWR | LINUX_O_DIRECT | LINUX_O_SYNC);
 	auto result = handle->Read(p, 4096); //buffer.size());
 	
 
