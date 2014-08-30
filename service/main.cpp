@@ -26,42 +26,12 @@
 #include "Console.h"
 #include "StructuredException.h"
 #include "VmService.h"
-#include "PathSplitter.h"
-#include <filesystem>
 
 #include "HostFileSystem.h"
 #include "RootFileSystem.h"
 #include "VmFileSystem.h"
 
 #pragma warning(push, 4)
-
-void TestOne(const tchar_t* path)
-{
-	std::tr2::sys::wpath pathobj(path);
-	const wchar_t* leaf = pathobj.filename().c_str();
-	pathobj = pathobj.parent_path();
-	const wchar_t* branch = pathobj.relative_path().string().c_str();
-}
-
-void TestTwo(const tchar_t* path)
-{
-	PathSplitter p(path);
-	const wchar_t* leaf = p.Leaf;
-	const wchar_t* branch = p.Branch;
-}
-
-uint32_t Time(std::function<void(const tchar_t*)> func)
-{
-	LARGE_INTEGER frequency, start, finish, elapsed;
-	QueryPerformanceFrequency(&frequency);
-	QueryPerformanceCounter(&start);
-	for(int index = 0; index < 10000; index++) func(L"/root/branch/branch/leaf");
-	QueryPerformanceCounter(&finish);
-	elapsed.QuadPart = finish.QuadPart - start.QuadPart;
-	elapsed.QuadPart *= 1000000;
-	elapsed.QuadPart /= frequency.QuadPart;
-	return static_cast<uint32_t>(elapsed.QuadPart / 1000);
-}
 
 //---------------------------------------------------------------------------
 // _tWinMain
@@ -85,9 +55,6 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 #endif	// _DEBUG
 
-	uint32_t one = Time(TestOne);			// <--- 4057ms, 0.4057ms/iteration
-	uint32_t two = Time(TestTwo);			// <---   58ms, 0.0058ms/iteration -- not too shabby
-
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
@@ -99,7 +66,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	try {
 		void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	//std::vector<uint8_t> buffer(4096);
-	VmFileSystem::Handle handle = vfs->Open(L"/test.bin", LINUX_O_RDWR | LINUX_O_TRUNC);
+	VmFileSystem::Handle handle = vfs->CreateFile(L"/temp/linkpoint/test2.bin", LINUX_O_RDWR, 0);
 	auto result = handle->Write(p, 4096); //buffer.size());
 	handle->Sync();
 	

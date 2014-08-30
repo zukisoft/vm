@@ -43,6 +43,11 @@ public:
 	PathSplitter(const tchar_t* path);
 	~PathSplitter()=default;
 
+	// operator bool
+	//
+	// Indicates if either the leaf or branch is set to something
+	operator bool() const { return (*m_leaf || *m_branch); }
+
 	//-------------------------------------------------------------------------
 	// Properties
 

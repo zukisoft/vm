@@ -67,38 +67,25 @@ std::unique_ptr<VmFileSystem> VmFileSystem::Create(const FileSystemPtr& rootfs)
 
 void VmFileSystem::CreateDirectory(const tchar_t* path)
 {
-	_ASSERTE(path);
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+	PathSplitter splitter(path);
+	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
-	// <filesystem> is way too inefficient I think - it will do for testing
-	// yes, it makes a lot of unnecessary copies
-
-	tpath_t pathstr(path);
-
-	// Pull out the desired leaf name string and remove it from the branch path
-	std::tstring leafstr = pathstr.filename();
-	pathstr = pathstr.parent_path();
-
-	FileSystem::AliasPtr branch = ResolvePath(pathstr.relative_path().string().c_str());
+	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	branch->Node->CreateDirectory(leafstr.c_str());
+	branch->Node->CreateDirectory(splitter.Leaf);
 }
 
 VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, uapi::mode_t mode)
 {
-	_ASSERTE(path);
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+	PathSplitter splitter(path);
+	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
-	tpath_t pathstr(path);
-	std::tstring leafstr = pathstr.filename();
-	pathstr = pathstr.relative_path().parent_path();
-
-	FileSystem::AliasPtr branch = ResolvePath(pathstr.string().c_str());
+	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	(mode);
-	return branch->Node->CreateFile(leafstr.c_str(), flags);
+	return branch->Node->CreateFile(splitter.Leaf, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -113,21 +100,13 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 
 void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target)
 {
-	_ASSERTE(path);
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+	PathSplitter splitter(path);
+	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
-	tpath_t pathstr(path);
-
-	// Pull out the desired leaf name string and remove it from the branch path
-	std::tstring leafstr = pathstr.filename();
-	pathstr = pathstr.relative_path().parent_path();
-
-	// <filesystem> is way too inefficient I think - it will do for testing
-
-	FileSystem::AliasPtr branch = ResolvePath(pathstr.string().c_str());
+	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	branch->Node->CreateSymbolicLink(leafstr.c_str(), target);
+	branch->Node->CreateSymbolicLink(splitter.Leaf, target);
 }
 
 //-----------------------------------------------------------------------------

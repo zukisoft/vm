@@ -24,7 +24,6 @@
 #define __VMFILESYSTEM_H_
 #pragma once
 
-#include <filesystem>
 #include <memory>
 #include <type_traits>
 #include <concurrent_unordered_map.h>
@@ -33,6 +32,7 @@
 #include <linux/types.h>
 #include "LinuxException.h"
 #include "FileSystem.h"
+#include "PathSplitter.h"
 
 // remove me
 #include <PathCch.h>
@@ -118,11 +118,6 @@ private:
 	//
 	// Typedef for a concurrent map<> of mounted file systems and the alias they are mounted in
 	using mount_map_t = Concurrency::concurrent_unordered_map<FileSystem::AliasPtr, FileSystemPtr>;
-
-	// tpath_t
-	//
-	// Typedef for a generic text std::tr2::sys::[w]path
-	using tpath_t = std::conditional<sizeof(tchar_t) == sizeof(wchar_t), std::tr2::sys::wpath, std::tr2::sys::path>::type;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
