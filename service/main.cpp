@@ -66,9 +66,9 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	try {
 		void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	//std::vector<uint8_t> buffer(4096);
-	VmFileSystem::Handle handle = vfs->CreateFile(L"/temp/linkpoint/test2.bin", LINUX_O_RDWR, 0);
+	VmFileSystem::Handle handle = vfs->Open(L"/temp/linkpoint/test2.bin", LINUX_O_RDWR);
 	auto result = handle->Write(p, 4096); //buffer.size());
-	handle->Sync();
+	//handle->Sync();
 	
 
 	}

@@ -44,10 +44,6 @@
 //
 // todo: document
 //
-// todo: use something else for inode numbers than the pool; removed for now
-// could do something like hashing the path with the instance address, or get
-// fancy and have a static allocator that works across instances (yes?)
-//
 // todo: note that this does not support overmounting within the file system (yet?)
 //
 // need to decide on symbolic link behavior

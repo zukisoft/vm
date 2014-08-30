@@ -40,6 +40,15 @@ HostFileSystem::HostFileSystem(const std::shared_ptr<MountPoint>& mountpoint, co
 	_ASSERTE(root);
 }
 
+//-----------------------------------------------------------------------------
+// HostFileSystem::MapException (private, static)
+//
+// Converts a Win32 error code into a representative LinuxException instance
+//
+// Arguments:
+//
+//	code		- Win32 error code to be mapped
+
 LinuxException HostFileSystem::MapException(DWORD code)
 {
 	int linuxcode = LINUX_EIO;				// Use EIO as the default linux error code
@@ -80,8 +89,9 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 	// Determine the type of node that the path represents; must be a directory for mounting
 	DWORD attributes = GetFileAttributes(source);
 	if(attributes == INVALID_FILE_ATTRIBUTES) throw LinuxException(LINUX_ENOTDIR);
+	if((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) throw LinuxException(LINUX_ENOTDIR);
 
-	// Attempt to open a query-only handle against the file system object
+	// Attempt to open a query-only handle against the file system directory object
 	HANDLE handle = CreateFile(source, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw HostFileSystem::MapException();
 
@@ -97,34 +107,50 @@ FileSystemPtr HostFileSystem::Mount(const tchar_t* source, uint32_t flags, void*
 // HOSTFILESYSTEM::HANDLE
 //
 
+//-----------------------------------------------------------------------------
+// HostFileSystem::Handle Constructor
+//
+// Arguments:
+//
+//	mountpoint		- Reference to the HostFileSystem mountpoint object
+//	node			- Parent Node instance for this Handle instance
+//	handle			- Operating system handle to be wrapped
+//	flags			- Linux flags used when opening the operating system handle
+
 HostFileSystem::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, HANDLE handle, int flags)
-	: m_alignment(1), m_mountpoint(mountpoint), m_node(node), m_handle(handle), m_flags(flags)
+	: m_mountpoint(mountpoint), m_node(node), m_handle(handle), m_flags(flags)
 {
 	FILE_STORAGE_INFO			storageinfo;			// Information about underyling storage
 
-	// Handles opened with O_DIRECT require the data to be aligned to the physical sector size
-	if(flags & LINUX_O_DIRECT) {
-
-		if(!GetFileInformationByHandleEx(handle, FileStorageInfo, &storageinfo, sizeof(storageinfo))) throw HostFileSystem::MapException();
-
-		// Reset the required O_DIRECT alignment based on the file system physical sector size
-		m_alignment = storageinfo.FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
-	}
+	// Retrieve the file alignment information from the operating system
+	if(!GetFileInformationByHandleEx(handle, FileStorageInfo, &storageinfo, sizeof(storageinfo))) throw HostFileSystem::MapException();
+	m_alignment = storageinfo.FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
 }
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Handle Destructor
 
 HostFileSystem::Handle::~Handle()
 {
+	// Close the underlying operating system handle for this object
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 }
 
-	
+//-----------------------------------------------------------------------------
+// HostFileSystem::Handle::Read (private)
+//
+// Synchronously reads data from the underlying object
+//
+// Arguments:
+//
+//	buffer			- Buffer to read the object data into
+//	count			- Number of bytes to be read from the file
+
 uapi::size_t HostFileSystem::Handle::Read(void* buffer, uapi::size_t count)
 {
 	DWORD				read;			// Bytes read from the file
 
-	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
-	_ASSERTE(m_node);
-
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
 	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF);
 
 	// Host file system does not support reading from directories or symbolic links
@@ -141,23 +167,37 @@ uapi::size_t HostFileSystem::Handle::Read(void* buffer, uapi::size_t count)
 }
 
 //-----------------------------------------------------------------------------
-
+// HostFileSystem::Handle::Sync (private)
+//
+// Synchronizes any operating system buffers or caches associated with the handle
+//
+// Arguments:
+//
+//	NONE
 
 void HostFileSystem::Handle::Sync(void)
 {
-	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
+	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF);
 
 	// The closest equivalent of fsync/fdatasync on Windows is FlushFileBuffers()
 	if(!FlushFileBuffers(m_handle)) throw HostFileSystem::MapException();
 }
 
+//-----------------------------------------------------------------------------
+// HostFileSystem::Handle::Write (private)
+//
+// Writes data to the underlying file system object at the current position
+//
+// Arguments:
+//
+//	buffer			- Pointer to the buffer containing the source data
+//	count			- Size of the input buffer, in bytes
+
 uapi::size_t HostFileSystem::Handle::Write(const void* buffer, uapi::size_t count)
 {
 	DWORD				written;		// Bytes written to the file
 
-	_ASSERTE(m_handle != INVALID_HANDLE_VALUE);
-	_ASSERTE(m_node);
-
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
 	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF);
 
 	// Host file system does not support writing to directories or symbolic links
@@ -176,6 +216,17 @@ uapi::size_t HostFileSystem::Handle::Write(const void* buffer, uapi::size_t coun
 
 	return static_cast<uapi::size_t>(written);
 }
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::Handle::ValidateAlignment (private)
+//
+// Used with O_DIRECT, this validates that the memory buffer pointer as well as
+// the current operating system file pointer have the proper alignment
+//
+// Arguments:
+//
+//	buffer		- Pointer to the input/output buffer
+//	count		- Size of the input/output buffer, in bytes
 
 void HostFileSystem::Handle::ValidateAlignment(const void* buffer, uapi::size_t count)
 {
@@ -201,8 +252,6 @@ void HostFileSystem::Handle::ValidateAlignment(const void* buffer, uapi::size_t 
 
 HostFileSystem::MountPoint::MountPoint(HANDLE handle, uint32_t flags, const void* data) : m_handle(handle), m_options(flags, data)
 {
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-
 	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
 	// providing NULL for the output, this will include the count for the NULL terminator
 	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
@@ -274,9 +323,6 @@ void HostFileSystem::MountPoint::ValidateHandle(HANDLE handle)
 HostFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, HANDLE handle)
 	: m_mountpoint(mountpoint), m_path(std::move(path)), m_handle(handle)
 {
-	_ASSERTE(mountpoint);
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-
 	// Get a pointer to the path leaf name to satisfy the FileSystem::Alias interface
 	m_name = PathFindFileName(m_path.data());
 
@@ -294,6 +340,7 @@ HostFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, std::v
 
 HostFileSystem::Node::~Node()
 {
+	// Close the underlying operating system handle
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 }
 
@@ -337,8 +384,6 @@ std::vector<tchar_t> HostFileSystem::Node::AppendToPath(const tchar_t* more)
 
 std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path)
 {
-	_ASSERTE(path);
-
 	// The provided path string must not be null or zero-length
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
 
@@ -362,8 +407,6 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std:
 
 std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path)
 {
-	_ASSERTE(mountpoint);
-
 	// The node type must be known in order to open the basic handle
 	DWORD attributes = GetFileAttributes(path.data());
 	if(attributes == INVALID_FILE_ATTRIBUTES) throw HostFileSystem::MapException();
@@ -394,9 +437,6 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std:
 
 std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle)
 {
-	_ASSERTE(mountpoint);
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-
 	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
 	// providing NULL for the output, this will include the count for the NULL terminator
 	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
@@ -424,10 +464,6 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std:
 
 std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path, HANDLE handle)
 {
-	_ASSERTE(mountpoint);
-	_ASSERTE(path);
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-
 	// The provided path string must not be null or zero-length
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
 
@@ -452,9 +488,6 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std:
 
 std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std::shared_ptr<MountPoint>& mountpoint, std::vector<tchar_t>&& path, HANDLE handle)
 {
-	_ASSERTE(mountpoint);
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-
 	// This method is the final link in the Construct() chain; just create the Node instance
 	return std::make_shared<Node>(mountpoint, std::move(path), handle);
 }
@@ -551,7 +584,7 @@ inline DWORD HostFileSystem::Node::FlagsToAccess(int flags)
 //-----------------------------------------------------------------------------
 // HostFileSystem::Node::OpenHandle
 //
-// Creates a FileSystem::Handle instance for this node
+// Creates a FileSystem::Handle instance from this node
 //
 // Arguments:
 //
