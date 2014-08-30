@@ -328,6 +328,7 @@
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="MountOptions.h" />
     <ClInclude Include="NullCharacterDevice.h" />
+    <ClInclude Include="PathSplitter.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RootFileSystem.h" />
@@ -559,6 +560,7 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
+    <ClCompile Include="PathSplitter.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />

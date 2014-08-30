@@ -26,12 +26,42 @@
 #include "Console.h"
 #include "StructuredException.h"
 #include "VmService.h"
+#include "PathSplitter.h"
+#include <filesystem>
 
 #include "HostFileSystem.h"
 #include "RootFileSystem.h"
 #include "VmFileSystem.h"
 
-#pragma warning(push, 4)	
+#pragma warning(push, 4)
+
+void TestOne(const tchar_t* path)
+{
+	std::tr2::sys::wpath pathobj(path);
+	const wchar_t* leaf = pathobj.filename().c_str();
+	pathobj = pathobj.parent_path();
+	const wchar_t* branch = pathobj.relative_path().string().c_str();
+}
+
+void TestTwo(const tchar_t* path)
+{
+	PathSplitter p(path);
+	const wchar_t* leaf = p.Leaf;
+	const wchar_t* branch = p.Branch;
+}
+
+uint32_t Time(std::function<void(const tchar_t*)> func)
+{
+	LARGE_INTEGER frequency, start, finish, elapsed;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&start);
+	for(int index = 0; index < 10000; index++) func(L"/root/branch/branch/leaf");
+	QueryPerformanceCounter(&finish);
+	elapsed.QuadPart = finish.QuadPart - start.QuadPart;
+	elapsed.QuadPart *= 1000000;
+	elapsed.QuadPart /= frequency.QuadPart;
+	return static_cast<uint32_t>(elapsed.QuadPart / 1000);
+}
 
 //---------------------------------------------------------------------------
 // _tWinMain
@@ -54,6 +84,9 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
+
+	uint32_t one = Time(TestOne);			// <--- 4057ms, 0.4057ms/iteration
+	uint32_t two = Time(TestTwo);			// <---   58ms, 0.0058ms/iteration -- not too shabby
 
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
