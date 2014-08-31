@@ -58,24 +58,24 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
+	//std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
 	//FileSystemPtr hfs = HostFileSystem::Mount(L"d:\\linux Stuff\\android\\..\\", 0, nullptr);
-	vfs->Mount(L"D:\\Linux Stuff", L"/", L"hostfs", 0, nullptr);
+	//vfs->Mount(L"D:\\Linux Stuff", L"/", L"hostfs", 0, nullptr);
 	//vfs->Mount(L"D:\\temp", L"/", L"hostfs", 0, nullptr);
 
-	try {
-		void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	//try {
+	//	void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	//std::vector<uint8_t> buffer(4096);
-	VmFileSystem::Handle handle = vfs->Open(L"/temp/linkpoint/test2.bin", LINUX_O_RDWR);
-	auto result = handle->Write(p, 4096); //buffer.size());
+	//VmFileSystem::Handle handle = vfs->Open(L"/temp/linkpoint/test2.bin", LINUX_O_RDWR);
+	//auto result = handle->Write(p, 4096); //buffer.size());
 	//handle->Sync();
 	
 
-	}
-	catch(const std::exception& ex) {
-
-		int x = 123;
-	}
+	//}
+	//catch(const std::exception& ex) {
+	//
+	//	int x = 123;
+	//}
 
 	//vfs->TestMountRoot(hfs);
 	//vfs->CreateDirectory(L"HELLO");

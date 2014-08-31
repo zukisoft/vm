@@ -37,9 +37,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	ElfImage*		executable = nullptr;				// Executable image
 	ElfImage*		interpreter = nullptr;				// Interpreter image
 
-
+	UNREFERENCED_PARAMETER(hInstance);
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+	UNREFERENCED_PARAMETER(nCmdShow);
 
 	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
 	const tchar_t* exec_path = _T("D:\\android\\init");
@@ -79,6 +80,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 			// TEST: sys005_open()
 			int test = SystemCall(mod, 5).Invoke(executable->Interpreter, 0, 0);
+			(test);
 
 			interpreter = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
 			if(interpreter->Interpreter) {

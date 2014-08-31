@@ -213,6 +213,7 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base,
 
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative, bool follow)
 {
+	(follow);
 	// todo: Remove follow, don't think you would ever do that since we resolve the parent 
 	// directory for an object and then call Open(), which would have the follow flag there
 	_ASSERTE(base);

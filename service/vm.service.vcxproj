@@ -331,6 +331,7 @@
     <ClInclude Include="PathIterator.h" />
     <ClInclude Include="PathSplitter.h" />
     <ClInclude Include="PipeDevice.h" />
+    <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
@@ -563,6 +564,7 @@
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="PathIterator.cpp" />
     <ClCompile Include="PathSplitter.cpp" />
+    <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="rpc005_open.cpp" />
     <ClCompile Include="rpc006_close.cpp" />

@@ -82,7 +82,7 @@ private:
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
 
-	// MountPoint
+	// HostFileSystem::MountPoint
 	//
 	// Internal state and metadata about the mounted file system, all file
 	// system objects will hold a reference to this object.  An operating

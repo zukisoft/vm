@@ -251,6 +251,9 @@
     <ClInclude Include="PathIterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TempFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -432,6 +435,9 @@
     </ClCompile>
     <ClCompile Include="PathIterator.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TempFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
