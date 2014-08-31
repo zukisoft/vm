@@ -27,7 +27,6 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
-#include "HostFileSystem.h"
 #include "RootFileSystem.h"
 #include "VmFileSystem.h"
 
@@ -58,41 +57,27 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	//std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
-	//FileSystemPtr hfs = HostFileSystem::Mount(L"d:\\linux Stuff\\android\\..\\", 0, nullptr);
-	//vfs->Mount(L"D:\\Linux Stuff", L"/", L"hostfs", 0, nullptr);
-	//vfs->Mount(L"D:\\temp", L"/", L"hostfs", 0, nullptr);
-
-	//try {
-	//	void *p = VirtualAlloc(nullptr, 4096, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	//std::vector<uint8_t> buffer(4096);
-	//VmFileSystem::Handle handle = vfs->Open(L"/temp/linkpoint/test2.bin", LINUX_O_RDWR);
-	//auto result = handle->Write(p, 4096); //buffer.size());
-	//handle->Sync();
-	
-
-	//}
-	//catch(const std::exception& ex) {
 	//
-	//	int x = 123;
-	//}
+	// TEMPFS TESTING
+	//
 
-	//vfs->TestMountRoot(hfs);
-	//vfs->CreateDirectory(L"HELLO");
-	//vfs->TestUnmountRoot();
-	//vfs->CreateDirectory(L"HELLO2 - should fail");
+	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
+	vfs->Mount(nullptr, L"/", L"tmpfs", 0, nullptr);
 
-	//try {
-	//	//vfs->CreateDirectory(L"mike");
-	//	vfs->CreateDirectory(L"/symdirlink/mike");
-	//}
-	//catch(std::exception& ex)
-	//{
-	//	int x = 123;
-	//}
+	try {
+
+		vfs->Open(L"/mike", 0);
+	}
+	catch(const std::exception& ex) {
+	
+		int x = 123;
+	}
 
 	return 0;	
-
+	
+	//
+	// END TESTING
+	//
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);

@@ -122,7 +122,7 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 //	flags		- Mounting flags
 //	data		- File-system specific mounting options/data
 
-#include "HostFileSystem.h"	// todo: remove me
+#include "TempFileSystem.h"	// todo: remove me
 void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data)
 {
 	(source);
@@ -133,7 +133,7 @@ void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tch
 	if(alias->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	/// TESTING
-	FileSystemPtr hfs = HostFileSystem::Mount(source, flags, data);
+	FileSystemPtr hfs = TempFileSystem::Mount(source, flags, data);
 
 	// Overmount the target alias with the new file system's root node
 	alias->Mount(hfs->Root->Node);

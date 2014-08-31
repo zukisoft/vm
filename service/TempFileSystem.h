@@ -24,9 +24,13 @@
 #define __TEMPFILESYSTEM_H_
 #pragma once
 
+#include <atomic>
 #include <memory>
+#include <mutex>
+#include <stack>
 #include "LinuxException.h"
 #include "FileSystem.h"
+#include "MountOptions.h"
 
 #pragma warning(push, 4)
 
@@ -42,31 +46,51 @@ public:
 	// Destructor
 	virtual ~TempFileSystem()=default;
 
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Mount
+	//
+	// Mounts the file system
+	static FileSystemPtr Mount(const tchar_t*, uint32_t flags, void* data);
+
 private:
 
 	TempFileSystem(const TempFileSystem&)=delete;
 	TempFileSystem& operator=(const TempFileSystem&)=delete;
 
-	// Constructor
+	// Forward Declarations
 	//
-	TempFileSystem()=default;
+	class Alias;
+	class Handle;
+	class MountPoint;
+	class Node;
+
+	// Instance Constructor
+	//
+	TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Alias>& alias);
 	friend class std::_Ref_count_obj<TempFileSystem>;
 
 	// TempFileSystem::MountPoint
 	//
-	// Internal state and metadata about the mounted file system, all file
-	// system objects will hold a reference to this object
+	// State and metadata about the mounted file system, all file system
+	// objects will maintain a shared reference to this object
 	class MountPoint
 	{
 	public:
 
 		// Constructor / Destructor
 		//
-		MountPoint()=default;
+		MountPoint(uint32_t flags, const void* data);
 		~MountPoint()=default;
 
 		//---------------------------------------------------------------------
 		// Member Functions
+
+		// AllocateIndex
+		//
+		// Allocates a new Node index; just wraps around if necessary
+		uint64_t AllocateIndex(void) { return m_nextindex++; }
 
 		//---------------------------------------------------------------------
 		// Properties
@@ -78,6 +102,9 @@ private:
 
 		//---------------------------------------------------------------------
 		// Member Variables
+
+		MountOptions				m_options;			// Mounting options
+		std::atomic<uint64_t>		m_nextindex;		// Next inode index
 	};
 
 	// TempFileSystem::Alias
@@ -87,15 +114,27 @@ private:
 	{
 	public:
 
-		// Constructor / Destructor
+		// Constructor
 		//
-		Alias()=default;
-		~Alias()=default;
+		virtual ~Alias()=default;
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Construct (static)
+		//
+		// Constructs a new Alias instance
+		static std::shared_ptr<Alias> Construct(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node);
 
 	private:
 
 		Alias(const Alias&)=delete;
 		Alias& operator=(const Alias&)=delete;
+
+		// Instance Constructor
+		//
+		Alias(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node);
+		friend class std::_Ref_count_obj<Alias>;
 
 		//---------------------------------------------------------------------
 		// FileSystem::Alias Implementation
@@ -113,20 +152,19 @@ private:
 		// Name
 		//
 		// Gets the name associated with this alias
-		__declspec(property(get=getName)) const tchar_t* Name;
-		virtual const tchar_t* getName(void);
+		virtual const tchar_t* getName(void) { return m_name.c_str(); }
 
 		// Node
 		//
 		// Gets the node instance that this alias references
-		__declspec(property(get=getNode)) NodePtr Node;
-		virtual NodePtr getNode(void);
-
-		//---------------------------------------------------------------------
-		// Private Member Functions
+		virtual FileSystem::NodePtr getNode(void);
 
 		//---------------------------------------------------------------------
 		// Member Variables
+		
+		std::mutex							m_lock;		// Synchronization object
+		std::tstring						m_name;		// Alias name
+		std::stack<FileSystem::NodePtr>		m_mounted;	// Stack of mounted nodes
 	};
 
 	// TempFileSystem::Node
@@ -136,10 +174,21 @@ private:
 	{
 	public:
 
-		// Constructor / Destructor
+		// Destructor
 		//
-		Node()=default;
-		~Node()=default;
+		virtual ~Node()=default;
+
+	protected:
+
+		// Instance Constructor
+		//
+		Node(const std::shared_ptr<MountPoint>& mountpoint);
+
+		//---------------------------------------------------------------------
+		// Protected Member Variables
+
+		uint64_t						m_index;		// Node index number
+		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
 
 	private:
 
@@ -152,45 +201,154 @@ private:
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const tchar_t* name);
+		virtual void CreateDirectory(const tchar_t* name)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual HandlePtr CreateFile(const tchar_t* name, int flags);
+		virtual FileSystem::HandlePtr CreateFile(const tchar_t* name, int flags)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target);
+		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 
 		// OpenHandle
 		//
 		// Creates a FileSystem::Handle instance for this node
-		virtual HandlePtr OpenHandle(int flags);
+		virtual FileSystem::HandlePtr OpenHandle(int flags)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance
-		virtual AliasPtr ResolvePath(const tchar_t* path);
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 
 		// Index
 		//
 		// Gets the node index
-		__declspec(property(get=getIndex)) uint64_t Index;
-		virtual uint64_t getIndex(void);
+		virtual uint64_t getIndex(void) { return m_index; }
 
 		// Type
 		//
 		// Gets the node type
-		__declspec(property(get=getType)) NodeType Type;
-		virtual NodeType getType(void);
+		virtual NodeType getType(void)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	};
+
+	// DirectoryNode
+	//
+	// Specializes Node for a Directory file system object
+	class DirectoryNode : public Node
+	{
+	public:
+
+		virtual ~DirectoryNode()=default;
 
 		//---------------------------------------------------------------------
-		// Private Member Functions
+		// Member Functions
+
+		// Construct
+		//
+		// Constructs a new DirectoryNode instance
+		static std::shared_ptr<DirectoryNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
+
+	private:
+
+		DirectoryNode(const DirectoryNode&)=delete;
+		DirectoryNode& operator=(const DirectoryNode&)=delete;
+
+		// Instance Constructor
+		//
+		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint) {}
+		friend class std::_Ref_count_obj<DirectoryNode>;
 
 		//---------------------------------------------------------------------
-		// Member Variables
+		// Node Specialization
+
+		// ResolvePath
+		//
+		// Resolves a relative path from this node to an Alias instance
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	};
+
+	// FileNode
+	//
+	// Specializes Node for a File file system object
+	class FileNode : public Node
+	{
+	public:
+
+		virtual ~FileNode()=default;
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Construct
+		//
+		// Constructs a new FileNode instance
+		static std::shared_ptr<FileNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
+
+	private:
+
+		FileNode(const FileNode&)=delete;
+		FileNode& operator=(const FileNode&)=delete;
+
+		// Instance Constructor
+		//
+		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint) {}
+		friend class std::_Ref_count_obj<FileNode>;
+
+		//---------------------------------------------------------------------
+		// Node Specialization
+
+		// ResolvePath
+		//
+		// Resolves a relative path from this node to an Alias instance
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	};
+
+	// SymbolicLinkNode
+	//
+	// Specializes Node for a Symbolic Link file system object
+	class SymbolicLinkNode : public Node
+	{
+	public:
+
+		virtual ~SymbolicLinkNode()=default;
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Construct
+		//
+		// Constructs a new SymbolicLinkNode instance
+		static std::shared_ptr<SymbolicLinkNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
+
+	private:
+
+		SymbolicLinkNode(const SymbolicLinkNode&)=delete;
+		SymbolicLinkNode& operator=(const SymbolicLinkNode&)=delete;
+
+		// Instance Constructor
+		//
+		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint) {}
+		friend class std::_Ref_count_obj<SymbolicLinkNode>;
+
+		//---------------------------------------------------------------------
+		// Node Specialization
+
+		// ResolvePath
+		//
+		// Resolves a relative path from this node to an Alias instance
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
+			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	};
 
 	// Handle
@@ -200,8 +358,10 @@ private:
 	{
 	public:
 
+		// Constructor / Destructor
+		//
 		Handle()=default;
-		~Handle()=default;
+		virtual ~Handle()=default;
 
 	private:
 
@@ -244,13 +404,16 @@ private:
 	// getRoot
 	//
 	// Accesses the root alias for the file system
-	virtual AliasPtr getRoot(void);
+	virtual FileSystem::AliasPtr getRoot(void) { return m_root; }
 
 	//---------------------------------------------------------------------
 	// Private Member Functions
 
 	//---------------------------------------------------------------------
 	// Member Variables
+
+	std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
+	std::shared_ptr<Alias>			m_root;			// Root Alias instance
 };
 
 //-----------------------------------------------------------------------------

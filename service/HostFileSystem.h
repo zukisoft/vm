@@ -82,6 +82,17 @@ private:
 	HostFileSystem(const HostFileSystem&)=delete;
 	HostFileSystem& operator=(const HostFileSystem&)=delete;
 
+	// Forward Declarations
+	//
+	class Handle;
+	class MountPoint;
+	class Node;
+
+	// Instance Constructor
+	//
+	HostFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& root);
+	friend class std::_Ref_count_obj<HostFileSystem>;
+
 	// HostFileSystem::MountPoint
 	//
 	// Internal state and metadata about the mounted file system, all file
@@ -324,11 +335,6 @@ private:
 		std::shared_ptr<MountPoint>	m_mountpoint;		// Reference to the mountpoint
 		std::shared_ptr<Node>		m_node;				// Reference to the node instance
 	};
-
-	// Instance Constructor
-	//
-	HostFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& root);
-	friend class std::_Ref_count_obj<HostFileSystem>;
 
 	//-------------------------------------------------------------------------
 	// FileSystem Implementation
