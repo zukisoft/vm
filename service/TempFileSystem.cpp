@@ -32,7 +32,8 @@
 //
 //	mountpoint	- Reference to the mountpoint instance for this file system
 
-TempFileSystem::TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Alias>& alias) : m_mountpoint(mountpoint), m_root(alias)
+TempFileSystem::TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Alias>& alias) : 
+	m_mountpoint(mountpoint), m_root(alias)
 {
 	_ASSERTE(mountpoint);
 	_ASSERTE(alias);
@@ -90,7 +91,8 @@ TempFileSystem::Alias::Alias(const tchar_t* name, const std::shared_ptr<TempFile
 //	name		- Name to assign to this Alias instance
 //	node		- Initial Node instance to be assigned to this Alias
 
-std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node)
+std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tchar_t* name, 
+	const std::shared_ptr<TempFileSystem::Node>& node)
 {
 	// Construct a new shared Alias instance and return it to the caller
 	return std::make_shared<Alias>(name, node);
@@ -154,7 +156,8 @@ void TempFileSystem::Alias::Unmount(void)
 //	flags		- Standard mounting flags passed to Mount()
 //	data		- Addtional custom mounting information for this file system
 
-TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) : m_options(flags, data), m_nextindex(FileSystem::NODE_INDEX_FIRSTDYNAMIC)
+TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) : 
+	m_options(flags, data), m_nextindex(FileSystem::NODE_INDEX_FIRSTDYNAMIC)
 {
 }
 
@@ -168,8 +171,10 @@ TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) : m_opt
 // Arguments:
 //
 //	mountpoint	- Reference to the parent filesystem's MountPoint instance
+//	type		- Type of the Node being constructed
 
-TempFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint) : m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex())
+TempFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type) : 
+	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_type(type)
 {
 	_ASSERTE(mountpoint);
 }
@@ -193,12 +198,29 @@ std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Co
 	return std::make_shared<DirectoryNode>(mountpoint);
 }
 
+//-----------------------------------------------------------------------------
+// TempFileSystem::DirectoryNode::OpenHandle (private)
+//
+// Opens a Handle instance against this node
+//
+// Arguments:
+//
+//	flags		- Operational flags and attributes
+
+FileSystem::HandlePtr TempFileSystem::DirectoryNode::OpenHandle(int flags)
+{
+	// Directory node handles must be opened in read-only mode
+	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
 //
 // TEMPFILESYSTEM::FILENODE
 //
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::Construct (static)
+// TempFileSystem::FileNode::Construct (static)
 //
 // Constructs a new FileNode instance
 //
@@ -210,6 +232,26 @@ std::shared_ptr<TempFileSystem::FileNode> TempFileSystem::FileNode::Construct(co
 {
 	// Construct a new shared DirectoryNode instance and return it to the caller
 	return std::make_shared<FileNode>(mountpoint);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::FileNode::OpenHandle (private)
+//
+// Opens a Handle instance against this node
+//
+// Arguments:
+//
+//	flags		- Operational flags and attributes
+
+FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
+{
+	// O_DIRECTORY verifies that the target node is a directory, which this is not
+	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
+
+	// If the file system was mounted as read-only, write access cannot be granted
+	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
 }
 
 //
@@ -229,6 +271,28 @@ std::shared_ptr<TempFileSystem::SymbolicLinkNode> TempFileSystem::SymbolicLinkNo
 {
 	// Construct a new shared DirectoryNode instance and return it to the caller
 	return std::make_shared<SymbolicLinkNode>(mountpoint);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::SymbolicLinkNode::OpenHandle (private)
+//
+// Opens a Handle instance against this node
+//
+// Arguments:
+//
+//	flags		- Operational flags and attributes
+
+FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::OpenHandle(int flags)
+{
+	// O_DIRECTORY?
+
+	// Symbolic Links cannot be opened with O_NOFOLLOW unless O_PATH is also set
+	if((flags & LINUX_O_NOFOLLOW) && ((flags & LINUX_O_PATH) == 0)) throw LinuxException(LINUX_ELOOP);
+
+	// If the file system was mounted as read-only, write access cannot be granted
+	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
 }
 
 //-----------------------------------------------------------------------------

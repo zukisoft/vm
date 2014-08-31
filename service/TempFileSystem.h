@@ -28,6 +28,8 @@
 #include <memory>
 #include <mutex>
 #include <stack>
+#include <linux/types.h>
+#include <linux/fcntl.h>
 #include "LinuxException.h"
 #include "FileSystem.h"
 #include "MountOptions.h"
@@ -94,6 +96,12 @@ private:
 
 		//---------------------------------------------------------------------
 		// Properties
+
+		// Options
+		//
+		// Gets a reference to the contained MountOptions instance
+		__declspec(property(get=getOptions)) MountOptions& Options;
+		MountOptions& getOptions(void) { return m_options; }
 
 	private:
 
@@ -170,7 +178,7 @@ private:
 	// TempFileSystem::Node
 	//
 	// Specialization of FileSystem::Node for a temp file system instance 
-	class Node : public FileSystem::Node
+	class __declspec(novtable) Node : public FileSystem::Node
 	{
 	public:
 
@@ -182,13 +190,14 @@ private:
 
 		// Instance Constructor
 		//
-		Node(const std::shared_ptr<MountPoint>& mountpoint);
+		Node(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type);
 
 		//---------------------------------------------------------------------
 		// Protected Member Variables
 
-		uint64_t						m_index;		// Node index number
+		const uint64_t					m_index;		// Node index number
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
+		const FileSystem::NodeType		m_type;			// Node type flag
 
 	private:
 
@@ -201,32 +210,27 @@ private:
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const tchar_t* name)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual void CreateDirectory(const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual FileSystem::HandlePtr CreateFile(const tchar_t* name, int flags)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual FileSystem::HandlePtr CreateFile(const tchar_t*, int) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// OpenHandle
 		//
 		// Creates a FileSystem::Handle instance for this node
-		virtual FileSystem::HandlePtr OpenHandle(int flags)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual FileSystem::HandlePtr OpenHandle(int flags) = 0;
 
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual FileSystem::AliasPtr ResolvePath(const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// Index
 		//
@@ -236,8 +240,7 @@ private:
 		// Type
 		//
 		// Gets the node type
-		virtual NodeType getType(void)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual NodeType getType(void) { return m_type; }
 	};
 
 	// DirectoryNode
@@ -264,17 +267,16 @@ private:
 
 		// Instance Constructor
 		//
-		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint) {}
+		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::Directory) {}
 		friend class std::_Ref_count_obj<DirectoryNode>;
 
 		//---------------------------------------------------------------------
 		// Node Specialization
 
-		// ResolvePath
+		// OpenHandle
 		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		// Creates a FileSystem::Handle instance for this node
+		virtual FileSystem::HandlePtr OpenHandle(int flags);
 	};
 
 	// FileNode
@@ -301,17 +303,16 @@ private:
 
 		// Instance Constructor
 		//
-		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint) {}
+		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::File) {}
 		friend class std::_Ref_count_obj<FileNode>;
 
 		//---------------------------------------------------------------------
 		// Node Specialization
-
-		// ResolvePath
+		
+		// OpenHandle
 		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		// Creates a FileSystem::Handle instance for this node
+		virtual FileSystem::HandlePtr OpenHandle(int flags);
 	};
 
 	// SymbolicLinkNode
@@ -338,17 +339,16 @@ private:
 
 		// Instance Constructor
 		//
-		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint) {}
+		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::SymbolicLink) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
 
 		//---------------------------------------------------------------------
 		// Node Specialization
-
-		// ResolvePath
+		
+		// OpenHandle
 		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path)
-			{ throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		// Creates a FileSystem::Handle instance for this node
+		virtual FileSystem::HandlePtr OpenHandle(int flags);
 	};
 
 	// Handle
