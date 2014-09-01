@@ -70,8 +70,11 @@ FileSystemPtr TempFileSystem::Mount(const tchar_t*, uint32_t flags, void* data)
 // Arguments:
 //
 //	name		- Name to assign to this Alias instance
+//	parent		- Parent alias instance, or nullptr if this is a root node
+//	node		- Node to assign to this Alias instance
 
-TempFileSystem::Alias::Alias(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node) : m_name(name)
+TempFileSystem::Alias::Alias(const tchar_t* name, const FileSystem::AliasPtr& parent, const std::shared_ptr<TempFileSystem::Node>& node) 
+	: m_name(name), m_parent(parent)
 {
 	_ASSERTE(name);
 	_ASSERTE(node);
@@ -94,8 +97,27 @@ TempFileSystem::Alias::Alias(const tchar_t* name, const std::shared_ptr<TempFile
 std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tchar_t* name, 
 	const std::shared_ptr<TempFileSystem::Node>& node)
 {
+	// This version of Construct should only be called when constructing a root 
+	// alias for the file system, invoke the other version with a nullptr parent
+	return Construct(name, nullptr, node);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::Alias::Construct (static)
+//
+// Constructs a new Alias instance
+//
+// Arguments:
+//
+//	name		- Name to assign to this Alias instance
+//	parent		- Parent alias for this Alias instance, or nullptr if this is root
+//	node		- Initial Node instance to be assigned to this Alias
+
+std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tchar_t* name, 
+	const FileSystem::AliasPtr& parent, const std::shared_ptr<TempFileSystem::Node>& node)
+{
 	// Construct a new shared Alias instance and return it to the caller
-	return std::make_shared<Alias>(name, node);
+	return std::make_shared<Alias>(name, parent, node);
 }
 
 //-----------------------------------------------------------------------------
@@ -107,6 +129,18 @@ FileSystem::NodePtr TempFileSystem::Alias::getNode(void)
 { 
 	std::lock_guard<std::mutex> critsec(m_lock);
 	return m_mounted.empty() ? nullptr : m_mounted.top();
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::Alias::getParent (private)
+//
+// Accesses the parent alias for this alias instance
+
+FileSystem::AliasPtr TempFileSystem::Alias::getParent(void)
+{
+	// The only time parent should be null is when this alias is acting as the
+	// root node for a mounted file system, in that case return ourselves
+	return (m_parent) ? m_parent : shared_from_this();
 }
 
 //-----------------------------------------------------------------------------
@@ -199,6 +233,63 @@ std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Co
 }
 
 //-----------------------------------------------------------------------------
+// TempFileSystem::DirectoryNode::CreateDirectory (private)
+//
+// Creates a new directory node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Parent Alias instance from the resolved path
+//	name		- Name to assign to the new directory object
+
+void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name)
+{
+	// The file system cannot be mounted as read-only when constructing new objects
+	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
+
+	// Construct the new DirectoryNode instance before entering the synchronization lock
+	auto node = DirectoryNode::Construct(m_mountpoint);
+
+	// Automatically acquire and hold the synchronization lock until function ends
+	std::lock_guard<std::recursive_mutex> critsec(m_lock);
+
+	// The name cannot be in use by any of the current children of this node
+	if(m_children.find(name) != m_children.end()) throw LinuxException(LINUX_EEXIST);
+
+	// Construct and insert a new Alias instance with the specified name into the collection
+	m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::DirectoryNode::CreateSymbolicLink (private)
+//
+// Creates a new symbolic link node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Parent Alias instance from the resolved path
+//	name		- Name to assign to the new symbolic link object
+//	target		- Target string to assign to the new symbolic link object
+
+void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target)
+{
+	// The file system cannot be mounted as read-only when constructing new objects
+	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
+
+	// Construct the new SymbolicLinkNode instance before entering the synchronization lock
+	auto node = SymbolicLinkNode::Construct(m_mountpoint, target);
+
+	// Automatically acquire and hold the synchronization lock until function ends
+	std::lock_guard<std::recursive_mutex> critsec(m_lock);
+
+	// The name cannot be in use by any of the current children of this node
+	if(m_children.find(name) != m_children.end()) throw LinuxException(LINUX_EEXIST);
+
+	// Construct and insert a new Alias instance with the specified name into the collection
+	m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+}
+
+//-----------------------------------------------------------------------------
 // TempFileSystem::DirectoryNode::OpenHandle (private)
 //
 // Opens a Handle instance against this node
@@ -213,6 +304,46 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::OpenHandle(int flags)
 	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
 
 	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::DirectoryNode::ResolvePath (private)
+//
+// Resolves a path relative from this Node instance
+//
+// Arguments:
+//
+//	current		- Current Alias instance that resolved to this node instance
+//	path		- Relative path to be resolved
+
+FileSystem::AliasPtr TempFileSystem::DirectoryNode::ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path)
+{
+	// Path string should not be null
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+	
+	// If the provided path is an empty string, it's referring to this node so we're done
+	if(*path == 0) return current;
+
+	// 
+	PathIterator iterator(path);
+
+	// SPECIAL CASE: .
+	//
+	// Just move past any single . components in the path
+	while(_tcscmp(iterator.Current, _T(".")) == 0) ++iterator;
+
+	// SPECIAL CASE: ..
+	//
+	// Pass the remainder of the path into the parent for the provided alias
+	if(_tcscmp(iterator.Current, _T("..")) == 0) 
+		return current->Parent->Node->ResolvePath(current->Parent, iterator.Remaining);
+
+
+	auto found = m_children.find(iterator.Current);
+	if(found != m_children.end()) return found->second->Node->ResolvePath(found->second, iterator.Remaining);
+
+	// Path component was not found
+	throw LinuxException(LINUX_ENOENT);
 }
 
 //
@@ -266,11 +397,17 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 // Arguments:
 //
 //	mountpoint	- Reference to the parent filesystem's MountPoint instance
+//	target		- Target string to assign to the symbolic link node
 
-std::shared_ptr<TempFileSystem::SymbolicLinkNode> TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& mountpoint)
+std::shared_ptr<TempFileSystem::SymbolicLinkNode> 
+TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target)
 {
+	// Target string cannot be null or empty 
+	if(target == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*target == 0) throw LinuxException(LINUX_ENOENT);
+
 	// Construct a new shared DirectoryNode instance and return it to the caller
-	return std::make_shared<SymbolicLinkNode>(mountpoint);
+	return std::make_shared<SymbolicLinkNode>(mountpoint, target);
 }
 
 //-----------------------------------------------------------------------------
@@ -293,6 +430,26 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::OpenHandle(int flags)
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
 
 	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::SymbolicLinkNode::ResolvePath (private)
+//
+// Resolves a path relative from this Node instance
+//
+// Arguments:
+//
+//	current		- Current Alias instance that resolved to this node instance
+//	path		- Relative path to be resolved
+
+FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path)
+{
+	// TODO: watch for ELOOP here, need a link counter argument; this will infinite loop
+	// if the symbolic link ends up referring to itself
+
+	// Process the symbolic link by sending the target into the current alias' parent
+	auto x = current->Parent->Node->ResolvePath(current->Parent, m_target.c_str())->Node->ResolvePath(current, path);
+	return x;
 }
 
 //-----------------------------------------------------------------------------

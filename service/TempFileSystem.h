@@ -25,6 +25,7 @@
 #pragma once
 
 #include <atomic>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <stack>
@@ -33,6 +34,7 @@
 #include "LinuxException.h"
 #include "FileSystem.h"
 #include "MountOptions.h"
+#include "PathIterator.h"
 
 #pragma warning(push, 4)
 
@@ -118,7 +120,7 @@ private:
 	// TempFileSystem::Alias
 	//
 	// Specialization of FileSystem::Alias for a temp file system instance
-	class Alias : public FileSystem::Alias
+	class Alias : public FileSystem::Alias, public std::enable_shared_from_this<Alias>
 	{
 	public:
 
@@ -133,6 +135,7 @@ private:
 		//
 		// Constructs a new Alias instance
 		static std::shared_ptr<Alias> Construct(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node);
+		static std::shared_ptr<Alias> Construct(const tchar_t* name, const FileSystem::AliasPtr& parent, const std::shared_ptr<TempFileSystem::Node>& node);
 
 	private:
 
@@ -141,7 +144,7 @@ private:
 
 		// Instance Constructor
 		//
-		Alias(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node);
+		Alias(const tchar_t* name, const FileSystem::AliasPtr& parent, const std::shared_ptr<TempFileSystem::Node>& node);
 		friend class std::_Ref_count_obj<Alias>;
 
 		//---------------------------------------------------------------------
@@ -167,12 +170,18 @@ private:
 		// Gets the node instance that this alias references
 		virtual FileSystem::NodePtr getNode(void);
 
+		// Parent
+		//
+		// Gets the parent Alias for this alias instance
+		virtual FileSystem::AliasPtr getParent(void);
+
 		//---------------------------------------------------------------------
 		// Member Variables
 		
 		std::mutex							m_lock;		// Synchronization object
 		std::tstring						m_name;		// Alias name
 		std::stack<FileSystem::NodePtr>		m_mounted;	// Stack of mounted nodes
+		FileSystem::AliasPtr				m_parent;	// Parent alias instance
 	};
 
 	// TempFileSystem::Node
@@ -210,7 +219,7 @@ private:
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
+		virtual void CreateDirectory(const FileSystem::AliasPtr&, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// CreateFile
 		//
@@ -220,7 +229,7 @@ private:
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
+		virtual void CreateSymbolicLink(const FileSystem::AliasPtr&, const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// OpenHandle
 		//
@@ -230,7 +239,7 @@ private:
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
+		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr&, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// Index
 		//
@@ -273,10 +282,33 @@ private:
 		//---------------------------------------------------------------------
 		// Node Specialization
 
+		// CreateDirectory
+		//
+		// Creates a new directory node as a child of this node
+		virtual void CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
+
+		// CreateSymbolicLink
+		//
+		// Creates a new symbolic link as a child of this node
+		virtual void CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target);
+
 		// OpenHandle
 		//
 		// Creates a FileSystem::Handle instance for this node
 		virtual FileSystem::HandlePtr OpenHandle(int flags);
+		
+		// ResolvePath
+		//
+		// Resolves a relative path from this node to an Alias instance
+		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		// TODO: temporary, this needs to be thread-safe at minimum and would
+		// likely be better served with a higher performing construct
+		std::recursive_mutex m_lock;
+		std::map<std::tstring, FileSystem::AliasPtr> m_children;
 	};
 
 	// FileNode
@@ -313,6 +345,13 @@ private:
 		//
 		// Creates a FileSystem::Handle instance for this node
 		virtual FileSystem::HandlePtr OpenHandle(int flags);
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		// TODO: This is temporary just to get things working, it needs to
+		// be a lot more fancy than just a vector<>
+		std::vector<uint8_t> m_data;
 	};
 
 	// SymbolicLinkNode
@@ -330,7 +369,7 @@ private:
 		// Construct
 		//
 		// Constructs a new SymbolicLinkNode instance
-		static std::shared_ptr<SymbolicLinkNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
+		static std::shared_ptr<SymbolicLinkNode> Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target);
 
 	private:
 
@@ -339,7 +378,7 @@ private:
 
 		// Instance Constructor
 		//
-		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::SymbolicLink) {}
+		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target) : Node(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(target) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
 
 		//---------------------------------------------------------------------
@@ -349,6 +388,16 @@ private:
 		//
 		// Creates a FileSystem::Handle instance for this node
 		virtual FileSystem::HandlePtr OpenHandle(int flags);
+
+		// ResolvePath
+		//
+		// Resolves a relative path from this node to an Alias instance
+		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		std::tstring			m_target;			// Symbolic link target
 	};
 
 	// Handle

@@ -66,7 +66,14 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	try {
 
-		vfs->Open(L"/mike", 0);
+		vfs->CreateDirectory(L"test1");
+		vfs->CreateDirectory(L"test1/test2");
+		vfs->CreateDirectory(L"test1/test2/test3");
+		vfs->CreateSymbolicLink(L"test1/test2/test3/mysymlink", L"../../test2");
+		vfs->CreateDirectory(L"test1/test2/test3/mysymlink/test4");
+		//vfs->CreateDirectory(L"test1/test2");
+
+		//vfs->Open(L"/mike", 0);
 	}
 	catch(const std::exception& ex) {
 	

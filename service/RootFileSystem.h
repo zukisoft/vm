@@ -95,13 +95,18 @@ private:
 	// Accesses the node pointed to by this alias
 	virtual FileSystem::NodePtr getNode(void);
 
+	// getParent
+	//
+	// Gets the parent alias for this alias instance
+	virtual FileSystem::AliasPtr getParent(void) { return shared_from_this(); }
+
 	//-------------------------------------------------------------------------
 	// FileSystem::Node Implementation
 
 	// CreateDirectory
 	//
 	// Creates a directory node as a child of this node
-	virtual void CreateDirectory(const tchar_t*)
+	virtual void CreateDirectory(const FileSystem::AliasPtr&, const tchar_t*)
 	{ 
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
 	}
@@ -117,7 +122,7 @@ private:
 	// CreateSymbolicLink
 	//
 	// Creates a new symbolic link as a child of this node
-	virtual void CreateSymbolicLink(const tchar_t*, const tchar_t*)
+	virtual void CreateSymbolicLink(const FileSystem::AliasPtr&, const tchar_t*, const tchar_t*)
 	{ 
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
 	}
@@ -133,7 +138,7 @@ private:
 	// ResolvePath
 	//
 	// Resolves a path for an alias that is a child of this alias
-	virtual FileSystem::AliasPtr ResolvePath(const tchar_t* path);
+	virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
 
 	// getIndex
 	//

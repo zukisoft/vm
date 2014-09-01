@@ -94,9 +94,10 @@ void RootFileSystem::Unmount(void)
 //
 // Arguments:
 //
+//	current		- Current Alias instance that was used to resolve this node
 //	path		- Relative file system object path string
 
-FileSystem::AliasPtr RootFileSystem::ResolvePath(const tchar_t* path)
+FileSystem::AliasPtr RootFileSystem::ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 

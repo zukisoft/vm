@@ -73,7 +73,7 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	branch->Node->CreateDirectory(splitter.Leaf);
+	branch->Node->CreateDirectory(branch, splitter.Leaf);
 }
 
 VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, uapi::mode_t mode)
@@ -81,8 +81,10 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 	PathSplitter splitter(path);
 	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
+	// Resolve the branch (parent) path, which must point to a directory node
 	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
+	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	(mode);
 	return branch->Node->CreateFile(splitter.Leaf, flags);
@@ -106,7 +108,7 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
 	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	branch->Node->CreateSymbolicLink(splitter.Leaf, target);
+	branch->Node->CreateSymbolicLink(branch, splitter.Leaf, target);
 }
 
 //-----------------------------------------------------------------------------
@@ -172,15 +174,14 @@ VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags)
 // Arguments:
 //
 //	absolute	- Absolute path to the alias to resolve
-//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute, bool follow)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 {
 	if(absolute == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// Remove leading slashes from the provided path and start at the root node
 	while((*absolute) && (*absolute == _T('/'))) absolute++;
-	return ResolvePath(m_rootfs->Root, absolute, follow);
+	return ResolvePath(m_rootfs->Root, absolute);
 }
 
 //-----------------------------------------------------------------------------
@@ -192,32 +193,11 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute, bool fol
 //
 //	base		- Base alias instance to use for resolution
 //	relative	- Relative path to resolve
-//	follow		- Flag to follow the final path component if a symbolic link
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, bool follow)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
 {
 	_ASSERTE(base);
-	return ResolvePath(base->Node, relative, follow);
-}
-
-//-----------------------------------------------------------------------------
-// VmFileSystem::ResolvePath (private)
-//
-// Resolves an alias from a path relative to an existing node
-//
-// Arguments:
-//
-//	base		- Base node instance to use for resolution
-//	relative	- Relative path to resolve
-//	follow		- Flag to follow the final path component if a symbolic link
-
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::NodePtr& base, const tchar_t* relative, bool follow)
-{
-	(follow);
-	// todo: Remove follow, don't think you would ever do that since we resolve the parent 
-	// directory for an object and then call Open(), which would have the follow flag there
-	_ASSERTE(base);
-	return base->ResolvePath(relative);
+	return base->Node->ResolvePath(base, relative);
 }
 
 //-----------------------------------------------------------------------------

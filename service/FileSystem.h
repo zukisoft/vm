@@ -94,7 +94,6 @@ struct __declspec(novtable) FileSystem
 	// Alias
 	//
 	// todo: document when done
-	// > needs a stack ADT for handling Mount/Unmount
 	struct __declspec(novtable) Alias
 	{
 		// Mount
@@ -118,6 +117,12 @@ struct __declspec(novtable) FileSystem
 		// Gets the node instance that this alias references
 		__declspec(property(get=getNode)) NodePtr Node;
 		virtual NodePtr getNode(void) = 0;
+
+		// Parent
+		//
+		// Gets the parent Alias instance for this alias
+		__declspec(property(get=getParent)) AliasPtr Parent;
+		virtual AliasPtr getParent(void) = 0;
 	};
 
 	// Node
@@ -128,7 +133,7 @@ struct __declspec(novtable) FileSystem
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const tchar_t* name) = 0;
+		virtual void CreateDirectory(const AliasPtr& parent, const tchar_t* name) = 0;
 
 		// CreateFile
 		//
@@ -138,7 +143,7 @@ struct __declspec(novtable) FileSystem
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const tchar_t* name, const tchar_t* target) = 0;
+		virtual void CreateSymbolicLink(const AliasPtr& parent, const tchar_t* name, const tchar_t* target) = 0;
 
 		// OpenHandle
 		//
@@ -148,7 +153,7 @@ struct __declspec(novtable) FileSystem
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance
-		virtual AliasPtr ResolvePath(const tchar_t* path) = 0;
+		virtual AliasPtr ResolvePath(const AliasPtr& current, const tchar_t* path) = 0;
 
 		// Index
 		//

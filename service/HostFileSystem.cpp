@@ -499,9 +499,10 @@ std::shared_ptr<HostFileSystem::Node> HostFileSystem::Node::Construct(const std:
 //
 // Arguments:
 //
+//	parent		- Parent alias to assign to the generated child alias
 //	name		- Name to assign to the new directory name
 
-void HostFileSystem::Node::CreateDirectory(const tchar_t* name)
+void HostFileSystem::Node::CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name)
 {
 	// Cannot create a directory with a null or zero-length name
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
@@ -634,9 +635,10 @@ FileSystem::HandlePtr HostFileSystem::Node::OpenHandle(int flags)
 //
 // Arguments:
 //
+//	current		- Current Alias instance that was used to resolve this Node
 //	path		- Relative file system object path string
 
-FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const tchar_t* path)
+FileSystem::AliasPtr HostFileSystem::Node::ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path)
 {
 	// Cannot resolve a null path
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
