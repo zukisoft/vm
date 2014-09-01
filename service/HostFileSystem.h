@@ -217,7 +217,7 @@ private:
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual FileSystem::HandlePtr CreateFile(const tchar_t* name, int flags);
+		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
 
 		// CreateSymbolicLink
 		//

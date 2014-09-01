@@ -247,17 +247,39 @@ void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& 
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
-	// Construct the new DirectoryNode instance before entering the synchronization lock
+	// Construct the new DirectoryNode instance
 	auto node = DirectoryNode::Construct(m_mountpoint);
 
-	// Automatically acquire and hold the synchronization lock until function ends
-	std::lock_guard<std::recursive_mutex> critsec(m_lock);
+	// Attempt to construct and insert a new Alias instance with the specified name
+	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+	if(!result.second) throw LinuxException(LINUX_EEXIST);
+}
 
-	// The name cannot be in use by any of the current children of this node
-	if(m_children.find(name) != m_children.end()) throw LinuxException(LINUX_EEXIST);
+//-----------------------------------------------------------------------------
+// TempFileSystem::DirectoryNode::CreateFile (private)
+//
+// Creates a new regular file node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Parent Alias instance from the resolved path
+//	name		- Name to assign to the new file object
+//	flags		- File creation flags
 
-	// Construct and insert a new Alias instance with the specified name into the collection
-	m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags)
+{
+	// The file system cannot be mounted as read-only when constructing new objects
+	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
+
+	// Construct the new FileNode instance
+	auto node = FileNode::Construct(m_mountpoint /*, name */);
+
+	// Attempt to construct and insert a new Alias instance with the specified name
+	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+	if(!result.second) throw LinuxException(LINUX_EEXIST);
+
+	FileSystem::HandlePtr todo = nullptr;
+	return todo;
 }
 
 //-----------------------------------------------------------------------------
@@ -276,17 +298,12 @@ void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
-	// Construct the new SymbolicLinkNode instance before entering the synchronization lock
+	// Construct the new SymbolicLinkNode instance
 	auto node = SymbolicLinkNode::Construct(m_mountpoint, target);
 
-	// Automatically acquire and hold the synchronization lock until function ends
-	std::lock_guard<std::recursive_mutex> critsec(m_lock);
-
-	// The name cannot be in use by any of the current children of this node
-	if(m_children.find(name) != m_children.end()) throw LinuxException(LINUX_EEXIST);
-
-	// Construct and insert a new Alias instance with the specified name into the collection
-	m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+	// Attempt to construct and insert a new Alias instance with the specified name
+	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+	if(!result.second) throw LinuxException(LINUX_EEXIST);
 }
 
 //-----------------------------------------------------------------------------
@@ -321,24 +338,19 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::ResolvePath(const FileSystem
 	// Path string should not be null
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 	
-	// If the provided path is an empty string, it's referring to this node so we're done
-	if(*path == 0) return current;
-
-	// 
+	// Construct a PathIterator instance to assist with traversing the path components
 	PathIterator iterator(path);
 
-	// SPECIAL CASE: .
-	//
-	// Just move past any single . components in the path
+	// Move past any "." components in the path before checking if the end of the
+	// traversal was reached; which indicates that this is the target node
 	while(_tcscmp(iterator.Current, _T(".")) == 0) ++iterator;
+	if(!iterator) return current;
 
-	// SPECIAL CASE: ..
-	//
-	// Pass the remainder of the path into the parent for the provided alias
+	// The ".." component indicates that the parent alias' node needs to resolve the remainder
 	if(_tcscmp(iterator.Current, _T("..")) == 0) 
 		return current->Parent->Node->ResolvePath(current->Parent, iterator.Remaining);
 
-
+	// Attempt to locate the next component in the child collection
 	auto found = m_children.find(iterator.Current);
 	if(found != m_children.end()) return found->second->Node->ResolvePath(found->second, iterator.Remaining);
 
@@ -424,9 +436,47 @@ void TempFileSystem::SymbolicLinkNode::CreateDirectory(const FileSystem::AliasPt
 {
 	// TODO: O_NOFOLLOW?
 
-	// TODO: This may ultimately prove to be a performance problem, following the link
-	// every time seems like it would be.  Make it work first, right?
+	// Resolve the target using our parent in the Alias tree and ask that node to create the object
 	parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateDirectory(parent, name);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::SymbolicLinkNode::CreateFile (private)
+//
+// Creates a new regular file node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Parent Alias instance from the resolved path
+//	name		- Name to assign to the new file object
+//	flags		- File creation flags
+
+FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags)
+{
+	// This operation cannot succeed against the symbolic link itself
+	if(flags & LINUX_O_NOFOLLOW) throw LinuxException(LINUX_ENOTDIR);
+
+	// Resolve the target using our parent in the Alias tree and ask that node to create the object
+	return parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateFile(parent, name, flags);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::SymbolicLinkNode::CreateSymbolicLink (private)
+//
+// Creates a new symbolic link node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Parent Alias instance from the resolved path
+//	name		- Name to assign to the new symbolic link object
+//	target		- Target string to assign to the new symbolic link object
+
+void TempFileSystem::SymbolicLinkNode::CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target)
+{
+	// TODO: O_NOFOLLOW?
+
+	// Resolve the target using our parent in the Alias tree and ask that node to create the object
+	parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateSymbolicLink(parent, name, target);
 }
 
 //-----------------------------------------------------------------------------

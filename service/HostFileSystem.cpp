@@ -516,8 +516,10 @@ void HostFileSystem::Node::CreateDirectory(const FileSystem::AliasPtr& parent, c
 }
 
 // todo: need mode
-FileSystem::HandlePtr HostFileSystem::Node::CreateFile(const tchar_t* name, int flags)
+FileSystem::HandlePtr HostFileSystem::Node::CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags)
 {
+	(parent);
+
 	// Cannot create a file with a null or zero-length name
 	if((name == nullptr) || (*name == 0)) throw LinuxException(LINUX_EINVAL);
 

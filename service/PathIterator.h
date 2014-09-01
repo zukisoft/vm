@@ -45,8 +45,13 @@ public:
 
 	// operator bool
 	//
-	// Indicates if the current component pointer is valid
+	// Indicates if the current component pointer is non-empty
 	operator bool() const { return ((m_current) && (*m_current)); }
+
+	// operator !
+	//
+	// Indicates if the current component pointer is empty
+	bool operator !() const { return ((m_current == nullptr) || (*m_current == 0)); }
 
 	// Increment operator
 	//

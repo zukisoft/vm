@@ -29,6 +29,7 @@
 #include <memory>
 #include <mutex>
 #include <stack>
+#include <concurrent_unordered_map.h>
 #include <linux/types.h>
 #include <linux/fcntl.h>
 #include "LinuxException.h"
@@ -224,7 +225,7 @@ private:
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual FileSystem::HandlePtr CreateFile(const tchar_t*, int) { throw LinuxException(LINUX_ENOTDIR); }
+		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr&, const tchar_t*, int) { throw LinuxException(LINUX_ENOTDIR); }
 
 		// CreateSymbolicLink
 		//
@@ -287,6 +288,11 @@ private:
 		// Creates a new directory node as a child of this node
 		virtual void CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
 
+		// CreateFile
+		//
+		// Creates a new regular file node as a child of this node
+		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
+
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
@@ -303,12 +309,17 @@ private:
 		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
 
 		//---------------------------------------------------------------------
+		// Private Type Declarations
+
+		// AliasSet
+		//
+		// Collection of child Alias instances
+		using AliasMap = Concurrency::concurrent_unordered_map<std::tstring, FileSystem::AliasPtr>;
+
+		//---------------------------------------------------------------------
 		// Member Variables
 
-		// TODO: temporary, this needs to be thread-safe at minimum and would
-		// likely be better served with a higher performing construct
-		std::recursive_mutex m_lock;
-		std::map<std::tstring, FileSystem::AliasPtr> m_children;
+		AliasMap				m_children;			// Collection of child aliases
 	};
 
 	// FileNode
@@ -392,6 +403,16 @@ private:
 		//
 		// Creates a new directory node as a child of this node
 		virtual void CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
+
+		// CreateFile
+		//
+		// Creates a new regular file node as a child of this node
+		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
+
+		// CreateSymbolicLink
+		//
+		// Creates a new symbolic link as a child of this node
+		virtual void CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target);
 
 		// OpenHandle
 		//

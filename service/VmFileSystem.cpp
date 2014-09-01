@@ -88,7 +88,7 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 
 	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
 	auto branch = ResolvePath(splitter.Branch);
-	return branch->Node->CreateFile(splitter.Leaf, flags);
+	return branch->Node->CreateFile(branch, splitter.Leaf, flags);
 }
 
 //-----------------------------------------------------------------------------

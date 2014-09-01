@@ -114,7 +114,7 @@ private:
 	// CreateFile
 	//
 	// Creates a new regular file node as a child of this node
-	virtual FileSystem::HandlePtr CreateFile(const tchar_t*, int)
+	virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr&, const tchar_t*, int)
 	{
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
 	}

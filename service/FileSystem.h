@@ -138,7 +138,7 @@ struct __declspec(novtable) FileSystem
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual HandlePtr CreateFile(const tchar_t* name, int flags) = 0;
+		virtual HandlePtr CreateFile(const AliasPtr& parent, const tchar_t* name, int flags) = 0;
 
 		// CreateSymbolicLink
 		//
