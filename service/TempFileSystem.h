@@ -383,7 +383,16 @@ private:
 
 		//---------------------------------------------------------------------
 		// Node Specialization
+
+		// TODO: Everything Node can do, this can do.  Each function will need to resolve the
+		// m_target.c_str() path and then pass the arguments on to that Node instance, using
+		// the symbolic link alias as the parent parameter (CreateFile() still needs that)
 		
+		// CreateDirectory
+		//
+		// Creates a new directory node as a child of this node
+		virtual void CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
+
 		// OpenHandle
 		//
 		// Creates a FileSystem::Handle instance for this node

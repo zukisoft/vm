@@ -71,7 +71,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		vfs->CreateDirectory(L"test1/test2/test3");
 		vfs->CreateSymbolicLink(L"test1/test2/test3/mysymlink", L"../../test2");
 		vfs->CreateDirectory(L"test1/test2/test3/mysymlink/test4");
-		//vfs->CreateDirectory(L"test1/test2");
+		vfs->CreateDirectory(L"test1/test2/test4/test5");
 
 		//vfs->Open(L"/mike", 0);
 	}

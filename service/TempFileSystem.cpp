@@ -411,6 +411,25 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 }
 
 //-----------------------------------------------------------------------------
+// TempFileSystem::SymbolicLinkNode::CreateDirectory (private)
+//
+// Creates a new directory node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Parent Alias instance from the resolved path
+//	name		- Name to assign to the new directory object
+
+void TempFileSystem::SymbolicLinkNode::CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name)
+{
+	// TODO: O_NOFOLLOW?
+
+	// TODO: This may ultimately prove to be a performance problem, following the link
+	// every time seems like it would be.  Make it work first, right?
+	parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateDirectory(parent, name);
+}
+
+//-----------------------------------------------------------------------------
 // TempFileSystem::SymbolicLinkNode::OpenHandle (private)
 //
 // Opens a Handle instance against this node
@@ -447,9 +466,10 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::ResolvePath(const FileSys
 	// TODO: watch for ELOOP here, need a link counter argument; this will infinite loop
 	// if the symbolic link ends up referring to itself
 
+	// TODO: O_NOFOLLOW would resolve to this node rather than following the link if path is ""
+
 	// Process the symbolic link by sending the target into the current alias' parent
-	auto x = current->Parent->Node->ResolvePath(current->Parent, m_target.c_str())->Node->ResolvePath(current, path);
-	return x;
+	return current->Parent->Node->ResolvePath(current->Parent, m_target.c_str())->Node->ResolvePath(current, path);
 }
 
 //-----------------------------------------------------------------------------

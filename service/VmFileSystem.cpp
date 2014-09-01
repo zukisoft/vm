@@ -67,26 +67,27 @@ std::unique_ptr<VmFileSystem> VmFileSystem::Create(const FileSystemPtr& rootfs)
 
 void VmFileSystem::CreateDirectory(const tchar_t* path)
 {
+	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
+
+	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
-	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
-	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
-	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
-
+	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
+	auto branch = ResolvePath(splitter.Branch);
 	branch->Node->CreateDirectory(branch, splitter.Leaf);
 }
 
 VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, uapi::mode_t mode)
 {
+	(mode);		// TODO
+
+	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
+
+	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
-	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
-	// Resolve the branch (parent) path, which must point to a directory node
-	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
-	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
-	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-
-	(mode);
+	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
+	auto branch = ResolvePath(splitter.Branch);
 	return branch->Node->CreateFile(splitter.Leaf, flags);
 }
 
@@ -102,12 +103,14 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 
 void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target)
 {
+	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
+	if((target == nullptr) || (*target == 0)) throw LinuxException(LINUX_ENOENT);
+
+	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
-	if(!splitter) throw LinuxException(LINUX_ENOENT);
 
-	FileSystem::AliasPtr branch = ResolvePath(splitter.Branch);
-	if(branch == nullptr) throw LinuxException(LINUX_ENOENT);
-
+	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
+	auto branch = ResolvePath(splitter.Branch);
 	branch->Node->CreateSymbolicLink(branch, splitter.Leaf, target);
 }
 
