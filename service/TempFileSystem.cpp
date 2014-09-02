@@ -181,41 +181,6 @@ void TempFileSystem::Alias::Unmount(void)
 }
 
 //
-// TEMPFILESYSTEM::MOUNTPOINT
-//
-
-//-----------------------------------------------------------------------------
-// TempFileSystem::MountPoint Constructor
-//
-// Arguments:
-//
-//	flags		- Standard mounting flags passed to Mount()
-//	data		- Addtional custom mounting information for this file system
-
-TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) : 
-	m_options(flags, data), m_nextindex(FileSystem::NODE_INDEX_FIRSTDYNAMIC)
-{
-}
-
-//
-// TEMPFILESYSTEM::NODE
-//
-
-//-----------------------------------------------------------------------------
-// TempFileSystem::Node::Constructor (private)
-//
-// Arguments:
-//
-//	mountpoint	- Reference to the parent filesystem's MountPoint instance
-//	type		- Type of the Node being constructed
-
-TempFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type) : 
-	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_type(type)
-{
-	_ASSERTE(mountpoint);
-}
-
-//
 // TEMPFILESYSTEM::DIRECTORYNODE
 //
 
@@ -273,15 +238,16 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
-	// Construct the new FileNode instance
+	// Construct the new FileNode instance and atomically create an initial handle
+	// prior to adding it to the collection of child nodes
 	auto node = FileNode::Construct(m_mountpoint /*, name */);
+	auto handle = node->OpenHandle(flags);
 
 	// Attempt to construct and insert a new Alias instance with the specified name
 	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
 	if(!result.second) throw LinuxException(LINUX_EEXIST);
 
-	FileSystem::HandlePtr todo = nullptr;
-	return todo;
+	return handle;				// Return Handle instance generated above
 }
 
 //-----------------------------------------------------------------------------
@@ -397,6 +363,78 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
 
 	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//
+// TEMPFILESYSTEM::HANDLE
+//
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::Handle Constructor
+//
+// Arguments:
+//
+//	mountpoint		- Reference to the mountpoint instance
+//	node			- Reference to the node being opened
+//	flags			- Copy of the flags used to open the node
+
+TempFileSystem::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, int flags) :
+	m_mountpoint(mountpoint), m_node(node), m_flags(flags)
+{
+	_ASSERTE(mountpoint);
+	_ASSERTE(node);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::Handle::Construct (static)
+//
+// Constructs a new Handle instance
+//
+// Arguments:
+//
+//	mountpoint		- Reference to the mountpoint instance
+//	node			- Reference to the node being opened
+//	flags			- Copy of the flags used to open the node
+
+std::shared_ptr<TempFileSystem::Handle> TempFileSystem::Handle::Construct(const std::shared_ptr<MountPoint>& mountpoint,
+	const std::shared_ptr<Node>& node, int flags)
+{
+	return std::make_shared<Handle>(mountpoint, node, flags);
+}
+
+//
+// TEMPFILESYSTEM::MOUNTPOINT
+//
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::MountPoint Constructor
+//
+// Arguments:
+//
+//	flags		- Standard mounting flags passed to Mount()
+//	data		- Addtional custom mounting information for this file system
+
+TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) : 
+	m_options(flags, data), m_nextindex(FileSystem::NODE_INDEX_FIRSTDYNAMIC)
+{
+}
+
+//
+// TEMPFILESYSTEM::NODE
+//
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::Node::Constructor (private)
+//
+// Arguments:
+//
+//	mountpoint	- Reference to the parent filesystem's MountPoint instance
+//	type		- Type of the Node being constructed
+
+TempFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type) : 
+	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_type(type)
+{
+	_ASSERTE(mountpoint);
 }
 
 //
