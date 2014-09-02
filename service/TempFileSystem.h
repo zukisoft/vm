@@ -121,7 +121,7 @@ private:
 	// TempFileSystem::Alias
 	//
 	// Specialization of FileSystem::Alias for a temp file system instance
-	class Alias : public FileSystem::Alias
+	class Alias : public FileSystem::Alias, public std::enable_shared_from_this<Alias>
 	{
 	public:
 
@@ -182,7 +182,7 @@ private:
 		std::mutex							m_lock;		// Synchronization object
 		std::tstring						m_name;		// Alias name
 		std::stack<FileSystem::NodePtr>		m_mounted;	// Stack of mounted nodes
-		std::weak_ptr<FileSystem::Alias>	m_parent;	// Parent alias instance
+		FileSystem::AliasPtr				m_parent;	// Parent alias instance
 	};
 
 	// TempFileSystem::Node

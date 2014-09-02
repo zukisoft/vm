@@ -138,11 +138,9 @@ FileSystem::NodePtr TempFileSystem::Alias::getNode(void)
 
 FileSystem::AliasPtr TempFileSystem::Alias::getParent(void)
 {
-	// The parent is stored as a weak reference that must be converted
-	FileSystem::AliasPtr parent = m_parent.lock();
-
-	if(parent) return parent;
-	else throw LinuxException(LINUX_ENOENT);
+	// The only time parent should be null is when this alias is acting as the
+	// root node for a mounted file system, in that case return ourselves
+	return (m_parent) ? m_parent : shared_from_this();
 }
 
 //-----------------------------------------------------------------------------
@@ -253,11 +251,8 @@ void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& 
 	auto node = DirectoryNode::Construct(m_mountpoint);
 
 	// Attempt to construct and insert a new Alias instance with the specified name
-	auto alias = Alias::Construct(name, parent, node);
-	auto result = m_children.insert(std::make_pair(name, alias)); //Alias::Construct(name, parent, node)));
+	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
 	if(!result.second) throw LinuxException(LINUX_EEXIST);
-
-	//m_children.clear();
 }
 
 //-----------------------------------------------------------------------------
