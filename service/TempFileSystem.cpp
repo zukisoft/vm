@@ -138,9 +138,11 @@ FileSystem::NodePtr TempFileSystem::Alias::getNode(void)
 
 FileSystem::AliasPtr TempFileSystem::Alias::getParent(void)
 {
-	// The only time parent should be null is when this alias is acting as the
-	// root node for a mounted file system, in that case return ourselves
-	return (m_parent) ? m_parent : shared_from_this();
+	// The parent is stored as a weak reference that must be converted
+	FileSystem::AliasPtr parent = m_parent.lock();
+
+	if(parent) return parent;
+	else throw LinuxException(LINUX_ENOENT);
 }
 
 //-----------------------------------------------------------------------------
