@@ -66,14 +66,21 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	try {
 
-		vfs->CreateDirectory(L"test1");
-		vfs->CreateDirectory(L"test1/test2");
-		vfs->CreateDirectory(L"test1/test2/test3");
-		vfs->CreateSymbolicLink(L"test1/test2/test3/mysymlink", L"../../test2");
-		vfs->CreateDirectory(L"test1/test2/test3/mysymlink/test4");
-		vfs->CreateDirectory(L"test1/test2/test4/test5");
+		FileSystem::HandlePtr p = vfs->CreateFile(L"test1", LINUX_O_RDWR, 0);
+		//vfs->CreateDirectory(L"test1/test2");
+		//vfs->CreateDirectory(L"test1/test2/test3");
+		//vfs->CreateSymbolicLink(L"test1/test2/test3/mysymlink", L"../../test2");
+		//vfs->CreateDirectory(L"test1/test2/test3/mysymlink/test4");
+		//vfs->CreateDirectory(L"test1/test2/test4/test5");
 
 		//vfs->Open(L"/mike", 0);
+
+		std::vector<uint8_t> buffer(2048, 0xAA);
+		std::vector<uint8_t> buffer2(2048);
+
+		auto count = p->Write(buffer.data(), 2048);
+		count = p->Read(buffer2.data(), 2048);
+		int x = 123;
 	}
 	catch(const std::exception& ex) {
 	

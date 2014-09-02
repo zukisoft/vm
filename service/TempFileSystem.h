@@ -196,7 +196,7 @@ private:
 	// TempFileSystem::Node
 	//
 	// Specialization of FileSystem::Node for a temp file system instance 
-	class __declspec(novtable) Node : public FileSystem::Node, public std::enable_shared_from_this<Node>
+	class __declspec(novtable) Node : public FileSystem::Node
 	{
 	public:
 
@@ -333,7 +333,7 @@ private:
 	// FileNode
 	//
 	// Specializes Node for a File file system object
-	class FileNode : public Node
+	class FileNode : public Node, public std::enable_shared_from_this<FileNode>
 	{
 	public:
 
@@ -346,6 +346,16 @@ private:
 		//
 		// Constructs a new FileNode instance
 		static std::shared_ptr<FileNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
+
+		// Read
+		//
+		// Synchronously reads data from the underlying file node
+		uapi::size_t Read(uapi::size_t position, void* buffer, uapi::size_t count);
+
+		// Write
+		//
+		// Synchronously writes data to the underlying file node
+		uapi::size_t Write(uapi::size_t position, const void* buffer, uapi::size_t count);
 
 		//---------------------------------------------------------------------
 		// FileSystem::Node Implementation
@@ -438,24 +448,24 @@ private:
 		std::tstring			m_target;			// Symbolic link target
 	};
 
-	// Handle
+	// FileHandle
 	//
 	// Specialization of FileSystem::Handle for temp file system instance
-	class Handle : public FileSystem::Handle
+	class FileHandle : public FileSystem::Handle
 	{
 	public:
 
 		// Destructor
 		//
-		Handle()=default;
+		FileHandle()=default;
 
 		//---------------------------------------------------------------------
 		// Member Functions
 
 		// Construct
 		//
-		// Constructs a new SymbolicLinkNode instance
-		static std::shared_ptr<Handle> Construct(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, int flags);
+		// Constructs a new FileHandle instance
+		static std::shared_ptr<FileHandle> Construct(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node, int flags);
 
 		//---------------------------------------------------------------------
 		// FileSystem::Handle Implementation
@@ -463,7 +473,7 @@ private:
 		// Read
 		//
 		// Synchronously reads data from the underlying node into a buffer
-		virtual uapi::size_t Read(void* buffer, uapi::size_t count) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
 
 		// Sync
 		//
@@ -478,24 +488,24 @@ private:
 		// Write
 		//
 		// Synchronously writes data from a buffer to the underlying node
-		virtual uapi::size_t Write(const void* buffer, uapi::size_t count) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
 
 	private:
 
-		Handle(const Handle&)=delete;
-		Handle& operator=(const Handle&)=delete;
+		FileHandle(const FileHandle&)=delete;
+		FileHandle& operator=(const FileHandle&)=delete;
 
 		// Instance Constructor
 		//
-		Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, int flags);
-		friend class std::_Ref_count_obj<Handle>;
+		FileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node, int flags);
+		friend class std::_Ref_count_obj<FileHandle>;
 
 		//---------------------------------------------------------------------
 		// Member Variables
 
 		int							m_flags;		// Handle flags
 		std::shared_ptr<MountPoint>	m_mountpoint;	// MountPoint reference
-		std::shared_ptr<Node>		m_node;			// Node reference
+		std::shared_ptr<FileNode>	m_node;			// Node reference
 	};
 
 	//---------------------------------------------------------------------

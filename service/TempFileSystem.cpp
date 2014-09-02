@@ -121,7 +121,7 @@ std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tc
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::Alias::getNode (private)
+// TempFileSystem::Alias::getNode
 //
 // Accesses the topmost node referenced by this alias
 
@@ -132,7 +132,7 @@ FileSystem::NodePtr TempFileSystem::Alias::getNode(void)
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::Alias::getParent (private)
+// TempFileSystem::Alias::getParent
 //
 // Accesses the parent alias for this alias instance
 
@@ -146,7 +146,7 @@ FileSystem::AliasPtr TempFileSystem::Alias::getParent(void)
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::Alias::Mount (private)
+// TempFileSystem::Alias::Mount
 //
 // Mounts/binds a foreign node to this alias, obscuring the previous node
 //
@@ -164,7 +164,7 @@ void TempFileSystem::Alias::Mount(const FileSystem::NodePtr& node)
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::Alias::Unmount (private)
+// TempFileSystem::Alias::Unmount
 //
 // Unmounts/unbinds a node from this alias, revealing the previously bound node
 //
@@ -200,7 +200,7 @@ std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Co
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::CreateDirectory (private)
+// TempFileSystem::DirectoryNode::CreateDirectory
 //
 // Creates a new directory node as a child of this node
 //
@@ -223,7 +223,7 @@ void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& 
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::CreateFile (private)
+// TempFileSystem::DirectoryNode::CreateFile
 //
 // Creates a new regular file node as a child of this node
 //
@@ -251,7 +251,7 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::CreateSymbolicLink (private)
+// TempFileSystem::DirectoryNode::CreateSymbolicLink
 //
 // Creates a new symbolic link node as a child of this node
 //
@@ -275,7 +275,7 @@ void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::OpenHandle (private)
+// TempFileSystem::DirectoryNode::OpenHandle
 //
 // Opens a Handle instance against this node
 //
@@ -292,7 +292,7 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::OpenHandle(int flags)
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::ResolvePath (private)
+// TempFileSystem::DirectoryNode::ResolvePath
 //
 // Resolves a path relative from this Node instance
 //
@@ -346,7 +346,7 @@ std::shared_ptr<TempFileSystem::FileNode> TempFileSystem::FileNode::Construct(co
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::FileNode::OpenHandle (private)
+// TempFileSystem::FileNode::OpenHandle
 //
 // Opens a Handle instance against this node
 //
@@ -362,15 +362,68 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 	// If the file system was mounted as read-only, write access cannot be granted
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
 
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	// todo: check flags
+	return FileHandle::Construct(m_mountpoint, shared_from_this(), flags);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::FileNode::Read
+//
+// Synchronously reads data from the underlying file node
+//
+// Arguments:
+//
+//	position		- Position inside the node to start reading
+//	buffer			- Pointer to the output buffer
+//	count			- Number of bytes to read
+
+uapi::size_t TempFileSystem::FileNode::Read(uapi::size_t position, void* buffer, uapi::size_t count)
+{
+	if(!buffer) throw LinuxException(LINUX_EFAULT);
+
+	// TODO: lock -- should be a range of some kind when the vector<> is removed
+	// or use copy-on-write semantics
+
+	// Determine the number of bytes to read from the file data
+	count = min(count, m_data.size() - position);
+
+	if(count) memcpy(buffer, m_data.data() + position, count);
+	return count;
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::FileNode::Write
+//
+// Synchronously writes data to the underlying file node
+//
+// Arguments:
+//
+//	position		- Position inside the node to start writing
+//	buffer			- Pointer to the input buffer
+//	count			- Number of bytes to write
+
+uapi::size_t TempFileSystem::FileNode::Write(uapi::size_t position, const void* buffer, uapi::size_t count)
+{
+	if(!buffer) throw LinuxException(LINUX_EFAULT);
+
+	// TODO: lock -- should be a range of some kind when the vector<> is removed
+	// or use copy-on-write semantics
+
+	// TODO: maximum file size - should not be unbounded for tempfilesystem
+
+	// ensure capacity and write the data into the vector<>
+	m_data.resize(max(m_data.size(), position + count));
+	if(count) memcpy(m_data.data() + position, buffer, count);
+
+	return count;
 }
 
 //
-// TEMPFILESYSTEM::HANDLE
+// TEMPFILESYSTEM::FILEHANDLE
 //
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::Handle Constructor
+// TempFileSystem::FileHandle Constructor
 //
 // Arguments:
 //
@@ -378,7 +431,7 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 //	node			- Reference to the node being opened
 //	flags			- Copy of the flags used to open the node
 
-TempFileSystem::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Node>& node, int flags) :
+TempFileSystem::FileHandle::FileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node, int flags) :
 	m_mountpoint(mountpoint), m_node(node), m_flags(flags)
 {
 	_ASSERTE(mountpoint);
@@ -386,7 +439,7 @@ TempFileSystem::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, co
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::Handle::Construct (static)
+// TempFileSystem::FileHandle::Construct (static)
 //
 // Constructs a new Handle instance
 //
@@ -396,10 +449,48 @@ TempFileSystem::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, co
 //	node			- Reference to the node being opened
 //	flags			- Copy of the flags used to open the node
 
-std::shared_ptr<TempFileSystem::Handle> TempFileSystem::Handle::Construct(const std::shared_ptr<MountPoint>& mountpoint,
-	const std::shared_ptr<Node>& node, int flags)
+std::shared_ptr<TempFileSystem::FileHandle> TempFileSystem::FileHandle::Construct(const std::shared_ptr<MountPoint>& mountpoint,
+	const std::shared_ptr<FileNode>& node, int flags)
 {
-	return std::make_shared<Handle>(mountpoint, node, flags);
+	return std::make_shared<FileHandle>(mountpoint, node, flags);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::FileHandle::Read
+//
+// Synchronously reads data from the underlying node into a buffer
+//
+// Arguments:
+//
+//	buffer		- Destination buffer pointer
+//	count		- Number of bytes to read
+
+uapi::size_t TempFileSystem::FileHandle::Read(void* buffer, uapi::size_t count)
+{
+	// Pointer must not be null and the handle must not be opened in write-only mode
+	if(!buffer) throw LinuxException(LINUX_EFAULT);
+	if((m_flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) throw LinuxException(LINUX_EINVAL);
+
+	return m_node->Read(0, buffer, count);
+}
+
+//-----------------------------------------------------------------------------
+// Write
+//
+// Synchronously writes data from a buffer to the underlying node
+//
+// Arguments:
+//
+//	buffer		- Source buffer pointer
+//	count		- Number of bytes to write
+
+uapi::size_t TempFileSystem::FileHandle::Write(const void* buffer, uapi::size_t count)
+{
+	// Pointer must not be null and the handle must not be opened in read-only mode
+	if(!buffer) throw LinuxException(LINUX_EFAULT);
+	if((m_flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) throw LinuxException(LINUX_EINVAL);
+
+	return m_node->Write(0, buffer, count);
 }
 
 //
@@ -463,7 +554,7 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::CreateDirectory (private)
+// TempFileSystem::SymbolicLinkNode::CreateDirectory
 //
 // Creates a new directory node as a child of this node
 //
@@ -481,7 +572,7 @@ void TempFileSystem::SymbolicLinkNode::CreateDirectory(const FileSystem::AliasPt
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::CreateFile (private)
+// TempFileSystem::SymbolicLinkNode::CreateFile
 //
 // Creates a new regular file node as a child of this node
 //
@@ -501,7 +592,7 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::CreateFile(const FileSys
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::CreateSymbolicLink (private)
+// TempFileSystem::SymbolicLinkNode::CreateSymbolicLink
 //
 // Creates a new symbolic link node as a child of this node
 //
@@ -520,7 +611,7 @@ void TempFileSystem::SymbolicLinkNode::CreateSymbolicLink(const FileSystem::Alia
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::OpenHandle (private)
+// TempFileSystem::SymbolicLinkNode::OpenHandle
 //
 // Opens a Handle instance against this node
 //
@@ -542,7 +633,7 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::OpenHandle(int flags)
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::ResolvePath (private)
+// TempFileSystem::SymbolicLinkNode::ResolvePath
 //
 // Resolves a path relative from this Node instance
 //
