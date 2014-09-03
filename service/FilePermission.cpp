@@ -53,14 +53,6 @@ FilePermission::FilePermission(uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mo
 }
 
 //-----------------------------------------------------------------------------
-// FilePermission Copy Constructor
-
-FilePermission::FilePermission(const FilePermission& rhs) : m_uid(rhs.m_uid),
-	m_gid(rhs.m_gid), m_mode(rhs.m_mode)
-{
-}
-
-//-----------------------------------------------------------------------------
 // FilePermission:Demand
 //
 // Demands the caller has the specified access to the securable object
@@ -72,6 +64,38 @@ FilePermission::FilePermission(const FilePermission& rhs) : m_uid(rhs.m_uid),
 void FilePermission::Demand(const FilePermission::Access& access)
 {
 	(access);
+	// this will need to check the current uid/gid against the contained values
+}
+
+//-----------------------------------------------------------------------------
+// FilePermission::Narrow
+//
+// Narrows the permission set based on file access flags (O_RDONLY and so on)
+//
+// Arguments:
+//
+//	flags		- File access mask flags
+
+void FilePermission::Narrow(int flags)
+{
+	// TODO: what to do about execute for RDONLY and RDWR ?
+
+	switch(flags & LINUX_O_ACCMODE) {
+
+		// O_RDONLY: Remove write permissions from the mode
+		case LINUX_O_RDONLY: 
+			m_mode &= ~(LINUX_S_IWUSR | LINUX_S_IWGRP | LINUX_S_IWOTH); 
+			break;
+
+		// O_WRONLY: Remove read and execute permissions from the mode
+		case LINUX_O_WRONLY: 
+			m_mode &= ~(LINUX_S_IRUSR | LINUX_S_IRGRP | LINUX_S_IROTH | LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH); 
+			break;
+
+		// O_RDWR: Permissions remain unmodified
+		case LINUX_O_RDWR:   
+			break;
+	}
 }
 
 //-----------------------------------------------------------------------------

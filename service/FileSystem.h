@@ -178,6 +178,11 @@ struct __declspec(novtable) FileSystem
 		// Synchronously reads data from the underlying node into a buffer
 		virtual uapi::size_t Read(void* buffer, uapi::size_t count) = 0;
 
+		// Seek
+		//
+		// Changes the file position
+		virtual uapi::loff_t Seek(uapi::loff_t offset, int whence) = 0;
+
 		// Sync
 		//
 		// Synchronizes all metadata and data associated with the file to storage

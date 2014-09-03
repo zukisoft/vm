@@ -25,6 +25,7 @@
 #pragma once
 
 #include <linux/types.h>
+#include <linux/fcntl.h>
 #include <linux/stat.h>
 
 #pragma warning(push, 4)
@@ -45,7 +46,7 @@ public:
 	//
 	FilePermission(uapi::mode_t mode);
 	FilePermission(uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode);
-	FilePermission(const FilePermission& rhs);
+	FilePermission(const FilePermission& rhs)=default;
 	~FilePermission()=default;
 
 	// Enum Access
@@ -66,6 +67,11 @@ public:
 	//
 	// Demands the provided access of the underlying permission
 	void Demand(const Access& access);
+
+	// Narrow
+	//
+	// Narrows the current permission set based on file access flags
+	void Narrow(int flags);
 
 	//-------------------------------------------------------------------------
 	// Properties

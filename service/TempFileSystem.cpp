@@ -358,25 +358,43 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 	// If the file system was mounted as read-only, write access cannot be granted
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
 
-	// todo: check flags
-	return std::make_shared<Handle>(m_mountpoint, shared_from_this());
-	//return FileHandle::Construct(m_mountpoint, shared_from_this(), flags);
+	// Demand the proper permission based on the access mode flags provided
+	switch(flags & LINUX_O_ACCMODE) {
+
+		case LINUX_O_RDONLY: m_permission.Demand(FilePermission::Access::Read); break;
+		case LINUX_O_WRONLY: m_permission.Demand(FilePermission::Access::Write); break;
+		case LINUX_O_RDWR:   m_permission.Demand(FilePermission::Access::Read | FilePermission::Access::Write); break;
+	}
+
+	// Create a new permission for the handle, which is narrowed from the node permission
+	// based on the file access mask flags
+	FilePermission permission(m_permission);
+	permission.Narrow(flags);
+
+	// O_TRUNC: Truncate the file when the handle is opened, although this requires
+	// write access to succeed, it is not an exception to request it with read-only handles
+	if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) {
+
+		Concurrency::reader_writer_lock::scoped_lock writer(m_lock);
+		m_data.clear();
+	}
+
+	// Construct and return the new Handle instance for this node
+	return std::make_shared<Handle>(shared_from_this(), flags, permission);
 }
 
 // ----------------------------------------------------------------------------
 // TEMPFILESYSTEM::FILENODE::HANDLE IMPLEMENTATION
 // ----------------------------------------------------------------------------
 
-// Constructor
+// FileNode::Handle Constructor
 //
-TempFileSystem::FileNode::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node) :
-	m_mountpoint(mountpoint), m_node(node), m_position(0), m_permission(0)
+TempFileSystem::FileNode::Handle::Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission) :
+	m_flags(flags), m_node(node), m_position(0), m_permission(permission) 
 {
-	_ASSERTE(mountpoint);
-	_ASSERTE(node);
 }
 
-// Read
+// FileNode::Handle::Read
 //
 uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t count)
 {
@@ -386,47 +404,98 @@ uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t c
 	m_permission.Demand(FilePermission::Access::Read);
 
 	// Acquire a reader lock against the file data buffer
-	Concurrency::reader_writer_lock::scoped_lock_read(m_node->m_lock);
+	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_lock);
 	
+	// The current file position can be beyond the end from a Seek()
+	size_t position = m_position;
+	position = min(m_node->m_data.size(), position);
+
 	// Determine the number of bytes to read from the file data
-	count = min(count, m_node->m_data.size() - m_position);
+	count = min(count, m_node->m_data.size() - position);
 
 	// Read the data from the file into the caller-supplied buffer
-	if(count) memcpy(buffer, m_node->m_data.data() + m_position, count);
+	if(count) memcpy(buffer, m_node->m_data.data() + position, count);
 
 	m_position += count;			// Advance the file pointer
 	return count;					// Return number of bytes read
 }
 
-// Sync
+// FileNode::Handle::Seek
+//
+uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whence)
+{
+	// This is only necessary since the node data is accessed for SEEK_END
+	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_lock);
+
+	// Note that it's not an error to move the file pointer beyond the end of the file;
+	// this must be accounted for with boundary checking in functions that use it
+	switch(whence)
+	{
+		// SEEK_SET: The new offset is from the beginning of the file
+		case LINUX_SEEK_SET: 
+			break;
+
+		// SEEK_CUR: The new offset is relative to the current position
+		case LINUX_SEEK_CUR: 
+			offset += m_position; 
+			break;
+		
+		// SEEK_END: The new offset is relative to the end of the file
+		case LINUX_SEEK_END:
+			offset += m_node->m_data.size();
+			break;
+		
+		default: throw LinuxException(LINUX_EINVAL);
+	}
+
+	// Ensure that the resultant file pointer isn't negative or too big (x86)
+	if(offset < 0) throw LinuxException(LINUX_EINVAL);
+	if(offset > MAXSIZE_T) throw LinuxException(LINUX_EFBIG);
+
+	m_position = static_cast<size_t>(offset);	// Set the new position
+	return m_position;							// Return the new position
+}
+
+// FileNode::Handle::Sync
 //
 void TempFileSystem::FileNode::Handle::Sync(void)
 {
-	// Demand write permission to the file but otherwise there is
-	// nothing useful to do for TempFileSystem, no underlying storage
+	// Demand write permission to the file but otherwise there is nothing
+	// useful to do for TempFileSystem, there is no underlying storage
 	m_permission.Demand(FilePermission::Access::Write);
 }
 
-// SyncData
+// FileNode::Handle::SyncData
 //
 void TempFileSystem::FileNode::Handle::SyncData(void)
 {
-	// Demand write permission to the file but otherwise there is
-	// nothing useful to do for TempFileSystem, no underlying storage
+	// Demand write permission to the file but otherwise there is nothing
+	// useful to do for TempFileSystem, there is no underlying storage
 	m_permission.Demand(FilePermission::Access::Write);
 }
 
-// Write
+// FileNode::Handle::Write
 //
 uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::size_t count)
 {
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
 
+#ifndef _M_X64
+	// 32-bit builds can only store data up to size_t in length.  In reality the
+	// file couldn't even get close to this large in memory, but EFBIG should be
+	// thrown rather than ENOSPC if this is known to be the case up front
+	uint64_t finalsize = m_position;
+	if(finalsize + count > MAXSIZE_T) throw LinuxException(LINUX_EFBIG);
+#endif
+
 	// Demand write permissions for this file
 	m_permission.Demand(FilePermission::Access::Write);
 
 	// Acquire a writer lock against the file data buffer
-	Concurrency::reader_writer_lock::scoped_lock writelock(m_node->m_lock);
+	Concurrency::reader_writer_lock::scoped_lock writer(m_node->m_lock);
+
+	// O_APPEND: Move the file pointer to the end of file before writing
+	if(m_flags & LINUX_O_APPEND) m_position = m_node->m_data.size();
 
 	// Attempt to resize the vector<> large enough to hold the new data
 	try { m_node->m_data.resize(max(m_node->m_data.size(), m_position + count)); }

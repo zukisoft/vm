@@ -44,7 +44,8 @@
 //-----------------------------------------------------------------------------
 // TempFileSystem
 //
-// 
+// FILE SIZE: Limited to size_t (4GB on x86 builds, more than sufficient 
+// considering it's not possible to address that much memory)
 
 class TempFileSystem : public FileSystem
 {
@@ -377,12 +378,13 @@ private:
 
 			// Consructor / Destructor
 			//
-			Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node);
+			Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission);
 			~Handle()=default;
 
 			// FileSystem::Handle Implementation
 			//
 			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
+			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
 			virtual void			Sync(void);
 			virtual void			SyncData(void);
 			virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
@@ -394,10 +396,10 @@ private:
 
 			// Member Variables
 			//
-			std::shared_ptr<MountPoint>	m_mountpoint;	// MountPoint reference
+			int							m_flags;		// File control flags
 			std::shared_ptr<FileNode>	m_node;			// Node reference
 			FilePermission				m_permission;	// File permissions
-			std::atomic<uint32_t>		m_position;		// File position
+			std::atomic<size_t>			m_position;		// File position
 		};
 
 		// Member Variables

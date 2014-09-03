@@ -308,6 +308,8 @@ private:
 		// Synchronously reads data from the underlying node into a buffer
 		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
 
+		virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+
 		// Sync
 		//
 		// Synchronizes all metadata and data associated with the file to storage
