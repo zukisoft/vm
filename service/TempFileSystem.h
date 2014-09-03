@@ -29,6 +29,7 @@
 #include <memory>
 #include <mutex>
 #include <stack>
+#include <concrt.h>
 #include <concurrent_unordered_map.h>
 #include <linux/types.h>
 #include <linux/fcntl.h>
@@ -349,16 +350,6 @@ private:
 		// Constructs a new FileNode instance
 		static std::shared_ptr<FileNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
 
-		// Read
-		//
-		// Synchronously reads data from the underlying file node
-		uapi::size_t Read(uapi::size_t position, void* buffer, uapi::size_t count);
-
-		// Write
-		//
-		// Synchronously writes data to the underlying file node
-		uapi::size_t Write(uapi::size_t position, const void* buffer, uapi::size_t count);
-
 		//---------------------------------------------------------------------
 		// FileSystem::Node Implementation
 		
@@ -377,12 +368,47 @@ private:
 		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::File) {}
 		friend class std::_Ref_count_obj<FileNode>;
 
-		//---------------------------------------------------------------------
-		// Member Variables
+		// FileNode::Handle
+		//
+		// Specialization of FileSystem::Handle for a FileNode object
+		class Handle : public FileSystem::Handle
+		{
+		public:
 
+			// Consructor / Destructor
+			//
+			Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node);
+			~Handle()=default;
+
+			// FileSystem::Handle Implementation
+			//
+			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
+
+		private:
+
+			Handle(const Handle&)=delete;
+			Handle& operator=(const Handle&)=delete;
+
+			// Member Variables
+			//
+			std::shared_ptr<MountPoint>	m_mountpoint;	// MountPoint reference
+			std::shared_ptr<FileNode>	m_node;			// Node reference
+		};
+
+		// Private Member Functions
+		//
+		uapi::size_t Read(uapi::size_t position, void* buffer, uapi::size_t count);
+		uapi::size_t Write(uapi::size_t position, const void* buffer, uapi::size_t count);
+
+		// Member Variables
+		//
 		// TODO: This is temporary just to get things working, it needs to
 		// be a lot more fancy than just a vector<>
-		std::vector<uint8_t> m_data;
+		Concurrency::reader_writer_lock		m_lock;
+		std::vector<uint8_t>				m_data;
 	};
 
 	// SymbolicLinkNode
@@ -448,66 +474,6 @@ private:
 		// Member Variables
 
 		std::tstring			m_target;			// Symbolic link target
-	};
-
-	// FileHandle
-	//
-	// Specialization of FileSystem::Handle for temp file system instance
-	class FileHandle : public FileSystem::Handle
-	{
-	public:
-
-		// Destructor
-		//
-		FileHandle()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
-
-		// Construct
-		//
-		// Constructs a new FileHandle instance
-		static std::shared_ptr<FileHandle> Construct(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node, int flags);
-
-		//---------------------------------------------------------------------
-		// FileSystem::Handle Implementation
-
-		// Read
-		//
-		// Synchronously reads data from the underlying node into a buffer
-		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
-
-		// Sync
-		//
-		// Synchronizes all metadata and data associated with the file to storage
-		virtual void Sync(void) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-
-		// SyncData
-		//
-		// Synchronizes all data associated with the file to storage, not metadata
-		virtual void SyncData(void) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-
-		// Write
-		//
-		// Synchronously writes data from a buffer to the underlying node
-		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
-
-	private:
-
-		FileHandle(const FileHandle&)=delete;
-		FileHandle& operator=(const FileHandle&)=delete;
-
-		// Instance Constructor
-		//
-		FileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node, int flags);
-		friend class std::_Ref_count_obj<FileHandle>;
-
-		//---------------------------------------------------------------------
-		// Member Variables
-
-		int							m_flags;		// Handle flags
-		std::shared_ptr<MountPoint>	m_mountpoint;	// MountPoint reference
-		std::shared_ptr<FileNode>	m_node;			// Node reference
 	};
 
 	//---------------------------------------------------------------------

@@ -326,10 +326,6 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::ResolvePath(const FileSystem
 	throw LinuxException(LINUX_ENOENT);
 }
 
-//
-// TEMPFILESYSTEM::FILENODE
-//
-
 //-----------------------------------------------------------------------------
 // TempFileSystem::FileNode::Construct (static)
 //
@@ -363,7 +359,8 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
 
 	// todo: check flags
-	return FileHandle::Construct(m_mountpoint, shared_from_this(), flags);
+	return std::make_shared<Handle>(m_mountpoint, shared_from_this());
+	//return FileHandle::Construct(m_mountpoint, shared_from_this(), flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -381,8 +378,8 @@ uapi::size_t TempFileSystem::FileNode::Read(uapi::size_t position, void* buffer,
 {
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
 
-	// TODO: lock -- should be a range of some kind when the vector<> is removed
-	// or use copy-on-write semantics
+	// Acquire a reader lock to the vector<> data
+	Concurrency::reader_writer_lock::scoped_lock_read readlock(m_lock);
 
 	// Determine the number of bytes to read from the file data
 	count = min(count, m_data.size() - position);
@@ -406,8 +403,8 @@ uapi::size_t TempFileSystem::FileNode::Write(uapi::size_t position, const void* 
 {
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
 
-	// TODO: lock -- should be a range of some kind when the vector<> is removed
-	// or use copy-on-write semantics
+	// Acquire a writer lock to the vector<> data
+	Concurrency::reader_writer_lock::scoped_lock writelock(m_lock);
 
 	// TODO: maximum file size - should not be unbounded for tempfilesystem
 
@@ -418,77 +415,51 @@ uapi::size_t TempFileSystem::FileNode::Write(uapi::size_t position, const void* 
 	return count;
 }
 
-//
-// TEMPFILESYSTEM::FILEHANDLE
-//
+// ----------------------------------------------------------------------------
+// TEMPFILESYSTEM::FILENODE::HANDLE IMPLEMENTATION
+// ----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::FileHandle Constructor
+// Constructor
 //
-// Arguments:
-//
-//	mountpoint		- Reference to the mountpoint instance
-//	node			- Reference to the node being opened
-//	flags			- Copy of the flags used to open the node
-
-TempFileSystem::FileHandle::FileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node, int flags) :
-	m_mountpoint(mountpoint), m_node(node), m_flags(flags)
+TempFileSystem::FileNode::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node) :
+	m_mountpoint(mountpoint), m_node(node)
 {
 	_ASSERTE(mountpoint);
 	_ASSERTE(node);
 }
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::FileHandle::Construct (static)
+// Read
 //
-// Constructs a new Handle instance
-//
-// Arguments:
-//
-//	mountpoint		- Reference to the mountpoint instance
-//	node			- Reference to the node being opened
-//	flags			- Copy of the flags used to open the node
-
-std::shared_ptr<TempFileSystem::FileHandle> TempFileSystem::FileHandle::Construct(const std::shared_ptr<MountPoint>& mountpoint,
-	const std::shared_ptr<FileNode>& node, int flags)
-{
-	return std::make_shared<FileHandle>(mountpoint, node, flags);
-}
-
-//-----------------------------------------------------------------------------
-// TempFileSystem::FileHandle::Read
-//
-// Synchronously reads data from the underlying node into a buffer
-//
-// Arguments:
-//
-//	buffer		- Destination buffer pointer
-//	count		- Number of bytes to read
-
-uapi::size_t TempFileSystem::FileHandle::Read(void* buffer, uapi::size_t count)
+uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t count)
 {
 	// Pointer must not be null and the handle must not be opened in write-only mode
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
-	if((m_flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) throw LinuxException(LINUX_EINVAL);
+	//if((m_flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) throw LinuxException(LINUX_EINVAL);
 
 	return m_node->Read(0, buffer, count);
 }
 
-//-----------------------------------------------------------------------------
+// Sync
+//
+void TempFileSystem::FileNode::Handle::Sync(void)
+{
+	// check permissions and return - nothing is cached here
+}
+
+// SyncData
+//
+void TempFileSystem::FileNode::Handle::SyncData(void)
+{
+	// check permissions and return - nothing is cached here
+}
+
 // Write
 //
-// Synchronously writes data from a buffer to the underlying node
-//
-// Arguments:
-//
-//	buffer		- Source buffer pointer
-//	count		- Number of bytes to write
-
-uapi::size_t TempFileSystem::FileHandle::Write(const void* buffer, uapi::size_t count)
+uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::size_t count)
 {
 	// Pointer must not be null and the handle must not be opened in read-only mode
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
-	if((m_flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) throw LinuxException(LINUX_EINVAL);
+	//if((m_flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) throw LinuxException(LINUX_EINVAL);
 
 	return m_node->Write(0, buffer, count);
 }
