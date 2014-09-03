@@ -254,6 +254,9 @@
     <ClInclude Include="TempFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
+    <ClInclude Include="FilePermission.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -438,6 +441,9 @@
     </ClCompile>
     <ClCompile Include="TempFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePermission.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

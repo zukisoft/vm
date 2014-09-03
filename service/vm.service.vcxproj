@@ -338,6 +338,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="VmFileSystem.h" />
+    <ClInclude Include="FilePermission.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
@@ -560,6 +561,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Console.cpp" />
+    <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="PathIterator.cpp" />

@@ -523,7 +523,7 @@ TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) :
 //	type		- Type of the Node being constructed
 
 TempFileSystem::Node::Node(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type) : 
-	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_type(type)
+	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_type(type), m_permission(0)
 {
 	_ASSERTE(mountpoint);
 }
@@ -622,6 +622,7 @@ void TempFileSystem::SymbolicLinkNode::CreateSymbolicLink(const FileSystem::Alia
 FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::OpenHandle(int flags)
 {
 	// O_DIRECTORY?
+	m_permission.Demand(FilePermission::Access::Read);
 
 	// Symbolic Links cannot be opened with O_NOFOLLOW unless O_PATH is also set
 	if((flags & LINUX_O_NOFOLLOW) && ((flags & LINUX_O_PATH) == 0)) throw LinuxException(LINUX_ELOOP);

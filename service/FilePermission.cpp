@@ -21,52 +21,57 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "PathIterator.h"
+#include "FilePermission.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// PathIterator Constructor
+// FilePermission Constructor
 //
 // Arguments:
 //
-//	path		- Pointer to the path to be iterated
+//	mode		- Mode flags to assign to this FilePermission
 
-PathIterator::PathIterator(const tchar_t* path) : m_path((path) ? _tcslen(path) + 1 : 1, 0)
+FilePermission::FilePermission(uapi::mode_t mode) : m_mode(mode)
 {
-	// Skip path any leading slashes in the original path, not concerned with them
-	while((path) && (*path == _T('/'))) ++path;
-
-	// Copy the string data from the original pointer into the vector<>
-	if(path) memcpy(m_path.data(), path, m_path.size() * sizeof(tchar_t));
-
-	m_consumed = &m_path[m_path.size() - 1];		// Nothing consumed yet
-
-	// Break the current component out from the data and move the remaining
-	// pointer to just beyond that break
-	m_current = m_remaining = m_path.data();
-	while((*m_remaining) && (*m_remaining != _T('/'))) ++m_remaining;
-	if(*m_remaining) *m_remaining++ = 0;
+	// todo: need to get uid/gid from somewhere
+	m_uid = m_gid = 0;
 }
 
 //-----------------------------------------------------------------------------
-// PathIterator::operator++
+// FilePermission Constructor
+//
+// Arguments:
+//
+//	uid			- Owner UID to assign to this FilePermission
+//	gid			- Group owner GID to assign to this FilePermission
+//	mode		- Mode flags to assign to this FilePermission
 
-PathIterator& PathIterator::operator++()
+FilePermission::FilePermission(uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode) :
+	m_uid(uid), m_gid(gid), m_mode(mode)
 {
-	// Reset the consumed pointer back to the beginning, it may be positioned
-	// at the null terminator at the end of the buffer
-	m_consumed = m_path.data();
+}
 
-	// Replace the slash character before the current component and advance it
-	if((m_current > m_path.data()) && (m_current < m_remaining)) (*(m_current - 1) = _T('/'));
-	m_current = m_remaining;
+//-----------------------------------------------------------------------------
+// FilePermission Copy Constructor
 
-	// Advance the remaining pointer and replace the slash with a null terminator
-	while((*m_remaining) && (*m_remaining != _T('/'))) ++m_remaining;
-	if(*m_remaining) *m_remaining++ = 0;
+FilePermission::FilePermission(const FilePermission& rhs) : m_uid(rhs.m_uid),
+	m_gid(rhs.m_gid), m_mode(rhs.m_mode)
+{
+}
 
-	return *this;
+//-----------------------------------------------------------------------------
+// FilePermission:Demand
+//
+// Demands the caller has the specified access to the securable object
+//
+// Arguments:
+//
+//	access		- Access mask being demanded
+
+void FilePermission::Demand(const FilePermission::Access& access)
+{
+	(access);
 }
 
 //-----------------------------------------------------------------------------

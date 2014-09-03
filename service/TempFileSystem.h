@@ -33,6 +33,7 @@
 #include <linux/types.h>
 #include <linux/fcntl.h>
 #include "LinuxException.h"
+#include "FilePermission.h"
 #include "FileSystem.h"
 #include "MountOptions.h"
 #include "PathIterator.h"
@@ -253,6 +254,7 @@ private:
 
 		const uint64_t					m_index;		// Node index number
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
+		FilePermission					m_permission;	// Node permission
 		const FileSystem::NodeType		m_type;			// Node type flag
 
 	private:
