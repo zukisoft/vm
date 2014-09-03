@@ -363,58 +363,6 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenHandle(int flags)
 	//return FileHandle::Construct(m_mountpoint, shared_from_this(), flags);
 }
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::FileNode::Read
-//
-// Synchronously reads data from the underlying file node
-//
-// Arguments:
-//
-//	position		- Position inside the node to start reading
-//	buffer			- Pointer to the output buffer
-//	count			- Number of bytes to read
-
-uapi::size_t TempFileSystem::FileNode::Read(uapi::size_t position, void* buffer, uapi::size_t count)
-{
-	if(!buffer) throw LinuxException(LINUX_EFAULT);
-
-	// Acquire a reader lock to the vector<> data
-	Concurrency::reader_writer_lock::scoped_lock_read readlock(m_lock);
-
-	// Determine the number of bytes to read from the file data
-	count = min(count, m_data.size() - position);
-
-	if(count) memcpy(buffer, m_data.data() + position, count);
-	return count;
-}
-
-//-----------------------------------------------------------------------------
-// TempFileSystem::FileNode::Write
-//
-// Synchronously writes data to the underlying file node
-//
-// Arguments:
-//
-//	position		- Position inside the node to start writing
-//	buffer			- Pointer to the input buffer
-//	count			- Number of bytes to write
-
-uapi::size_t TempFileSystem::FileNode::Write(uapi::size_t position, const void* buffer, uapi::size_t count)
-{
-	if(!buffer) throw LinuxException(LINUX_EFAULT);
-
-	// Acquire a writer lock to the vector<> data
-	Concurrency::reader_writer_lock::scoped_lock writelock(m_lock);
-
-	// TODO: maximum file size - should not be unbounded for tempfilesystem
-
-	// ensure capacity and write the data into the vector<>
-	m_data.resize(max(m_data.size(), position + count));
-	if(count) memcpy(m_data.data() + position, buffer, count);
-
-	return count;
-}
-
 // ----------------------------------------------------------------------------
 // TEMPFILESYSTEM::FILENODE::HANDLE IMPLEMENTATION
 // ----------------------------------------------------------------------------
@@ -422,7 +370,7 @@ uapi::size_t TempFileSystem::FileNode::Write(uapi::size_t position, const void* 
 // Constructor
 //
 TempFileSystem::FileNode::Handle::Handle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileNode>& node) :
-	m_mountpoint(mountpoint), m_node(node)
+	m_mountpoint(mountpoint), m_node(node), m_position(0), m_permission(0)
 {
 	_ASSERTE(mountpoint);
 	_ASSERTE(node);
@@ -432,36 +380,63 @@ TempFileSystem::FileNode::Handle::Handle(const std::shared_ptr<MountPoint>& moun
 //
 uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t count)
 {
-	// Pointer must not be null and the handle must not be opened in write-only mode
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
-	//if((m_flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) throw LinuxException(LINUX_EINVAL);
 
-	return m_node->Read(0, buffer, count);
+	// Demand read permissions for this file
+	m_permission.Demand(FilePermission::Access::Read);
+
+	// Acquire a reader lock against the file data buffer
+	Concurrency::reader_writer_lock::scoped_lock_read(m_node->m_lock);
+	
+	// Determine the number of bytes to read from the file data
+	count = min(count, m_node->m_data.size() - m_position);
+
+	// Read the data from the file into the caller-supplied buffer
+	if(count) memcpy(buffer, m_node->m_data.data() + m_position, count);
+
+	m_position += count;			// Advance the file pointer
+	return count;					// Return number of bytes read
 }
 
 // Sync
 //
 void TempFileSystem::FileNode::Handle::Sync(void)
 {
-	// check permissions and return - nothing is cached here
+	// Demand write permission to the file but otherwise there is
+	// nothing useful to do for TempFileSystem, no underlying storage
+	m_permission.Demand(FilePermission::Access::Write);
 }
 
 // SyncData
 //
 void TempFileSystem::FileNode::Handle::SyncData(void)
 {
-	// check permissions and return - nothing is cached here
+	// Demand write permission to the file but otherwise there is
+	// nothing useful to do for TempFileSystem, no underlying storage
+	m_permission.Demand(FilePermission::Access::Write);
 }
 
 // Write
 //
 uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::size_t count)
 {
-	// Pointer must not be null and the handle must not be opened in read-only mode
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
-	//if((m_flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) throw LinuxException(LINUX_EINVAL);
 
-	return m_node->Write(0, buffer, count);
+	// Demand write permissions for this file
+	m_permission.Demand(FilePermission::Access::Write);
+
+	// Acquire a writer lock against the file data buffer
+	Concurrency::reader_writer_lock::scoped_lock writelock(m_node->m_lock);
+
+	// Attempt to resize the vector<> large enough to hold the new data
+	try { m_node->m_data.resize(max(m_node->m_data.size(), m_position + count)); }
+	catch(std::bad_alloc&) { throw LinuxException(LINUX_ENOSPC); }
+
+	// Copy the caller-supplied data into the file data buffer
+	if(count) memcpy(m_node->m_data.data() + m_position, buffer, count);
+
+	m_position += count;				// Advance the file pointer
+	return count;						// Return number of bytes written
 }
 
 //

@@ -396,19 +396,14 @@ private:
 			//
 			std::shared_ptr<MountPoint>	m_mountpoint;	// MountPoint reference
 			std::shared_ptr<FileNode>	m_node;			// Node reference
+			FilePermission				m_permission;	// File permissions
+			std::atomic<uint32_t>		m_position;		// File position
 		};
-
-		// Private Member Functions
-		//
-		uapi::size_t Read(uapi::size_t position, void* buffer, uapi::size_t count);
-		uapi::size_t Write(uapi::size_t position, const void* buffer, uapi::size_t count);
 
 		// Member Variables
 		//
-		// TODO: This is temporary just to get things working, it needs to
-		// be a lot more fancy than just a vector<>
-		Concurrency::reader_writer_lock		m_lock;
-		std::vector<uint8_t>				m_data;
+		Concurrency::reader_writer_lock		m_lock;		// Synchronization object
+		std::vector<uint8_t>				m_data;		// Underlying file data
 	};
 
 	// SymbolicLinkNode
