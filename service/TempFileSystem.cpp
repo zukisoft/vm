@@ -291,6 +291,24 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::OpenHandle(int flags)
 	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
 }
 
+// DirectoryNode::RemoveNode
+//
+void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
+{
+	// todo:
+	// m_permission.Demand(blah);
+
+	// Locate the child alias in the collection, ENOENT if not found
+	auto found = m_children.find(name);
+	if(found == m_children.end()) throw LinuxException(LINUX_ENOENT);
+
+	// The node type has to be checked
+	FileSystem::NodePtr node = found->second->Node;
+	if(node->Type == FileSystem::NodeType::Directory) throw LinuxException(LINUX_EISDIR);
+	
+	// todo: Remove from the collection, node will die of on it's own
+}
+
 //-----------------------------------------------------------------------------
 // TempFileSystem::DirectoryNode::ResolvePath
 //

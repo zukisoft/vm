@@ -134,6 +134,8 @@ private:
 	{ 
 		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
 	}
+
+	virtual void RemoveNode(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 		
 	// ResolvePath
 	//

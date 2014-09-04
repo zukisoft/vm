@@ -229,6 +229,8 @@ private:
 		// Creates a FileSystem::Handle instance for this node
 		virtual FileSystem::HandlePtr OpenHandle(int flags);
 
+		virtual void RemoveNode(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+
 		// ResolvePath
 		//
 		// Resolves a path for an alias that is a child of this alias

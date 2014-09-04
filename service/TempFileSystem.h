@@ -230,6 +230,8 @@ private:
 		// Creates a FileSystem::Handle instance for this node
 		virtual FileSystem::HandlePtr OpenHandle(int flags) = 0;
 
+		virtual void RemoveNode(const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
+
 		// ResolvePath
 		//
 		// Resolves a relative path from this node to an Alias instance
@@ -304,6 +306,8 @@ private:
 		//
 		// Creates a FileSystem::Handle instance for this node
 		virtual FileSystem::HandlePtr OpenHandle(int flags);
+
+		virtual void RemoveNode(const tchar_t* name);
 		
 		// ResolvePath
 		//

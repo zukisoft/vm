@@ -140,6 +140,11 @@ struct __declspec(novtable) FileSystem
 		// Creates a new regular file node as a child of this node
 		virtual HandlePtr CreateFile(const AliasPtr& parent, const tchar_t* name, int flags) = 0;
 
+		// CreateNode
+		//
+		// Creates a new special node as a child of this node
+		// TODO
+
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
@@ -149,6 +154,16 @@ struct __declspec(novtable) FileSystem
 		//
 		// Creates a FileSystem::Handle instance for this node
 		virtual HandlePtr OpenHandle(int flags) = 0;
+
+		// RemoveDirectory
+		//
+		// Removes a directory child from the node
+		virtual void RemoveDirectory(const tchar_t* name) = 0;
+
+		// RemoveNode
+		//
+		// Removes a non-directory child from the node
+		virtual void RemoveNode(const tchar_t* name) = 0;
 
 		// ResolvePath
 		//
