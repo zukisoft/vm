@@ -146,8 +146,8 @@ private:
 		// Construct (static)
 		//
 		// Constructs a new Alias instance
-		static std::shared_ptr<Alias> Construct(const tchar_t* name, const std::shared_ptr<TempFileSystem::Node>& node);
-		static std::shared_ptr<Alias> Construct(const tchar_t* name, const FileSystem::AliasPtr& parent, const std::shared_ptr<TempFileSystem::Node>& node);
+		static std::shared_ptr<Alias> Construct(const tchar_t* name, const FileSystem::NodePtr& node);
+		static std::shared_ptr<Alias> Construct(const tchar_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node);
 
 		//---------------------------------------------------------------------
 		// FileSystem::Alias Implementation
@@ -184,7 +184,7 @@ private:
 
 		// Instance Constructor
 		//
-		Alias(const tchar_t* name, const FileSystem::AliasPtr& parent, const std::shared_ptr<TempFileSystem::Node>& node);
+		Alias(const tchar_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node);
 		friend class std::_Ref_count_obj<Alias>;
 
 		//---------------------------------------------------------------------
@@ -196,62 +196,32 @@ private:
 		std::weak_ptr<FileSystem::Alias>	m_parent;	// Parent alias instance
 	};
 
-	// TempFileSystem::Node
+	// TempFileSystem::NodeBase
 	//
-	// Specialization of FileSystem::Node for a temp file system instance 
-	class __declspec(novtable) Node : public FileSystem::Node
+	// Provides the base (FileSystem::Node) implementation for all node classes
+	class __declspec(novtable) NodeBase
 	{
 	public:
 
 		// Destructor
 		//
-		virtual ~Node()=default;
+		virtual ~NodeBase()=default;
 
-		//---------------------------------------------------------------------
-		// FileSystem::Node Implementation
-
-		// CreateDirectory
+		// getIndex
 		//
-		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const FileSystem::AliasPtr&, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
+		// todo
+		uint64_t getIndex(void) { return m_index; }
 
-		// CreateFile
+		// getType
 		//
-		// Creates a new regular file node as a child of this node
-		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr&, const tchar_t*, int) { throw LinuxException(LINUX_ENOTDIR); }
-
-		// CreateSymbolicLink
-		//
-		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const FileSystem::AliasPtr&, const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
-
-		// OpenHandle
-		//
-		// Creates a FileSystem::Handle instance for this node
-		virtual FileSystem::HandlePtr OpenHandle(int flags) = 0;
-
-		virtual void RemoveNode(const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
-
-		// ResolvePath
-		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr&, const tchar_t*) { throw LinuxException(LINUX_ENOTDIR); }
-
-		// Index
-		//
-		// Gets the node index
-		virtual uint64_t getIndex(void) { return m_index; }
-
-		// Type
-		//
-		// Gets the node type
-		virtual NodeType getType(void) { return m_type; }
+		// todo
+		NodeType getType(void) { return m_type; }
 
 	protected:
 
 		// Instance Constructor
 		//
-		Node(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type);
+		NodeBase(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type);
 
 		//---------------------------------------------------------------------
 		// Protected Member Variables
@@ -263,56 +233,37 @@ private:
 
 	private:
 
-		Node(const Node&)=delete;
-		Node& operator=(const Node&)=delete;
+		NodeBase(const NodeBase&)=delete;
+		NodeBase& operator=(const NodeBase&)=delete;
 	};
 
 	// DirectoryNode
 	//
-	// Specializes Node for a Directory file system object
-	class DirectoryNode : public Node
+	// Specializes NodeBase for a Directory file system object
+	class DirectoryNode : public NodeBase, public FileSystem::Directory
 	{
 	public:
 
 		virtual ~DirectoryNode()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
 
 		// Construct
 		//
 		// Constructs a new DirectoryNode instance
 		static std::shared_ptr<DirectoryNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
 
-		//---------------------------------------------------------------------
 		// FileSystem::Node Implementation
-
-		// CreateDirectory
 		//
-		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
+		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state);
+		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
-		// CreateFile
+		// FileSystem::Directory Implementation
 		//
-		// Creates a new regular file node as a child of this node
-		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
-
-		// CreateSymbolicLink
-		//
-		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target);
-
-		// OpenHandle
-		//
-		// Creates a FileSystem::Handle instance for this node
-		virtual FileSystem::HandlePtr OpenHandle(int flags);
-
-		virtual void RemoveNode(const tchar_t* name);
-		
-		// ResolvePath
-		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
+		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
+		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
+		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target);
+		virtual void					RemoveNode(const tchar_t* name);
 
 	private:
 
@@ -321,7 +272,7 @@ private:
 
 		// Instance Constructor
 		//
-		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::Directory) {}
+		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint, FileSystem::NodeType::Directory) {}
 		friend class std::_Ref_count_obj<DirectoryNode>;
 
 		//---------------------------------------------------------------------
@@ -340,8 +291,8 @@ private:
 
 	// FileNode
 	//
-	// Specializes Node for a File file system object
-	class FileNode : public Node, public std::enable_shared_from_this<FileNode>
+	// Specializes NodeBase for a File file system object
+	class FileNode : public NodeBase, public FileSystem::Node, public std::enable_shared_from_this<FileNode>
 	{
 	public:
 
@@ -355,13 +306,12 @@ private:
 		// Constructs a new FileNode instance
 		static std::shared_ptr<FileNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
 
-		//---------------------------------------------------------------------
 		// FileSystem::Node Implementation
-		
-		// OpenHandle
-		//
-		// Creates a FileSystem::Handle instance for this node
-		virtual FileSystem::HandlePtr OpenHandle(int flags);
+		//		
+		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state);
+		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
 	private:
 
@@ -370,7 +320,7 @@ private:
 
 		// Instance Constructor
 		//
-		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : Node(mountpoint, FileSystem::NodeType::File) {}
+		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint, FileSystem::NodeType::File) {}
 		friend class std::_Ref_count_obj<FileNode>;
 
 		// FileNode::Handle
@@ -414,52 +364,29 @@ private:
 
 	// SymbolicLinkNode
 	//
-	// Specializes Node for a Symbolic Link file system object
-	class SymbolicLinkNode : public Node
+	// Specializes NodeBase for a Symbolic Link file system object
+	class SymbolicLinkNode : public NodeBase, public FileSystem::SymbolicLink
 	{
 	public:
 
 		virtual ~SymbolicLinkNode()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
 
 		// Construct
 		//
 		// Constructs a new SymbolicLinkNode instance
 		static std::shared_ptr<SymbolicLinkNode> Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target);
 
-		//---------------------------------------------------------------------
 		// FileSystem::Node Implementation
-
-		// TODO: Everything Node can do, this can do.  Each function will need to resolve the
-		// m_target.c_str() path and then pass the arguments on to that Node instance, using
-		// the symbolic link alias as the parent parameter (CreateFile() still needs that)
-		
-		// CreateDirectory
 		//
-		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
+		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state);
+		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
-		// CreateFile
+		// FileSystem::SymbolicLink Implementation
 		//
-		// Creates a new regular file node as a child of this node
-		virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
-
-		// CreateSymbolicLink
-		//
-		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target);
-
-		// OpenHandle
-		//
-		// Creates a FileSystem::Handle instance for this node
-		virtual FileSystem::HandlePtr OpenHandle(int flags);
-
-		// ResolvePath
-		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
+		virtual FileSystem::AliasPtr	Follow(const FileSystem::AliasPtr& current);
+		virtual uapi::size_t			ReadTarget(tchar_t* buffer, size_t count);
 
 	private:
 
@@ -468,7 +395,8 @@ private:
 
 		// Instance Constructor
 		//
-		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target) : Node(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(target) {}
+		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target) : 
+			NodeBase(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(target) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
 
 		//---------------------------------------------------------------------

@@ -72,9 +72,14 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
 
-	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
+	// Resolve the branch path to an Alias instance, must resolve to a Directory
 	auto branch = ResolvePath(splitter.Branch);
-	branch->Node->CreateDirectory(branch, splitter.Leaf);
+	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+	
+	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+	if(!directory) throw LinuxException(LINUX_ENOTDIR);
+
+	directory->CreateDirectory(branch, splitter.Leaf);
 }
 
 VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, uapi::mode_t mode)
@@ -86,9 +91,14 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
 
-	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
+	// Resolve the branch path to an Alias instance, must resolve to a Directory
 	auto branch = ResolvePath(splitter.Branch);
-	return branch->Node->CreateFile(branch, splitter.Leaf, flags);
+	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+	if(!directory) throw LinuxException(LINUX_ENOTDIR);
+
+	return directory->CreateFile(branch, splitter.Leaf, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -109,9 +119,14 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
 
-	// Resolve the branch to an Alias instance, and invoke the operation on it's Node
+	// Resolve the branch path to an Alias instance, must resolve to a Directory
 	auto branch = ResolvePath(splitter.Branch);
-	branch->Node->CreateSymbolicLink(branch, splitter.Leaf, target);
+	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+	if(!directory) throw LinuxException(LINUX_ENOTDIR);
+
+	directory->CreateSymbolicLink(branch, splitter.Leaf, target);
 }
 
 //-----------------------------------------------------------------------------
@@ -166,7 +181,7 @@ VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags)
 	// placeholder code
 	// this may return a detached alias ... oops
 	FileSystem::AliasPtr alias = ResolvePath(path);
-	return alias->Node->OpenHandle(flags);
+	return alias->Node->Open(flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -200,7 +215,8 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
 {
 	_ASSERTE(base);
-	return base->Node->ResolvePath(base, relative);
+	FileSystem::ResolveState state(FileSystem::ResolveFlags::None);
+	return base->Node->Resolve(base, relative, state);
 }
 
 //-----------------------------------------------------------------------------

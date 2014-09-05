@@ -41,7 +41,7 @@
 // another file system when the virtual machine is starting up if no other
 // more robust default file system is available
 
-class RootFileSystem : public FileSystem, public FileSystem::Node, public FileSystem::Alias,
+class RootFileSystem : public FileSystem, public FileSystem::Directory, public FileSystem::Alias,
 	public std::enable_shared_from_this<RootFileSystem>
 {
 public:
@@ -64,94 +64,32 @@ private:
 	RootFileSystem()=default;
 	friend class std::_Ref_count_obj<RootFileSystem>;
 
-	//-------------------------------------------------------------------------
 	// FileSystem Implementation
-
-	// getRoot
 	//
-	// Gets the root alias instance
-	virtual AliasPtr getRoot(void) { return shared_from_this(); }
+	virtual AliasPtr				getRoot(void) { return shared_from_this(); }
 
-	//-------------------------------------------------------------------------
 	// FileSystem::Alias Implementation
-
-	// Mount
 	//
-	// Mounts/binds a foreign node to this alias, obscuring the previous node
-	virtual void Mount(const FileSystem::NodePtr& node);
+	virtual void					Mount(const FileSystem::NodePtr& node);
+	virtual void					Unmount(void);	
+	virtual const tchar_t*			getName(void) { return _T(""); }
+	virtual FileSystem::NodePtr		getNode(void);
+	virtual FileSystem::AliasPtr	getParent(void) { return shared_from_this(); }
 
-	// Unmount
-	//
-	// Unmounts/unbinds a node from this alias, revealing the previously bound node
-	virtual void Unmount(void);	
-	
-	// getName
-	//
-	// Gets the name associated with this alias
-	virtual const tchar_t* getName(void) { return _T(""); }
-
-	// getNode
-	//
-	// Accesses the node pointed to by this alias
-	virtual FileSystem::NodePtr getNode(void);
-
-	// getParent
-	//
-	// Gets the parent alias for this alias instance
-	virtual FileSystem::AliasPtr getParent(void) { return shared_from_this(); }
-
-	//-------------------------------------------------------------------------
 	// FileSystem::Node Implementation
-
-	// CreateDirectory
 	//
-	// Creates a directory node as a child of this node
-	virtual void CreateDirectory(const FileSystem::AliasPtr&, const tchar_t*)
-	{ 
-		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
-	}
+	virtual FileSystem::HandlePtr	Open(int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state);
+	virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
+	virtual NodeType				getType(void) { return NodeType::Directory; }
 
-	// CreateFile
+	// FileSystem::Directory Implementation
 	//
-	// Creates a new regular file node as a child of this node
-	virtual FileSystem::HandlePtr CreateFile(const FileSystem::AliasPtr&, const tchar_t*, int)
-	{
-		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
-	}
-
-	// CreateSymbolicLink
-	//
-	// Creates a new symbolic link as a child of this node
-	virtual void CreateSymbolicLink(const FileSystem::AliasPtr&, const tchar_t*, const tchar_t*)
-	{ 
-		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
-	}
-	
-	// OpenHandle
-	//
-	// Creates a FileSystem::Handle instance for this node
-	virtual FileSystem::HandlePtr OpenHandle(int)
-	{ 
-		throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); 
-	}
-
-	virtual void RemoveNode(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void					CreateDirectory(const FileSystem::AliasPtr&, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const tchar_t*, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); } 
+	virtual void					RemoveNode(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 		
-	// ResolvePath
-	//
-	// Resolves a path for an alias that is a child of this alias
-	virtual FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path);
-
-	// getIndex
-	//
-	// Gets the node index
-	virtual uint64_t getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
-
-	// getType
-	//
-	// Gets the node type
-	virtual NodeType getType(void) { return NodeType::Directory; }
-
 	//-------------------------------------------------------------------------
 	// Member Variables
 

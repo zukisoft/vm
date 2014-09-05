@@ -336,7 +336,6 @@
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="VmFileSystem.h" />
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="VmService.h" />
@@ -579,16 +578,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="HostFileSystem.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="VmFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />

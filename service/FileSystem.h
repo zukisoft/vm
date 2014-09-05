@@ -47,11 +47,11 @@ struct __declspec(novtable) FileSystem
 	struct Alias;
 	using AliasPtr = std::shared_ptr<Alias>;
 
-	// NodePtr
+	// DirectoryPtr
 	//
-	// Alias for an std::shared_ptr<Node>
-	struct Node;
-	using NodePtr = std::shared_ptr<Node>;
+	// Alias for an std::shared_ptr<Directory>
+	struct Directory;
+	using DirectoryPtr = std::shared_ptr<Directory>;
 
 	// HandlePtr
 	//
@@ -59,13 +59,25 @@ struct __declspec(novtable) FileSystem
 	struct Handle;
 	using HandlePtr = std::shared_ptr<Handle>;
 
+	// NodePtr
+	//
+	// Alias for an std::shared_ptr<Node>
+	struct Node;
+	using NodePtr = std::shared_ptr<Node>;
+
+	// SymbolicLinkPtr
+	//
+	// Alias for an std::shared_ptr<SymbolicLink>
+	struct SymbolicLink;
+	using SymbolicLinkPtr = std::shared_ptr<SymbolicLink>;
+
 	// need typedef for Mount(const tchar_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
 
 	// NodeType
 	//
 	// Strogly typed enumeration for the S_IFxxx inode type constants
-	enum NodeType
+	enum class NodeType
 	{
 		BlockDevice			= LINUX_S_IFBLK,
 		CharacterDevice		= LINUX_S_IFCHR,
@@ -90,6 +102,51 @@ struct __declspec(novtable) FileSystem
 	//
 	// Constant indicating the first dynamic node index that should be used
 	static const uapi::ino_t NODE_INDEX_FIRSTDYNAMIC = 4;
+
+	//
+	static const int MAXIMUM_PATH_SYMLINKS = 40;
+
+	// ResolveFlags (bitmask)
+	//
+	// Strongly typed enumeration defining flags that are used when resolving a path
+	enum ResolveFlags
+	{
+		None				= 0x00,
+		FollowLeaf			= 0x01,			// Follow trailing symbolic link
+		DirectoryRequired	= 0x02,			// Path must resolve to a directory
+	};
+
+	// ResolveState
+	//
+	// State object used during path resolution operations
+	class ResolveState
+	{
+	public:
+
+		explicit ResolveState(ResolveFlags flags) : m_depth(0), m_flags(flags) {}
+
+		int IncrementDepth(void) { return ++m_depth; }
+
+		__declspec(property(get=getDepth)) int Depth;
+		int getDepth(void) const { return m_depth; }
+
+		//__declspec(property(get=getFlags)) ResolveFlags Flags;
+		//ResolveFlags getFlags(void) const { return m_flags; }
+
+		__declspec(property(get=getDirectoryRequired)) bool DirectoryRequired;
+		bool getDirectoryRequired(void) const { return (m_flags & ResolveFlags::DirectoryRequired) == ResolveFlags::DirectoryRequired; }
+
+		__declspec(property(get=getFollowLeaf)) bool FollowLeaf;
+		bool getFollowLeaf(void) const { return (m_flags & ResolveFlags::FollowLeaf) == ResolveFlags::FollowLeaf; }
+
+	private:
+
+		ResolveState(const ResolveState&)=delete;
+		ResolveState& operator=(const ResolveState&)=delete;
+
+		int					m_depth;
+		ResolveFlags		m_flags;
+	};
 
 	// Alias
 	//
@@ -130,6 +187,35 @@ struct __declspec(novtable) FileSystem
 	// todo: need permission arguments (mode_t)
 	struct __declspec(novtable) Node
 	{
+		// OpenHandle
+		// todo: rename to just open?
+		//
+		// Creates a FileSystem::Handle instance for this node
+		virtual HandlePtr Open(int flags) = 0;
+
+		// Resolve
+		//
+		// Resolves a relative path from this node to an Alias instance
+		virtual AliasPtr Resolve(const AliasPtr& current, const tchar_t* path, ResolveState& state) = 0;		
+
+		// Index
+		//
+		// Gets the node index
+		__declspec(property(get=getIndex)) uint64_t Index;
+		virtual uint64_t getIndex(void) = 0;
+
+		// Type
+		//
+		// Gets the node type
+		__declspec(property(get=getType)) NodeType Type;
+		virtual NodeType getType(void) = 0;
+	};
+
+	// Directory
+	//
+	// Specialization of Node for Directory objects
+	struct __declspec(novtable) Directory : public Node
+	{
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
@@ -150,37 +236,31 @@ struct __declspec(novtable) FileSystem
 		// Creates a new symbolic link as a child of this node
 		virtual void CreateSymbolicLink(const AliasPtr& parent, const tchar_t* name, const tchar_t* target) = 0;
 
-		// OpenHandle
-		//
-		// Creates a FileSystem::Handle instance for this node
-		virtual HandlePtr OpenHandle(int flags) = 0;
-
 		// RemoveDirectory
 		//
 		// Removes a directory child from the node
-		virtual void RemoveDirectory(const tchar_t* name) = 0;
+		//virtual void RemoveDirectory(const tchar_t* name) = 0;
 
 		// RemoveNode
 		//
 		// Removes a non-directory child from the node
-		virtual void RemoveNode(const tchar_t* name) = 0;
+		//virtual void RemoveNode(const tchar_t* name) = 0;
+	};
 
-		// ResolvePath
+	// SymbolicLink
+	//
+	// Specialization of Node for Symbolic Link objects
+	struct __declspec(novtable) SymbolicLink : public virtual Node
+	{
+		// Follow
 		//
-		// Resolves a relative path from this node to an Alias instance
-		virtual AliasPtr ResolvePath(const AliasPtr& current, const tchar_t* path) = 0;
+		// Follows the symbolic link as part of a path resolution
+		virtual FileSystem::AliasPtr Follow(const FileSystem::AliasPtr& current);
 
-		// Index
+		// ReadTarget
 		//
-		// Gets the node index
-		__declspec(property(get=getIndex)) uint64_t Index;
-		virtual uint64_t getIndex(void) = 0;
-
-		// Type
-		//
-		// Gets the node type
-		__declspec(property(get=getType)) NodeType Type;
-		virtual NodeType getType(void) = 0;
+		// Reads the target of the symbolic link
+		virtual uapi::size_t ReadTarget(tchar_t* buffer, size_t count) = 0; 
 	};
 
 	// Handle
@@ -229,6 +309,42 @@ struct __declspec(novtable) FileSystem
 	__declspec(property(get=getRoot)) AliasPtr Root;
 	virtual AliasPtr getRoot(void) = 0;
 };
+
+// ::FileSystem::ResolveFlags Bitwise Operators
+inline FileSystem::ResolveFlags operator~(FileSystem::ResolveFlags lhs) {
+	return static_cast<FileSystem::ResolveFlags>(~static_cast<uint32_t>(lhs));
+}
+
+inline FileSystem::ResolveFlags operator&(FileSystem::ResolveFlags lhs, FileSystem::ResolveFlags rhs) {
+	return static_cast<FileSystem::ResolveFlags>(static_cast<uint32_t>(lhs) & (static_cast<uint32_t>(rhs)));
+}
+
+inline FileSystem::ResolveFlags operator|(FileSystem::ResolveFlags lhs, FileSystem::ResolveFlags rhs) {
+	return static_cast<FileSystem::ResolveFlags>(static_cast<uint32_t>(lhs) | (static_cast<uint32_t>(rhs)));
+}
+
+inline FileSystem::ResolveFlags operator^(FileSystem::ResolveFlags lhs, FileSystem::ResolveFlags rhs) {
+	return static_cast<FileSystem::ResolveFlags>(static_cast<uint32_t>(lhs) ^ (static_cast<uint32_t>(rhs)));
+}
+
+// ::FileSystem::ResolveFlags Compound Assignment Operators
+inline FileSystem::ResolveFlags& operator&=(FileSystem::ResolveFlags& lhs, FileSystem::ResolveFlags rhs) 
+{
+	lhs = lhs & rhs;
+	return lhs;
+}
+
+inline FileSystem::ResolveFlags& operator|=(FileSystem::ResolveFlags& lhs, FileSystem::ResolveFlags rhs) 
+{
+	lhs = lhs | rhs;
+	return lhs;
+}
+
+inline FileSystem::ResolveFlags& operator^=(FileSystem::ResolveFlags& lhs, FileSystem::ResolveFlags rhs) 
+{
+	lhs = lhs ^ rhs;
+	return lhs;
+}
 
 //-----------------------------------------------------------------------------
 

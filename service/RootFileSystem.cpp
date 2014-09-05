@@ -88,7 +88,7 @@ void RootFileSystem::Unmount(void)
 }
 	
 //-----------------------------------------------------------------------------
-// RootFileSystem::ResolvePath (private, static)
+// RootFileSystem::Resolve
 //
 // Resolves a FileSystem::Alias from a relative object path
 //
@@ -96,8 +96,9 @@ void RootFileSystem::Unmount(void)
 //
 //	current		- Current Alias instance that was used to resolve this node
 //	path		- Relative file system object path string
+//	state		- State object for the path resolution operation
 
-FileSystem::AliasPtr RootFileSystem::ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path)
+FileSystem::AliasPtr RootFileSystem::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
