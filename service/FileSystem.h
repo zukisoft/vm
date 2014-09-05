@@ -252,11 +252,6 @@ struct __declspec(novtable) FileSystem
 	// Specialization of Node for Symbolic Link objects
 	struct __declspec(novtable) SymbolicLink : public virtual Node
 	{
-		// Follow
-		//
-		// Follows the symbolic link as part of a path resolution
-		virtual FileSystem::AliasPtr Follow(const FileSystem::AliasPtr& current);
-
 		// ReadTarget
 		//
 		// Reads the target of the symbolic link

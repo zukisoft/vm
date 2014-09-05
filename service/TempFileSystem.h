@@ -385,7 +385,6 @@ private:
 
 		// FileSystem::SymbolicLink Implementation
 		//
-		virtual FileSystem::AliasPtr	Follow(const FileSystem::AliasPtr& current);
 		virtual uapi::size_t			ReadTarget(tchar_t* buffer, size_t count);
 
 	private:

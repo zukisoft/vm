@@ -275,7 +275,7 @@ void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::OpenHandle
+// TempFileSystem::DirectoryNode::Open
 //
 // Opens a Handle instance against this node
 //
@@ -295,8 +295,8 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(int flags)
 //
 void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
 {
-	// todo:
-	// m_permission.Demand(blah);
+	// Write permission is required to remove a node from a directory
+	m_permission.Demand(FilePermission::Access::Write);
 
 	// Locate the child alias in the collection, ENOENT if not found
 	auto found = m_children.find(name);
@@ -313,8 +313,10 @@ void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
 //
 FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, ResolveState& state)
 {
-	// Path string should not be null
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	// Execute permission is required to traverse a directory node
+	m_permission.Demand(FilePermission::Access::Execute);
 	
 	// Construct a PathIterator instance to assist with traversing the path components
 	PathIterator iterator(path);
@@ -356,7 +358,7 @@ std::shared_ptr<TempFileSystem::FileNode> TempFileSystem::FileNode::Construct(co
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::FileNode::OpenHandle
+// TempFileSystem::FileNode::Open
 //
 // Opens a Handle instance against this node
 //
@@ -397,16 +399,16 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
 	return std::make_shared<Handle>(shared_from_this(), flags, permission);
 }
 
-// FileNode::ResolvePath
+// FileNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state)
 {
-	bool isleaf = (path == nullptr) ? true : (*path == 0);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	if(state.DirectoryRequired) throw LinuxException(LINUX_ENOTDIR);
 
 	// File nodes can only be resolved to themselves, they have no children
-	if(!isleaf) throw LinuxException(LINUX_ENOTDIR);
+	if(*path != 0) throw LinuxException(LINUX_ENOTDIR);
 	return current;
 }
 
@@ -595,17 +597,21 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 	return std::make_shared<SymbolicLinkNode>(mountpoint, target);
 }
 
-FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Follow(const FileSystem::AliasPtr& current)
+// SymbolicLinkNode::Open
+//
+FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
 {
-	//
-	// JUST MOVE THIS BACK TO RESOLVE(), remove Follow() from SymbolicLink interface -- need state to call Resolve()
-	//
+	// Symbolic Links cannot be opened with O_NOFOLLOW unless O_PATH is also set
+	if((flags & LINUX_O_NOFOLLOW) && ((flags & LINUX_O_PATH) == 0)) throw LinuxException(LINUX_ELOOP);
 
-	// Process the symbolic link by sending the target into the current alias' parent
-	ResolveState state(FileSystem::ResolveFlags::None);  // <--- TODO: is this right??
-	return current->Parent->Node->Resolve(current->Parent, m_target.c_str(), state);
+	// If the file system was mounted as read-only, write access cannot be granted
+	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
 }
 
+// SymbolicLinkNode::ReadTarget
+//
 uapi::size_t TempFileSystem::SymbolicLinkNode::ReadTarget(tchar_t* buffer, size_t count)
 {
 	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
@@ -617,116 +623,15 @@ uapi::size_t TempFileSystem::SymbolicLinkNode::ReadTarget(tchar_t* buffer, size_
 	return count;
 }
 
-////-----------------------------------------------------------------------------
-//// TempFileSystem::SymbolicLinkNode::CreateDirectory
-////
-//// Creates a new directory node as a child of this node
-////
-//// Arguments:
-////
-////	parent		- Parent Alias instance from the resolved path
-////	name		- Name to assign to the new directory object
-//
-//void TempFileSystem::SymbolicLinkNode::CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name)
-//{
-//	// TODO: O_NOFOLLOW?
-//
-//	// Resolve the target using our parent in the Alias tree and ask that node to create the object
-//	parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateDirectory(parent, name);
-//}
-//
-////-----------------------------------------------------------------------------
-//// TempFileSystem::SymbolicLinkNode::CreateFile
-////
-//// Creates a new regular file node as a child of this node
-////
-//// Arguments:
-////
-////	parent		- Parent Alias instance from the resolved path
-////	name		- Name to assign to the new file object
-////	flags		- File creation flags
-//
-//FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags)
-//{
-//	// This operation cannot succeed against the symbolic link itself
-//	if(flags & LINUX_O_NOFOLLOW) throw LinuxException(LINUX_ENOTDIR);
-//
-//	// Resolve the target using our parent in the Alias tree and ask that node to create the object
-//	return parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateFile(parent, name, flags);
-//}
-//
-////-----------------------------------------------------------------------------
-//// TempFileSystem::SymbolicLinkNode::CreateSymbolicLink
-////
-//// Creates a new symbolic link node as a child of this node
-////
-//// Arguments:
-////
-////	parent		- Parent Alias instance from the resolved path
-////	name		- Name to assign to the new symbolic link object
-////	target		- Target string to assign to the new symbolic link object
-//
-//void TempFileSystem::SymbolicLinkNode::CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target)
-//{
-//	// TODO: O_NOFOLLOW?
-//
-//	// Resolve the target using our parent in the Alias tree and ask that node to create the object
-//	parent->Parent->Node->ResolvePath(parent->Parent, m_target.c_str())->Node->CreateSymbolicLink(parent, name, target);
-//}
-//
-//-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::OpenHandle
-//
-// Opens a Handle instance against this node
-//
-// Arguments:
-//
-//	flags		- Operational flags and attributes
-
-FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
-{
-	// O_DIRECTORY?
-	m_permission.Demand(FilePermission::Access::Read);
-
-	// Symbolic Links cannot be opened with O_NOFOLLOW unless O_PATH is also set
-	if((flags & LINUX_O_NOFOLLOW) && ((flags & LINUX_O_PATH) == 0)) throw LinuxException(LINUX_ELOOP);
-
-	// If the file system was mounted as read-only, write access cannot be granted
-	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
-
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
-}
-
-////-----------------------------------------------------------------------------
-//// TempFileSystem::SymbolicLinkNode::ResolvePath
-////
-//// Resolves a path relative from this Node instance
-////
-//// Arguments:
-////
-////	current		- Current Alias instance that resolved to this node instance
-////	path		- Relative path to be resolved
-//
-//FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::ResolvePath(const FileSystem::AliasPtr& current, const tchar_t* path)
-//{
-//	// TODO: watch for ELOOP here, need a link counter argument; this will infinite loop
-//	// if the symbolic link ends up referring to itself
-//
-//	// TODO: O_NOFOLLOW would resolve to this node rather than following the link if path is ""
-//
-//	// Process the symbolic link by sending the target into the current alias' parent
-//	return current->Parent->Node->ResolvePath(current->Parent, m_target.c_str())->Node->ResolvePath(current, path);
-//}
-
 // SymbolicLinkNode::ResolvePath
 //
 FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state)
 {
-	bool isleaf = (path == nullptr) ? true : (*path == 0);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
 	// If this is the leaf of the path and it's not supposed to be followed, check the state flags
 	// and return the current alias if this symlink object should be returned
-	if(isleaf && !state.FollowLeaf) {
+	if((*path == 0) && !state.FollowLeaf) {
 
 		if(state.DirectoryRequired) throw LinuxException(LINUX_ENOTDIR);
 		return current;
@@ -734,7 +639,7 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const FileSystem:
 
 	// Not a leaf or should be followed, follow the link and continue resolution from there
 	if(state.IncrementDepth() > FileSystem::MAXIMUM_PATH_SYMLINKS) throw LinuxException(LINUX_ELOOP);
-	return Follow(current)->Node->Resolve(current, path, state);
+	return current->Parent->Node->Resolve(current->Parent, m_target.c_str(), state)->Node->Resolve(current, path, state);
 }
 
 //-----------------------------------------------------------------------------
