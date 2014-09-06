@@ -24,6 +24,8 @@
 #define __FILESYSTEM_H_
 #pragma once
 
+#include <vector>
+#include <linux/fcntl.h>
 #include <linux/stat.h>
 #include <linux/types.h>
 
@@ -146,6 +148,92 @@ struct __declspec(novtable) FileSystem
 
 		int					m_depth;
 		ResolveFlags		m_flags;
+	};
+
+	// Path
+	//
+	// Helper class used to process and resolve paths
+	class Path
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		Path(const tchar_t* path) : Path(path, 0) {}
+		Path(const tchar_t* path, int flags);
+		~Path()=default;
+
+		// operator bool
+		//
+		// Indicates if the current component pointer is non-empty
+		operator bool() const { return ((m_current) && (*m_current)); }
+
+		// operator !
+		//
+		// Indicates if the current component pointer is empty
+		bool operator !() const { return ((m_current == nullptr) || (*m_current == 0)); }
+
+		// operator ++
+		//
+		// Adjusts the current pointer to the next path component
+		Path& operator++();
+
+		//-------------------------------------------------------------------------
+		// Member Functions
+
+		// IncrementDepth
+		//
+		// Increments a counter that is used to catch loops; typically only incremented
+		// when a symbolic link has been followed during path resolution
+		int IncrementDepth(void) { return ++m_depth; }
+
+		//-------------------------------------------------------------------------
+		// Properties
+
+		// Consumed
+		//
+		// Returns a pointer to the consumed path components
+		__declspec(property(get=getConsumed)) const tchar_t* Consumed;
+		const tchar_t* getConsumed(void) const { return m_consumed; }
+
+		// Current
+		//
+		// Returns a pointer to the current component in the path
+		__declspec(property(get=getCurrent)) const tchar_t* Current;
+		const tchar_t* getCurrent(void) const { return m_current; }
+
+		// DirectoryOnly
+		//
+		// Flag indicating that the path must resolve to a directory
+		__declspec(property(get=getDirectoryOnly)) bool DirectoryOnly;
+		bool getDirectoryOnly(void) const { return (m_flags & LINUX_O_DIRECTORY) == LINUX_O_DIRECTORY; }
+
+		// NoFollow
+		//
+		// Flag indicating that a symbolic link leaf should not be followed
+		__declspec(property(get=getNoFollow)) bool NoFollow;
+		bool getNoFollow(void) const { return (m_flags & LINUX_O_NOFOLLOW) == LINUX_O_NOFOLLOW; }
+
+		// Remaining
+		//
+		// Returns a pointer to the remaining path components
+		__declspec(property(get=getRemaining)) const tchar_t* Remaining;
+		const tchar_t* getRemaining(void) const { return m_remaining; }
+
+	private:
+
+		Path(const Path&)=delete;
+		Path& operator=(const Path&)=delete;
+
+		//-------------------------------------------------------------------------
+		// Member Variables
+
+		int						m_depth;			// Current symbolic link depth
+		int						m_flags;			// Path processing flags
+		std::vector<tchar_t>	m_path;				// Path string vector
+		tchar_t*				m_consumed;			// Pointer to the consumed data
+		tchar_t*				m_current;			// Pointer to the current component
+		tchar_t*				m_remaining;		// Pointer to the remaining data
 	};
 
 	// Alias
