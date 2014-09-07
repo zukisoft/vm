@@ -108,134 +108,6 @@ struct __declspec(novtable) FileSystem
 	//
 	static const int MAXIMUM_PATH_SYMLINKS = 40;
 
-	// ResolveFlags (bitmask)
-	//
-	// Strongly typed enumeration defining flags that are used when resolving a path
-	enum ResolveFlags
-	{
-		None				= 0x00,
-		FollowLeaf			= 0x01,			// Follow trailing symbolic link
-		DirectoryRequired	= 0x02,			// Path must resolve to a directory
-	};
-
-	// ResolveState
-	//
-	// State object used during path resolution operations
-	class ResolveState
-	{
-	public:
-
-		explicit ResolveState(ResolveFlags flags) : m_depth(0), m_flags(flags) {}
-
-		int IncrementDepth(void) { return ++m_depth; }
-
-		__declspec(property(get=getDepth)) int Depth;
-		int getDepth(void) const { return m_depth; }
-
-		//__declspec(property(get=getFlags)) ResolveFlags Flags;
-		//ResolveFlags getFlags(void) const { return m_flags; }
-
-		__declspec(property(get=getDirectoryRequired)) bool DirectoryRequired;
-		bool getDirectoryRequired(void) const { return (m_flags & ResolveFlags::DirectoryRequired) == ResolveFlags::DirectoryRequired; }
-
-		__declspec(property(get=getFollowLeaf)) bool FollowLeaf;
-		bool getFollowLeaf(void) const { return (m_flags & ResolveFlags::FollowLeaf) == ResolveFlags::FollowLeaf; }
-
-	private:
-
-		ResolveState(const ResolveState&)=delete;
-		ResolveState& operator=(const ResolveState&)=delete;
-
-		int					m_depth;
-		ResolveFlags		m_flags;
-	};
-
-	// Path
-	//
-	// Helper class used to process and resolve paths
-	class Path
-	{
-	public:
-
-		// Constructor / Destructor
-		//
-		Path(const tchar_t* path) : Path(path, 0) {}
-		Path(const tchar_t* path, int flags);
-		~Path()=default;
-
-		// operator bool
-		//
-		// Indicates if the current component pointer is non-empty
-		operator bool() const { return ((m_current) && (*m_current)); }
-
-		// operator !
-		//
-		// Indicates if the current component pointer is empty
-		bool operator !() const { return ((m_current == nullptr) || (*m_current == 0)); }
-
-		// operator ++
-		//
-		// Adjusts the current pointer to the next path component
-		Path& operator++();
-
-		//-------------------------------------------------------------------------
-		// Member Functions
-
-		// IncrementDepth
-		//
-		// Increments a counter that is used to catch loops; typically only incremented
-		// when a symbolic link has been followed during path resolution
-		int IncrementDepth(void) { return ++m_depth; }
-
-		//-------------------------------------------------------------------------
-		// Properties
-
-		// Consumed
-		//
-		// Returns a pointer to the consumed path components
-		__declspec(property(get=getConsumed)) const tchar_t* Consumed;
-		const tchar_t* getConsumed(void) const { return m_consumed; }
-
-		// Current
-		//
-		// Returns a pointer to the current component in the path
-		__declspec(property(get=getCurrent)) const tchar_t* Current;
-		const tchar_t* getCurrent(void) const { return m_current; }
-
-		// DirectoryOnly
-		//
-		// Flag indicating that the path must resolve to a directory
-		__declspec(property(get=getDirectoryOnly)) bool DirectoryOnly;
-		bool getDirectoryOnly(void) const { return (m_flags & LINUX_O_DIRECTORY) == LINUX_O_DIRECTORY; }
-
-		// NoFollow
-		//
-		// Flag indicating that a symbolic link leaf should not be followed
-		__declspec(property(get=getNoFollow)) bool NoFollow;
-		bool getNoFollow(void) const { return (m_flags & LINUX_O_NOFOLLOW) == LINUX_O_NOFOLLOW; }
-
-		// Remaining
-		//
-		// Returns a pointer to the remaining path components
-		__declspec(property(get=getRemaining)) const tchar_t* Remaining;
-		const tchar_t* getRemaining(void) const { return m_remaining; }
-
-	private:
-
-		Path(const Path&)=delete;
-		Path& operator=(const Path&)=delete;
-
-		//-------------------------------------------------------------------------
-		// Member Variables
-
-		int						m_depth;			// Current symbolic link depth
-		int						m_flags;			// Path processing flags
-		std::vector<tchar_t>	m_path;				// Path string vector
-		tchar_t*				m_consumed;			// Pointer to the consumed data
-		tchar_t*				m_current;			// Pointer to the current component
-		tchar_t*				m_remaining;		// Pointer to the remaining data
-	};
-
 	// Alias
 	//
 	// todo: document when done
@@ -284,7 +156,7 @@ struct __declspec(novtable) FileSystem
 		// Resolve
 		//
 		// Resolves a relative path from this node to an Alias instance
-		virtual AliasPtr Resolve(const AliasPtr& current, const tchar_t* path, ResolveState& state) = 0;		
+		virtual AliasPtr Resolve(const AliasPtr& current, const tchar_t* path, int flags) = 0;		
 
 		// Index
 		//
@@ -392,42 +264,6 @@ struct __declspec(novtable) FileSystem
 	__declspec(property(get=getRoot)) AliasPtr Root;
 	virtual AliasPtr getRoot(void) = 0;
 };
-
-// ::FileSystem::ResolveFlags Bitwise Operators
-inline FileSystem::ResolveFlags operator~(FileSystem::ResolveFlags lhs) {
-	return static_cast<FileSystem::ResolveFlags>(~static_cast<uint32_t>(lhs));
-}
-
-inline FileSystem::ResolveFlags operator&(FileSystem::ResolveFlags lhs, FileSystem::ResolveFlags rhs) {
-	return static_cast<FileSystem::ResolveFlags>(static_cast<uint32_t>(lhs) & (static_cast<uint32_t>(rhs)));
-}
-
-inline FileSystem::ResolveFlags operator|(FileSystem::ResolveFlags lhs, FileSystem::ResolveFlags rhs) {
-	return static_cast<FileSystem::ResolveFlags>(static_cast<uint32_t>(lhs) | (static_cast<uint32_t>(rhs)));
-}
-
-inline FileSystem::ResolveFlags operator^(FileSystem::ResolveFlags lhs, FileSystem::ResolveFlags rhs) {
-	return static_cast<FileSystem::ResolveFlags>(static_cast<uint32_t>(lhs) ^ (static_cast<uint32_t>(rhs)));
-}
-
-// ::FileSystem::ResolveFlags Compound Assignment Operators
-inline FileSystem::ResolveFlags& operator&=(FileSystem::ResolveFlags& lhs, FileSystem::ResolveFlags rhs) 
-{
-	lhs = lhs & rhs;
-	return lhs;
-}
-
-inline FileSystem::ResolveFlags& operator|=(FileSystem::ResolveFlags& lhs, FileSystem::ResolveFlags rhs) 
-{
-	lhs = lhs | rhs;
-	return lhs;
-}
-
-inline FileSystem::ResolveFlags& operator^=(FileSystem::ResolveFlags& lhs, FileSystem::ResolveFlags rhs) 
-{
-	lhs = lhs ^ rhs;
-	return lhs;
-}
 
 //-----------------------------------------------------------------------------
 

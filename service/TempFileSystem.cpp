@@ -311,7 +311,7 @@ void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
 
 // DirectoryNode::ResolvePath
 //
-FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, ResolveState& state)
+FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, int flags)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
@@ -328,11 +328,11 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const FileSystem::Al
 
 	// The ".." component indicates that the parent alias' node needs to resolve the remainder
 	if(_tcscmp(iterator.Current, _T("..")) == 0) 
-		return current->Parent->Node->Resolve(current->Parent, iterator.Remaining, state);
+		return current->Parent->Node->Resolve(current->Parent, iterator.Remaining, flags);
 
 	// Attempt to locate the next component in the child collection
 	auto found = m_children.find(iterator.Current);
-	if(found != m_children.end()) return found->second->Node->Resolve(found->second, iterator.Remaining, state);
+	if(found != m_children.end()) return found->second->Node->Resolve(found->second, iterator.Remaining, flags);
 
 	// Path component was not found
 	throw LinuxException(LINUX_ENOENT);
@@ -401,11 +401,12 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
 
 // FileNode::Resolve
 //
-FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state)
+FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, int flags)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
-	if(state.DirectoryRequired) throw LinuxException(LINUX_ENOTDIR);
+	// If the path operation required termination in a directory, it cannot end here
+	if((flags & LINUX_O_DIRECTORY) == LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
 
 	// File nodes can only be resolved to themselves, they have no children
 	if(*path != 0) throw LinuxException(LINUX_ENOTDIR);
@@ -625,21 +626,21 @@ uapi::size_t TempFileSystem::SymbolicLinkNode::ReadTarget(tchar_t* buffer, size_
 
 // SymbolicLinkNode::ResolvePath
 //
-FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, FileSystem::ResolveState& state)
+FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, int flags)
 {
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
 
-	// If this is the leaf of the path and it's not supposed to be followed, check the state flags
-	// and return the current alias if this symlink object should be returned
-	if((*path == 0) && !state.FollowLeaf) {
+	// If this is the leaf of the path and it's not supposed to be followed, this is the target node
+	if((*path == 0) && ((flags & LINUX_O_NOFOLLOW) == LINUX_O_NOFOLLOW)) {
 
-		if(state.DirectoryRequired) throw LinuxException(LINUX_ENOTDIR);
+		// Check for O_DIRECTORY flag, this node is not a directory object
+		if((flags & LINUX_O_DIRECTORY) == LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
 		return current;
 	}
 
-	// Not a leaf or should be followed, follow the link and continue resolution from there
-	if(state.IncrementDepth() > FileSystem::MAXIMUM_PATH_SYMLINKS) throw LinuxException(LINUX_ELOOP);
-	return current->Parent->Node->Resolve(current->Parent, m_target.c_str(), state)->Node->Resolve(current, path, state);
+	// Follow the symbolic link by resolving the target against the alias parent
+	// TODO !!! !if(state.IncrementDepth() > FileSystem::MAXIMUM_PATH_SYMLINKS) throw LinuxException(LINUX_ELOOP);
+	return current->Parent->Node->Resolve(current->Parent, m_target.c_str(), flags)->Node->Resolve(current, path, flags);
 }
 
 //-----------------------------------------------------------------------------

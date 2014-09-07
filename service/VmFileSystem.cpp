@@ -119,10 +119,6 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
 
-	// Construct a path resolver instance for the branch, which must be a directory
-	FileSystem::Path resolver(splitter.Branch, LINUX_O_DIRECTORY);
-	//auto branch = 
-
 	// Resolve the branch path to an Alias instance, must resolve to a Directory
 	auto branch = ResolvePath(splitter.Branch);
 	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
@@ -219,11 +215,7 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
 {
 	_ASSERTE(base);
-
-	FileSystem::Path path(relative, 0);		// <--- todo flags
-
-	FileSystem::ResolveState state(FileSystem::ResolveFlags::None);
-	return base->Node->Resolve(base, relative, state);
+	return base->Node->Resolve(base, relative, 0);		// <--- todo flags
 }
 
 //-----------------------------------------------------------------------------

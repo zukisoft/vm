@@ -561,7 +561,6 @@
     </ClCompile>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="FilePermission.cpp" />
-    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="PathIterator.cpp" />
