@@ -365,7 +365,7 @@ private:
 	// SymbolicLinkNode
 	//
 	// Specializes NodeBase for a Symbolic Link file system object
-	class SymbolicLinkNode : public NodeBase, public FileSystem::SymbolicLink
+	class SymbolicLinkNode : public NodeBase, public FileSystem::SymbolicLink, public std::enable_shared_from_this<SymbolicLinkNode>
 	{
 	public:
 
@@ -397,6 +397,38 @@ private:
 		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target) : 
 			NodeBase(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(std::trim(target)) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
+
+		// SymbolicLinkNode::Handle
+		//
+		// Specialization of FileSystem::Handle for a SymbolicLink object; most operations will
+		// simply throw EBADF as this must have been opened with (O_PATH | O_NOFOLLOW)
+		class Handle : public FileSystem::Handle
+		{
+		public:
+
+			// Consructor / Destructor
+			//
+			Handle(const std::shared_ptr<SymbolicLinkNode>& node, int flags) : m_node(node), m_flags(flags) {}
+			~Handle()=default;
+
+			// FileSystem::Handle Implementation
+			//
+			virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
+			virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
+			virtual void			Sync(void)							{ throw LinuxException(LINUX_EBADF); }
+			virtual void			SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
+			virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+
+		private:
+
+			Handle(const Handle&)=delete;
+			Handle& operator=(const Handle&)=delete;
+
+			// Member Variables
+			//
+			int									m_flags;	// File control flags
+			std::shared_ptr<SymbolicLinkNode>	m_node;		// Node reference
+		};
 
 		//---------------------------------------------------------------------
 		// Member Variables

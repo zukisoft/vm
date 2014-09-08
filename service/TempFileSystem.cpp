@@ -573,20 +573,12 @@ TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint
 	_ASSERTE(mountpoint);
 }
 
-//
-// TEMPFILESYSTEM::SYMBOLICLINKNODE
-//
-
 //-----------------------------------------------------------------------------
-// TempFileSystem::SymbolicLinkNode::Construct (static)
-//
-// Constructs a new SymbolicLinkNode instance
-//
-// Arguments:
-//
-//	mountpoint	- Reference to the parent filesystem's MountPoint instance
-//	target		- Target string to assign to the symbolic link node
+// TEMPFILESYSTEM::SYMBOLICLINKNODE IMPLEMENTATION
+//-----------------------------------------------------------------------------
 
+// SymbolicLinkNode::Construct (static)
+//
 std::shared_ptr<TempFileSystem::SymbolicLinkNode> 
 TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target)
 {
@@ -594,7 +586,7 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 	if(target == nullptr) throw LinuxException(LINUX_EFAULT);
 	if(*target == 0) throw LinuxException(LINUX_ENOENT);
 
-	// Construct a new shared DirectoryNode instance and return it to the caller
+	// Construct a new shared SymbolicLinkNode instance and return it to the caller
 	return std::make_shared<SymbolicLinkNode>(mountpoint, target);
 }
 
@@ -608,7 +600,8 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
 	// If the file system was mounted as read-only, write access cannot be granted
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
 
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	// Construct and return the new Handle instance for this node
+	return std::make_shared<Handle>(shared_from_this(), flags);
 }
 
 // SymbolicLinkNode::ReadTarget
