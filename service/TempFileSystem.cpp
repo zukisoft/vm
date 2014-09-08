@@ -641,12 +641,14 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 	// Increment the number of followed symbolic links and throw ELOOP if there are too many
 	if(++(*symlinks) > FileSystem::MAXIMUM_PATH_SYMLINKS) throw LinuxException(LINUX_ELOOP);
 
-	// Trim the target string before using it, need to check the first character to determine absolute v. relative
-	std::tstring target = std::trim(m_target);
-	auto node = (target.size() && (target[0] == _T('/'))) ? root->Node : current->Parent->Node;
+	// Copy and check the first character of the target string to determine absolute v. relative
+	auto node = (m_target.size() && (m_target[0] == _T('/'))) ? root->Node : current->Parent->Node;
+
+	// Trim off any leading slash characters to convert an absolute path into a relative one
+	std::tstring relative(std::ltrim(m_target, _T('/')));
 
 	// Follow the symbolic link by resolving the target against the root node (absolute) or alias parent (relative)
-	return node->Resolve(root, current->Parent, target.c_str(), flags, symlinks)->Node->Resolve(root, current, path, flags, symlinks);
+	return node->Resolve(root, current->Parent, relative.c_str(), flags, symlinks)->Node->Resolve(root, current, path, flags, symlinks);
 }
 
 //-----------------------------------------------------------------------------

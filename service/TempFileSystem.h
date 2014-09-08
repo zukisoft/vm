@@ -395,7 +395,7 @@ private:
 		// Instance Constructor
 		//
 		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target) : 
-			NodeBase(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(target) {}
+			NodeBase(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(std::trim(target)) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
 
 		//---------------------------------------------------------------------

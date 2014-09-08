@@ -120,6 +120,18 @@ namespace std {
 		return wstring(left, str.end());
 	}
 
+	inline string ltrim(const string& str, const char_t& value)
+	{
+		auto left = find_if_not(str.begin(), str.end(), [&](char_t ch) { return ch == value; } );
+		return string(left, str.end());
+	}
+
+	inline wstring ltrim(const wstring& str, const wchar_t& value)
+	{
+		auto left = find_if_not(str.begin(), str.end(), [&](wchar_t ch) { return ch == value; } );
+		return wstring(left, str.end());
+	}
+
 	// std::rtrim
 	//
 	// Performs a right trim of a string
@@ -132,6 +144,18 @@ namespace std {
 	inline wstring rtrim(const wstring& str)
 	{
 		auto right = find_if_not(str.rbegin(), str.rend(), iswspace);
+		return wstring(str.begin(), right.base());
+	}
+
+	inline string rtrim(const string& str, const char_t& value)
+	{
+		auto right = find_if_not(str.rbegin(), str.rend(), [&](char_t ch) { return ch == value; } );
+		return string(str.begin(), right.base());
+	}
+
+	inline wstring rtrim(const wstring& str, const wchar_t& value)
+	{
+		auto right = find_if_not(str.rbegin(), str.rend(), [&](wchar_t ch) { return ch == value; });
 		return wstring(str.begin(), right.base());
 	}
 
@@ -149,6 +173,22 @@ namespace std {
 	{
 		auto left = find_if_not(str.begin(), str.end(), iswspace);
 		auto right = find_if_not(str.rbegin(), str.rend(), iswspace);
+		return (right.base() <= left) ? wstring() : wstring(left, right.base());
+	}
+
+	inline string trim(const string& str, const char_t& value)
+	{
+		auto lambda = [&](char_t ch) { return ch == value; };
+		auto left = find_if_not(str.begin(), str.end(), lambda);
+		auto right = find_if_not(str.rbegin(), str.rend(), lambda);
+		return (right.base() <= left) ? string() : string(left, right.base());
+	}
+
+	inline wstring trim(const wstring& str, const wchar_t& value)
+	{
+		auto lambda = [&](wchar_t ch) { return ch == value; };
+		auto left = find_if_not(str.begin(), str.end(), lambda);
+		auto right = find_if_not(str.rbegin(), str.rend(), lambda);
 		return (right.base() <= left) ? wstring() : wstring(left, right.base());
 	}
 
