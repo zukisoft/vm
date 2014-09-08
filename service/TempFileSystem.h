@@ -46,6 +46,9 @@
 //
 // FILE SIZE: Limited to size_t (4GB on x86 builds, more than sufficient 
 // considering it's not possible to address that much memory)
+//
+// TODO: Create a PathHandle class that is used for all nodes opened with
+// LINUX_O_PATH, it's silly to implement that in each node handle
 
 class TempFileSystem : public FileSystem
 {
@@ -240,7 +243,7 @@ private:
 	// DirectoryNode
 	//
 	// Specializes NodeBase for a Directory file system object
-	class DirectoryNode : public NodeBase, public FileSystem::Directory
+	class DirectoryNode : public NodeBase, public FileSystem::Directory, public std::enable_shared_from_this<DirectoryNode>
 	{
 	public:
 
@@ -274,6 +277,39 @@ private:
 		//
 		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint, FileSystem::NodeType::Directory) {}
 		friend class std::_Ref_count_obj<DirectoryNode>;
+
+		// DirectoryNode::Handle
+		//
+		// Specialization of FileSystem::Handle for a DirectoryNode object
+		class Handle : public FileSystem::Handle
+		{
+		public:
+
+			// Consructor / Destructor
+			//
+			Handle(const std::shared_ptr<DirectoryNode>& node, int flags, const FilePermission& permission) 
+				: m_node(node), m_flags(flags), m_permission(permission) {}
+			~Handle()=default;
+
+			// FileSystem::Handle Implementation
+			//
+			virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException((m_flags & LINUX_O_PATH) ? LINUX_EISDIR : LINUX_EBADF); }
+			virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException((m_flags & LINUX_O_PATH) ? LINUX_EISDIR : LINUX_EBADF); }
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException((m_flags & LINUX_O_PATH) ? LINUX_EISDIR : LINUX_EBADF); }
+
+		private:
+
+			Handle(const Handle&)=delete;
+			Handle& operator=(const Handle&)=delete;
+
+			// Member Variables
+			//
+			int								m_flags;		// File control flags
+			std::shared_ptr<DirectoryNode>	m_node;			// Node reference
+			FilePermission					m_permission;	// Directory permissions
+		};
 
 		//---------------------------------------------------------------------
 		// Private Type Declarations
@@ -332,7 +368,8 @@ private:
 
 			// Consructor / Destructor
 			//
-			Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission);
+			Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission)
+				: m_flags(flags), m_node(node), m_position(0), m_permission(permission) {}
 			~Handle()=default;
 
 			// FileSystem::Handle Implementation

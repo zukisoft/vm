@@ -180,35 +180,20 @@ void TempFileSystem::Alias::Unmount(void)
 	if(m_mounted.size() > 1) m_mounted.pop();
 }
 
-//
-// TEMPFILESYSTEM::DIRECTORYNODE
-//
-
 //-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::Construct (static)
-//
-// Constructs a new DirectoryNode instance
-//
-// Arguments:
-//
-//	mountpoint	- Reference to the parent filesystem's MountPoint instance
+// TEMPFILESYSTEM::DIRECTORYNODE IMPLEMENTATION
+//-----------------------------------------------------------------------------
 
+// DirectoryNode::Construct (static)
+//
 std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Construct(const std::shared_ptr<MountPoint>& mountpoint)
 {
 	// Construct a new shared DirectoryNode instance and return it to the caller
 	return std::make_shared<DirectoryNode>(mountpoint);
 }
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::CreateDirectory
+// DirectoryNode::CreateDirectory
 //
-// Creates a new directory node as a child of this node
-//
-// Arguments:
-//
-//	parent		- Parent Alias instance from the resolved path
-//	name		- Name to assign to the new directory object
-
 void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
@@ -222,17 +207,8 @@ void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& 
 	if(!result.second) throw LinuxException(LINUX_EEXIST);
 }
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::CreateFile
+// DirectoryNode::CreateFile
 //
-// Creates a new regular file node as a child of this node
-//
-// Arguments:
-//
-//	parent		- Parent Alias instance from the resolved path
-//	name		- Name to assign to the new file object
-//	flags		- File creation flags
-
 FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
@@ -250,17 +226,8 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem
 	return handle;				// Return Handle instance generated above
 }
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::CreateSymbolicLink
+// DirectoryNode::CreateSymbolicLink
 //
-// Creates a new symbolic link node as a child of this node
-//
-// Arguments:
-//
-//	parent		- Parent Alias instance from the resolved path
-//	name		- Name to assign to the new symbolic link object
-//	target		- Target string to assign to the new symbolic link object
-
 void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
@@ -274,21 +241,20 @@ void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 	if(!result.second) throw LinuxException(LINUX_EEXIST);
 }
 
-//-----------------------------------------------------------------------------
-// TempFileSystem::DirectoryNode::Open
+// DirectoryNode::Open
 //
-// Opens a Handle instance against this node
-//
-// Arguments:
-//
-//	flags		- Operational flags and attributes
-
 FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(int flags)
 {
 	// Directory node handles must be opened in read-only mode
 	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
 
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	// Create a new permission for the handle, which is narrowed from the node permission
+	// based on the file access mask flags
+	FilePermission permission(m_permission);
+	permission.Narrow(flags);
+
+	// Construct and return the new Handle instance for this node
+	return std::make_shared<Handle>(shared_from_this(), flags, permission);
 }
 
 // DirectoryNode::RemoveNode
@@ -338,9 +304,29 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root
 	throw LinuxException(LINUX_ENOENT);
 }
 
+//-----------------------------------------------------------------------------
+// TEMPFILESYSTEM::DIRECTORYNODE::HANDLE IMPLEMENTATION
+//-----------------------------------------------------------------------------
+
+// DirectoryNode::Handle::Sync
 //
-// TEMPFILESYSTEM::FILENODE
+void TempFileSystem::DirectoryNode::Handle::Sync(void)
+{
+	// Check for O_PATH, but otherwise there is nothing to do
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
+}
+
+// DirectoryNode::Handle::SyncData
 //
+void TempFileSystem::DirectoryNode::Handle::SyncData(void)
+{
+	// Check for O_PATH, but otherwise there is nothing to do
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
+}
+
+//-----------------------------------------------------------------------------
+// TEMPFILESYSTEM::FILENODE IMPLEMENTATION
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // TempFileSystem::FileNode::Construct (static)
@@ -417,18 +403,12 @@ FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 // TEMPFILESYSTEM::FILENODE::HANDLE IMPLEMENTATION
 // ----------------------------------------------------------------------------
 
-// FileNode::Handle Constructor
-//
-TempFileSystem::FileNode::Handle::Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission) :
-	m_flags(flags), m_node(node), m_position(0), m_permission(permission) 
-{
-}
-
 // FileNode::Handle::Read
 //
 uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t count)
 {
-	if(!buffer) throw LinuxException(LINUX_EFAULT);
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
 
 	// Demand read permissions for this file
 	m_permission.Demand(FilePermission::Access::Read);
@@ -454,6 +434,8 @@ uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t c
 //
 uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whence)
 {
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
+
 	// This is only necessary since the node data is accessed for SEEK_END
 	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_lock);
 
@@ -490,18 +472,16 @@ uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whe
 //
 void TempFileSystem::FileNode::Handle::Sync(void)
 {
-	// Demand write permission to the file but otherwise there is nothing
-	// useful to do for TempFileSystem, there is no underlying storage
-	m_permission.Demand(FilePermission::Access::Write);
+	// Check for O_PATH, but otherwise there is nothing to do
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
 }
 
 // FileNode::Handle::SyncData
 //
 void TempFileSystem::FileNode::Handle::SyncData(void)
 {
-	// Demand write permission to the file but otherwise there is nothing
-	// useful to do for TempFileSystem, there is no underlying storage
-	m_permission.Demand(FilePermission::Access::Write);
+	// Check for O_PATH, but otherwise there is nothing to do
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
 }
 
 // FileNode::Handle::Write
@@ -509,6 +489,7 @@ void TempFileSystem::FileNode::Handle::SyncData(void)
 uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::size_t count)
 {
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
+	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
 
 #ifndef _M_X64
 	// 32-bit builds can only store data up to size_t in length.  In reality the
