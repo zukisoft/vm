@@ -79,7 +79,7 @@ private:
 	// FileSystem::Node Implementation
 	//
 	virtual FileSystem::HandlePtr	Open(int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr&, const tchar_t* path, int);
+	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
 	virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
 	virtual NodeType				getType(void) { return NodeType::Directory; }
 

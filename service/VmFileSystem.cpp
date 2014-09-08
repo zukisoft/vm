@@ -215,7 +215,8 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
 {
 	_ASSERTE(base);
-	return base->Node->Resolve(base, relative, 0);		// <--- todo flags
+	int symlinks = 0;
+	return base->Node->Resolve(m_rootfs->Root, base, relative, 0, &symlinks);		// <--- todo flags
 }
 
 //-----------------------------------------------------------------------------

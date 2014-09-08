@@ -94,11 +94,13 @@ void RootFileSystem::Unmount(void)
 //
 // Arguments:
 //
+//	root		- Root Alias for the file system
 //	current		- Current Alias instance that was used to resolve this node
 //	path		- Relative file system object path string
 //	flags		- Resolution flags (O_NOFOLLOW, O_DIRECTORY, etc)
+//	symlinks	- Number of followed symbolic links for O_LOOP processing
 
-FileSystem::AliasPtr RootFileSystem::Resolve(const FileSystem::AliasPtr&, const tchar_t* path, int)
+FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, const tchar_t* path, int, int*)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 

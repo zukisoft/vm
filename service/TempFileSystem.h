@@ -254,7 +254,7 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
-		virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, int flags);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
@@ -309,7 +309,7 @@ private:
 		// FileSystem::Node Implementation
 		//		
 		virtual FileSystem::HandlePtr	Open(int flags);
-		virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, int flags);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
@@ -379,7 +379,7 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
-		virtual FileSystem::AliasPtr	Resolve(const FileSystem::AliasPtr& current, const tchar_t* path, int flags);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 

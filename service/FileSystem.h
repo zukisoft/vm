@@ -156,7 +156,8 @@ struct __declspec(novtable) FileSystem
 		// Resolve
 		//
 		// Resolves a relative path from this node to an Alias instance
-		virtual AliasPtr Resolve(const AliasPtr& current, const tchar_t* path, int flags) = 0;		
+		// TODO: too many arguments, create a state object.  Resolve() is recursive, don't blow up the stack
+		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks) = 0;		
 
 		// Index
 		//
