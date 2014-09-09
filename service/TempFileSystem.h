@@ -240,6 +240,41 @@ private:
 		NodeBase& operator=(const NodeBase&)=delete;
 	};
 
+	// PathHandle
+	//
+	// Specializes FileSystem::Handle for an O_PATH-based handle.  Most operations will fail with
+	// EBADF, O_PATH handles can only be used with operations that act on the Handle itself and
+	// do not actually access the underlying file
+	class PathHandle : public FileSystem::Handle
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		PathHandle(const std::shared_ptr<NodeBase>& node, int flags, const FilePermission& permission) 
+			: m_node(node), m_flags(flags), m_permission(permission) {}
+		~PathHandle()=default;
+
+		// FileSystem::Handle Implementation
+		//
+		virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
+		virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
+		virtual void			Sync(void)							{ throw LinuxException(LINUX_EBADF); }
+		virtual void			SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
+		virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+
+	private:
+
+		PathHandle(const PathHandle&)=delete;
+		PathHandle& operator=(const PathHandle&)=delete;
+
+		// Member Variables
+		//		
+		int								m_flags;		// File control flags
+		std::shared_ptr<NodeBase>		m_node;			// Node reference
+		FilePermission					m_permission;	// Object permissions
+	};
+
 	// DirectoryNode
 	//
 	// Specializes NodeBase for a Directory file system object
@@ -293,11 +328,11 @@ private:
 
 			// FileSystem::Handle Implementation
 			//
-			virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException((m_flags & LINUX_O_PATH) ? LINUX_EISDIR : LINUX_EBADF); }
-			virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException((m_flags & LINUX_O_PATH) ? LINUX_EISDIR : LINUX_EBADF); }
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
-			virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException((m_flags & LINUX_O_PATH) ? LINUX_EISDIR : LINUX_EBADF); }
+			virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EISDIR); }
+			virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EISDIR); }
+			virtual void			Sync(void)							{ /* do nothing */ }
+			virtual void			SyncData(void)						{ /* do nothing */ }
+			virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
 
 		private:
 
@@ -366,7 +401,7 @@ private:
 		{
 		public:
 
-			// Consructor / Destructor
+			// Constructor / Destructor
 			//
 			Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission)
 				: m_flags(flags), m_node(node), m_position(0), m_permission(permission) {}
@@ -376,8 +411,8 @@ private:
 			//
 			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
 			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
+			virtual void			Sync(void)				{ /* do nothing */ }
+			virtual void			SyncData(void)			{ /* do nothing */ }
 			virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
 
 		private:

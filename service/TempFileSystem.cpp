@@ -254,7 +254,8 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(int flags)
 	permission.Narrow(flags);
 
 	// Construct and return the new Handle instance for this node
-	return std::make_shared<Handle>(shared_from_this(), flags, permission);
+	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), flags, permission);
+	else return std::make_shared<Handle>(shared_from_this(), flags, permission);
 }
 
 // DirectoryNode::RemoveNode
@@ -307,22 +308,6 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root
 //-----------------------------------------------------------------------------
 // TEMPFILESYSTEM::DIRECTORYNODE::HANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
-
-// DirectoryNode::Handle::Sync
-//
-void TempFileSystem::DirectoryNode::Handle::Sync(void)
-{
-	// Check for O_PATH, but otherwise there is nothing to do
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
-}
-
-// DirectoryNode::Handle::SyncData
-//
-void TempFileSystem::DirectoryNode::Handle::SyncData(void)
-{
-	// Check for O_PATH, but otherwise there is nothing to do
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
-}
 
 //-----------------------------------------------------------------------------
 // TEMPFILESYSTEM::FILENODE IMPLEMENTATION
@@ -382,7 +367,8 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
 	}
 
 	// Construct and return the new Handle instance for this node
-	return std::make_shared<Handle>(shared_from_this(), flags, permission);
+	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), flags, permission);
+	else return std::make_shared<Handle>(shared_from_this(), flags, permission);
 }
 
 // FileNode::Resolve
@@ -408,7 +394,6 @@ FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t count)
 {
 	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
 
 	// Demand read permissions for this file
 	m_permission.Demand(FilePermission::Access::Read);
@@ -434,8 +419,6 @@ uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t c
 //
 uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whence)
 {
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
-
 	// This is only necessary since the node data is accessed for SEEK_END
 	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_lock);
 
@@ -468,28 +451,11 @@ uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whe
 	return m_position;							// Return the new position
 }
 
-// FileNode::Handle::Sync
-//
-void TempFileSystem::FileNode::Handle::Sync(void)
-{
-	// Check for O_PATH, but otherwise there is nothing to do
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
-}
-
-// FileNode::Handle::SyncData
-//
-void TempFileSystem::FileNode::Handle::SyncData(void)
-{
-	// Check for O_PATH, but otherwise there is nothing to do
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
-}
-
 // FileNode::Handle::Write
 //
 uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::size_t count)
 {
 	if(!buffer) throw LinuxException(LINUX_EFAULT);
-	if(m_flags & LINUX_O_PATH) throw LinuxException(LINUX_EBADF);
 
 #ifndef _M_X64
 	// 32-bit builds can only store data up to size_t in length.  In reality the
@@ -575,13 +541,15 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 //
 FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
 {
-	// Symbolic Links cannot be opened with O_NOFOLLOW unless O_PATH is also set
-	if((flags & LINUX_O_NOFOLLOW) && ((flags & LINUX_O_PATH) == 0)) throw LinuxException(LINUX_ELOOP);
+	// Symbolic links can only be opened with O_NOFOLLOW and O_PATH set in the flags
+	if((flags & (LINUX_O_NOFOLLOW | LINUX_O_PATH)) != (LINUX_O_NOFOLLOW | LINUX_O_PATH)) throw LinuxException(LINUX_ELOOP);
 
 	// If the file system was mounted as read-only, write access cannot be granted
 	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
-
-	// Construct and return the new Handle instance for this node
+	
+	// Construct and return the new Handle instance for this node, note that PathHandle
+	// is never used in conjunction with symbolic links and that there is no need for
+	// a permissions object as symlinks are always read/write/execute for all users
 	return std::make_shared<Handle>(shared_from_this(), flags);
 }
 
