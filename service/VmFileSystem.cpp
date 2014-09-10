@@ -88,6 +88,9 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
 
+	// O_PATH and O_DIRECTORY cannot be used when creating a regular file object
+	if((flags & LINUX_O_PATH) || (flags & LINUX_O_DIRECTORY)) throw LinuxException(LINUX_EINVAL);
+
 	// Split the path into branch and leaf components
 	PathSplitter splitter(path);
 
@@ -172,16 +175,42 @@ void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tch
 //
 //	path		- Path to the object to be opened/created
 //	flags		- Flags indicating how the object should be opened
+//	mode		- Mode bitmask to use if a new object is created
 
-VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags)
+VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags, uapi::mode_t mode)
 {
-	_ASSERTE(path);
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*path == 0) throw LinuxException(LINUX_ENOENT);
 
-	// placeholder code
-	// this may return a detached alias ... oops
-	FileSystem::AliasPtr alias = ResolvePath(path);
-	return alias->Node->Open(flags);
+	// O_PATH filter -> Only O_CLOEXEC, O_DIRECTORY and O_NOFOLLOW are evaluated
+	if(flags & LINUX_O_PATH) flags &= (LINUX_O_PATH | LINUX_O_CLOEXEC | LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW);
+
+	// O_CREAT | O_EXCL indicates that a file object must be created, call CreateFile() instead
+	if((flags & (LINUX_O_CREAT | LINUX_O_EXCL)) == (LINUX_O_CREAT | LINUX_O_EXCL)) return CreateFile(path, flags, mode);
+
+	// O_CREAT indicates that if the object does not exist, a new file will be created
+	else if((flags & LINUX_O_CREAT) == LINUX_O_CREAT) {
+
+		PathSplitter splitter(path);				// Path splitter
+
+		// Resolve the branch path to an Alias instance, must resolve to a Directory
+		auto branch = ResolvePath(splitter.Branch);
+		if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+		// Ask the branch node to resolve the leaf, if that succeeds, just open it
+		FileSystem::AliasPtr leaf;
+		if(TryResolvePath(branch, splitter.Leaf, leaf)) return leaf->Node->Open(flags);
+
+		// The leaf didn't exist (or some other issue happened, TryResolvePath() doesn't
+		// discriminate), cast out the branch as a Directory node and create a file
+		auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+		if(!directory) throw LinuxException(LINUX_ENOTDIR);
+
+		return directory->CreateFile(branch, splitter.Leaf, flags);
+	}
+
+	// Standard open, will throw exception if the object does not exist
+	else return ResolvePath(path)->Node->Open(flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -217,6 +246,25 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base,
 	_ASSERTE(base);
 	int symlinks = 0;
 	return base->Node->Resolve(m_rootfs->Root, base, relative, 0, &symlinks);		// <--- todo flags
+}
+
+bool VmFileSystem::TryResolvePath(const tchar_t* absolute, FileSystem::AliasPtr& result)
+{
+	// TODO: this could be done more efficiently
+	// a performance problem
+	try { result = ResolvePath(absolute); }
+	catch(...) { return false; }
+
+	return true;
+}
+
+bool VmFileSystem::TryResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, FileSystem::AliasPtr& result)
+{
+	// TODO: this could be done more efficiently
+	try { result = ResolvePath(base, relative); }
+	catch(...) { return false; }
+
+	return true;
 }
 
 //-----------------------------------------------------------------------------

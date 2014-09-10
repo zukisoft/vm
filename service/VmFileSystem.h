@@ -80,7 +80,7 @@ public:
 
 	// open
 	//
-	Handle Open(const tchar_t* path, int flags);
+	Handle Open(const tchar_t* path, int flags, uapi::mode_t mode);
 
 	// mount
 	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);
@@ -109,6 +109,9 @@ private:
 	// Resolves an alias instance based on a path
 	FileSystem::AliasPtr ResolvePath(const tchar_t* absolute);
 	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative);
+
+	bool TryResolvePath(const tchar_t* absolute, FileSystem::AliasPtr& result);
+	bool TryResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, FileSystem::AliasPtr& result);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

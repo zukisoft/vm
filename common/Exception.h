@@ -132,7 +132,7 @@ public:
 	// Code
 	//
 	// Gets the error code associated with the HRESULT
-	__declspec(property(get=getCode)) uint16_t code;
+	__declspec(property(get=getCode)) uint16_t Code;
 	uint16_t getCode(void) const { return HRESULT_CODE(m_hresult); }
 
 	// Facility

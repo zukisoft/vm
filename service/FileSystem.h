@@ -147,8 +147,7 @@ struct __declspec(novtable) FileSystem
 	// todo: need permission arguments (mode_t)
 	struct __declspec(novtable) Node
 	{
-		// OpenHandle
-		// todo: rename to just open?
+		// Open
 		//
 		// Creates a FileSystem::Handle instance for this node
 		virtual HandlePtr Open(int flags) = 0;
