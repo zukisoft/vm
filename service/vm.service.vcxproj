@@ -119,10 +119,9 @@
       <ProxyFileName>
       </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
-      <GenerateStublessProxies>true</GenerateStublessProxies>
-      <ValidateAllParameters>true</ValidateAllParameters>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <GenerateStublessProxies>false</GenerateStublessProxies>
+      <ValidateAllParameters>false</ValidateAllParameters>
+      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -164,10 +163,9 @@
       <ProxyFileName>
       </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
-      <GenerateStublessProxies>true</GenerateStublessProxies>
-      <ValidateAllParameters>true</ValidateAllParameters>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <GenerateStublessProxies>false</GenerateStublessProxies>
+      <ValidateAllParameters>false</ValidateAllParameters>
+      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -213,10 +211,9 @@
       <ProxyFileName>
       </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
-      <GenerateStublessProxies>true</GenerateStublessProxies>
-      <ValidateAllParameters>true</ValidateAllParameters>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <GenerateStublessProxies>false</GenerateStublessProxies>
+      <ValidateAllParameters>false</ValidateAllParameters>
+      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -262,10 +259,9 @@
       <ProxyFileName>
       </ProxyFileName>
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
-      <GenerateStublessProxies>true</GenerateStublessProxies>
-      <ValidateAllParameters>true</ValidateAllParameters>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <GenerateStublessProxies>false</GenerateStublessProxies>
+      <ValidateAllParameters>false</ValidateAllParameters>
+      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -319,6 +315,8 @@
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\common\XzStreamReader.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
+    <ClInclude Include="..\tmp\vm.service\syscalls32.h" />
+    <ClInclude Include="..\tmp\vm.service\syscalls64.h" />
     <ClInclude Include="..\tmp\vm.service\vm.service.h" />
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
@@ -553,6 +551,18 @@
     <ClCompile Include="..\common\StructuredException.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\common\XzStreamReader.cpp" />
+    <ClCompile Include="..\tmp\vm.service\syscalls32_s.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\tmp\vm.service\vm.service_s.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -595,9 +605,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </Midl>
+    <Midl Include="syscalls32.idl" />
+    <Midl Include="syscalls64.idl" />
     <Midl Include="vm.service.idl" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="syscalls32.acf" />
+    <None Include="syscalls64.acf" />
     <None Include="vm.service.acf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

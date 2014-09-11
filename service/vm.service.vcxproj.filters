@@ -254,6 +254,12 @@
     <ClInclude Include="FilePermission.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\syscalls32.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\syscalls64.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -439,6 +445,12 @@
     <ClCompile Include="FilePermission.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\syscalls32_s.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">
@@ -458,10 +470,22 @@
     <Midl Include="linuxtypes.idl">
       <Filter>Source Files</Filter>
     </Midl>
+    <Midl Include="syscalls64.idl">
+      <Filter>Source Files\System Calls</Filter>
+    </Midl>
+    <Midl Include="syscalls32.idl">
+      <Filter>Source Files\System Calls</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <None Include="vm.service.acf">
       <Filter>Source Files</Filter>
+    </None>
+    <None Include="syscalls64.acf">
+      <Filter>Source Files\System Calls</Filter>
+    </None>
+    <None Include="syscalls32.acf">
+      <Filter>Source Files\System Calls</Filter>
     </None>
   </ItemGroup>
 </Project>
