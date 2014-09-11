@@ -46,9 +46,6 @@
 //
 // FILE SIZE: Limited to size_t (4GB on x86 builds, more than sufficient 
 // considering it's not possible to address that much memory)
-//
-// TODO: Create a PathHandle class that is used for all nodes opened with
-// LINUX_O_PATH, it's silly to implement that in each node handle
 
 class TempFileSystem : public FileSystem
 {
@@ -293,8 +290,8 @@ private:
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
-		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
-		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
+		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
+		virtual FileSystem::NodeType	getType(void)	{ return NodeBase::getType(); }
 
 		// FileSystem::Directory Implementation
 		//
