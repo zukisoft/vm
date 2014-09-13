@@ -83,6 +83,9 @@ private:
 	//
 	// Virtual file system instance
 	// VirtualFileSystem m_vfs;
+
+	UUID				m_uuid32;		// 32-bit system calls object UUID
+	UUID				m_uuid64;		// 64-bit system calls object UUID
 };
 
 //---------------------------------------------------------------------------

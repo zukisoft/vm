@@ -85,6 +85,9 @@
     <ClInclude Include="..\common\generic_text.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\syscalls32.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -115,6 +118,12 @@
       <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\Win32Exception.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\syscalls32_c.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\rpcmem.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>

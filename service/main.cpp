@@ -61,16 +61,13 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	//RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls32_v1_0_s_ifspec, nullptr);
 	RPC_STATUS rpcresult = RpcServerUseProtseq((RPC_WSTR)L"ncalrpc", RPC_C_PROTSEQ_MAX_REQS_DEFAULT, nullptr);
 	if(rpcresult != RPC_S_OK) {
+		throw std::exception("bad thing");
+	}
+	rpcresult = RpcServerUseProtseq((RPC_WSTR)L"ncalrpc", RPC_C_PROTSEQ_MAX_REQS_DEFAULT, nullptr);
+	if(rpcresult != RPC_S_OK) {
+		throw std::exception("bad thing");
 	}
 	///////
-
-	RPC_BINDING_VECTOR* vector;
-	rpcresult = RpcServerInqBindings(&vector);
-	if(rpcresult == RPC_S_OK) {
-
-		int x = 123;
-	}
-	RpcBindingVectorFree(&vector);
 
 	// -console
 	//

@@ -41,6 +41,10 @@
 #include <DbgHelp.h>
 #pragma comment(lib, "DbgHelp.lib")
 
+// RPC
+#pragma comment(lib, "rpcrt4.lib")
+#pragma comment(lib, "rpcns4.lib")
+
 // STL
 #include <algorithm>
 #include <functional>
