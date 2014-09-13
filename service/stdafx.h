@@ -60,7 +60,7 @@
 
 #include <servicelib.h>
 
-#include <vm.service.h>
+//#include <vm.service.h>
 #include <messages.h>
 
 //---------------------------------------------------------------------------

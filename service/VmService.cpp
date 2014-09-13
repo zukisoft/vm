@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "VmService.h"
 
-#pragma warning(push, 4)			
+#pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
 // VmService::OnStart (private)
@@ -53,21 +53,28 @@ void VmService::OnStart(int, LPTSTR*)
 	////
 
 	svctl::tstring initramfs = m_initramfs;
-
-	// Attempt to load the initial ramdisk file system
-	// m_vfs.LoadInitialFileSystem(initramfs.c_str());
+	
+	////
+	UUID objectuuid, typeuuid;
+	UuidCreate(&objectuuid); 
+	UuidCreate(&typeuuid); 
 
 	// Attept to register the remote system call RPC interface
-	rpcresult = RpcServerRegisterIf(SystemCalls_v1_0_s_ifspec, nullptr, nullptr);
+	RpcObjectSetType(&objectuuid, &typeuuid);
+	rpcresult = RpcServerRegisterIfEx(SystemCalls32_v1_0_s_ifspec, &objectuuid, &syscalls32_32, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
 	if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
 
+	// Attempt to load the initial ramdisk file system
+	// this needs unwind on exception?
+	// m_vfs.LoadInitialFileSystem(initramfs.c_str());
+
 	// Start the RPC listener for this process
-	rpcresult = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
-	if(rpcresult != RPC_S_OK) {
+	//rpcresult = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
+	//if(rpcresult != RPC_S_OK) {
 		
-		RpcServerUnregisterIf(SystemCalls_v1_0_s_ifspec, nullptr, 1);
-		throw std::exception("RpcServerListen");
-	}
+	//	RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, &instanceuuid, 1);
+	//	throw std::exception("RpcServerListen");
+	//}
 }
 
 //-----------------------------------------------------------------------------
@@ -81,8 +88,8 @@ void VmService::OnStart(int, LPTSTR*)
 
 void VmService::OnStop(void)
 {
-	RpcMgmtStopServerListening(nullptr);
-	RpcServerUnregisterIf(SystemCalls_v1_0_s_ifspec, nullptr, 1);
+	//RpcMgmtStopServerListening(nullptr);
+	RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, nullptr, 1);
 }
 
 //---------------------------------------------------------------------------

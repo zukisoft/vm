@@ -20,17 +20,42 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-import "wtypes.idl";
-import "linuxtypes.idl";
+// Integral Data Types
+//
+typedef char								syscall64_char_t;
+typedef unsigned char						syscall64_uchar_t;
+typedef short								syscall64_short_t;
+typedef unsigned short						syscall64_ushort_t;
+typedef __int32								syscall64_int_t;
+typedef unsigned __int32					syscall64_uint_t;
+typedef __int64								syscall64_long_t;
+typedef unsigned __int64					syscall64_ulong_t;
+typedef __int64								syscall64_longlong_t;
+typedef unsigned __int64					syscall64_ulonglong_t;
 
+// Derived Data Types
+//
+typedef syscall64_uint_t					syscall64_mode_t;
+typedef syscall64_ulong_t					syscall64_size_t;
+typedef syscall64_long_t					syscall64_ssize_t;
+
+// Interface SystemCalls64
+//
+// Provides the 64-bit system calls interface for the virtual kernel instance.  Based on the
+// function prototypes provided by the Linux kernel's include/linux/syscalls.h header file
 [
 	version(1.0),
-	uuid(6878E31D-3A11-4C82-8CD9-946F3E2C1C3F),
+	uuid(ADD9997E-0ED3-4E46-9B1C-8099410F2BD6),
 	pointer_default(unique),
-	//endpoint("ncalrpc:[vm.service.SystemCalls]"),
 ]
 
 interface SystemCalls64
 {
-	__int64 sys000_test([in, string] const char* pathname);
+/* 000 */	syscall64_long_t	sys_read([in] syscall64_int_t fd, [out, ref, size_is(count)] syscall64_uchar_t* buf, [in] syscall64_size_t count);
+/* 001 */	syscall64_long_t	sys_write([in] syscall64_int_t fd, [in, ref, size_is(count)] const syscall64_uchar_t* buf, [in] syscall64_size_t count);
+/* 002 */	syscall64_long_t	sys_open([in, string] const syscall64_char_t* pathname, [in] syscall64_int_t flags, [in] syscall64_mode_t mode);
+/* 003 */	syscall64_long_t	sys_close([in] syscall64_int_t fd);
+/* 085 */	syscall64_long_t	sys_creat([in, string] const syscall64_char_t* pathname, [in] syscall64_mode_t mode);
+/* 089 */	syscall64_long_t	sys_readlink([in, string] const syscall64_char_t* pathname, [out, ref, size_is(bufsiz)] syscall64_char_t* buf, [in] syscall64_size_t bufsiz);
+/* 257 */	syscall64_long_t	sys_openat([in] syscall64_int_t fd, [in, string] const syscall64_char_t* pathname, [in] syscall64_int_t flags, [in] syscall64_mode_t mode);
 }

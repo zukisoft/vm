@@ -21,4 +21,8 @@
 //-----------------------------------------------------------------------------
 
 [explicit_handle]
-interface SystemCalls32 {}
+interface SystemCalls32 
+{
+	typedef [context_handle_serialize]		sys32_context_exclusive_t;
+	typedef [context_handle_noserialize]	sys32_context_t;
+}

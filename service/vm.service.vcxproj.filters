@@ -274,24 +274,6 @@
     <ClCompile Include="..\tmp\vm.service\vm.service_s.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="rpc005_open.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="rpc006_close.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="rpc295_openat.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="rpc014_mknod.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="rpc297_mknodat.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="rpc010_unlink.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\GZipStreamReader.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -450,6 +432,9 @@
     </ClCompile>
     <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
       <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="syscalls32_32.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

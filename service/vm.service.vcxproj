@@ -577,14 +577,9 @@
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="PathIterator.cpp" />
     <ClCompile Include="PathSplitter.cpp" />
+    <ClCompile Include="syscalls32_32.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
-    <ClCompile Include="rpc005_open.cpp" />
-    <ClCompile Include="rpc006_close.cpp" />
-    <ClCompile Include="rpc010_unlink.cpp" />
-    <ClCompile Include="rpc014_mknod.cpp" />
-    <ClCompile Include="rpc295_openat.cpp" />
-    <ClCompile Include="rpc297_mknodat.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -607,10 +602,15 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </Midl>
-    <Midl Include="syscalls32.idl" />
+    <Midl Include="syscalls32.idl">
+      <TargetEnvironment Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Win32</TargetEnvironment>
+      <TargetEnvironment Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Win32</TargetEnvironment>
+    </Midl>
     <Midl Include="syscalls64.idl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <TargetEnvironment Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">X64</TargetEnvironment>
+      <TargetEnvironment Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">X64</TargetEnvironment>
     </Midl>
     <Midl Include="vm.service.idl" />
   </ItemGroup>

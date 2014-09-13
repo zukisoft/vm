@@ -27,9 +27,6 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
-#include "RootFileSystem.h"
-#include "VmFileSystem.h"
-
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
@@ -57,51 +54,23 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	//
-	// TEMPFS TESTING
-	//
-
-	std::unique_ptr<VmFileSystem> vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
-	vfs->Mount(nullptr, L"/", L"tmpfs", 0, nullptr);
-
-	try {
-
-		FileSystem::HandlePtr p = vfs->CreateFile(L"test1", LINUX_O_RDWR | LINUX_O_TRUNC, 0);
-		//vfs->CreateDirectory(L"test1/test2");
-		//vfs->CreateDirectory(L"test1/test2/test3");
-		//vfs->CreateSymbolicLink(L"test1/test2/test3/mysymlink", L"../../test2");
-		//vfs->CreateDirectory(L"test1/test2/test3/mysymlink/test4");
-		//vfs->CreateDirectory(L"test1/test2/test4/test5");
-
-		//vfs->Open(L"/mike", 0);
-
-		std::vector<uint8_t> buffer(2048, 0xAA);
-		std::vector<uint8_t> buffer2(2048);
-
-		auto count = p->Write(buffer.data(), 2048);
-		count = p->Read(buffer2.data(), 2048);
-		p->Seek(0, LINUX_SEEK_END);
-		int x = 123;
-	}
-	catch(const std::exception& ex) {
-	
-		int x = 123;
-	}
-
-	return 0;	
-	
-	//
-	// END TESTING
-	//
-
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);
 
 	////////
-	RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls_v1_0_s_ifspec, nullptr);
+	//RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls32_v1_0_s_ifspec, nullptr);
+	RPC_STATUS rpcresult = RpcServerUseProtseq((RPC_WSTR)L"ncalrpc", RPC_C_PROTSEQ_MAX_REQS_DEFAULT, nullptr);
 	if(rpcresult != RPC_S_OK) {
 	}
 	///////
+
+	RPC_BINDING_VECTOR* vector;
+	rpcresult = RpcServerInqBindings(&vector);
+	if(rpcresult == RPC_S_OK) {
+
+		int x = 123;
+	}
+	RpcBindingVectorFree(&vector);
 
 	// -console
 	//
