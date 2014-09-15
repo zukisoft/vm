@@ -23,39 +23,12 @@
     <Filter Include="Header Files\Common">
       <UniqueIdentifier>{4461e233-7df7-4cbd-9905-596a0cd9cb72}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Common\linux">
-      <UniqueIdentifier>{bd6b4155-e47a-4f36-bde8-18524fbc3fb3}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ElfImage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ElfArguments.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SystemCall.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\Exception.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\File.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\MappedFile.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\MappedFileView.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\MemoryRegion.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\Win32Exception.h">
@@ -63,24 +36,6 @@
     </ClInclude>
     <ClInclude Include="..\tmp\vm.messages\messages.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\linux\auxvec.h">
-      <Filter>Header Files\Common\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\linux\elf.h">
-      <Filter>Header Files\Common\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\linux\errno.h">
-      <Filter>Header Files\Common\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\linux\types.h">
-      <Filter>Header Files\Common\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\linux\elf-em.h">
-      <Filter>Header Files\Common\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\linux\mman.h">
-      <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
     <ClInclude Include="..\common\generic_text.h">
       <Filter>Header Files\Common</Filter>
@@ -96,25 +51,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ElfImage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ElfArguments.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Exception.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\File.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\MappedFile.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\MappedFileView.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\MemoryRegion.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\Win32Exception.cpp">
@@ -131,27 +68,8 @@
     <ResourceCompile Include="..\tmp\version\version.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="vdso.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
     <ResourceCompile Include="..\tmp\vm.messages\messages.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="ElfEntry32.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-    <MASM Include="ElfEntry64.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="vdso32-int80.so">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="vdso32-sysenter.so">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

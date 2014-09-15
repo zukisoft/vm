@@ -25,44 +25,32 @@
 #pragma once
 
 // Target Versions
+//
 #define NTDDI_VERSION			NTDDI_WIN7
 #define	_WIN32_WINNT			_WIN32_WINNT_WIN7
 #define WINVER					_WIN32_WINNT_WIN7
 #define	_WIN32_IE				_WIN32_IE_IE80
 
 // Windows / CRT
+//
 #include <windows.h>
-#include <tchar.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-// Debug Help Library
-#include <DbgHelp.h>
-#pragma comment(lib, "DbgHelp.lib")
-
-// RPC
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
-
-// STL
-#include <algorithm>
-#include <functional>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include <linux/types.h>
-#include <linux/errno.h>
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
+// Generic Text Mappings
+//
+#include <generic_text.h>
 
 // Message Resources
+//
 #include <messages.h>
+
+// RPC
+//
+#include <syscalls32.h>
+#pragma comment(lib, "rpcrt4.lib")
+#pragma comment(lib, "rpcns4.lib")
 
 //-----------------------------------------------------------------------------
 

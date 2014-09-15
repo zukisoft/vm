@@ -35,6 +35,10 @@
 
 #pragma warning(push, 4)
 
+using rpc_char_t = unsigned char;
+using rpc_wchar_t = unsigned short;
+using rpc_tchar_t = std::conditional<sizeof(TCHAR) == sizeof(wchar_t), rpc_wchar_t, rpc_char_t>::type;
+
 //-----------------------------------------------------------------------------
 // Generic Text Extensions
 

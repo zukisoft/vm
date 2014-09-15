@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -95,7 +95,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -111,7 +111,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -127,7 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +145,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -156,32 +156,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\common\Exception.h" />
-    <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\generic_text.h" />
-    <ClInclude Include="..\common\linux\auxvec.h" />
-    <ClInclude Include="..\common\linux\elf.h" />
-    <ClInclude Include="..\common\linux\elf-em.h" />
-    <ClInclude Include="..\common\linux\errno.h" />
-    <ClInclude Include="..\common\linux\mman.h" />
-    <ClInclude Include="..\common\linux\types.h" />
-    <ClInclude Include="..\common\MappedFile.h" />
-    <ClInclude Include="..\common\MappedFileView.h" />
-    <ClInclude Include="..\common\MemoryRegion.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\syscalls32.h" />
-    <ClInclude Include="ElfArguments.h" />
-    <ClInclude Include="ElfImage.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="SystemCall.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\Exception.cpp" />
-    <ClCompile Include="..\common\File.cpp" />
-    <ClCompile Include="..\common\MappedFile.cpp" />
-    <ClCompile Include="..\common\MappedFileView.cpp" />
-    <ClCompile Include="..\common\MemoryRegion.cpp" />
     <ClCompile Include="..\common\rpcmem.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\tmp\vm.service\syscalls32_c.c">
@@ -190,8 +172,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ElfArguments.cpp" />
-    <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -203,35 +183,6 @@
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
     <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
-    <ResourceCompile Include="vdso.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="ElfEntry32.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <UseSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</UseSafeExceptionHandlers>
-      <UseSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </UseSafeExceptionHandlers>
-      <UseSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</UseSafeExceptionHandlers>
-      <UseSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</UseSafeExceptionHandlers>
-    </MASM>
-    <MASM Include="ElfEntry64.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="vdso32-int80.so">
-      <DeploymentContent>false</DeploymentContent>
-    </None>
-    <None Include="vdso32-sysenter.so">
-      <DeploymentContent>false</DeploymentContent>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\syscalls\vm.syscalls.vcxproj">
-      <Project>{2cd0303d-470a-4941-bb21-e7f3f840e131}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

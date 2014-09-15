@@ -21,149 +21,49 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <Exception.h>
-#include "resource.h"
-#include "ElfImage.h"
-#include "SystemCall.h"
+#include "Exception.h"
+#include "Win32Exception.h"
 
-#include "../../tmp/vm.service/syscalls32.h"
+// g_rpccontext
+//
+// Global RPC context handle to the system calls server
+sys32_context_exclusive_t g_rpccontext;
 
-LONG CALLBACK SysCallExceptionHandler(PEXCEPTION_POINTERS exception);
-HMODULE GetMyModuleTest(void);
+//-----------------------------------------------------------------------------
+// WinMain
+//
+// Application entry point
+//
+// Arguments:
+//
+//	hInstance			- Application instance handle (base address)
+//	hPrevInstance		- Unused in Win32
+//	pszCommandLine		- Pointer to the application command line
+//	nCmdShow			- Initial window show command
 
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR pszCommandLine, int nCmdShow)
 {
-	ElfImage*		executable = nullptr;				// Executable image
-	ElfImage*		interpreter = nullptr;				// Interpreter image
+	RPC_BINDING_HANDLE			binding;				// RPC binding from command line
+	RPC_STATUS					rpcresult;				// Result from RPC function call
+	sys32_long_t				apiresult;				// Result from system call API function
 
 	UNREFERENCED_PARAMETER(hInstance);
 	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
 
-	RPC_BINDING_HANDLE binding;
-	sys32_context_exclusive_t context;
+	// The only argument passed into the host process is the RPC binding string necessary to connect to the server
+	rpcresult = RpcBindingFromStringBinding(reinterpret_cast<rpc_tchar_t*>(pszCommandLine), &binding);
+	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
-	RPC_STATUS status = RpcBindingFromStringBinding((RPC_WSTR)L"ncalrpc:BREHMM-W8-M[LRPC-21fbd9bcc88657dda3]", &binding);
-	UUID uuuid;
-	UuidFromString((RPC_WSTR)L"d87ed395-7f85-4ea5-a265-e1cb1195cf2d", &uuuid);
-	RpcBindingSetObject(binding, &uuuid);
+	// Attempt to acquire the host runtime context handle from the server
+	apiresult = sys32_acquire_context(binding, &g_rpccontext);
+	if(apiresult != 0) return static_cast<int>(apiresult);
 
-	long result = sys32_acquire_context(binding, &context);
+	//
+	// TODO: just release the context and exit, more interesting things go here later
+	//
 
-
-	return 0;
-
-
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\bootanimation");
-	const tchar_t* exec_path = _T("D:\\android\\init");
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker");
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\busybox-x86");
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\bionicapp");
-	//const tchar_t* exec_path = _T("D:\\Linux Binaries\\generic_x86\\root\\init");
-
-
-	// VDSO - need to work on this, not to mention I need an x86 and an x64 version of it
-	ElfImage* vdso = ElfImage::FromResource(MAKEINTRESOURCE(IDR_RCDATA_VDSO32INT80), RT_RCDATA);
-
-	ElfArguments builder;
-
-	// Clone the command line arguments into the auxiliary vector; these are expected
-	// to be correct for the hosted process, including argument zero, on entry
-	builder.AppendArgument(exec_path);
-	for(int index = 1; index < __argc; index++) builder.AppendArgument(__targv[index]);
-
-	// environment should come from the remote services
-
-	// Clone the initial environment into the auxiliary vector
-	tchar_t** env = _tenviron;
-	while(*env) { builder.AppendEnvironmentVariable(*env); env++; }
-
-	// AT_RANDOM
-	GUID pseudorandom;
-	CoCreateGuid(&pseudorandom);
-
-	HMODULE mod = GetMyModuleTest();
-
-	try { 
-		
-		// note: would use a while loop to iterate over interpreters, they could be chained
-		executable = ElfImage::FromFile(exec_path);
-		if(executable->Interpreter) {
-
-			// TEST: sys005_open()
-			int test = SystemCall(mod, 5).Invoke(executable->Interpreter, 0, 0);
-			(test);
-
-			interpreter = ElfImage::FromFile(_T("D:\\Linux Binaries\\generic_x86\\system\\bin\\linker"));
-			if(interpreter->Interpreter) {
-
-				// TODO: throw something here; don't support chained interpreters yet
-			}
-		}
-
-		//
-		// AUXILIARY VECTORS
-		//
-
-		(LINUX_AT_EXECFD);		// 2 - - CAN IMPLEMENT ONCE FSMANAGER IS WORKING
-		
-		if(executable->ProgramHeaders) {
-
-			builder.AppendAuxiliaryVector(LINUX_AT_PHDR, executable->ProgramHeaders);				// 3
-#ifdef _M_X64
-			builder.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(uapi::Elf64_Phdr));					// 4
-#else
-			builder.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(uapi::Elf32_Phdr));					// 4
-#endif
-			builder.AppendAuxiliaryVector(LINUX_AT_PHNUM, executable->NumProgramHeaders);			// 5
-		}
-
-		builder.AppendAuxiliaryVector(LINUX_AT_PAGESZ, MemoryRegion::PageSize);					// 6
-
-		// AT_BASE is only used with an interpreter and specifies that module's base address
-		if(interpreter) builder.AppendAuxiliaryVector(LINUX_AT_BASE, interpreter->BaseAddress);	// 7
-
-		builder.AppendAuxiliaryVector(LINUX_AT_FLAGS, 0);									// 8
-		builder.AppendAuxiliaryVector(LINUX_AT_ENTRY, executable->EntryPoint);			// 9
-		(LINUX_AT_NOTELF);		// 10 - DO NOT IMPLEMENT
-		(LINUX_AT_UID);			// 11
-		(LINUX_AT_EUID);			// 12
-		(LINUX_AT_GID);			// 13
-		(LINUX_AT_EGID);			// 14
-#ifdef _M_X64
-		builder.AppendAuxiliaryVector(LINUX_AT_PLATFORM, "x86_64");						// 15
-#else
-		builder.AppendAuxiliaryVector(LINUX_AT_PLATFORM, "i686");							// 15
-#endif
-		(LINUX_AT_HWCAP);			// 16
-		(LINUX_AT_CLKTCK);		// 17
-		builder.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);								// 23
-		(LINUX_AT_BASE_PLATFORM);	// 24 - DO NOT IMPLEMENT
-		builder.AppendAuxiliaryVector(LINUX_AT_RANDOM, &pseudorandom, sizeof(GUID));		// 25
-		(LINUX_AT_HWCAP2);		// 26 - DO NOT IMPLEMENT
-		(LINUX_AT_EXECFN);		// 31
-		(LINUX_AT_SYSINFO);		// 32 - PROBABLY DO NOT IMPLEMENT
-		builder.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);			// 33
-
-		// add exception handler from the system calls dll
-		AddVectoredExceptionHandler(1, SysCallExceptionHandler);
-
-		if(interpreter) interpreter->Execute(builder);
-		else executable->Execute(builder);
-
-		if(interpreter) delete interpreter;
-		delete executable;
-	}
-	catch(Exception& ex) {
-		MessageBox(NULL, ex.Message, _T("Exception"), MB_OK | MB_ICONHAND);
-		return (int)E_FAIL;
-	}
-
-	//ElfArguments::ReleaseArgumentStack(args);
-
-	return 0;
+	return sys32_release_context(&g_rpccontext);
 }
+
+//-----------------------------------------------------------------------------
