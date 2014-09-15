@@ -70,7 +70,7 @@
       <UniqueIdentifier>{904732a2-c9b8-4969-b93a-83d5ebb5163d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\System Calls">
-      <UniqueIdentifier>{ff2dbbd5-9f79-4b0e-b890-2814ec47de03}</UniqueIdentifier>
+      <UniqueIdentifier>{7813127d-e6b1-4b3c-8869-be5edc4b6a8a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -263,9 +263,6 @@
     <ClInclude Include="..\tmp\vm.service\syscalls64.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="SystemCalls.h">
-      <Filter>Header Files\System Calls</Filter>
-    </ClInclude>
     <ClInclude Include="Process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -274,6 +271,12 @@
     </ClInclude>
     <ClInclude Include="VmProcessManager.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VmSystemCalls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemCalls.h">
+      <Filter>Header Files\System Calls</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -448,11 +451,23 @@
     <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="syscalls32_32.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
     <ClCompile Include="RpcBindingVector.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VmSystemCalls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemCalls.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="syscalls32_epv64.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="syscalls32_epv32.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="syscalls64_epv64.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

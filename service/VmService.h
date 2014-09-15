@@ -26,13 +26,8 @@
 
 #include <map>
 #include "resource.h"
-#include "SystemCalls.h"
 #include "VmProcessManager.h"
 #include "VmSystemLog.h"
-
-// this could move to a header
-#include <syscalls32.h>
-extern SystemCalls32_v1_0_epv_t syscalls32_32;
 
 #pragma warning(push, 4)			
 

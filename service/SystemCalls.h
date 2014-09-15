@@ -24,41 +24,86 @@
 #define __SYSTEMCALLS_H_
 #pragma once
 
-#include "Process.h"
+#include <concrt.h>
+#include <map>
 
 #pragma warning(push, 4)			
 
 //-----------------------------------------------------------------------------
-// UUID_SYSTEMCALLS32
+// Class SystemCalls (abstract)
 //
-// Type UUID for the 32-bit system calls implementation; this UUID is transparent
-// to the client application(s)
+// Generic implementation of the server system calls interface.  When constructed,
+// a unique identifier is generated and the instance is stored in a static collection
+// that the RPC entry point vectors can use to thunk from the static entry points
+// based on just the client binding handle
 
-// {D967A755-869F-4180-A9C0-BA96D7B41E18}
-__declspec(selectany) extern UUID UUID_SYSTEMCALLS32 = 
-{ 0xd967a755, 0x869f, 0x4180, { 0xa9, 0xc0, 0xba, 0x96, 0xd7, 0xb4, 0x1e, 0x18 } };
-
-//-----------------------------------------------------------------------------
-// UUID_SYSTEMCALLS64
-//
-// Type UUID for the 64-bit system calls implementation; this UUID is transparent
-// to the client application(s)
-
-// {94F810E2-56FE-4FAB-A0A6-2F631C807036}
-__declspec(selectany) extern UUID UUID_SYSTEMCALLS64 = 
-{ 0x94f810e2, 0x56fe, 0x4fab, { 0xa0, 0xa6, 0x2f, 0x63, 0x1c, 0x80, 0x70, 0x36 } };
-
-//-----------------------------------------------------------------------------
-// Interface SystemCalls
-//
-// Build-specific (32bit vs 64bit) implementation of the system calls interface;
-// this will be invoked from the RPC entry points
-
-struct __declspec(novtable) SystemCalls
+class SystemCalls
 {
-	virtual __int3264 SysAttachProcess(DWORD processid, Process** process) = 0;
+public:
 
-	virtual __int3264 SysClose(Process* process, int fd) = 0;
+	// Destructor
+	//
+	virtual ~SystemCalls();
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// FromObjectID
+	//
+	// Retrieves a SystemCalls instance based on it's object id
+	static SystemCalls* FromObjectID(const uuid_t& objectid);
+
+	//
+	// TODO: the API goes here
+	//
+
+protected:
+
+	// Instance Constructor
+	//
+	SystemCalls();
+
+	// ObjectID
+	//
+	// Exposes the auto-generated instance identifier
+	__declspec(property(get=getObjectID)) uuid_t ObjectID;
+	uuid_t getObjectID(void) const { return m_objectid; }
+
+private:
+
+	SystemCalls(const SystemCalls&)=delete;
+	SystemCalls& operator=(const SystemCalls&)=delete;
+
+	//-------------------------------------------------------------------------
+	// Private Type Declarations
+
+	// uuid_key_comp_t
+	//
+	// Key comparison type for UUIDs when used as a collection key
+	struct uuid_key_comp_t 
+	{ 
+		bool operator() (const uuid_t& lhs, const uuid_t& rhs) const { return (memcmp(&lhs, &rhs, sizeof(uuid_t)) < 0); }
+	};
+
+	// object_map_t
+	//
+	// RPC object -> SystemCalls interface map type
+	using object_map_t = std::map<uuid_t, SystemCalls*, uuid_key_comp_t>;
+
+	// rw_lock_t, write_lock, read_lock
+	//
+	// Mappings for Concurrency::reader_writer_lock
+	using rwlock_t = Concurrency::reader_writer_lock;
+	using write_lock = Concurrency::reader_writer_lock::scoped_lock;
+	using read_lock = Concurrency::reader_writer_lock::scoped_lock_read;
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	uuid_t						m_objectid;		// Instance identifier
+
+	static object_map_t			s_objects;		// Object instance collection
+	static rwlock_t				s_lock;			// Collection synchronization lock
 };
 
 //-----------------------------------------------------------------------------

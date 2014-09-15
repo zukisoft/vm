@@ -27,7 +27,7 @@
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
-sys32_context_exclusive_t g_rpccontext;
+sys64_context_exclusive_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
 // WinMain
@@ -45,7 +45,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR pszC
 {
 	RPC_BINDING_HANDLE			binding;				// RPC binding from command line
 	RPC_STATUS					rpcresult;				// Result from RPC function call
-	sys32_long_t				apiresult;				// Result from system call API function
+	HRESULT						hresult;				// Result from system call API function
 
 	UNREFERENCED_PARAMETER(hInstance);
 	UNREFERENCED_PARAMETER(hPrevInstance);
@@ -56,14 +56,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR pszC
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	apiresult = sys32_acquire_context(binding, &g_rpccontext);
-	if(apiresult != 0) return static_cast<int>(apiresult);
+	hresult = sys64_acquire_context(binding, &g_rpccontext);
+	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	//
 	// TODO: just release the context and exit, more interesting things go here later
 	//
 
-	return sys32_release_context(&g_rpccontext);
+	return static_cast<int>(sys64_release_context(&g_rpccontext));
 }
 
 //-----------------------------------------------------------------------------

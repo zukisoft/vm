@@ -332,6 +332,7 @@
     <ClInclude Include="Process.h" />
     <ClInclude Include="RpcBindingVector.h" />
     <ClInclude Include="SystemCalls.h" />
+    <ClInclude Include="VmSystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RootFileSystem.h" />
@@ -582,7 +583,19 @@
     <ClCompile Include="PathIterator.cpp" />
     <ClCompile Include="PathSplitter.cpp" />
     <ClCompile Include="RpcBindingVector.cpp" />
-    <ClCompile Include="syscalls32_32.cpp" />
+    <ClCompile Include="syscalls32_epv32.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="syscalls32_epv64.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="syscalls64_epv64.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="SystemCalls.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -593,6 +606,7 @@
     </ClCompile>
     <ClCompile Include="VmFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
+    <ClCompile Include="VmSystemCalls.cpp" />
     <ClCompile Include="VmSystemLog.cpp" />
   </ItemGroup>
   <ItemGroup>

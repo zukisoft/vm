@@ -38,11 +38,11 @@ VmService::VmService()
 	// embedding the service instance pointer into the first 32/64 bits of
 	// the predefined UUIDs that represent the EPV types
 
-	m_objid32 = UUID_SYSTEMCALLS32;
+//	m_objid32 = EPVID_SYSTEMCALLS32;
 	*reinterpret_cast<VmService**>(&m_objid32) = this;
 
 #ifdef _M_X64
-	m_objid64 = UUID_SYSTEMCALLS64;
+//	m_objid64 = EPVID_SYSTEMCALLS64;
 	*reinterpret_cast<VmService**>(&m_objid64) = this;
 #endif
 }
@@ -77,33 +77,32 @@ void VmService::OnStart(int, LPTSTR*)
 	svctl::tstring initramfs = m_initramfs;
 
 	// Attept to register the remote system call RPC interface
-	RpcObjectSetType(&m_objid32, &UUID_SYSTEMCALLS32);
-	rpcresult = RpcServerRegisterIfEx(SystemCalls32_v1_0_s_ifspec, &UUID_SYSTEMCALLS32, &syscalls32_32, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
-	if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
+	//RpcObjectSetType(&m_objid32, &EPVID_SYSTEMCALLS32);
+	//rpcresult = RpcServerRegisterIfEx(SystemCalls32_v1_0_s_ifspec, &EPVID_SYSTEMCALLS32, &syscalls32_32, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
+	//if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
 
-	RPC_BINDING_VECTOR* vector;
-	rpcresult = RpcServerInqBindings(&vector);
-	if(rpcresult == RPC_S_OK) {
+	//RPC_BINDING_VECTOR* vector;
+	//rpcresult = RpcServerInqBindings(&vector);
+	//if(rpcresult == RPC_S_OK) {
 
-		wchar_t* t;
-		RPC_BINDING_HANDLE copy;
-		RpcBindingCopy(vector->BindingH[0], &copy);
-		RpcBindingSetObject(copy, &m_objid32);
+	//	wchar_t* t;
+	//	RPC_BINDING_HANDLE copy;
+	//	RpcBindingCopy(vector->BindingH[0], &copy);
+	//	RpcBindingSetObject(copy, &m_objid32);
 
-		RpcBindingToStringBinding(copy, (RPC_WSTR*)&t);
-		m_bindstr32 = t;
-		RpcStringFree((RPC_WSTR*)&t);
-		OutputDebugString(m_bindstr32.c_str());
-		OutputDebugString(L"\r\n");
+	//	RpcBindingToStringBinding(copy, (RPC_WSTR*)&t);
+	//	m_bindstr32 = t;
+	//	RpcStringFree((RPC_WSTR*)&t);
+	//	OutputDebugString(m_bindstr32.c_str());
+	//	OutputDebugString(L"\r\n");
 
-		UUID_VECTOR u = { 1, &m_objid32 };
-		rpcresult = RpcEpRegister(SystemCalls32_v1_0_s_ifspec, vector, &u, nullptr);
-		if(rpcresult == RPC_S_OK) {
+	//	UUID_VECTOR u = { 1, &m_objid32 };
+	//	rpcresult = RpcEpRegister(SystemCalls32_v1_0_s_ifspec, vector, &u, nullptr);
+	//	if(rpcresult == RPC_S_OK) {
 
-			int x = 123;
-		}
-	}
-	RpcBindingVectorFree(&vector);
+	//	}
+	//}
+	//RpcBindingVectorFree(&vector);
 
 	// Attempt to load the initial ramdisk file system
 	// this needs unwind on exception?
@@ -121,18 +120,18 @@ void VmService::OnStart(int, LPTSTR*)
 
 void VmService::OnStop(void)
 {
-	RPC_BINDING_VECTOR* vector;
-	RPC_STATUS rpcresult = RpcServerInqBindings(&vector);
+	//RPC_BINDING_VECTOR* vector;
+	//RPC_STATUS rpcresult = RpcServerInqBindings(&vector);
 
-	UUID_VECTOR u = { 1, &m_objid32 };
-	rpcresult = RpcEpUnregister(SystemCalls32_v1_0_s_ifspec, vector, &u);
-	RpcBindingVectorFree(&vector);
+	//UUID_VECTOR u = { 1, &m_objid32 };
+	//rpcresult = RpcEpUnregister(SystemCalls32_v1_0_s_ifspec, vector, &u);
+	//RpcBindingVectorFree(&vector);
 
-	RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, &UUID_SYSTEMCALLS32, 1);
+	//RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, &EPVID_SYSTEMCALLS32, 1);
 
-	UUID nil;
-	UuidCreateNil(&nil);
-	RpcObjectSetType(&m_objid32, &nil);
+	//UUID nil;
+	//UuidCreateNil(&nil);
+	//RpcObjectSetType(&m_objid32, &nil);
 }
 
 //-----------------------------------------------------------------------------
