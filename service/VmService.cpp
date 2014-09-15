@@ -25,15 +25,27 @@
 
 #pragma warning(push, 4)
 
-	// {D87ED395-7F85-4EA5-A265-E1CB1195CF2D}
-static const GUID OBJGUID = 
-{ 0xd87ed395, 0x7f85, 0x4ea5, { 0xa2, 0x65, 0xe1, 0xcb, 0x11, 0x95, 0xcf, 0x2d } };
+//---------------------------------------------------------------------------
+// VmService Constructor
+//
+// Arguments:
+//
+//	NONE
 
-// {158D9099-A155-480C-A295-F3392372F840}
-static const GUID TYPEGUID = 
-{ 0x158d9099, 0xa155, 0x480c, { 0xa2, 0x95, 0xf3, 0x39, 0x23, 0x72, 0xf8, 0x40 } };
+VmService::VmService()
+{
+	// Construct unique identifiers for the system call interfaces by
+	// embedding the service instance pointer into the first 32/64 bits of
+	// the predefined UUIDs that represent the EPV types
 
+	m_objid32 = UUID_SYSTEMCALLS32;
+	*reinterpret_cast<VmService**>(&m_objid32) = this;
 
+#ifdef _M_X64
+	m_objid64 = UUID_SYSTEMCALLS64;
+	*reinterpret_cast<VmService**>(&m_objid64) = this;
+#endif
+}
 
 //---------------------------------------------------------------------------
 // VmService::OnStart (private)
@@ -63,16 +75,10 @@ void VmService::OnStart(int, LPTSTR*)
 	////
 
 	svctl::tstring initramfs = m_initramfs;
-	
-	////
-	UuidCreate(&m_uuid32); 
-	UuidCreate(&m_uuid64); 
-
-
 
 	// Attept to register the remote system call RPC interface
-	RpcObjectSetType(const_cast<GUID*>(&OBJGUID), const_cast<GUID*>(&TYPEGUID));
-	rpcresult = RpcServerRegisterIfEx(SystemCalls32_v1_0_s_ifspec, const_cast<GUID*>(&TYPEGUID), &syscalls32_32, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
+	RpcObjectSetType(&m_objid32, &UUID_SYSTEMCALLS32);
+	rpcresult = RpcServerRegisterIfEx(SystemCalls32_v1_0_s_ifspec, &UUID_SYSTEMCALLS32, &syscalls32_32, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
 	if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
 
 	RPC_BINDING_VECTOR* vector;
@@ -82,13 +88,15 @@ void VmService::OnStart(int, LPTSTR*)
 		wchar_t* t;
 		RPC_BINDING_HANDLE copy;
 		RpcBindingCopy(vector->BindingH[0], &copy);
-		RpcBindingSetObject(copy, const_cast<GUID*>(&OBJGUID));
+		RpcBindingSetObject(copy, &m_objid32);
 
 		RpcBindingToStringBinding(copy, (RPC_WSTR*)&t);
-		OutputDebugString(t);
+		m_bindstr32 = t;
+		RpcStringFree((RPC_WSTR*)&t);
+		OutputDebugString(m_bindstr32.c_str());
 		OutputDebugString(L"\r\n");
 
-		UUID_VECTOR u = { 1, const_cast<GUID*>(&OBJGUID) };
+		UUID_VECTOR u = { 1, &m_objid32 };
 		rpcresult = RpcEpRegister(SystemCalls32_v1_0_s_ifspec, vector, &u, nullptr);
 		if(rpcresult == RPC_S_OK) {
 
@@ -100,14 +108,6 @@ void VmService::OnStart(int, LPTSTR*)
 	// Attempt to load the initial ramdisk file system
 	// this needs unwind on exception?
 	// m_vfs.LoadInitialFileSystem(initramfs.c_str());
-
-	// Start the RPC listener for this process
-	//rpcresult = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, 1);
-	//if(rpcresult != RPC_S_OK) {
-		
-	//	RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, &instanceuuid, 1);
-	//	throw std::exception("RpcServerListen");
-	//}
 }
 
 //-----------------------------------------------------------------------------
@@ -122,27 +122,92 @@ void VmService::OnStart(int, LPTSTR*)
 void VmService::OnStop(void)
 {
 	RPC_BINDING_VECTOR* vector;
-
 	RPC_STATUS rpcresult = RpcServerInqBindings(&vector);
-	if(rpcresult == RPC_S_OK) {
 
-		
-
-
-		UUID_VECTOR u = { 1, const_cast<GUID*>(&OBJGUID) };
-		rpcresult = RpcEpUnregister(SystemCalls32_v1_0_s_ifspec, vector, &u);
-		if(rpcresult == RPC_S_OK) {
-
-			int x = 123;
-		}
-	}
+	UUID_VECTOR u = { 1, &m_objid32 };
+	rpcresult = RpcEpUnregister(SystemCalls32_v1_0_s_ifspec, vector, &u);
 	RpcBindingVectorFree(&vector);
 
+	RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, &UUID_SYSTEMCALLS32, 1);
 
-	//RpcMgmtStopServerListening(nullptr);
-	//RpcEpUnregister(SystemCalls32_v1_0_s_ifspec, 
-	RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, const_cast<GUID*>(&TYPEGUID), 1);
+	UUID nil;
+	UuidCreateNil(&nil);
+	RpcObjectSetType(&m_objid32, &nil);
 }
+
+//-----------------------------------------------------------------------------
+
+//
+//RPC_STATUS VmService::Listener::Start(const UUID& object)
+//{
+//	RPC_STATUS			rpcresult;				// Result from RPC function call
+//
+//	m_object = object;
+//
+//	// Set the object->type->epv mapping for this instance
+//	RpcObjectSetType(&m_object, &m_type);
+//
+//	// Attempt to register the provided interface with the provided type
+//	rpcresult = RpcServerRegisterIfEx(m_interface, &m_type, m_epv, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
+//	if(rpcresult != RPC_S_OK) {
+//		
+//		RpcObjectSetType(&m_object, nullptr);
+//		throw ServiceException(rpcresult);
+//	}
+//
+//	// Retrieve the binding vector for this process
+//	rpcresult = RpcServerInqBindings(&m_bindings);
+//	if(rpcresult != RPC_S_OK) {
+//
+//		RpcServerUnregisterIf(m_interface, &m_type, TRUE);
+//		RpcObjectSetType(&m_object, nullptr);
+//		throw ServiceException(rpcresult);
+//	}
+//
+//	// Register the endpoint for clients to connect to this object
+//	UUID_VECTOR uuids = { 1, &m_object };
+//	rpcresult = RpcEpRegister(m_interface, m_bindings, &uuids, nullptr);
+//	if(rpcresult != RPC_S_OK) {
+//
+//		RpcBindingVectorFree(&m_bindings);
+//		RpcServerUnregisterIf(m_interface, &m_type, TRUE);
+//		RpcObjectSetType(&m_object, nullptr);
+//		throw ServiceException(rpcresult);
+//	}
+//
+//	// Finally, generate a binding string that describes this listener
+//	wchar_t* bindstr;
+//	RPC_BINDING_HANDLE copy;
+//	RpcBindingCopy(m_bindings->BindingH[0], &copy);
+//	RpcBindingSetObject(copy, &m_object);
+//	RpcBindingToStringBinding(copy, reinterpret_cast<RPC_WSTR*>(&bindstr));
+//	m_bindstr = bindstr;
+//	RpcStringFree(reinterpret_cast<RPC_WSTR*>(&bindstr));
+//
+//	return RPC_S_OK;
+//}
+//
+//RPC_STATUS VmService::Listener::Stop(void)
+//{
+//	RPC_STATUS			rpcresult;		// Result from RPC function call
+//
+//	m_bindstr = _T("");					// Remove the binding string
+//
+//	// Remove the endpoint that was generated for this interface
+//	UUID_VECTOR uuids = { 1, &m_object };
+//	RpcEpUnregister(m_interface, m_bindings, &uuids);
+//
+//	// Release and reset the binding vector
+//	RpcBindingVectorFree(&m_bindings);
+//	m_bindings = nullptr;
+//
+//	// Unregister the interface and remove the object UUID
+//	RpcServerUnregisterIf(m_interface, &m_type, TRUE);
+//	RpcObjectSetType(&m_object, nullptr);
+//	m_object = GUID_NULL;
+//
+//	return RPC_S_OK;
+//}
 
 //---------------------------------------------------------------------------
 

@@ -24,7 +24,10 @@
 #define __VMSERVICE_H_
 #pragma once
 
+#include <map>
 #include "resource.h"
+#include "SystemCalls.h"
+#include "VmProcessManager.h"
 #include "VmSystemLog.h"
 
 // this could move to a header
@@ -40,14 +43,18 @@ class VmService : public Service<VmService>
 {
 public:
 
-	VmService()=default;
+	// Instance Constructor
+	//
+	VmService();
 
 	// CONTROL_HANDLER_MAP
+	//
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
 	END_CONTROL_HANDLER_MAP()
 
 	// PARAMETER_MAP
+	//
 	BEGIN_PARAMETER_MAP(VmService)
 		PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
 		PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
@@ -73,6 +80,9 @@ private:
 	// Path to the virtual machine's initramfs blob
 	StringParameter m_initramfs;
 
+
+	std::unique_ptr<VmProcessManager> m_procmgr;
+
 	// m_syslog
 	//
 	// System log implementation
@@ -84,8 +94,42 @@ private:
 	// Virtual file system instance
 	// VirtualFileSystem m_vfs;
 
-	UUID				m_uuid32;		// 32-bit system calls object UUID
-	UUID				m_uuid64;		// 64-bit system calls object UUID
+	UUID m_objid32;
+	std::tstring m_bindstr32;
+
+#ifdef _M_X64
+	UUID m_objid64;
+	std::tstring m_bindstr64;
+#endif
+
+	//class Listener
+	//{
+	//public:
+
+	//	explicit Listener(RPC_IF_HANDLE ifspec, const UUID& type, RPC_MGR_EPV* epv) : 
+	//		m_interface(ifspec), m_type(type), m_epv(epv) {}
+
+	//	~Listener() { Stop(); }
+
+	//	RPC_STATUS Start(const UUID& object);
+	//	RPC_STATUS Stop(void);
+
+	//private:
+
+	//	Listener(const Listener&)=delete;
+	//	Listener& operator=(const Listener&)=delete;
+
+	//	RPC_IF_HANDLE			m_interface = nullptr;
+	//	UUID					m_type = GUID_NULL;
+	//	RPC_MGR_EPV*			m_epv = nullptr;
+	//	
+	//	UUID					m_object = GUID_NULL;
+	//	RPC_BINDING_VECTOR*		m_bindings = nullptr;
+	//	std::tstring			m_bindstr;
+	//};
+
+	//Listener			m_listener32;
+	//Listener			m_listener64;
 };
 
 //---------------------------------------------------------------------------

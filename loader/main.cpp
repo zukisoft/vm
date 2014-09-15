@@ -46,18 +46,11 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	RPC_BINDING_HANDLE binding;
 	sys32_context_exclusive_t context;
-	//RpcBindingConm
-	//[4900] d87ed395-7f85-4ea5-a265-e1cb1195cf2d@ncalrpc:BREHMM-W8[LRPC-59af3949f645705476]
 
-	RPC_STATUS status = RpcBindingFromStringBinding((RPC_WSTR)L"ncalrpc:BREHMM-W8[LRPC-59af3949f645705476]", &binding);
+	RPC_STATUS status = RpcBindingFromStringBinding((RPC_WSTR)L"ncalrpc:BREHMM-W8-M[LRPC-21fbd9bcc88657dda3]", &binding);
 	UUID uuuid;
 	UuidFromString((RPC_WSTR)L"d87ed395-7f85-4ea5-a265-e1cb1195cf2d", &uuuid);
-	//UuidFromString((RPC_WSTR)L"158D9099-A155-480C-A295-F3392372F840", &uuuid);	
 	RpcBindingSetObject(binding, &uuuid);
-
-	wchar_t* t;
-	RpcStringBindingCompose((RPC_WSTR)L"d87ed395-7f85-4ea5-a265-e1cb1195cf2d", (RPC_WSTR)L"ncalrpc", (RPC_WSTR)L"BREHMM-W8", 
-		(RPC_WSTR)L"LRPC-59af3949f645705476", nullptr, (RPC_WSTR*)&t);
 
 	long result = sys32_acquire_context(binding, &context);
 

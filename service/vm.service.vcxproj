@@ -329,6 +329,9 @@
     <ClInclude Include="PathIterator.h" />
     <ClInclude Include="PathSplitter.h" />
     <ClInclude Include="PipeDevice.h" />
+    <ClInclude Include="Process.h" />
+    <ClInclude Include="RpcBindingVector.h" />
+    <ClInclude Include="SystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RootFileSystem.h" />
@@ -336,6 +339,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VmFileSystem.h" />
     <ClInclude Include="FilePermission.h" />
+    <ClInclude Include="VmProcessManager.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
@@ -577,6 +581,7 @@
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="PathIterator.cpp" />
     <ClCompile Include="PathSplitter.cpp" />
+    <ClCompile Include="RpcBindingVector.cpp" />
     <ClCompile Include="syscalls32_32.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />

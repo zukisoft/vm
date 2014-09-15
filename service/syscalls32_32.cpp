@@ -21,8 +21,10 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "VmService.h"
+#include "Process.h"
+#include "SystemCalls.h"
 #include <syscalls32.h>
+#include <vector>
 
 #pragma warning(push, 4)
 
@@ -32,8 +34,8 @@
 
 struct sys32_state_t
 {
-	VmService*		instance;
-	// VmProcess*	process;
+	SystemCalls*	syscalls;
+	Process*		process;
 };
 
 //-----------------------------------------------------------------------------
@@ -48,12 +50,37 @@ struct sys32_state_t
 
 static sys32_long_t acquire_context(handle_t rpchandle, sys32_context_exclusive_t* context)
 {
+	RPC_STATUS			rpcresult;				// Result from RPC function call
+
+	// The client attributes are required to register the remote process
+	RPC_CALL_ATTRIBUTES	attributes;
+	memset(&attributes, 0, sizeof(RPC_CALL_ATTRIBUTES));
+	attributes.Version = RPC_CALL_ATTRIBUTES_VERSION;
+	attributes.Flags = RPC_QUERY_CLIENT_PID;
+
+	// Acquire the call attributes for the remote client
+	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
+	if(rpcresult != RPC_S_OK) return -LINUX_EPERM;
+
+	// The pointer to the SystemCalls interface is embedded into the RPC object UUID
+	UUID objectid;
+	rpcresult = RpcBindingInqObject(rpchandle, &objectid);
+	if(rpcresult != RPC_S_OK) return -LINUX_EPERM;
+
+	SystemCalls* syscalls = *reinterpret_cast<SystemCalls**>(&objectid);
+	Process* process;
+	syscalls->SysAttachProcess(reinterpret_cast<DWORD>(attributes.ClientPID), &process);
+
 	// Allocate a new state object instance that will be case into the context handle
 	sys32_state_t* state = reinterpret_cast<sys32_state_t*>(MIDL_user_allocate(sizeof(sys32_state_t)));
-	if(!state) return -LINUX_ENOMEM;
+	if(!state) {
+		
+		// Detach process or move this up
+		return -LINUX_ENOMEM;
+	}
 
-	state->instance = 0;
-	// state->process = 0;
+	state->syscalls = syscalls;
+	state->process = process;
 
 	// Cast the state object into the client context handle pointer
 	*context = reinterpret_cast<sys32_context_exclusive_t>(state);

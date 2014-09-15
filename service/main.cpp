@@ -57,17 +57,13 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);
 
-	////////
-	//RPC_STATUS rpcresult = RpcServerUseAllProtseqsIf(RPC_C_PROTSEQ_MAX_REQS_DEFAULT, SystemCalls32_v1_0_s_ifspec, nullptr);
+	// Register the RPC protocol sequences that will be used by all the services
+	// hosted within this process
+	// TODO: Security Descriptor
 	RPC_STATUS rpcresult = RpcServerUseProtseq((RPC_WSTR)L"ncalrpc", RPC_C_PROTSEQ_MAX_REQS_DEFAULT, nullptr);
 	if(rpcresult != RPC_S_OK) {
-		throw std::exception("bad thing");
+		throw std::exception("todo: bad thing");
 	}
-	rpcresult = RpcServerUseProtseq((RPC_WSTR)L"ncalrpc", RPC_C_PROTSEQ_MAX_REQS_DEFAULT, nullptr);
-	if(rpcresult != RPC_S_OK) {
-		throw std::exception("bad thing");
-	}
-	///////
 
 	// -console
 	//
