@@ -295,6 +295,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\BZip2StreamReader.h" />
     <ClInclude Include="..\common\CommandLine.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
+    <ClInclude Include="..\common\Console.h" />
     <ClInclude Include="..\common\CpioArchive.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\File.h" />
@@ -314,6 +315,9 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\MappedFile.h" />
     <ClInclude Include="..\common\MappedFileView.h" />
     <ClInclude Include="..\common\MemoryRegion.h" />
+    <ClInclude Include="..\common\PathIterator.h" />
+    <ClInclude Include="..\common\PathSplitter.h" />
+    <ClInclude Include="..\common\RpcInterface.h" />
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\StructuredException.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
@@ -333,18 +337,13 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClInclude>
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
-    <ClInclude Include="Console.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="FsNode.h" />
     <ClInclude Include="MountOptions.h" />
     <ClInclude Include="NullCharacterDevice.h" />
-    <ClInclude Include="PathIterator.h" />
-    <ClInclude Include="PathSplitter.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
-    <ClInclude Include="RpcAutoListener.h" />
-    <ClInclude Include="RpcInterface.h" />
     <ClInclude Include="syscalls.h" />
     <ClInclude Include="SystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />
@@ -554,6 +553,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\bz_internal_error.cpp" />
     <ClCompile Include="..\common\CommandLine.cpp" />
     <ClCompile Include="..\common\CompressedStreamReader.cpp" />
+    <ClCompile Include="..\common\Console.cpp" />
     <ClCompile Include="..\common\CpioArchive.cpp" />
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\File.cpp" />
@@ -565,6 +565,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\MappedFile.cpp" />
     <ClCompile Include="..\common\MappedFileView.cpp" />
     <ClCompile Include="..\common\MemoryRegion.cpp" />
+    <ClCompile Include="..\common\PathIterator.cpp" />
+    <ClCompile Include="..\common\PathSplitter.cpp" />
     <ClCompile Include="..\common\rpcmem.cpp" />
     <ClCompile Include="..\common\StreamReader.cpp" />
     <ClCompile Include="..\common\StructuredException.cpp" />
@@ -594,12 +596,9 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Console.cpp" />
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
-    <ClCompile Include="PathIterator.cpp" />
-    <ClCompile Include="PathSplitter.cpp" />
     <ClCompile Include="syscalls32_epv32.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

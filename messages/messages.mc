@@ -27,7 +27,6 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			ElfImage=3:FACILITY_ELFIMAGE
-			VirtualFileSystem=4:FACILITY_VFS
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1222,31 +1221,4 @@ Severity=Error
 SymbolicName=E_SYSCALLARGUMENTCOUNT
 Language=English
 An invalid number of arguments have been specified for virtual system call number %1!d!
-.
-
-;//----------------------------------------------------------------------------
-;// VirtualFileSystem
-;//
-;// Messages specific to the virtual file system
-
-MessageId=1
-Severity=Error
-Facility=VirtualFileSystem
-SymbolicName=E_VFS_INVALIDNODEMODE
-Language=English
-The specified mode flags 0x%1!X! are not valid for the type of node being created
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_VFS_ALIASEXISTS
-Language=English
-The specified alias %1 is already a member of directory node %2!d!
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_VFS_ALIASNOTFOUND
-Language=English
-The specified alias %1 is not a member of directory node %2!d!
 .

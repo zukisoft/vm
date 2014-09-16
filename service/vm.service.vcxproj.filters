@@ -209,9 +209,6 @@
     <ClInclude Include="..\common\CommandLine.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Console.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VmSystemLog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -248,12 +245,6 @@
     <ClInclude Include="MountOptions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PathSplitter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PathIterator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TempFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
@@ -269,12 +260,6 @@
     <ClInclude Include="SystemCalls.h">
       <Filter>Header Files\System Calls</Filter>
     </ClInclude>
-    <ClInclude Include="RpcAutoListener.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RpcInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="syscalls.h">
       <Filter>Header Files\System Calls</Filter>
     </ClInclude>
@@ -286,6 +271,18 @@
     </ClInclude>
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
       <Filter>Generated Files\RPC x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\RpcInterface.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Console.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PathIterator.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PathSplitter.h">
+      <Filter>Header Files\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -415,9 +412,6 @@
     <ClCompile Include="..\common\CommandLine.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Console.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VmSystemLog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -437,12 +431,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MountOptions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PathSplitter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PathIterator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TempFileSystem.cpp">
@@ -471,6 +459,15 @@
     </ClCompile>
     <ClCompile Include="..\tmp\vm.service\x86\syscalls32_s.c">
       <Filter>Generated Files\RPC x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Console.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\PathIterator.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\PathSplitter.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
