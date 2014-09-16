@@ -53,6 +53,8 @@ public:
 	BEGIN_PARAMETER_MAP(VmService)
 		PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
 		PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
+		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
+		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
 	END_PARAMETER_MAP()
 
 private:
@@ -76,6 +78,7 @@ private:
 	StringParameter m_initramfs;
 
 
+
 	std::unique_ptr<VmProcessManager> m_procmgr;
 
 	// m_syslog
@@ -89,10 +92,11 @@ private:
 	// Virtual file system instance
 	// VirtualFileSystem m_vfs;
 
+	// hosts
 	std::tstring m_bindstr32;
-#ifdef _M_X64
-	std::tstring m_bindstr64;
-#endif
+	std::tstring m_bindstr64;				// won't be initialized on x86
+	StringParameter m_hostprocess32;
+	StringParameter m_hostprocess64;
 };
 
 //---------------------------------------------------------------------------
