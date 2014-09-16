@@ -333,6 +333,8 @@
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="RpcAutoListener.h" />
+    <ClInclude Include="RpcInterface.h" />
+    <ClInclude Include="syscalls.h" />
     <ClInclude Include="SystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />

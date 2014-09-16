@@ -26,6 +26,7 @@
 
 #include <map>
 #include "resource.h"
+#include "syscalls.h"
 #include "SystemCalls.h"
 #include "VmProcessManager.h"
 #include "VmSystemLog.h"
@@ -39,9 +40,7 @@ class VmService : public Service<VmService>, private SystemCalls
 {
 public:
 
-	// Instance Constructor
-	//
-	VmService();
+	VmService()=default;
 
 	// CONTROL_HANDLER_MAP
 	//
@@ -90,11 +89,8 @@ private:
 	// Virtual file system instance
 	// VirtualFileSystem m_vfs;
 
-	UUID m_objid32;
 	std::tstring m_bindstr32;
-
 #ifdef _M_X64
-	UUID m_objid64;
 	std::tstring m_bindstr64;
 #endif
 };

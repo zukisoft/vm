@@ -272,6 +272,12 @@
     <ClInclude Include="RpcAutoListener.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RpcInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="syscalls.h">
+      <Filter>Header Files\System Calls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

@@ -26,28 +26,6 @@
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
-// VmService Constructor
-//
-// Arguments:
-//
-//	NONE
-
-VmService::VmService()
-{
-	// Construct unique identifiers for the system call interfaces by
-	// embedding the service instance pointer into the first 32/64 bits of
-	// the predefined UUIDs that represent the EPV types
-
-//	m_objid32 = EPVID_SYSTEMCALLS32;
-	*reinterpret_cast<VmService**>(&m_objid32) = this;
-
-#ifdef _M_X64
-//	m_objid64 = EPVID_SYSTEMCALLS64;
-	*reinterpret_cast<VmService**>(&m_objid64) = this;
-#endif
-}
-
-//---------------------------------------------------------------------------
 // VmService::OnStart (private)
 //
 // Invoked when the service is started
@@ -59,7 +37,6 @@ VmService::VmService()
 
 void VmService::OnStart(int, LPTSTR*)
 {
-	RPC_STATUS					rpcresult;			// Result from function call
 	LARGE_INTEGER				qpcbias;			// QueryPerformanceCounter bias
 
 	// The system log needs to know what value acts as zero for the timestamps
@@ -76,37 +53,37 @@ void VmService::OnStart(int, LPTSTR*)
 
 	svctl::tstring initramfs = m_initramfs;
 
-	// Attept to register the remote system call RPC interface
-	//RpcObjectSetType(&m_objid32, &EPVID_SYSTEMCALLS32);
-	//rpcresult = RpcServerRegisterIfEx(SystemCalls32_v1_0_s_ifspec, &EPVID_SYSTEMCALLS32, &syscalls32_32, RPC_IF_AUTOLISTEN, RPC_C_LISTEN_MAX_CALLS_DEFAULT, nullptr);
-	//if(rpcresult != RPC_S_OK) throw std::exception("RpcServerRegisterIf");
-
-	//RPC_BINDING_VECTOR* vector;
-	//rpcresult = RpcServerInqBindings(&vector);
-	//if(rpcresult == RPC_S_OK) {
-
-	//	wchar_t* t;
-	//	RPC_BINDING_HANDLE copy;
-	//	RpcBindingCopy(vector->BindingH[0], &copy);
-	//	RpcBindingSetObject(copy, &m_objid32);
-
-	//	RpcBindingToStringBinding(copy, (RPC_WSTR*)&t);
-	//	m_bindstr32 = t;
-	//	RpcStringFree((RPC_WSTR*)&t);
-	//	OutputDebugString(m_bindstr32.c_str());
-	//	OutputDebugString(L"\r\n");
-
-	//	UUID_VECTOR u = { 1, &m_objid32 };
-	//	rpcresult = RpcEpRegister(SystemCalls32_v1_0_s_ifspec, vector, &u, nullptr);
-	//	if(rpcresult == RPC_S_OK) {
-
-	//	}
-	//}
-	//RpcBindingVectorFree(&vector);
-
 	// Attempt to load the initial ramdisk file system
 	// this needs unwind on exception?
 	// m_vfs.LoadInitialFileSystem(initramfs.c_str());
+
+	try {
+
+		// TODO: I want to rework the RpcInterface thing at some point, but this
+		// is a LOT cleaner than making the RPC calls here.  Should also have
+		// some kind of rundown to deal with exceptions properly
+
+		// This may work better as a general single registrar in syscalls/SystemCalls
+		// since the service really doesn't care that it has 2 RPC interfaces, they
+		// both just come back to this single service instance via the entry point vectors
+		syscall32_listener::Register(RPC_IF_AUTOLISTEN);
+		syscall32_listener::AddObject(this->ObjectID32); 
+		m_bindstr32 = syscall32_listener::GetBindingString(this->ObjectID32);
+
+#ifdef _M_X64
+		syscall64_listener::Register(RPC_IF_AUTOLISTEN);
+		syscall64_listener::AddObject(this->ObjectID64);
+		m_bindstr64 = syscall64_listener::GetBindingString(this->ObjectID64);
+#endif
+
+	} 
+
+	// RpcInterface throws Win32Exception, servicelib expects ServiceException
+	catch(Win32Exception& ex) { throw ServiceException(ex.HResult); }
+
+	// TODO: throwing an exception here messes up the ServiceHarness, you get
+	// that damn "abort() has been called" from the std::thread ... fix that 
+	// in servicelib at some point in the near future
 }
 
 //-----------------------------------------------------------------------------
@@ -120,18 +97,14 @@ void VmService::OnStart(int, LPTSTR*)
 
 void VmService::OnStop(void)
 {
-	//RPC_BINDING_VECTOR* vector;
-	//RPC_STATUS rpcresult = RpcServerInqBindings(&vector);
 
-	//UUID_VECTOR u = { 1, &m_objid32 };
-	//rpcresult = RpcEpUnregister(SystemCalls32_v1_0_s_ifspec, vector, &u);
-	//RpcBindingVectorFree(&vector);
+#ifdef _M_X64
+	syscall64_listener::RemoveObject(this->ObjectID64);
+	syscall64_listener::Unregister(true);
+#endif
 
-	//RpcServerUnregisterIf(SystemCalls32_v1_0_s_ifspec, &EPVID_SYSTEMCALLS32, 1);
-
-	//UUID nil;
-	//UuidCreateNil(&nil);
-	//RpcObjectSetType(&m_objid32, &nil);
+	syscall32_listener::RemoveObject(this->ObjectID32);
+	syscall32_listener::Unregister(true);
 }
 
 //---------------------------------------------------------------------------

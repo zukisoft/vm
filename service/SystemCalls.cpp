@@ -44,12 +44,14 @@ SystemCalls::rwlock_t SystemCalls::s_lock;
 
 SystemCalls::SystemCalls()
 {
-	// Generate a unique identifier that can be passed into the RPC runtime
-	UuidCreate(&m_objectid);
+	// Generate unique identifiers that can be passed into the RPC runtime
+	UuidCreate(&m_objectid32);
+	UuidCreate(&m_objectid64);
 
-	// Repeatedly try to insert the new object, regenerating the UUID as necessary
+	// Repeatedly try to insert the new objects, regenerating the UUID as necessary
 	write_lock writer(s_lock);
-	while(!s_objects.insert(std::make_pair(m_objectid, this)).second) UuidCreate(&m_objectid);
+	while(!s_objects.insert(std::make_pair(m_objectid32, this)).second) UuidCreate(&m_objectid32);
+	while(!s_objects.insert(std::make_pair(m_objectid64, this)).second) UuidCreate(&m_objectid64);
 }
 
 //-----------------------------------------------------------------------------
@@ -58,7 +60,8 @@ SystemCalls::SystemCalls()
 SystemCalls::~SystemCalls()
 {
 	write_lock writer(s_lock);
-	s_objects.erase(m_objectid);
+	s_objects.erase(m_objectid32);
+	s_objects.erase(m_objectid64);
 }
 
 //-----------------------------------------------------------------------------

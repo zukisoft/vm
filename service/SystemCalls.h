@@ -64,11 +64,17 @@ protected:
 	//
 	SystemCalls();
 
-	// ObjectID
+	// ObjectID32
 	//
 	// Exposes the auto-generated instance identifier
-	__declspec(property(get=getObjectID)) uuid_t ObjectID;
-	uuid_t getObjectID(void) const { return m_objectid; }
+	__declspec(property(get=getObjectID32)) uuid_t ObjectID32;
+	uuid_t getObjectID32(void) const { return m_objectid32; }
+
+	// ObjectID64
+	//
+	// Exposes the auto-generated instance identifier
+	__declspec(property(get=getObjectID64)) uuid_t ObjectID64;
+	uuid_t getObjectID64(void) const { return m_objectid64; }
 
 private:
 
@@ -101,10 +107,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	uuid_t						m_objectid;		// Instance identifier
+	uuid_t					m_objectid32;		// Instance identifier
+	uuid_t					m_objectid64;		// Instance identifier
 
-	static object_map_t			s_objects;		// Object instance collection
-	static rwlock_t				s_lock;			// Collection synchronization lock
+	static object_map_t		s_objects;			// Object instance collection
+	static rwlock_t			s_lock;				// Collection synchronization lock
 };
 
 //-----------------------------------------------------------------------------
