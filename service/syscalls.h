@@ -28,11 +28,6 @@
 
 #pragma warning(push, 4)
 
-// remove me
-__declspec(selectany) extern uuid_t __object32;
-__declspec(selectany) extern uuid_t __object64;
-// end: remove me
-
 // syscall32_listener
 // syscall64_listener
 //

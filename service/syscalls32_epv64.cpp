@@ -190,7 +190,6 @@ SystemCalls32_v1_0_epv_t syscalls32_epv64 = {
 	[](sys32_context_t context, sys32_int_t fd) -> sys32_long_t 
 	{ 
 		(context); (fd);
-		OutputDebugString(L"syscalls32_epv64 --> sys_close\r\n");
 		//Context* instance = reinterpret_cast<Context*>(context);
 		//return state->instance->blah(state->process, fd);
 		return -1; 
