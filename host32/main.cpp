@@ -59,6 +59,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR pszC
 	hresult = sys32_acquire_context(binding, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
+	sys32_close(g_rpccontext, 1234);
+
 	//
 	// TODO: just release the context and exit, more interesting things go here later
 	//

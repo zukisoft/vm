@@ -190,6 +190,7 @@ SystemCalls64_v1_0_epv_t syscalls64_epv64 = {
 	[](sys64_context_t context, sys64_int_t fd) -> sys64_long_t 
 	{ 
 		(context); (fd);
+		OutputDebugString(L"syscalls64_epv64 --> sys_close\r\n");
 		//Context* instance = reinterpret_cast<Context*>(context);
 		//return state->instance->blah(state->process, fd);
 		return -1; 

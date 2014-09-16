@@ -26,8 +26,37 @@
 #include "Console.h"
 #include "StructuredException.h"
 #include "VmService.h"
+#include "syscalls.h"
 
 #pragma warning(push, 4)
+
+void TestCreateProcess(const tchar_t* host, const tchar_t* bindingstring)
+{
+	tchar_t commandline[MAX_PATH];
+	_tcscpy_s(commandline, MAX_PATH, host);
+	_tcscat_s(commandline, MAX_PATH, _T(" "));
+	_tcscat_s(commandline, MAX_PATH, bindingstring);
+
+	PROCESS_INFORMATION pinfo;
+	STARTUPINFO sinfo;
+	memset(&pinfo, 0, sizeof(PROCESS_INFORMATION));
+	memset(&sinfo, 0, sizeof(STARTUPINFO));
+	sinfo.cb = sizeof(STARTUPINFO);
+
+	if(!CreateProcess(nullptr, commandline, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &sinfo, &pinfo))
+	{
+		DWORD dw = GetLastError();
+		throw std::exception("CreateProcess");
+	}
+
+	WaitForSingleObject(pinfo.hProcess, INFINITE);
+	DWORD exitcode;
+	GetExitCodeProcess(pinfo.hProcess, &exitcode);
+
+	CloseHandle(pinfo.hThread);
+	CloseHandle(pinfo.hProcess);
+}
+
 
 //---------------------------------------------------------------------------
 // _tWinMain
@@ -77,8 +106,21 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		harness.SetParameter(IDR_PARAM_INITRAMFS, commandline.Switches.GetValue(L"initramfs"));
 
 		harness.SetParameter(IDR_PARAM_SYSLOGLENGTH, 1 MiB);
+		harness.SetParameter(IDR_PARAM_HOSTPROCESS32, _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
+		harness.SetParameter(IDR_PARAM_HOSTPROCESS64, _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
+		harness.WaitForStatus(ServiceStatus::Running);
+
+		//console.WriteLine(L"Press ENTER to test 32-bit host");
+		//console.ReadLine();
+		TestCreateProcess(_T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"), syscall32_listener::GetBindingString(__object32).c_str());
+
+#ifdef _M_X64
+		//console.WriteLine(L"Press ENTER to test 64-bit host");
+		//console.ReadLine();
+		TestCreateProcess(_T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"), syscall64_listener::GetBindingString(__object64).c_str());
+#endif
 
 		console.WriteLine(L"Press ENTER to exit");
 		console.ReadLine();

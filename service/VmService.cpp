@@ -69,11 +69,13 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall32_listener::Register(RPC_IF_AUTOLISTEN);
 		syscall32_listener::AddObject(this->ObjectID32); 
 		m_bindstr32 = syscall32_listener::GetBindingString(this->ObjectID32);
+		__object32 = this->ObjectID32;	// todo: Remove me
 
 #ifdef _M_X64
 		syscall64_listener::Register(RPC_IF_AUTOLISTEN);
 		syscall64_listener::AddObject(this->ObjectID64);
 		m_bindstr64 = syscall64_listener::GetBindingString(this->ObjectID64);
+		__object64 = this->ObjectID64;	// todo: Remove me
 #endif
 
 	} 
