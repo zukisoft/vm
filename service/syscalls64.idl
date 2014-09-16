@@ -44,7 +44,7 @@ typedef sys64_long_t					sys64_ssize_t;
 // EPVID_SYSTEMCALLS64 {94F810E2-56FE-4FAB-A0A6-2F631C807036}
 //
 // Defines the UUID to assign to the 64-bit system call entry point vector
-cpp_quote("__declspec(selectany) extern UUID EPVID_SYSTEMCALLS64 = ")
+cpp_quote("__declspec(selectany) extern uuid_t EPVID_SYSTEMCALLS64 = ")
 cpp_quote("{ 0x94f810e2, 0x56fe, 0x4fab, { 0xa0, 0xa6, 0x2f, 0x63, 0x1c, 0x80, 0x70, 0x36 } };")
 
 // Interface SystemCalls64
@@ -84,11 +84,11 @@ interface SystemCalls64
 	// sys_xxxxx
 	//
 	// Linux kernel system calls
-///* 003 */	sys64_long_t	sys64_read([in] sys64_int_t fd, [out, ref, size_is(count)] sys64_uchar_t* buf, [in] sys64_size_t count);
-///* 004 */	sys64_long_t	sys64_write([in] sys64_int_t fd, [in, ref, size_is(count)] const sys64_uchar_t* buf, [in] sys64_size_t count);
-///* 005 */	sys64_long_t	sys64_open([in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
-/* 006 */	sys64_long_t	sys64_close([in] sys64_context_t context, [in] sys64_int_t fd);
-///* 008 */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
-///* 085 */	sys64_long_t	sys64_readlink([in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_size_t bufsiz);
-///* 295 */	sys64_long_t	sys64_openat([in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
+///* x */	sys64_long_t	sys64_read([in] sys64_int_t fd, [out, ref, size_is(count)] sys64_uchar_t* buf, [in] sys64_size_t count);
+///* x */	sys64_long_t	sys64_write([in] sys64_int_t fd, [in, ref, size_is(count)] const sys64_uchar_t* buf, [in] sys64_size_t count);
+///* x */	sys64_long_t	sys64_open([in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
+/* x */	sys64_long_t	sys64_close([in] sys64_context_t context, [in] sys64_int_t fd);
+///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
+///* x */	sys64_long_t	sys64_readlink([in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_size_t bufsiz);
+///* x */	sys64_long_t	sys64_openat([in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 }

@@ -20,5 +20,12 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-[explicit_handle]
-interface SystemCalls64 {}
+[
+	explicit_handle,
+	strict_context_handle
+]
+interface SystemCalls64
+{
+	typedef [context_handle_serialize]		sys64_context_exclusive_t;
+	typedef [context_handle_noserialize]	sys64_context_t;
+}

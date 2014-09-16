@@ -316,7 +316,10 @@
     <ClInclude Include="..\common\XzStreamReader.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\syscalls32.h" />
-    <ClInclude Include="..\tmp\vm.service\syscalls64.h" />
+    <ClInclude Include="..\tmp\vm.service\syscalls64.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
     <ClInclude Include="Console.h" />
@@ -329,7 +332,7 @@
     <ClInclude Include="PathSplitter.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
-    <ClInclude Include="RpcBindingVector.h" />
+    <ClInclude Include="RpcAutoListener.h" />
     <ClInclude Include="SystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
@@ -574,7 +577,6 @@
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="PathIterator.cpp" />
     <ClCompile Include="PathSplitter.cpp" />
-    <ClCompile Include="RpcBindingVector.cpp" />
     <ClCompile Include="syscalls32_epv32.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

@@ -97,35 +97,6 @@ private:
 	UUID m_objid64;
 	std::tstring m_bindstr64;
 #endif
-
-	//class Listener
-	//{
-	//public:
-
-	//	explicit Listener(RPC_IF_HANDLE ifspec, const UUID& type, RPC_MGR_EPV* epv) : 
-	//		m_interface(ifspec), m_type(type), m_epv(epv) {}
-
-	//	~Listener() { Stop(); }
-
-	//	RPC_STATUS Start(const UUID& object);
-	//	RPC_STATUS Stop(void);
-
-	//private:
-
-	//	Listener(const Listener&)=delete;
-	//	Listener& operator=(const Listener&)=delete;
-
-	//	RPC_IF_HANDLE			m_interface = nullptr;
-	//	UUID					m_type = GUID_NULL;
-	//	RPC_MGR_EPV*			m_epv = nullptr;
-	//	
-	//	UUID					m_object = GUID_NULL;
-	//	RPC_BINDING_VECTOR*		m_bindings = nullptr;
-	//	std::tstring			m_bindstr;
-	//};
-
-	//Listener			m_listener32;
-	//Listener			m_listener64;
 };
 
 //---------------------------------------------------------------------------

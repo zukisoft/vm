@@ -32,7 +32,7 @@
 
 // Context
 //
-// Represents the backing data for the sysXX_context_t context handle for a client process
+// Represents the backing data for the sys32_context_t context handle for a client process
 class Context
 {
 public:

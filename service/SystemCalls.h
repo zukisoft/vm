@@ -32,10 +32,11 @@
 //-----------------------------------------------------------------------------
 // Class SystemCalls (abstract)
 //
-// Generic implementation of the server system calls interface.  When constructed,
-// a unique identifier is generated and the instance is stored in a static collection
-// that the RPC entry point vectors can use to thunk from the static entry points
-// based on just the client binding handle
+// Generic implementation of the server system calls interface
+//
+// When constructed, a unique identifier is generated and the instance is stored 
+// in a static collection that the RPC entry point vectors can use to thunk from 
+// the static entry points based on just the client binding handle
 
 class SystemCalls
 {

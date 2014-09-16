@@ -20,7 +20,10 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-[explicit_handle]
+[
+	explicit_handle,
+	strict_context_handle
+]
 interface SystemCalls32 
 {
 	typedef [context_handle_serialize]		sys32_context_exclusive_t;

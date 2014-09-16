@@ -44,7 +44,7 @@ typedef sys32_long_t					sys32_ssize_t;
 // EPVID_SYSTEMCALLS32 {D967A755-869F-4180-A9C0-BA96D7B41E18}
 //
 // Defines the UUID to assign to the 32-bit system call entry point vector
-cpp_quote("__declspec(selectany) extern UUID EPVID_SYSTEMCALLS32 = ")
+cpp_quote("__declspec(selectany) extern uuid_t EPVID_SYSTEMCALLS32 = ")
 cpp_quote("{ 0xd967a755, 0x869f, 0x4180, { 0xa9, 0xc0, 0xba, 0x96, 0xd7, 0xb4, 0x1e, 0x18 } };")
 
 // Interface SystemCalls32

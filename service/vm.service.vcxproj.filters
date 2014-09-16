@@ -263,14 +263,14 @@
     <ClInclude Include="Process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RpcBindingVector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VmProcessManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SystemCalls.h">
       <Filter>Header Files\System Calls</Filter>
+    </ClInclude>
+    <ClInclude Include="RpcAutoListener.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -441,9 +441,6 @@
     </ClCompile>
     <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
       <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RpcBindingVector.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SystemCalls.cpp">
       <Filter>Source Files\System Calls</Filter>
