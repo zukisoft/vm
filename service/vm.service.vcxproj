@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -110,7 +110,7 @@
       </Command>
     </CustomBuildStep>
     <Midl>
-      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)/$(PlatformShortName)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
@@ -129,7 +129,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
-      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"
+if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Creating Temporary Folder</Message>
@@ -142,7 +143,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -154,7 +155,7 @@
       </Command>
     </CustomBuildStep>
     <Midl>
-      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)/$(PlatformShortName)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
@@ -173,7 +174,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
-      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"
+if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Creating Temporary Folder</Message>
@@ -188,7 +190,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -202,7 +204,7 @@
       </Command>
     </CustomBuildStep>
     <Midl>
-      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)/$(PlatformShortName)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
@@ -221,7 +223,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
-      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"
+if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Creating Temporary Folder</Message>
@@ -236,7 +239,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -250,7 +253,7 @@
       </Command>
     </CustomBuildStep>
     <Midl>
-      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)</OutputDirectory>
+      <OutputDirectory>$(SolutionDir)tmp/$(ProjectName)/$(PlatformShortName)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <DllDataFileName>
       </DllDataFileName>
@@ -269,7 +272,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common</AdditionalIncludeDirectories>
     </Midl>
     <PreBuildEvent>
-      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"</Command>
+      <Command>if not exist "$(SolutionDir)\tmp\$(ProjectName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)"
+if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Creating Temporary Folder</Message>
@@ -315,10 +319,17 @@
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\common\XzStreamReader.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
-    <ClInclude Include="..\tmp\vm.service\syscalls32.h" />
-    <ClInclude Include="..\tmp\vm.service\syscalls64.h">
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls32.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
@@ -559,19 +570,29 @@
     <ClCompile Include="..\common\StructuredException.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\common\XzStreamReader.cpp" />
-    <ClCompile Include="..\tmp\vm.service\syscalls32_s.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls32_s.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls64_s.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x86\syscalls32_s.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="FilePermission.cpp" />

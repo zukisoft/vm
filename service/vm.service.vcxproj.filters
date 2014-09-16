@@ -72,6 +72,12 @@
     <Filter Include="Header Files\System Calls">
       <UniqueIdentifier>{7813127d-e6b1-4b3c-8869-be5edc4b6a8a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Generated Files\RPC x86">
+      <UniqueIdentifier>{90d0c904-2711-4a64-bed9-3fb6f8255b8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Generated Files\RPC x64">
+      <UniqueIdentifier>{9507a1d0-f871-4431-8d93-4a382f2408f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -254,12 +260,6 @@
     <ClInclude Include="FilePermission.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\tmp\vm.service\syscalls32.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\tmp\vm.service\syscalls64.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="Process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -277,6 +277,15 @@
     </ClInclude>
     <ClInclude Include="syscalls.h">
       <Filter>Header Files\System Calls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls32.h">
+      <Filter>Generated Files\RPC x64</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h">
+      <Filter>Generated Files\RPC x64</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
+      <Filter>Generated Files\RPC x86</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -442,12 +451,6 @@
     <ClCompile Include="FilePermission.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\syscalls32_s.c">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\syscalls64_s.c">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
     <ClCompile Include="SystemCalls.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
@@ -459,6 +462,15 @@
     </ClCompile>
     <ClCompile Include="syscalls64_epv64.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls32_s.c">
+      <Filter>Generated Files\RPC x64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls64_s.c">
+      <Filter>Generated Files\RPC x64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x86\syscalls32_s.c">
+      <Filter>Generated Files\RPC x86</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
