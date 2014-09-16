@@ -22,7 +22,7 @@
     <ProjectGuid>{C367CDDA-D85D-47D2-8685-46DF64B486E7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>zuki.vm.loader</RootNamespace>
-    <ProjectName>vm.loader</ProjectName>
+    <ProjectName>__vm.loader</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

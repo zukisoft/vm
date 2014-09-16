@@ -22,7 +22,7 @@
     <ProjectGuid>{2CD0303D-470A-4941-BB21-E7F3F840E131}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>zuki.vm.syscalls</RootNamespace>
-    <ProjectName>vm.syscalls</ProjectName>
+    <ProjectName>__vm.syscalls</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

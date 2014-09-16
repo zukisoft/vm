@@ -98,9 +98,6 @@
     <ClInclude Include="SocketDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\tmp\vm.service\vm.service.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\GZipStreamReader.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -272,9 +269,6 @@
     <ClInclude Include="VmProcessManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VmSystemCalls.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SystemCalls.h">
       <Filter>Header Files\System Calls</Filter>
     </ClInclude>
@@ -288,9 +282,6 @@
     </ClCompile>
     <ClCompile Include="VmService.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\vm.service_s.c">
-      <Filter>Generated Files</Filter>
     </ClCompile>
     <ClCompile Include="..\common\GZipStreamReader.cpp">
       <Filter>Source Files\Common</Filter>
@@ -454,9 +445,6 @@
     <ClCompile Include="RpcBindingVector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VmSystemCalls.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SystemCalls.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
@@ -482,9 +470,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="vm.service.idl">
-      <Filter>Source Files</Filter>
-    </Midl>
     <Midl Include="linuxtypes.idl">
       <Filter>Source Files</Filter>
     </Midl>
@@ -496,9 +481,6 @@
     </Midl>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vm.service.acf">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="syscalls64.acf">
       <Filter>Source Files\System Calls</Filter>
     </None>

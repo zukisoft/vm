@@ -26,6 +26,7 @@
 
 #include <map>
 #include "resource.h"
+#include "SystemCalls.h"
 #include "VmProcessManager.h"
 #include "VmSystemLog.h"
 
@@ -34,7 +35,7 @@
 //---------------------------------------------------------------------------
 // Class VmService
 
-class VmService : public Service<VmService>
+class VmService : public Service<VmService>, private SystemCalls
 {
 public:
 
