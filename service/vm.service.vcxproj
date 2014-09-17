@@ -340,7 +340,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Device.h" />
     <ClInclude Include="FileDescriptor.h" />
     <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="FsNode.h" />
     <ClInclude Include="MountOptions.h" />
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
