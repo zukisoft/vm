@@ -44,17 +44,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
 
-	RPC_BINDING_HANDLE binding;
-	sys32_context_exclusive_t context;
-
-	RPC_STATUS status = RpcBindingFromStringBinding((RPC_WSTR)L"ncalrpc:BREHMM-W8-M[LRPC-21fbd9bcc88657dda3]", &binding);
-	UUID uuuid;
-	UuidFromString((RPC_WSTR)L"d87ed395-7f85-4ea5-a265-e1cb1195cf2d", &uuuid);
-	RpcBindingSetObject(binding, &uuuid);
-
-	long result = sys32_acquire_context(binding, &context);
-
-
 	return 0;
 
 

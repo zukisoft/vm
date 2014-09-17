@@ -39,8 +39,16 @@ class VmProcessManager
 {
 public:
 
+	VmProcessManager(const tchar_t* hostpath32, const tchar_t* hostcmdline32)
+	{
+		_ASSERTE((hostpath32 != nullptr) && (hostcmdline32 != nullptr));
+	}
+
 	//-------------------------------------------------------------------------
 	// Member Functions
+
+	// something like this ... perhaps FileSystem::Handle instead?
+	//std::shared_ptr<Process> CreateProcess(const std::shared_ptr<FileDescriptor>& fd);
 
 private:
 
@@ -72,6 +80,10 @@ private:
 	// Member Variables
 
 	process_map_t			m_processes;	// Collection of hosted processes
+
+
+	std::tstring		m_hostpath32;		// 32-bit host path string
+	std::tstring		m_hostcmdline32;	// 32-bit host command line
 };
 
 //-----------------------------------------------------------------------------

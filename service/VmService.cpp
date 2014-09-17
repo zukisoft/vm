@@ -51,12 +51,13 @@ void VmService::OnStart(int, LPTSTR*)
 	m_syslog->Push("System log initialized");
 	////
 
+	// INITIALIZE RAMDISK
 	svctl::tstring initramfs = m_initramfs;
-
 	// Attempt to load the initial ramdisk file system
 	// this needs unwind on exception?
 	// m_vfs.LoadInitialFileSystem(initramfs.c_str());
 
+	// REGISTER RPC INTERFACES
 	try {
 
 		// TODO: I want to rework the RpcInterface thing at some point, but this
@@ -69,17 +70,21 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall32_listener::Register(RPC_IF_AUTOLISTEN);
 		syscall32_listener::AddObject(this->ObjectID32); 
 		m_bindstr32 = syscall32_listener::GetBindingString(this->ObjectID32);
+		// m_syslog->Push
 
 #ifdef _M_X64
 		syscall64_listener::Register(RPC_IF_AUTOLISTEN);
 		syscall64_listener::AddObject(this->ObjectID64);
 		m_bindstr64 = syscall64_listener::GetBindingString(this->ObjectID64);
+		// m_syslog->Push
 #endif
-
 	} 
 
 	// RpcInterface throws Win32Exception, servicelib expects ServiceException
 	catch(Win32Exception& ex) { throw ServiceException(ex.HResult); }
+
+	// INITIALIZE PROCESS MANAGER
+	//
 
 	// TODO: throwing an exception here messes up the ServiceHarness, you get
 	// that damn "abort() has been called" from the std::thread ... fix that 

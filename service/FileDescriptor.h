@@ -20,27 +20,27 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __PROCESS_H_
-#define __PROCESS_H_
+#ifndef __FILEDESCRIPTOR_H_
+#define __FILEDESCRIPTOR_H_
 #pragma once
 
 #pragma warning(push, 4)			
 
-class Process
+class FileDescriptor
 {
 public:
 
-	Process()=default;
-	~Process()=default;
+	FileDescriptor()=default;
+	~FileDescriptor()=default;
 
 private:
 
-	Process(const Process&)=delete;
-	Process& operator=(const Process&)=delete;
+	FileDescriptor(const FileDescriptor&)=delete;
+	FileDescriptor& operator=(const FileDescriptor&)=delete;
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __PROCESS_H_
+#endif	// __FILEDESCRIPTOR_H_

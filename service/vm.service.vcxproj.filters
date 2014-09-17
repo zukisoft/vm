@@ -72,12 +72,6 @@
     <Filter Include="Header Files\System Calls">
       <UniqueIdentifier>{7813127d-e6b1-4b3c-8869-be5edc4b6a8a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Generated Files\RPC x86">
-      <UniqueIdentifier>{90d0c904-2711-4a64-bed9-3fb6f8255b8c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Generated Files\RPC x64">
-      <UniqueIdentifier>{9507a1d0-f871-4431-8d93-4a382f2408f4}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -263,15 +257,6 @@
     <ClInclude Include="syscalls.h">
       <Filter>Header Files\System Calls</Filter>
     </ClInclude>
-    <ClInclude Include="..\tmp\vm.service\x64\syscalls32.h">
-      <Filter>Generated Files\RPC x64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h">
-      <Filter>Generated Files\RPC x64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
-      <Filter>Generated Files\RPC x86</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\RpcInterface.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -283,6 +268,18 @@
     </ClInclude>
     <ClInclude Include="..\common\PathSplitter.h">
       <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls32.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDescriptor.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -451,15 +448,6 @@
     <ClCompile Include="syscalls64_epv64.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\x64\syscalls32_s.c">
-      <Filter>Generated Files\RPC x64</Filter>
-    </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\x64\syscalls64_s.c">
-      <Filter>Generated Files\RPC x64</Filter>
-    </ClCompile>
-    <ClCompile Include="..\tmp\vm.service\x86\syscalls32_s.c">
-      <Filter>Generated Files\RPC x86</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Console.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -468,6 +456,21 @@
     </ClCompile>
     <ClCompile Include="..\common\PathSplitter.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls32_s.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x86\syscalls32_s.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls64_s.c">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDescriptor.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

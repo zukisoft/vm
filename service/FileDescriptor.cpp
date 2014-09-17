@@ -20,27 +20,13 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __PROCESS_H_
-#define __PROCESS_H_
-#pragma once
+#include "stdafx.h"
+#include "FileDescriptor.h"
 
-#pragma warning(push, 4)			
+#pragma warning(push, 4)
 
-class Process
-{
-public:
-
-	Process()=default;
-	~Process()=default;
-
-private:
-
-	Process(const Process&)=delete;
-	Process& operator=(const Process&)=delete;
-};
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __PROCESS_H_
