@@ -27,6 +27,8 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
+#include "Host.h"
+
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
@@ -53,6 +55,9 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
+
+	std::unique_ptr<Host> h = Host::Create(_T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
+	return 0;
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);

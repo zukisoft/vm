@@ -65,6 +65,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	// The server will wait for an inherited event object to be signaled to ensure that this
 	// process was able to acquire the context handle; set that event and close the handle
 	HANDLE signal = reinterpret_cast<HANDLE>(_ttol(__targv[2]));
+	// todo: this won't close the handle if SetEvent() fails
 	if(!SetEvent(signal) || !CloseHandle(signal)) return static_cast<int>(GetLastError());
 
 	//

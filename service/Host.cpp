@@ -25,12 +25,25 @@
 
 #pragma warning(push, 4)
 
+// Host::ReadySignal::s_inheritflags
+//
+// Static SECURITY_ATTRIBUTES structure with bInheritHandle set to TRUE
+SECURITY_ATTRIBUTES Host::ReadySignal::s_inherit = { sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };
+
 //-----------------------------------------------------------------------------
+// Host Constructor
+//
+// Arguments:
+//
+//	procinfo		- PROCESS_INFORMATION for the hosted process
 
 Host::Host(const PROCESS_INFORMATION& procinfo)
 {
 	m_procinfo = procinfo;
 }
+
+//-----------------------------------------------------------------------------
+// Host Destructor
 
 Host::~Host()
 {
@@ -39,35 +52,64 @@ Host::~Host()
 	CloseHandle(m_procinfo.hProcess);
 }
 
-std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* commandline)
+//-----------------------------------------------------------------------------
+// Host::Create (static)
+//
+// Creates a new Host instance for a regular child process
+//
+// Arguments:
+//
+//	binarypath		- Path to the host binary
+//	bindingstring	- RPC binding string to pass to the host binary
+
+std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bindingstring)
 {
 	zero_init<PROCESS_INFORMATION>	procinfo;			// Process information
-	//zero_init<STARTUPINFOEX>		startinfo;			// Startup information
-	zero_init<STARTUPINFO>			startinfo;			// Startup information
-	HANDLE							readysignal;		// Event host signals when ready
+	ReadySignal						readysignal;		// Event for child to signal
 
-	// Initialize the STARTUPINFO structure for the new process
-	startinfo.cb = sizeof(STARTUPINFO); // <--- CHANGE TO EX
+	// Generate the command line for the child process, which includes the RPC binding string as argv[1] and
+	// a 32-bit serialized copy of the inheritable event handle as argv[2]
+	tchar_t commandline[MAX_PATH];
+	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\" \"%s\" \"%ld\""), binarypath, bindingstring, static_cast<__int32>(readysignal));
 
-	zero_init<SECURITY_ATTRIBUTES> secattr;
-	secattr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	secattr.bInheritHandle = TRUE;
-	readysignal = CreateEvent(&secattr, TRUE, FALSE, nullptr);
-	if(!readysignal) throw Win32Exception();
+	// Determine the size of the attributes buffer required to hold the inheritable handle
+	size_t required = 0;
+	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
+	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
 
-	size_t required;
-	if(!InitializeProcThreadAttributeList(nullptr, 1, 0, &required)) throw Win32Exception();
+	// Allocate a buffer large enough to hold the attribute data and initialize it
 	std::vector<uint8_t> buffer(required);
-	//if(!InitializeProcThreadAttributeList(reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(buffer.data()), 1, 0, &required)) throw Win32Exception();
-	//if(!UpdateProcThreadAttribute(reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(buffer.data()), 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, 
+	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(buffer.data());
+	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) throw Win32Exception();
 
-	// Create a copy of the command line string, it may be modified by CreateProcess()
-	tchar_t* cmdline = _tcsdup(commandline);
+	try {
 
-	BOOL result = CreateProcess(binarypath, cmdline, nullptr, nullptr, TRUE, CREATE_SUSPENDED /*| EXTENDED_STARTUPINFO_PRESENT*/, 
-		nullptr, nullptr, &startinfo, &procinfo);
+		// Add the ready event as in inheritable handle attribute for the client process
+		HANDLE handles[] = { readysignal };
+		if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, sizeof(handles), nullptr, nullptr)) throw Win32Exception();
 
-	free(cmdline);
+		// Attempt to launch the process using the EXTENDED_STARTUP_INFO_PRESENT flag
+		// TODO: NEEDS SECURITY SETTINGS AND OPTIONS
+		zero_init<STARTUPINFOEX> startinfo;
+		startinfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
+		startinfo.lpAttributeList = attributes;
+		if(!CreateProcess(binarypath, commandline, nullptr, nullptr, TRUE, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, 
+			&startinfo.StartupInfo, &procinfo)) throw Win32Exception();
+
+		DeleteProcThreadAttributeList(attributes);			// Clean up the PROC_THREAD_ATTRIBUTE_LIST
+	}
+
+	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
+
+	// Create the Host instance to take ownership of the PROCESS_INFORMATION handles
+	std::unique_ptr<Host> instance = std::make_unique<Host>(procinfo);
+
+	// The process is alive, wait for it to either signal the ready event or to terminate
+	HANDLE waithandles[] = { readysignal, procinfo.hProcess };
+	if(WaitForMultipleObjects(2, waithandles, FALSE, /* TODO: SETTING HERE */ 20000) != WAIT_OBJECT_0) 
+		throw Exception(E_UNEXPECTED);	// <--- TODO: EXCEPTION
+
+	return instance;									// Process signaled, all is well
 }
 
 //-----------------------------------------------------------------------------
