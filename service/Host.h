@@ -20,57 +20,38 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __HOST_H_
+#define __HOST_H_
 #pragma once
 
-//-----------------------------------------------------------------------------
-// Win32 Declarations
-
-#define NTDDI_VERSION			NTDDI_WIN8
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN8
-#define WINVER					_WIN32_WINNT_WIN8
-#define	_WIN32_IE				_WIN32_IE_IE100
-
-// Windows / CRT
-#include <Windows.h>
-#include <rpc.h>
-#include <stdint.h>
 #include <memory>
-#include <string>
+#include "Exception.h"
+#include "Win32Exception.h"
 
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
+#pragma warning(push, 4)			
 
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Generic Text Mappings
-#include <generic_text.h>
-
-// Linux
-#include <linux/types.h>
-#include <linux/errno.h>
-
-//---------------------------------------------------------------------------
-// Service Template Library
-
-#include <servicelib.h>
-
-//#include <vm.service.h>
-#include <messages.h>
-
-// find a place to put this
-template <typename _type>
-struct zero_init : public _type
+class Host
 {
-	zero_init() { memset(this, 0, sizeof(_type)); }
+public:
+
+	Host(const PROCESS_INFORMATION& procinfo);
+	~Host();
+
+	static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* commandline);
+
+private:
+
+	Host(const Host&)=delete;
+	Host& operator=(const Host&)=delete;
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	PROCESS_INFORMATION		m_procinfo;		// Process information
 };
 
-
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)
+
+#endif	// __HOST_H_
