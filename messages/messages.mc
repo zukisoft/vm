@@ -1234,6 +1234,13 @@ Severity=Error
 Facility=HostProcess
 SymbolicName=E_HOSTUNRESPONSIVE
 Language=English
-The host process %1 did not signal that it was successfully initialized
+The host process %1 did not trigger the event indicating successful initialization and will be terminated
+.
+
+MessageId=2
+Severity=Error
+SymbolicName=E_CANNOTSERIALIZEHANDLE
+Language=English
+The kernel handle required to synchronize with the host process cannot be serialized into a 32-bit integer value
 .
 

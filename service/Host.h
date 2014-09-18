@@ -76,9 +76,15 @@ private:
 		//
 		operator __int32() const 
 		{ 
-			// The raw value of the handle cannot exceed INT32_MAX for serialization
-			if(reinterpret_cast<__int3264>(m_handle) > INT32_MAX) { /* TODO: EXCEPTION HERE */ }; 
+#ifdef _M_X64
+			// The raw value of the handle needs to fall within (INT32_MIN,INT32_MAX) for it to serialize properly
+			__int64 serialized = reinterpret_cast<__int64>(m_handle);
+			if((serialized > INT32_MAX) || (serialized < INT32_MIN)) throw Exception(E_CANNOTSERIALIZEHANDLE);
+			else return static_cast<__int32>(serialized);
+#else
+			// 32-bit builds have 32-bit handles, serialization is not an issue
 			return reinterpret_cast<__int32>(m_handle); 
+#endif
 		}
 
 		// Set
