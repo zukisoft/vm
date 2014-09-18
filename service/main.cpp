@@ -27,8 +27,6 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
-#include "Host.h"
-
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
@@ -56,9 +54,6 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
 
-	std::unique_ptr<Host> h = Host::Create(_T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
-	return 0;
-
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);
 
@@ -85,9 +80,12 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		harness.SetParameter(IDR_PARAM_SYSLOGLENGTH, 1 MiB);
 		harness.SetParameter(IDR_PARAM_HOSTPROCESS32, _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
 		harness.SetParameter(IDR_PARAM_HOSTPROCESS64, _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
+		harness.SetParameter(IDR_PARAM_HOSTPROCESSTIMEOUT, 10000);
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		harness.WaitForStatus(ServiceStatus::Running);
+
+		harness.SendControl((ServiceControl)128);
 
 		console.WriteLine(L"Press ENTER to exit");
 		console.ReadLine();

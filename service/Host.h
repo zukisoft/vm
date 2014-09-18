@@ -48,7 +48,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new Host instance for a regular child process
-	static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* bindingstring);
+	static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout);
 
 private:
 

@@ -61,8 +61,9 @@ Host::~Host()
 //
 //	binarypath		- Path to the host binary
 //	bindingstring	- RPC binding string to pass to the host binary
+//	timeout			- Timeout value, in milliseconds, to wait for a host process
 
-std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bindingstring)
+std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout)
 {
 	zero_init<PROCESS_INFORMATION>	procinfo;			// Process information
 	ReadySignal						readysignal;		// Event for child to signal
@@ -72,7 +73,7 @@ std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bin
 	tchar_t commandline[MAX_PATH];
 	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\" \"%s\" \"%ld\""), binarypath, bindingstring, static_cast<__int32>(readysignal));
 
-	// Determine the size of the attributes buffer required to hold the inheritable handle
+	// Determine the size of the attributes buffer required to hold the inheritable handles property
 	size_t required = 0;
 	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
 	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
@@ -101,15 +102,23 @@ std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bin
 
 	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
 
-	// Create the Host instance to take ownership of the PROCESS_INFORMATION handles
-	std::unique_ptr<Host> instance = std::make_unique<Host>(procinfo);
-
 	// The process is alive, wait for it to either signal the ready event or to terminate
 	HANDLE waithandles[] = { readysignal, procinfo.hProcess };
-	if(WaitForMultipleObjects(2, waithandles, FALSE, /* TODO: SETTING HERE */ 20000) != WAIT_OBJECT_0) 
-		throw Exception(E_UNEXPECTED);	// <--- TODO: EXCEPTION
+	DWORD wait = WaitForMultipleObjects(2, waithandles, FALSE, timeout);
+	if(wait != WAIT_OBJECT_0) {
 
-	return instance;									// Process signaled, all is well
+		// Process did not respond to the event, kill it if it's not already dead
+		if(wait == WAIT_TIMEOUT) TerminateProcess(procinfo.hProcess, ERROR_TIMEOUT);
+
+		// Close the process and thread handles returned from CreateProcess()
+		CloseHandle(procinfo.hThread);
+		CloseHandle(procinfo.hProcess);
+
+		throw Exception(E_HOSTUNRESPONSIVE, binarypath);
+	}
+
+	// Process was successfully created and initialized, pass it off to a Host instance
+	return std::make_unique<Host>(procinfo);
 }
 
 //-----------------------------------------------------------------------------

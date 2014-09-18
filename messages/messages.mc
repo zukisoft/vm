@@ -27,6 +27,7 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			ElfImage=3:FACILITY_ELFIMAGE
+			HostProcess=4:FACILITY_HOSTPROCESS
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1222,3 +1223,17 @@ SymbolicName=E_SYSCALLARGUMENTCOUNT
 Language=English
 An invalid number of arguments have been specified for virtual system call number %1!d!
 .
+
+;//----------------------------------------------------------------------------
+;// HostProcess
+;//
+;// Messages specific to the ELF binary hosting process
+
+MessageId=1
+Severity=Error
+Facility=HostProcess
+SymbolicName=E_HOSTUNRESPONSIVE
+Language=English
+The host process %1 did not signal that it was successfully initialized
+.
+

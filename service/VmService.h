@@ -31,6 +31,8 @@
 #include "VmProcessManager.h"
 #include "VmSystemLog.h"
 
+#include "Host.h"
+
 #pragma warning(push, 4)			
 
 //---------------------------------------------------------------------------
@@ -46,6 +48,7 @@ public:
 	//
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
+		CONTROL_HANDLER_ENTRY(128, OnUserControl128)
 	END_CONTROL_HANDLER_MAP()
 
 	// PARAMETER_MAP
@@ -55,6 +58,7 @@ public:
 		PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
 		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
 		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
+		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESSTIMEOUT, m_hostprocesstimeout)
 	END_PARAMETER_MAP()
 
 private:
@@ -71,6 +75,19 @@ private:
 	//
 	// Invoked when the service is stopped
 	void OnStop(void);
+
+	void OnUserControl128(void)
+	{
+		try {
+
+			std::tstring binpath = m_hostprocess32;
+			std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr32.c_str(), m_hostprocesstimeout);
+		}
+		catch(...) {
+
+			int x = 123;
+		}
+	}
 
 	// m_initramfs
 	//
@@ -97,6 +114,7 @@ private:
 	std::tstring m_bindstr64;				// won't be initialized on x86
 	StringParameter m_hostprocess32;
 	StringParameter m_hostprocess64;
+	DWordParameter m_hostprocesstimeout;	// miliseconds
 };
 
 //---------------------------------------------------------------------------
