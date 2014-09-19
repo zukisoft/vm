@@ -50,6 +50,8 @@ public:
 	// Creates a new Host instance for a regular child process
 	static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout);
 
+	static std::unique_ptr<Host> TESTME(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout);
+
 private:
 
 	Host(const Host&)=delete;

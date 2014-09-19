@@ -94,7 +94,7 @@ private:
 	void OnUserControl128(void)
 	{
 		std::tstring binpath = m_hostprocess32;
-		std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr32.c_str(), m_hostprocesstimeout);
+		std::unique_ptr<Host> h = Host::TESTME(binpath.c_str(), m_bindstr32.c_str(), m_hostprocesstimeout);
 	}
 
 	// 64-bit host test

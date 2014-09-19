@@ -541,6 +541,10 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 //
 FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
 {
+	//
+	// THIS IS WHERE IT NEEDS TO REDIRECT TO THE TARGET AND INVOKE THAT NODE'S OPEN()
+	//
+
 	// Symbolic links can only be opened with O_NOFOLLOW and O_PATH set in the flags
 	if((flags & (LINUX_O_NOFOLLOW | LINUX_O_PATH)) != (LINUX_O_NOFOLLOW | LINUX_O_PATH)) throw LinuxException(LINUX_ELOOP);
 
@@ -588,6 +592,12 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 
 	// Trim off any leading slash characters to convert an absolute path into a relative one
 	std::tstring relative(std::ltrim(m_target, _T('/')));
+
+	//
+	// TODO: this change was wrong, the flaw is when the symlink points to a node you should
+	// open the symlink like I had it, but redirect to the target at that point, go into
+	// GitHub and get the code that followed this comment back
+	//
 
 	// Follow the symbolic link
 	auto followed = node->Resolve(root, current->Parent, relative.c_str(), flags, symlinks);
