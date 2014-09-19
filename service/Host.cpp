@@ -73,6 +73,9 @@ std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bin
 	tchar_t commandline[MAX_PATH];
 	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\" \"%s\" \"%ld\""), binarypath, bindingstring, static_cast<__int32>(readysignal));
 
+	// TODO: If this technique will be used anywhere else, break out the PROCTHREADATTRIBUTE stuff into a class object;
+	// this may not be a bad idea regardless, it's kind of ugly and makes this look more complicated than it is
+
 	// Determine the size of the attributes buffer required to hold the inheritable handles property
 	size_t required = 0;
 	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);

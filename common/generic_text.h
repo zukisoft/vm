@@ -66,8 +66,8 @@ namespace std {
 		if(psz == nullptr) return string();
 
 		// Create an std::vector big enough to hold the converted string data and convert it
-		vector<char_t> convert(WideCharToMultiByte(CP_THREAD_ACP, 0, psz, -1, nullptr, 0, nullptr, nullptr));
-		WideCharToMultiByte(CP_THREAD_ACP, 0, psz, -1, convert.data(), static_cast<int>(convert.size()), nullptr, nullptr);
+		vector<char_t> convert(WideCharToMultiByte(CP_UTF8, 0, psz, -1, nullptr, 0, nullptr, nullptr));
+		WideCharToMultiByte(CP_UTF8, 0, psz, -1, convert.data(), static_cast<int>(convert.size()), nullptr, nullptr);
 
 		// Construct an std::string around the converted character data
 		return string(convert.data(), convert.size());
@@ -85,8 +85,8 @@ namespace std {
 		if(psz == nullptr) return wstring();
 
 		// Create an std::vector big enough to hold the converted string data and convert it
-		vector<wchar_t> convert(MultiByteToWideChar(CP_THREAD_ACP, 0, psz, -1, nullptr, 0));
-		MultiByteToWideChar(CP_THREAD_ACP, 0, psz, -1, convert.data(), static_cast<int>(convert.size()));
+		vector<wchar_t> convert(MultiByteToWideChar(CP_UTF8, 0, psz, -1, nullptr, 0));
+		MultiByteToWideChar(CP_UTF8, 0, psz, -1, convert.data(), static_cast<int>(convert.size()));
 
 		// Construct an std::wstring around the converted character data
 		return wstring(convert.data(), convert.size());

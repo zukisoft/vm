@@ -53,6 +53,30 @@ File::~File()
 }
 
 //-----------------------------------------------------------------------------
+// File::Exists (static)
+//
+// Determines if the specifed file exists, will return false if the object
+// exists and is not a file (or a link to a file)
+//
+// Arguments:
+//
+//	path		- Path to the file to check
+
+bool File::Exists(const tchar_t* path)
+{
+	WIN32_FILE_ATTRIBUTE_DATA fileinfo;
+	if(!GetFileAttributesEx(path, GetFileExInfoStandard, &fileinfo)) return false;
+
+	// Check for devices, directories, and offline files.  Reparse points that 
+	// aren't files will also have these flags set, so this should catch those
+	if(fileinfo.dwFileAttributes & FILE_ATTRIBUTE_DEVICE) return false;
+	else if(fileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) return false;
+	else if(fileinfo.dwFileAttributes & FILE_ATTRIBUTE_OFFLINE) return false;
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------
 // File::getSize
 //
 // Gets the size of the file

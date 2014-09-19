@@ -74,7 +74,7 @@ private:
 
 		// __int32 conversion operator
 		//
-		operator __int32() const 
+		operator __int32() const
 		{ 
 #ifdef _M_X64
 			// The raw value of the handle needs to fall within (INT32_MIN,INT32_MAX) for it to serialize properly
@@ -86,6 +86,7 @@ private:
 			return reinterpret_cast<__int32>(m_handle); 
 #endif
 		}
+
 
 		// Set
 		//

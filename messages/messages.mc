@@ -28,6 +28,7 @@ FacilityNames=(
 			Linux=2:FACILITY_LINUX
 			ElfImage=3:FACILITY_ELFIMAGE
 			HostProcess=4:FACILITY_HOSTPROCESS
+			Service=5:FACILITY_SERVICE
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1242,5 +1243,25 @@ Severity=Error
 SymbolicName=E_CANNOTSERIALIZEHANDLE
 Language=English
 The kernel handle required to synchronize with the host process cannot be serialized into a 32-bit integer value
+.
+
+;//----------------------------------------------------------------------------
+;// Service
+;//
+;// Messages specific to the virtual machine service
+
+MessageId=1
+Severity=Error
+Facility=Service
+SymbolicName=E_INITRAMFSNOTFOUND
+Language=English
+The specified initial RAM file system (initramfs) archive %1 cannot be found or is not a file object
+.
+
+MessageId=2
+Severity=Error
+SymbolicName=E_INITRAMFSEXTRACT
+Language=English
+An error occurred extracting the contents of the initial RAM file system (initramfs) archive %1: %2
 .
 

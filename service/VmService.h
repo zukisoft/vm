@@ -27,11 +27,18 @@
 #include <map>
 #include "resource.h"
 #include "syscalls.h"
+#include "CompressedStreamReader.h"
+#include "CpioArchive.h"
+#include "Exception.h"
+#include "File.h"
+#include "FileSystem.h"
 #include "SystemCalls.h"
+#include "VmFileSystem.h"
 #include "VmProcessManager.h"
 #include "VmSystemLog.h"
 
 #include "Host.h"
+#include "RootFileSystem.h"
 
 #pragma warning(push, 4)			
 
@@ -49,6 +56,7 @@ public:
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
 		CONTROL_HANDLER_ENTRY(128, OnUserControl128)
+		CONTROL_HANDLER_ENTRY(129, OnUserControl129)
 	END_CONTROL_HANDLER_MAP()
 
 	// PARAMETER_MAP
@@ -59,12 +67,18 @@ public:
 		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
 		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
 		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESSTIMEOUT, m_hostprocesstimeout)
+		PARAMETER_ENTRY(IDR_PARAM_INITPATH, m_initpath)
 	END_PARAMETER_MAP()
 
 private:
 
 	VmService(const VmService &rhs)=delete;
 	VmService& operator=(const VmService &rhs)=delete;
+
+	// LoadInitialFileSystem
+	//
+	// Loads the initial file system from an initramfs CPIO archive
+	void LoadInitialFileSystem(const tchar_t* archivefile);
 
 	// OnStart (Service)
 	//
@@ -76,17 +90,18 @@ private:
 	// Invoked when the service is stopped
 	void OnStop(void);
 
+	// 32-bit host test
 	void OnUserControl128(void)
 	{
-		try {
+		std::tstring binpath = m_hostprocess32;
+		std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr32.c_str(), m_hostprocesstimeout);
+	}
 
-			std::tstring binpath = m_hostprocess32;
-			std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr32.c_str(), m_hostprocesstimeout);
-		}
-		catch(...) {
-
-			int x = 123;
-		}
+	// 64-bit host test
+	void OnUserControl129(void)
+	{
+		std::tstring binpath = m_hostprocess64;
+		std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr64.c_str(), m_hostprocesstimeout);
 	}
 
 	// m_initramfs
@@ -104,10 +119,7 @@ private:
 	std::unique_ptr<VmSystemLog> m_syslog;
 	DWordParameter m_sysloglength { 512 KiB };
 
-	// m_vfs
-	//
-	// Virtual file system instance
-	// VirtualFileSystem m_vfs;
+	std::unique_ptr<VmFileSystem> m_vfs;
 
 	// hosts
 	std::tstring m_bindstr32;
@@ -115,6 +127,7 @@ private:
 	StringParameter m_hostprocess32;
 	StringParameter m_hostprocess64;
 	DWordParameter m_hostprocesstimeout;	// miliseconds
+	StringParameter m_initpath;
 };
 
 //---------------------------------------------------------------------------

@@ -54,10 +54,14 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// OpenExisting
+	// Exists (static)
+	//
+	// Determines if the specified file exists
+	static bool Exists(const tchar_t* path);
+
+	// OpenExisting (static)
 	//
 	// Opens an existing file
-
 	static std::unique_ptr<File> OpenExisting(const tchar_t* path)
 		{ return std::unique_ptr<File>(new File(path, GENERIC_READ | GENERIC_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL)); }
 

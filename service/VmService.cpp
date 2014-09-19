@@ -25,6 +25,71 @@
 
 #pragma warning(push, 4)
 
+void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
+{
+	// Attempt to open the specified file read-only with sequential scan optimization
+	std::unique_ptr<File> archive = File::OpenExisting(archivefile, GENERIC_READ, FILE_SHARE_READ, FILE_FLAG_SEQUENTIAL_SCAN);
+
+	// Decompress as necessary and iterate over all the files contained in the CPIO archive
+	CpioArchive::EnumerateFiles(CompressedStreamReader::FromFile(archive), [&](const CpioFile& file) -> void {
+
+		// Convert the path string from ANSI/UTF8 to generic text for the FileSystem API
+		std::tstring path = std::to_tstring(file.Path);
+
+		// Depending on the type of node being enumerated, construct the appropriate object
+		switch(file.Mode & LINUX_S_IFMT) {
+
+			// TODO: These all need UID and GID support, likely will need to call chown() equivalent
+
+			case LINUX_S_IFREG: 
+			{
+				FileSystem::HandlePtr p = m_vfs->CreateFile(path.c_str(), 0, file.Mode);
+				std::vector<uint8_t> buffer(64 KiB);
+				uint32_t read = file.Data.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+				while(read > 0) {
+
+					p->Write(buffer.data(), read);
+					read = file.Data.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+				}
+			}
+				break;
+
+			case LINUX_S_IFDIR:
+				m_vfs->CreateDirectory(path.c_str());
+				break;
+
+			case LINUX_S_IFLNK:
+			{
+				std::vector<char> buffer(file.Data.Length + 1);
+				file.Data.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+				std::tstring target = std::to_tstring(buffer.data());
+				m_vfs->CreateSymbolicLinkW(path.c_str(), target.c_str());
+			}
+				break;
+				
+			case LINUX_S_IFCHR:
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFCHR not implemented yet");
+				break;
+
+			case LINUX_S_IFBLK:
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFBLK not implemented yet");
+				break;
+
+			case LINUX_S_IFIFO:
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFIFO not implemented yet");
+				break;
+
+			case LINUX_S_IFSOCK:
+				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFSOCK not implemented yet");
+				break;
+
+			default:
+				_RPTF0(_CRT_ASSERT, "initramfs: unknown node type detected in archive");
+				break;
+		}
+	});
+}
+
 //---------------------------------------------------------------------------
 // VmService::OnStart (private)
 //
@@ -42,27 +107,48 @@ void VmService::OnStart(int, LPTSTR*)
 	// The system log needs to know what value acts as zero for the timestamps
 	QueryPerformanceCounter(&qpcbias);
 
-	// Create the system log instance and seed the time bias to now
-	m_syslog = std::make_unique<VmSystemLog>(m_sysloglength);
-	m_syslog->TimestampBias = qpcbias.QuadPart;
-
-	// TODO: Put a real log here with the zero-time bias and the size of the
-	// configured system log
-	m_syslog->Push("System log initialized");
-	////
-
-	// INITIALIZE RAMDISK
-	svctl::tstring initramfs = m_initramfs;
-	// Attempt to load the initial ramdisk file system
-	// this needs unwind on exception?
-	// m_vfs.LoadInitialFileSystem(initramfs.c_str());
-
-	// REGISTER RPC INTERFACES
 	try {
+
+		//
+		// SYSTEM LOG
+		//
+
+		// Create the system log instance and seed the time bias to now
+		m_syslog = std::make_unique<VmSystemLog>(m_sysloglength);
+		m_syslog->TimestampBias = qpcbias.QuadPart;
+
+		// TODO: Put a real log here with the zero-time bias and the size of the
+		// configured system log
+		m_syslog->Push("System log initialized");
+		//// need the syslog overloads to do this better!
+
+		//
+		// VIRTUAL FILE SYSTEM
+		//
+
+		// clearly this is temporary code
+		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
+		m_vfs->Mount(nullptr, L"/", L"tmpfs", 0, nullptr);
+
+		//
+		// INITRAMFS
+		//
+
+		// Check that the initramfs archive file exists
+		std::tstring initramfs = m_initramfs;
+		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
+
+		// Attempt to extract the contents of the initramfs into the tempfs
+		try { LoadInitialFileSystem(initramfs.c_str()); }
+		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
+
+		//
+		// RPC INTERFACES
+		//
 
 		// TODO: I want to rework the RpcInterface thing at some point, but this
 		// is a LOT cleaner than making the RPC calls here.  Should also have
-		// some kind of rundown to deal with exceptions properly
+		// some kind of rundown to deal with exceptions properly, need nested try/catches here
 
 		// This may work better as a general single registrar in syscalls/SystemCalls
 		// since the service really doesn't care that it has 2 RPC interfaces, they
@@ -70,23 +156,39 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall32_listener::Register(RPC_IF_AUTOLISTEN);
 		syscall32_listener::AddObject(this->ObjectID32); 
 		m_bindstr32 = syscall32_listener::GetBindingString(this->ObjectID32);
-		// m_syslog->Push
+		// m_syslog->Push(something)
 
 #ifdef _M_X64
+		// x64 builds also register the 64-bit system calls interface
 		syscall64_listener::Register(RPC_IF_AUTOLISTEN);
 		syscall64_listener::AddObject(this->ObjectID64);
 		m_bindstr64 = syscall64_listener::GetBindingString(this->ObjectID64);
-		// m_syslog->Push
+		// m_syslog->Push(something)
 #endif
 	} 
 
-	// RpcInterface throws Win32Exception, servicelib expects ServiceException
-	catch(Win32Exception& ex) { throw ServiceException(ex.HResult); }
+	// Win32Exception and Exception can be translated into a ServiceException
+	catch(Win32Exception& ex) { throw ServiceException(static_cast<DWORD>(ex.Code)); }
+	catch(Exception& ex) { throw ServiceException(ex.HResult); }
 
+	//
 	// INITIALIZE PROCESS MANAGER
 	//
 
-	// TODO: throwing an exception here messes up the ServiceHarness, you get
+	//
+	// LAUNCH INIT
+	//
+	std::tstring initpath = m_initpath;
+	FileSystem::HandlePtr h = m_vfs->Open(initpath.c_str(), LINUX_O_RDONLY, 0);
+	// seems to work to here, can use this to create the new in-proc ELF loader
+	
+	// need to convert h into a FileDescriptor? Perhaps process should accept Handle
+	// instead, file descriptors are just per-process mappings of Handle
+
+	// need to maintain a reference to the Process object since
+	// this will need a watcher thread to panic if init stops before service stops
+
+	// TODO: throwing an exception from here messes up the ServiceHarness, you get
 	// that damn "abort() has been called" from the std::thread ... fix that 
 	// in servicelib at some point in the near future
 }
@@ -104,10 +206,12 @@ void VmService::OnStop(void)
 {
 
 #ifdef _M_X64
+	// Remove the 64-bit system calls RPC interface
 	syscall64_listener::RemoveObject(this->ObjectID64);
 	syscall64_listener::Unregister(true);
 #endif
 
+	// Remove the 32-bit system calls RPC interface
 	syscall32_listener::RemoveObject(this->ObjectID32);
 	syscall32_listener::Unregister(true);
 }

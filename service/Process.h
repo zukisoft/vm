@@ -24,6 +24,9 @@
 #define __PROCESS_H_
 #pragma once
 
+#include "Exception.h"
+#include "Host.h"
+
 #pragma warning(push, 4)			
 
 class Process
