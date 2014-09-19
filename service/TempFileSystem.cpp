@@ -589,8 +589,11 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 	// Trim off any leading slash characters to convert an absolute path into a relative one
 	std::tstring relative(std::ltrim(m_target, _T('/')));
 
-	// Follow the symbolic link by resolving the target against the root node (absolute) or alias parent (relative)
-	return node->Resolve(root, current->Parent, relative.c_str(), flags, symlinks)->Node->Resolve(root, current, path, flags, symlinks);
+	// Follow the symbolic link
+	auto followed = node->Resolve(root, current->Parent, relative.c_str(), flags, symlinks);
+
+	// Complete the path resolution from the followed alias
+	return followed->Node->Resolve(root, followed, path, flags, symlinks);
 }
 
 //-----------------------------------------------------------------------------
