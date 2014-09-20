@@ -65,7 +65,7 @@ Host::~Host()
 
 std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout)
 {
-	zero_init<PROCESS_INFORMATION>	procinfo;			// Process information
+	PROCESS_INFORMATION				procinfo;			// Process information
 	ReadySignal						readysignal;		// Event for child to signal
 
 	// Generate the command line for the child process, which includes the RPC binding string as argv[1] and
@@ -128,7 +128,7 @@ std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bin
 
 std::unique_ptr<Host> Host::TESTME(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout)
 {
-	zero_init<PROCESS_INFORMATION>	procinfo;			// Process information
+	PROCESS_INFORMATION				procinfo;			// Process information
 	ReadySignal						readysignal;		// Event for child to signal
 
 	// Generate the command line for the child process, which includes the RPC binding string as argv[1] and
@@ -177,23 +177,20 @@ std::unique_ptr<Host> Host::TESTME(const tchar_t* binarypath, const tchar_t* bin
 	// when service dies killing all clients too.  Perhaps start the job with INIT rather than
 	// the service, this mimicks userspace and the service can kill the entire job on PANIC
 
-	void* testmem = VirtualAllocEx(procinfo.hProcess, nullptr, 8 * 1 MiB, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-	if(testmem) {
+	try {
 
-		BOOL result = VirtualFreeEx(procinfo.hProcess, testmem, 0, MEM_RELEASE);
-		if(!result) {
-
-			DWORD dw = GetLastError();
-			int x = 123;
-		}
-	}
-	else {
-
-		DWORD dw = GetLastError();
-		int x = 123;
+		std::unique_ptr<MemoryRegion> testmem = MemoryRegion::Reserve(procinfo.hProcess, 8 * 1 MiB, MEM_COMMIT);
+		testmem->Protect(testmem->Pointer, 8192, PAGE_EXECUTE);
+		testmem->Detach();
+		ResumeThread(procinfo.hThread);
 	}
 
-	ResumeThread(procinfo.hThread);
+	catch(...) { 
+		
+		TerminateProcess(procinfo.hProcess, (UINT)E_FAIL);
+		CloseHandle(procinfo.hThread);
+		CloseHandle(procinfo.hProcess);
+	}
 
 	// If anything above doesn't work, need to call TerminateProcess() to kill it otherwise it will
 	// sit there suspended forever

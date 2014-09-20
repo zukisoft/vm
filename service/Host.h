@@ -26,10 +26,13 @@
 
 #include <memory>
 #include <vector>
+#include "ElfImage.h"
 #include "Exception.h"
+#include "MemoryRegion.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // Class Host
@@ -40,9 +43,8 @@ class Host
 {
 public:
 
-	// Constructor / Destructor
+	// Destructor
 	//
-	Host(const PROCESS_INFORMATION& procinfo);
 	~Host();
 
 	// Create (static)
@@ -56,6 +58,11 @@ private:
 
 	Host(const Host&)=delete;
 	Host& operator=(const Host&)=delete;
+
+	// Instance Constructor
+	//
+	Host(const PROCESS_INFORMATION& procinfo);
+	friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
 
 	// ReadySignal
 	//

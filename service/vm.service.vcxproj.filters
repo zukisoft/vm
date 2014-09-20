@@ -281,6 +281,15 @@
     <ClInclude Include="Host.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\elf.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\elf-em.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -473,6 +482,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Host.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
