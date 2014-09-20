@@ -33,31 +33,6 @@ size_t const MemoryRegion::AllocationGranularity = MemoryRegion::s_sysinfo.dwAll
 size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 
 //-----------------------------------------------------------------------------
-// MemoryRegion Constructor (private)
-//
-// Arguments:
-//
-//	base		- Optional base address to use for the allocation
-//	length		- Length of the memory region to allocate
-//	flags		- Memory region allocation type flags
-//	protect		- Memory region protection flags
-
-MemoryRegion::MemoryRegion(void* base, size_t length, uint32_t flags, uint32_t protect)
-{
-	uintptr_t requested = uintptr_t(base);
-	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(base));
-
-	// Adjust the requested length to accomodate any downward alignment
-	length += requested - aligned;
-
-	// Pass the arguments onto VirtualAlloc() and just throw any resultant error
-	m_base = VirtualAlloc(base, length, flags, protect);
-	if(!m_base) throw Win32Exception();
-
-	m_length = length;					// Save the length for destructor
-}
-
-//-----------------------------------------------------------------------------
 // MemoryRegion Destructor
 
 MemoryRegion::~MemoryRegion()
@@ -183,6 +158,30 @@ void* MemoryRegion::Decommit(void* address, size_t length)
 }
 
 //-----------------------------------------------------------------------------
+// MemoryRegion::Detach
+//
+// Detaches the memory region from the class so that it will not be released
+// on object destruction
+//
+// Arguments:
+//
+//	length		- Optional size_t pointer to receive the region length
+
+void* MemoryRegion::Detach(size_t* length)
+{
+	// Save the region base pointer and optionally set the length [out] argument
+	void* base = m_base;
+	if(length) *length = m_length;
+
+	// Reset member variables to an uninitialized state
+	m_base = nullptr;
+	m_length = 0;
+
+	// Return the previously held base address
+	return base;
+}
+
+//-----------------------------------------------------------------------------
 // MemoryRegion::Lock
 //
 // Locks page(s) of the region into physical memory
@@ -235,6 +234,32 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 	if(!VirtualProtect(reinterpret_cast<void*>(aligned), length, protect, &oldprotect)) throw Win32Exception();
 
 	return reinterpret_cast<void*>(aligned);
+}
+
+//-----------------------------------------------------------------------------
+// MemoryRegion::Reserve (private, static)
+//
+// Arguments:
+//
+//	base		- Optional base address to use for the allocation
+//	length		- Length of the memory region to allocate
+//	flags		- Memory region allocation type flags
+//	protect		- Memory region protection flags
+
+std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(void* base, size_t length, uint32_t flags, uint32_t protect)
+{
+	uintptr_t requested = uintptr_t(base);
+	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(base));
+
+	// Adjust the requested length to accomodate any downward alignment
+	length += requested - aligned;
+
+	// Pass the arguments onto VirtualAlloc() and just throw any resultant error
+	base = VirtualAlloc(base, length, flags, protect);
+	if(!base) throw Win32Exception();
+
+	// Construct the MemoryRegion instance to take ownership of the pointer
+	return std::make_unique<MemoryRegion>(base, length);
 }
 
 //-----------------------------------------------------------------------------

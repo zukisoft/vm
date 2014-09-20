@@ -28,7 +28,8 @@
 #include "Exception.h"
 #include "Win32Exception.h"
 
-#pragma warning(push, 4)				
+#pragma warning(push, 4)	
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // MemoryRegion
@@ -67,6 +68,12 @@ public:
 	// Decommits page(s) within the region
 	void* Decommit(void* address, size_t length);
 
+	// Detach
+	//
+	// Detaches the memory region from the class instance
+	void* Detach(void) { return Detach(nullptr); }
+	void* Detach(size_t* length);
+
 	// Lock
 	//
 	// Locks page(s) within the region into physical memory
@@ -81,16 +88,16 @@ public:
 	//
 	// Reserves a range of virtual memory
 	static std::unique_ptr<MemoryRegion> Reserve(size_t length)
-		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(NULL, length, MEM_RESERVE, PAGE_NOACCESS)); }
+		{ return Reserve(nullptr, length, MEM_RESERVE, PAGE_NOACCESS); }
 
 	static std::unique_ptr<MemoryRegion> Reserve(size_t length, uint32_t flags)
-		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(NULL, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS)); }
+		{ return Reserve(nullptr, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length)
-		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(address, length, MEM_RESERVE, PAGE_NOACCESS)); }
+		{ return Reserve(address, length, MEM_RESERVE, PAGE_NOACCESS); }
 
 	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length, uint32_t flags)
-		{ return std::unique_ptr<MemoryRegion>(new MemoryRegion(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS)); }
+		{ return Reserve(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	// Unlock
 	//
@@ -132,7 +139,8 @@ private:
 
 	// Instance Constructor
 	//
-	MemoryRegion(void* base, size_t length, uint32_t flags, uint32_t protect);
+	MemoryRegion(void* base, size_t length) : m_base(base), m_length(length) {}
+	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, void*&, size_t&>(void*&, size_t&);
 
 	// SystemInfo
 	//
@@ -150,6 +158,11 @@ private:
 	// Address alignment helper functions
 	static uintptr_t AlignDown(uintptr_t address, size_t alignment);
 	static uintptr_t AlignUp(uintptr_t address, size_t alignment);
+
+	// Reserve
+	//
+	// Reserves a range of virtual memory
+	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length, uint32_t flags, uint32_t protect);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
