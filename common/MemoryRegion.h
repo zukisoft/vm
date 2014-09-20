@@ -34,8 +34,8 @@
 //-----------------------------------------------------------------------------
 // MemoryRegion
 //
-// Wrapper class to contain a memory region allocated with VirtualAlloc so that
-// an automatic destructor can be provided to release it
+// Wrapper class to contain a memory region allocated with VirtualAlloc(Ex) so
+// that an automatic destructor can be provided to release it
 
 class MemoryRegion
 {
@@ -84,20 +84,33 @@ public:
 	// Applies protection flags to page(s) within the region
 	void* Protect(void* address, size_t length, uint32_t protect);
 
-	// Reserve
+	// Reserve (static)
 	//
-	// Reserves a range of virtual memory
+	// Reserves a range of virtual memory; can also commit at the same time by specifying
+	// MEM_COMMIT to an overload that accepts a flags argument
 	static std::unique_ptr<MemoryRegion> Reserve(size_t length)
-		{ return Reserve(nullptr, length, MEM_RESERVE, PAGE_NOACCESS); }
+		{ return Reserve(INVALID_HANDLE_VALUE, length, nullptr, MEM_RESERVE, PAGE_NOACCESS); }
 
 	static std::unique_ptr<MemoryRegion> Reserve(size_t length, uint32_t flags)
-		{ return Reserve(nullptr, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
+		{ return Reserve(INVALID_HANDLE_VALUE, length, nullptr, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
-	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length)
-		{ return Reserve(address, length, MEM_RESERVE, PAGE_NOACCESS); }
+	static std::unique_ptr<MemoryRegion> Reserve(size_t length, void* address)
+		{ return Reserve(INVALID_HANDLE_VALUE, length, address, MEM_RESERVE, PAGE_NOACCESS); }
 
-	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length, uint32_t flags)
-		{ return Reserve(address, length, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
+	static std::unique_ptr<MemoryRegion> Reserve(size_t length, void* address, uint32_t flags)
+		{ return Reserve(INVALID_HANDLE_VALUE, length, address, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
+
+	static std::unique_ptr<MemoryRegion> Reserve(HANDLE process, size_t length)
+		{ return Reserve(process, length, nullptr, MEM_RESERVE, PAGE_NOACCESS); }
+
+	static std::unique_ptr<MemoryRegion> Reserve(HANDLE process, size_t length, uint32_t flags)
+		{ return Reserve(process, length, nullptr, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
+
+	static std::unique_ptr<MemoryRegion> Reserve(HANDLE process, size_t length, void* address)
+		{ return Reserve(process, length, address, MEM_RESERVE, PAGE_NOACCESS); }
+
+	static std::unique_ptr<MemoryRegion> Reserve(HANDLE process, size_t length, void* address, uint32_t flags)
+		{ return Reserve(process, length, address, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	// Unlock
 	//
@@ -139,8 +152,8 @@ private:
 
 	// Instance Constructor
 	//
-	MemoryRegion(void* base, size_t length) : m_base(base), m_length(length) {}
-	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, void*&, size_t&>(void*&, size_t&);
+	MemoryRegion(HANDLE process, void* base, size_t length) : m_process(process), m_base(base), m_length(length) {}
+	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, HANDLE&, void*&, size_t&>(HANDLE&, void*&, size_t&);
 
 	// SystemInfo
 	//
@@ -162,13 +175,14 @@ private:
 	// Reserve
 	//
 	// Reserves a range of virtual memory
-	static std::unique_ptr<MemoryRegion> Reserve(void* address, size_t length, uint32_t flags, uint32_t protect);
+	static std::unique_ptr<MemoryRegion> Reserve(HANDLE process, size_t length, void* address, uint32_t flags, uint32_t protect);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	void*				m_base;				// Base pointer for the memory region
 	size_t				m_length;			// Length of the memory region
+	HANDLE				m_process;			// Process to operate against
 	static SystemInfo	s_sysinfo;			// System information class
 };
 

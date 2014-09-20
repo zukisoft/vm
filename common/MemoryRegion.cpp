@@ -25,11 +25,19 @@
 
 #pragma warning(push, 4)				
 
-//-----------------------------------------------------------------------------
-// Static Initializers
-
+// MemoryRegion::s_sysinfo
+//
+// Static SYSTEM_INFO information
 MemoryRegion::SystemInfo MemoryRegion::s_sysinfo;
+
+// MemoryRegion::AllocationGranularity
+//
+// Static copy of the system allocation granularity
 size_t const MemoryRegion::AllocationGranularity = MemoryRegion::s_sysinfo.dwAllocationGranularity;
+
+// MemoryRegion::PageSize
+//
+// Static copy of the system page size
 size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 
 //-----------------------------------------------------------------------------
@@ -37,7 +45,12 @@ size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 
 MemoryRegion::~MemoryRegion()
 {
-	if(m_base) VirtualFree(m_base, 0, MEM_RELEASE);
+	if(m_base) {
+
+		// Decommit and release the memory region with the appropriate API
+		if(m_process == INVALID_HANDLE_VALUE) VirtualFree(m_base, 0, MEM_RELEASE);
+		else VirtualFreeEx(m_process, m_base, 0, MEM_RELEASE);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -127,8 +140,9 @@ void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 	length += requested - aligned;
 	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
-	// Use VirtualAlloc() to commit the page(s) within the region
-	return VirtualAlloc(reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect);
+	// Use the appropriate VirtualAlloc version to commit the page(s) within the region
+	return (m_process == INVALID_HANDLE_VALUE) ? VirtualAlloc(reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect) :
+		VirtualAllocEx(m_process, reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect);
 }
 
 //-----------------------------------------------------------------------------
@@ -151,8 +165,10 @@ void* MemoryRegion::Decommit(void* address, size_t length)
 	length += requested - aligned;
 	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
-	// Use VirtualFree() to decommit the page(s) from within the region
-	if(!VirtualFree(reinterpret_cast<void*>(aligned), length, MEM_DECOMMIT)) throw Win32Exception();
+	// Use the appropriate VirtualFree version to decommit the page(s) from within the region
+	BOOL result = (m_process == INVALID_HANDLE_VALUE) ? VirtualFree(reinterpret_cast<void*>(aligned), length, MEM_DECOMMIT) :
+		VirtualFreeEx(m_process, reinterpret_cast<void*>(aligned), length, MEM_DECOMMIT);
+	if(!result) throw Win32Exception();
 
 	return reinterpret_cast<void*>(aligned);
 }
@@ -176,6 +192,7 @@ void* MemoryRegion::Detach(size_t* length)
 	// Reset member variables to an uninitialized state
 	m_base = nullptr;
 	m_length = 0;
+	m_process = INVALID_HANDLE_VALUE;
 
 	// Return the previously held base address
 	return base;
@@ -193,6 +210,9 @@ void* MemoryRegion::Detach(size_t* length)
 
 void* MemoryRegion::Lock(void* address, size_t length)
 {
+	// Lock cannot be used on memory regions assigned to another process
+	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_PARAMETER);
+
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
 	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
@@ -201,7 +221,7 @@ void* MemoryRegion::Lock(void* address, size_t length)
 	length += requested - aligned;
 	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
-	// Use VirtualLock() to lock the page(s) into physical memory
+	// Use the appropriate version of VirtualLock to lock the page(s) into physical memory
 	if(!VirtualLock(reinterpret_cast<void*>(aligned), length)) throw Win32Exception();
 
 	return reinterpret_cast<void*>(aligned);
@@ -230,8 +250,10 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 	length += requested - aligned;
 	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
-	// Apply the requested protection flags; throw away the rest
-	if(!VirtualProtect(reinterpret_cast<void*>(aligned), length, protect, &oldprotect)) throw Win32Exception();
+	// Apply the requested protection flags; throw away the old flags returned
+	BOOL result = (m_process == INVALID_HANDLE_VALUE) ? VirtualProtect(reinterpret_cast<void*>(aligned), length, protect, &oldprotect) :
+		VirtualProtectEx(m_process, reinterpret_cast<void*>(aligned), length, protect, &oldprotect);
+	if(!result) throw Win32Exception();
 
 	return reinterpret_cast<void*>(aligned);
 }
@@ -241,25 +263,27 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 //
 // Arguments:
 //
-//	base		- Optional base address to use for the allocation
+//	process		- Optional process handle to operate against or INVALID_HANDLE_VALUE
+//	address		- Optional base address to use for the allocation
 //	length		- Length of the memory region to allocate
 //	flags		- Memory region allocation type flags
 //	protect		- Memory region protection flags
 
-std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(void* base, size_t length, uint32_t flags, uint32_t protect)
+std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t length, void* address, uint32_t flags, uint32_t protect)
 {
-	uintptr_t requested = uintptr_t(base);
-	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(base));
+	uintptr_t requested = uintptr_t(address);
+	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(address));
 
 	// Adjust the requested length to accomodate any downward alignment
 	length += requested - aligned;
 
-	// Pass the arguments onto VirtualAlloc() and just throw any resultant error
-	base = VirtualAlloc(base, length, flags, protect);
+	// Pass the arguments onto the appropriate VirtualAlloc and just throw any resultant error
+	void* base = (process == INVALID_HANDLE_VALUE) ? VirtualAlloc(address, length, flags, protect) :
+		VirtualAllocEx(process, address, length, flags, protect);
 	if(!base) throw Win32Exception();
 
 	// Construct the MemoryRegion instance to take ownership of the pointer
-	return std::make_unique<MemoryRegion>(base, length);
+	return std::make_unique<MemoryRegion>(process, base, length);
 }
 
 //-----------------------------------------------------------------------------
@@ -274,6 +298,9 @@ std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(void* base, size_t length, u
 
 void* MemoryRegion::Unlock(void* address, size_t length)
 {
+	// Unlock cannot be used on memory regions assigned to another process
+	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_PARAMETER);
+
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
 	uintptr_t aligned = uintptr_t(AlignToPageSize(address));

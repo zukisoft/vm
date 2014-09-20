@@ -97,7 +97,7 @@ ElfImageT<ehdr_t, phdr_t, shdr_t, symb_t>::ElfImageT(const void* base, size_t le
 
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
 		// so reserve them at the highest available virtual address
-		if(elfheader->e_type == LINUX_ET_EXEC) m_region = MemoryRegion::Reserve(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
+		if(elfheader->e_type == LINUX_ET_EXEC) m_region = MemoryRegion::Reserve(maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
 		else m_region = MemoryRegion::Reserve(maxvaddr - minvaddr, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(E_RESERVEIMAGEREGION, ex); }
