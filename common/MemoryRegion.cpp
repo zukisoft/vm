@@ -211,7 +211,7 @@ void* MemoryRegion::Detach(size_t* length)
 void* MemoryRegion::Lock(void* address, size_t length)
 {
 	// Lock cannot be used on memory regions assigned to another process
-	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_PARAMETER);
+	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_HANDLE);
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
@@ -299,7 +299,7 @@ std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t lengt
 void* MemoryRegion::Unlock(void* address, size_t length)
 {
 	// Unlock cannot be used on memory regions assigned to another process
-	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_PARAMETER);
+	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_HANDLE);
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
