@@ -301,6 +301,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\generic_text.h" />
     <ClInclude Include="..\common\GZipStreamReader.h" />
+    <ClInclude Include="..\common\HeapBuffer.h" />
     <ClInclude Include="..\common\IndexPool.h" />
     <ClInclude Include="..\common\LinuxException.h" />
     <ClInclude Include="..\common\linuxtypes.h" />

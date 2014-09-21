@@ -290,6 +290,9 @@
     <ClInclude Include="ElfImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\HeapBuffer.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
