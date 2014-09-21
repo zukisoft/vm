@@ -26,8 +26,8 @@
 
 #include <linux/elf.h>
 #include <linux/elf-em.h>
-#include <Exception.h>
-#include <MemoryRegion.h>
+#include "ElfLoader.h"
+#include "Exception.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -37,135 +37,113 @@
 //
 // Base interface exposed by various ELF image format classes
 
-struct __declspec(novtable) ElfImage
+class ElfImage
 {
+public:
+
+	// Destructor
+	//
+	~ElfImage()=default;
+
+	// todo: move this - PUBLIC TYPES or something
+
 	// read_image_func
 	//
 	// Invoked by ElfImageT to read data from the binary image file
 	using read_image_func = std::function<size_t(void* buffer, size_t offset, size_t count)>;
 
+	// Type
+	//
+	// Defines the class of the ELF binary image, used to determine if a 32 or 64-bit
+	// loader needs to be used
+	enum class Type
+	{
+		None		= LINUX_ELFCLASSNONE,
+		i386		= LINUX_ELFCLASS32,
+		x86_64		= LINUX_ELFCLASS64,
+	};
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// todo
+	static Type GetType(void) { return Type::None; }
+
+	// this guy takes multiple things in and then calls loader<T> to get
+	static std::unique_ptr<ElfImage> Load(void)
+	{
+		//return std::make_unique<ElfImage>(TestFunc());
+		return nullptr;
+	}
+
+	//-------------------------------------------------------------------------
+	// Properties
+
 	// BaseAddress
 	//
 	// Gets the virtual memory base address of the loaded image
 	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-	virtual const void* getBaseAddress(void) const = 0;
+	virtual const void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
 
 	// EntryPoint
 	//
 	// Gets the entry point for the image
 	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
-	virtual const void* getEntryPoint(void) const = 0;
+	virtual const void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
 
 	// Interpreter
 	//
 	// Indicates the path to the program interpreter, if one is present
 	__declspec(property(get=getInterpreter)) const tchar_t* Interpreter;
-	virtual const tchar_t* getInterpreter(void) const = 0;
+	virtual const tchar_t* getInterpreter(void) const { return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str(); }
 
 	// NumProgramHeaders
 	//
 	// Number of program headers defines as part of the loaded image
 	__declspec(property(get=getNumProgramHeaders)) size_t NumProgramHeaders;
-	virtual size_t getNumProgramHeaders(void) const = 0;
+	virtual size_t getNumProgramHeaders(void) const { return m_metadata.NumProgramHeaders; }
 
 	// ProgramHeaders
 	//
 	// Pointer to program headers that were defined as part of the loaded image
 	__declspec(property(get=getProgramHeaders)) const void* ProgramHeaders;
-	virtual const void* getProgramHeaders(void) const = 0;
-};
-
-//-----------------------------------------------------------------------------
-// ElfImageT
-//
-// Templatized implementation of ElfImage interface
-//
-//	elfclass	- Expected ELF binary class value
-//	ehdr_t		- ELF header structure type
-//	phdr_t		- ELF program header structure type
-//	shdr_t		- ELF section header structure type
-
-template<int elfclass, class ehdr_t, class phdr_t, class shdr_t>
-class ElfImageT
-{
-public:
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// Load (static)
-	//
-	// Loads the image into memory using the provided callback functions
-	static std::unique_ptr<ElfImage> Load(ElfImage::read_image_func reader);
-
-	//-------------------------------------------------------------------------
-	// ElfImage Implementation
-
-	// getBaseAddress
-	//
-	// Gets the virtual memory base address of the loaded image
-	virtual const void* getBaseAddress(void) const { return m_base; }
-
-	// getEntryPoint
-	//
-	// Gets the entry point for the image
-	virtual const void* getEntryPoint(void) const { return m_entry; }
-
-	// getInterpreter
-	//
-	// Indicates the path to the program interpreter, if one is present
-	virtual const tchar_t* getInterpreter(void) const { return (m_interpreter.size() == 0) ? nullptr : m_interpreter.c_str(); }
-
-	// getNumProgramHeaders
-	//
-	// Number of program headers defines as part of the loaded image
-	virtual size_t getNumProgramHeaders(void) const { return m_phdrents; }
-
-	// getProgramHeaders
-	//
-	// Pointer to program headers that were defined as part of the loaded image
-	virtual const void* getProgramHeaders(void) const { return m_phdrs; }
+	virtual const void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
 
 private:
 
-	ElfImageT(const ElfImageT&)=delete;
-	ElfImageT& operator=(const ElfImageT&)=delete;
+	ElfImage(const ElfImage&)=delete;
+	ElfImage& operator=(const ElfImage&)=delete;
+
+	// Forward Declarations
+	//
+	struct LoadedImage;
 
 	// Instance Constructor
 	//
-	ElfImageT()=default;
-	friend std::unique_ptr<ElfImageT> std::make_unique<ElfImageT>();
+	ElfImage(ElfLoader::Metadata&& metadata) : m_metadata(metadata) {}
+	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, LoadedImage>(LoadedImage&&);
 
 	//-------------------------------------------------------------------------
-	// Private Member Functions
+	// Private Type Declarations
 
-	// FlagsToProtection
+	// ElfCommon_Ehdr
 	//
-	// Converts the ELF p_flags into VirtualAlloc(Ex) protection flags
-	static DWORD FlagsToProtection(uint32_t flags);
+	// Common portion of the ELF header structure, can be used to determine
+	// what the size and type of the full header structure is
+	typedef struct {
+
+	  uint8_t		e_ident[LINUX_EI_NIDENT];
+	  uint16_t		e_type;
+	  uint16_t		e_machine;
+	  uint32_t		e_version;
+
+	} ElfCommon_Ehdr;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<MemoryRegion>	m_region;			// Allocated virtual memory
-	std::tstring					m_interpreter;		// Program interpreter
-	void*							m_base;				// Loaded image base address
-	void*							m_entry;			// Calculated image entry point
-	const phdr_t*					m_phdrs;			// Program headers (in image)
-	size_t							m_phdrents;			// Program header entries
+	const ElfLoader::Metadata	m_metadata;		// Loaded image metadata
 };
-
-// ElfImage32
-//
-// 32-bit x86 ELF binary image type
-using ElfImage32 = ElfImageT<LINUX_ELFCLASS32, uapi::Elf32_Ehdr, uapi::Elf32_Phdr, uapi::Elf32_Shdr>;
-
-// ElfLoader64
-//
-// 64-bit x86_64 ELF binary image type
-#ifdef _M_X64
-using ElfImage64 = ElfImageT<LINUX_ELFCLASS64, uapi::Elf64_Ehdr, uapi::Elf64_Phdr, uapi::Elf64_Shdr>;
-#endif
 
 //-----------------------------------------------------------------------------
 
