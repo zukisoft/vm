@@ -26,6 +26,7 @@
 
 #include <linux/elf.h>
 #include <linux/elf-em.h>
+#include <linux/fs.h>
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
@@ -127,6 +128,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
+	// load_binary_func
+	//
+	// Defines a specific instance of LoadBinary()
+	using load_binary_func = std::function<Metadata(StreamReader&, HANDLE)>;
+
 	// ElfCommon_Ehdr
 	//
 	// Common portion of the ELF header structure, can be used to determine
@@ -140,16 +146,6 @@ private:
 
 	} ElfCommon_Ehdr;
 
-	// image_read_func
-	//
-	// Invoked by LoadImage to read data from the binary image file
-	using image_read_func = std::function<size_t(void* destination, size_t offset, size_t count)>;
-
-	// load_binary_func
-	//
-	// Defines a specific instance of LoadBinary()
-	using load_binary_func = std::function<Metadata(HANDLE process, image_read_func inproc_reader, image_read_func outproc_reader)>;
-
 	// Metadata
 	//
 	// Provides information about an image that has been loaded by ElfLoader<>
@@ -160,6 +156,38 @@ private:
 		size_t					NumProgramHeaders = 0;
 		void*					EntryPoint = nullptr;
 		std::tstring			Interpreter;
+	};
+
+	// HandleStreamReader
+	//
+	// Implements a stream reader for a FileSystem::Handle instance
+	class HandleStreamReader : public StreamReader
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		HandleStreamReader(const FileSystem::HandlePtr& handle) : m_handle(handle) {}
+		virtual ~HandleStreamReader()=default;
+
+		//---------------------------------------------------------------------
+		// Properties
+
+		// StreamReader Implementation
+		virtual size_t	Read(void* buffer, size_t length);
+		virtual void	Seek(size_t position);
+		virtual size_t	getPosition(void) { return m_position; }
+
+	private:
+
+		HandleStreamReader(const HandleStreamReader& rhs);
+		HandleStreamReader& operator=(const HandleStreamReader& rhs);
+
+		//-------------------------------------------------------------------------
+		// Member Variables
+
+		FileSystem::HandlePtr		m_handle;			// Handle instance reference
+		size_t						m_position = 0;		// Current position
 	};
 
 	//-------------------------------------------------------------------------
@@ -174,7 +202,7 @@ private:
 	//
 	// Loads an ELF binary image into virtual memory
 	template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
-	static Metadata LoadBinary(HANDLE process, image_read_func inproc_reader, image_read_func outproc_reader);
+	static Metadata LoadBinary(StreamReader& reader, HANDLE process);
 
 	// ValidateHeader
 	//

@@ -40,7 +40,7 @@ public:
 
 	// Constructor
 	//
-	HeapBuffer(size_t elements = 1) 
+	HeapBuffer(size_t elements = 1) : m_count(elements)
 	{ 
 		// Cannot call operator new[] with 0 elements to allocate
 		if(elements == 0) throw Exception(E_BOUNDS);
