@@ -25,16 +25,8 @@
 
 #pragma warning(push, 4)
 
-ElfImage::load_binary_func ElfImage::LoadBinary32 = 
-ElfImage::LoadBinary<LINUX_ELFCLASS32, uapi::Elf32_Ehdr, uapi::Elf32_Phdr, uapi::Elf32_Shdr>;
-
-#ifdef _M_X64
-ElfImage::load_binary_func ElfImage::LoadBinary64 = 
-ElfImage::LoadBinary<LINUX_ELFCLASS64, uapi::Elf64_Ehdr, uapi::Elf64_Phdr, uapi::Elf64_Shdr>;
-#endif
-
 //-----------------------------------------------------------------------------
-// InProcessRead
+// ::InProcessRead
 //
 // Reads data from a StreamReader instance directly into a memory buffer
 //
@@ -53,7 +45,7 @@ inline size_t InProcessRead(StreamReader& reader, size_t offset, void* destinati
 }
 
 //-----------------------------------------------------------------------------
-// OutOfProcessRead
+// ::OutOfProcessRead
 //
 // Reads data from a StreamReader instance into another process using an
 // intermediate heap buffer
@@ -120,33 +112,36 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 }
 
 //-----------------------------------------------------------------------------
+// ElfImage::Load (ELFCLASS32)
+//
+// Loads a 32-bit ELF image into virtual memory
+//
+// Arguments:
+//
+//	reader	- StreamReader instance positioned at the the start of the image data
 
-std::unique_ptr<ElfImage> ElfImage::Load(ElfImage::Type type, HANDLE process, const FileSystem::HandlePtr& handle)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<LINUX_ELFCLASS32>(StreamReader& reader, HANDLE process)
 {
-	HandleStreamReader reader(handle);
-	return Load(type, process, reader);
+	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
+	return std::make_unique<ElfImage>(LoadBinary<LINUX_ELFCLASS32, uapi::Elf32_Ehdr, uapi::Elf32_Phdr, uapi::Elf32_Shdr>(reader, process));
 }
 
-std::unique_ptr<ElfImage> ElfImage::Load(ElfImage::Type type, HANDLE process, StreamReader& reader)
+//-----------------------------------------------------------------------------
+// ElfImage::Load (ELFCLASS64)
+//
+// Loads a 32-bit ELF image into virtual memory
+//
+// Arguments:
+//
+//	reader	- StreamReader instance positioned at the the start of the image data
+
+#ifdef _M_X64
+template <> std::unique_ptr<ElfImage> ElfImage::Load<LINUX_ELFCLASS64>(StreamReader& reader, HANDLE process)
 {
-#ifdef _M_X64
-	// 64 bit: Type has to be ELF32 or ELF64
-	if(type == Type::None) throw Exception(E_NOTELFIMAGE);
-#else
-	// 32 bit: Type has to be ELF32
-	if(type != Type::i386) throw Exception(E_NOTELFIMAGE);
-#endif
-
-#ifdef _M_X64
-	// 64-bit builds can load either 32 or 64 bit binaries into the host process
-	load_binary_func loader = (type == Type::i386) ? LoadBinary32 : LoadBinary64;
-#else
-	// 32-bit builds can only load 32 bit binaries into the host process
-	load_binary_func loader = LoadBinary32;
-#endif
-
-	return std::make_unique<ElfImage>(loader(reader, process));
+	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
+	return std::make_unique<ElfImage>(LoadBinary<LINUX_ELFCLASS64, uapi::Elf64_Ehdr, uapi::Elf64_Phdr, uapi::Elf64_Shdr>(reader, process));
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // ElfImage::LoadBinary (static, private)
@@ -182,6 +177,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	read = InProcessRead(reader, elfheader.e_phoff, &progheaders, progheaders.Size);
 	if(read != progheaders.Size) throw Exception(E_ELFIMAGETRUNCATED);
 
+	// TODO: Continue to clean this up, break out into helper functions
 	// PROGRAM HEADERS PASS ONE
 
 	// Make an initial pass over the program headers to determine the memory footprint
@@ -338,46 +334,6 @@ void ElfImage::ValidateHeader(const ehdr_t* elfheader)
 	if((elfheader->e_phentsize) && (elfheader->e_phentsize < sizeof(phdr_t))) throw Exception(E_ELFPROGHEADERFORMAT);
 	if((elfheader->e_shentsize) && (elfheader->e_shentsize < sizeof(shdr_t))) throw Exception(E_ELFSECTHEADERFORMAT);
 }
-
-//-----------------------------------------------------------------------------
-// ElfImage::HandleStreamReader::Read
-//
-// Reads data from a FileSystem::Handle instance
-//
-// Arguments:
-//
-//	buffer		- Destination buffer
-//	length		- Number of bytes to be read from the file stream
-
-size_t ElfImage::HandleStreamReader::Read(void* buffer, size_t length)
-{
-	// Just ask the Handle instance to read the data into the destination
-	return m_handle->Read(buffer, length);
-}
-
-//-----------------------------------------------------------------------------
-// ElfImage::HandleStreamReader::Seek
-//
-// Seeks the stream to the specified position
-//
-// Arguments:
-//
-//	position		- Position to set the stream pointer to
-
-void ElfImage::HandleStreamReader::Seek(size_t position)
-{
-	// Handles use uapi::loff_t, which is a signed 64-bit value
-	if(position > INT64_MAX) throw Exception(E_INVALIDARG);
-
-	// StreamReaders are supposed to be forward-only; even though the Handle
-	// can technically support this, follow the interface contract
-	if(position < m_position) throw Exception(E_INVALIDARG);
-
-	// Attempt to set the file pointer to the specified position
-	uapi::loff_t offset = static_cast<uapi::loff_t>(position);
-	if(m_handle->Seek(offset, LINUX_SEEK_SET) != offset) throw Exception(E_INVALIDARG);
-}
-
 
 //-----------------------------------------------------------------------------
 

@@ -65,6 +65,38 @@ private:
 	Host(const PROCESS_INFORMATION& procinfo);
 	friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
 
+	// HandleStreamReader
+	//
+	// Implements a stream reader for a FileSystem::Handle instance
+	class HandleStreamReader : public StreamReader
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		HandleStreamReader(const FileSystem::HandlePtr& handle) : m_handle(handle) {}
+		virtual ~HandleStreamReader()=default;
+
+		//---------------------------------------------------------------------
+		// Properties
+
+		// StreamReader Implementation
+		virtual size_t	Read(void* buffer, size_t length);
+		virtual void	Seek(size_t position);
+		virtual size_t	getPosition(void) { return m_position; }
+
+	private:
+
+		HandleStreamReader(const HandleStreamReader& rhs);
+		HandleStreamReader& operator=(const HandleStreamReader& rhs);
+
+		//-------------------------------------------------------------------------
+		// Member Variables
+
+		FileSystem::HandlePtr		m_handle;			// Handle instance reference
+		size_t						m_position = 0;		// Current position
+	};
+
 	// ReadySignal
 	//
 	// Wraps a Win32 manual reset event that is passed to the client process

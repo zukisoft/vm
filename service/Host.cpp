@@ -179,7 +179,8 @@ std::unique_ptr<Host> Host::TESTME(const FileSystem::HandlePtr handle, const tch
 
 	try {
 
-		std::unique_ptr<ElfImage> img = ElfImage::Load(ElfImage::Type::i386, procinfo.hProcess, handle);
+		HandleStreamReader reader(handle);
+		std::unique_ptr<ElfImage> img = ElfImage::Load<LINUX_ELFCLASS32>(reader, procinfo.hProcess);
 		int x = 123;
 		ResumeThread(procinfo.hThread);
 	}
@@ -213,6 +214,45 @@ std::unique_ptr<Host> Host::TESTME(const FileSystem::HandlePtr handle, const tch
 
 	// Process was successfully created and initialized, pass it off to a Host instance
 	return std::make_unique<Host>(procinfo);
+}
+
+//-----------------------------------------------------------------------------
+// Host::HandleStreamReader::Read
+//
+// Reads data from a FileSystem::Handle instance
+//
+// Arguments:
+//
+//	buffer		- Destination buffer
+//	length		- Number of bytes to be read from the file stream
+
+size_t Host::HandleStreamReader::Read(void* buffer, size_t length)
+{
+	// Just ask the Handle instance to read the data into the destination
+	return m_handle->Read(buffer, length);
+}
+
+//-----------------------------------------------------------------------------
+// Host::HandleStreamReader::Seek
+//
+// Seeks the stream to the specified position
+//
+// Arguments:
+//
+//	position		- Position to set the stream pointer to
+
+void Host::HandleStreamReader::Seek(size_t position)
+{
+	// Handles use uapi::loff_t, which is a signed 64-bit value
+	if(position > INT64_MAX) throw Exception(E_INVALIDARG);
+
+	// StreamReaders are supposed to be forward-only; even though the Handle
+	// can technically support this, follow the interface contract
+	if(position < m_position) throw Exception(E_INVALIDARG);
+
+	// Attempt to set the file pointer to the specified position
+	uapi::loff_t offset = static_cast<uapi::loff_t>(position);
+	if(m_handle->Seek(offset, LINUX_SEEK_SET) != offset) throw Exception(E_INVALIDARG);
 }
 
 //-----------------------------------------------------------------------------

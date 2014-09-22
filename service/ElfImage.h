@@ -49,34 +49,14 @@ public:
 	//
 	~ElfImage()=default;
 
-	// Type
-	//
-	// Defines the class of the ELF binary image, used to determine if a 32 or 64-bit
-	// loader needs to be used
-	enum class Type
-	{
-		None		= LINUX_ELFCLASSNONE,
-		i386		= LINUX_ELFCLASS32,
-		x86_64		= LINUX_ELFCLASS64,
-	};
-
 	//-------------------------------------------------------------------------
 	// Member Functions
-
-	// todo
-	static Type GetType(void) { return Type::None; }
-
-	// Load (FileSystem::Handle)
-	//
-	// Loads an ELF image into memory from a StreamReader instance
-	static std::unique_ptr<ElfImage> Load(Type type, const FileSystem::HandlePtr& handle) { return Load(type, INVALID_HANDLE_VALUE, handle); }
-	static std::unique_ptr<ElfImage> Load(Type type, HANDLE process, const FileSystem::HandlePtr& handle);
 
 	// Load (StreamReader)
 	//
 	// Loads an ELF image into memory from a StreamReader instance
-	static std::unique_ptr<ElfImage> Load(Type type, StreamReader& reader) { return Load(type, INVALID_HANDLE_VALUE, reader); }
-	static std::unique_ptr<ElfImage> Load(Type type, HANDLE process, StreamReader& reader);
+	template <int elfclass>
+	static std::unique_ptr<ElfImage> Load(StreamReader& reader, HANDLE process = INVALID_HANDLE_VALUE);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -128,27 +108,10 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
-	// load_binary_func
-	//
-	// Defines a specific instance of LoadBinary()
-	using load_binary_func = std::function<Metadata(StreamReader&, HANDLE)>;
-
-	// ElfCommon_Ehdr
-	//
-	// Common portion of the ELF header structure, can be used to determine
-	// what the size and type of the full header structure is
-	typedef struct {
-
-	  uint8_t		e_ident[LINUX_EI_NIDENT];
-	  uint16_t		e_type;
-	  uint16_t		e_machine;
-	  uint32_t		e_version;
-
-	} ElfCommon_Ehdr;
-
 	// Metadata
 	//
-	// Provides information about an image that has been loaded by ElfLoader<>
+	// Provides information about an image that has been loaded by LoadBinary<>,
+	// this is passed back to the ElfImage instance on construction
 	struct Metadata
 	{
 		void*					BaseAddress = nullptr;
@@ -156,38 +119,6 @@ private:
 		size_t					NumProgramHeaders = 0;
 		void*					EntryPoint = nullptr;
 		std::tstring			Interpreter;
-	};
-
-	// HandleStreamReader
-	//
-	// Implements a stream reader for a FileSystem::Handle instance
-	class HandleStreamReader : public StreamReader
-	{
-	public:
-
-		// Constructor / Destructor
-		//
-		HandleStreamReader(const FileSystem::HandlePtr& handle) : m_handle(handle) {}
-		virtual ~HandleStreamReader()=default;
-
-		//---------------------------------------------------------------------
-		// Properties
-
-		// StreamReader Implementation
-		virtual size_t	Read(void* buffer, size_t length);
-		virtual void	Seek(size_t position);
-		virtual size_t	getPosition(void) { return m_position; }
-
-	private:
-
-		HandleStreamReader(const HandleStreamReader& rhs);
-		HandleStreamReader& operator=(const HandleStreamReader& rhs);
-
-		//-------------------------------------------------------------------------
-		// Member Variables
-
-		FileSystem::HandlePtr		m_handle;			// Handle instance reference
-		size_t						m_position = 0;		// Current position
 	};
 
 	//-------------------------------------------------------------------------
@@ -213,13 +144,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const Metadata				m_metadata;		// Loaded image metadata
-
-	static load_binary_func		LoadBinary32;
-
-#ifdef _M_X64
-	static load_binary_func		LoadBinary64;
-#endif
+	const Metadata			m_metadata;			// Loaded image metadata
 };
 
 //-----------------------------------------------------------------------------

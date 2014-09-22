@@ -1192,13 +1192,6 @@ Unable to set protection attributes on loaded ELF image segment.
 
 MessageId=
 Severity=Error
-SymbolicName=E_NOTELFIMAGE
-Language=English
-The specified image is not an executable ELF image.
-.
-
-MessageId=
-Severity=Error
 SymbolicName=E_LOADELFIMAGEFAILED
 Language=English
 Cannot load ELF image %1.
