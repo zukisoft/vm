@@ -293,9 +293,6 @@
     <ClInclude Include="..\common\HeapBuffer.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="ElfLoader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -490,7 +487,7 @@
     <ClCompile Include="Host.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ElfLoader.cpp">
+    <ClCompile Include="ElfImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

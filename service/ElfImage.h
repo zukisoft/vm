@@ -26,8 +26,8 @@
 
 #include <linux/elf.h>
 #include <linux/elf-em.h>
-#include "ElfLoader.h"
 #include "Exception.h"
+#include "HeapBuffer.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -44,13 +44,6 @@ public:
 	// Destructor
 	//
 	~ElfImage()=default;
-
-	// todo: move this - PUBLIC TYPES or something
-
-	// read_image_func
-	//
-	// Invoked by ElfImageT to read data from the binary image file
-	using read_image_func = std::function<size_t(void* buffer, size_t offset, size_t count)>;
 
 	// Type
 	//
@@ -70,11 +63,7 @@ public:
 	static Type GetType(void) { return Type::None; }
 
 	// this guy takes multiple things in and then calls loader<T> to get
-	static std::unique_ptr<ElfImage> Load(void)
-	{
-		//return std::make_unique<ElfImage>(TestFunc());
-		return nullptr;
-	}
+	static std::unique_ptr<ElfImage> Load(void);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -116,12 +105,12 @@ private:
 
 	// Forward Declarations
 	//
-	struct LoadedImage;
+	struct Metadata;
 
 	// Instance Constructor
 	//
-	ElfImage(ElfLoader::Metadata&& metadata) : m_metadata(metadata) {}
-	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, LoadedImage>(LoadedImage&&);
+	ElfImage(Metadata&& metadata) : m_metadata(metadata) {}
+	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, Metadata>(Metadata&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -139,10 +128,49 @@ private:
 
 	} ElfCommon_Ehdr;
 
+	// image_reader_func
+	//
+	// Invoked by LoadImage to read data from the binary image file
+	using image_read_func = std::function<size_t(void* buffer, size_t offset, size_t count)>;
+
+	using image_copy_func = std::function<size_t(size_t offset, size_t count, void* buffer)>;
+
+	// Metadata
+	//
+	// Provides information about an image that has been loaded by ElfLoader<>
+	struct Metadata
+	{
+		void*					BaseAddress = nullptr;
+		void*					ProgramHeaders = nullptr;
+		size_t					NumProgramHeaders = 0;
+		void*					EntryPoint = nullptr;
+		std::tstring			Interpreter;
+	};
+
+	//-------------------------------------------------------------------------
+	// Priavte Member Functions
+
+	// FlagsToProtection
+	//
+	// Converts ELF p_flags into VirtualAlloc(Ex) protection flags
+	static DWORD FlagsToProtection(uint32_t flags);
+
+	// LoadBinary
+	//
+	// Loads an ELF binary image into virtual memory
+	template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
+	static Metadata LoadBinary(HANDLE process, image_read_func reader);
+
+	// ValidateHeader
+	//
+	// Validates the contents of an ELF binary header
+	template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
+	static void ValidateHeader(const ehdr_t* elfheader);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const ElfLoader::Metadata	m_metadata;		// Loaded image metadata
+	const Metadata				m_metadata;		// Loaded image metadata
 };
 
 //-----------------------------------------------------------------------------
