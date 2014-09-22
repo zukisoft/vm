@@ -71,18 +71,27 @@ inline size_t OutOfProcessRead(StreamReader& reader, HANDLE process, size_t offs
 	// If the process handle is not valid, this is actually an in-process read
 	if(process == INVALID_HANDLE_VALUE) return InProcessRead(reader, offset, destination, count);
 
-	// Allocate a heap buffer large enough to accomodate the data transfer
-	HeapBuffer<uint8_t> intermediate(count);
+	uintptr_t			dest = uintptr_t(destination);			// Easier pointer math as uintptr_t
+	size_t				total = 0;								// Total bytes written
+	SIZE_T				written;								// Result from WriteProcessMemory
 
-	// Read up to count bytes from the stream into the intermediate buffer
+	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
+	HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);
+
+	// If necessary seek the reader to the specifed offset
 	if(reader.Position != offset) reader.Seek(offset);
-	size_t read = reader.Read(&intermediate, count);
 
-	// Write the amount of data read into the external process
-	SIZE_T written;
-	if(!WriteProcessMemory(process, destination, &intermediate, read, &written)) throw Win32Exception();
+	while(count) {
 
-	return written;
+		// Read the next chunk of memory into the heap buffer and write it into the target process
+		size_t read = reader.Read(buffer, min(count, buffer.Size));
+		if(!WriteProcessMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written)) throw Win32Exception();
+
+		total += written;				// Increment total bytes written
+		count -= read;					// Decrement bytes left to be read
+	};
+
+	return total;						// Return total bytes written
 }
 
 //-----------------------------------------------------------------------------
