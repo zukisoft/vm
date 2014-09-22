@@ -73,6 +73,14 @@ public:
 		else throw Exception(E_BOUNDS);
 	}
 
+	// Array subscript operator
+	//
+	_type& operator[] (size_t index) 
+	{ 
+		if(index < m_count) return m_buffer[index]; 
+		else throw Exception(E_BOUNDS);
+	}
+
 	//-------------------------------------------------------------------------
 	// Properties
 

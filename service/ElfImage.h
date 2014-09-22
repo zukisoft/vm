@@ -27,7 +27,10 @@
 #include <linux/elf.h>
 #include <linux/elf-em.h>
 #include "Exception.h"
+#include "FileSystem.h"
 #include "HeapBuffer.h"
+#include "MemoryRegion.h"
+#include "StreamReader.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -62,8 +65,17 @@ public:
 	// todo
 	static Type GetType(void) { return Type::None; }
 
-	// this guy takes multiple things in and then calls loader<T> to get
-	static std::unique_ptr<ElfImage> Load(void);
+	// Load (FileSystem::Handle)
+	//
+	// Loads an ELF image into memory from a StreamReader instance
+	static std::unique_ptr<ElfImage> Load(Type type, const FileSystem::HandlePtr& handle) { return Load(type, INVALID_HANDLE_VALUE, handle); }
+	static std::unique_ptr<ElfImage> Load(Type type, HANDLE process, const FileSystem::HandlePtr& handle);
+
+	// Load (StreamReader)
+	//
+	// Loads an ELF image into memory from a StreamReader instance
+	static std::unique_ptr<ElfImage> Load(Type type, StreamReader& reader) { return Load(type, INVALID_HANDLE_VALUE, reader); }
+	static std::unique_ptr<ElfImage> Load(Type type, HANDLE process, StreamReader& reader);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -128,12 +140,15 @@ private:
 
 	} ElfCommon_Ehdr;
 
-	// image_reader_func
+	// image_read_func
 	//
 	// Invoked by LoadImage to read data from the binary image file
-	using image_read_func = std::function<size_t(void* buffer, size_t offset, size_t count)>;
+	using image_read_func = std::function<size_t(void* destination, size_t offset, size_t count)>;
 
-	using image_copy_func = std::function<size_t(size_t offset, size_t count, void* buffer)>;
+	// load_binary_func
+	//
+	// Defines a specific instance of LoadBinary()
+	using load_binary_func = std::function<Metadata(HANDLE process, image_read_func inproc_reader, image_read_func outproc_reader)>;
 
 	// Metadata
 	//
@@ -148,7 +163,7 @@ private:
 	};
 
 	//-------------------------------------------------------------------------
-	// Priavte Member Functions
+	// Private Member Functions
 
 	// FlagsToProtection
 	//
@@ -159,7 +174,7 @@ private:
 	//
 	// Loads an ELF binary image into virtual memory
 	template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
-	static Metadata LoadBinary(HANDLE process, image_read_func reader);
+	static Metadata LoadBinary(HANDLE process, image_read_func inproc_reader, image_read_func outproc_reader);
 
 	// ValidateHeader
 	//
@@ -171,6 +186,12 @@ private:
 	// Member Variables
 
 	const Metadata				m_metadata;		// Loaded image metadata
+
+	static load_binary_func		LoadBinary32;
+
+#ifdef _M_X64
+	static load_binary_func		LoadBinary64;
+#endif
 };
 
 //-----------------------------------------------------------------------------
