@@ -79,9 +79,13 @@ XzStreamReader::~XzStreamReader()
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t XzStreamReader::Read(void* buffer, uint32_t length)
+size_t XzStreamReader::Read(void* buffer, size_t length)
 {
 	bool freemem = false;							// Flag to free buffer
+
+#ifdef _WIN64
+	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
 
 	if((length == 0) || (m_finished)) return 0;		// Nothing to do
 
@@ -114,8 +118,8 @@ uint32_t XzStreamReader::Read(void* buffer, uint32_t length)
 	// XZ will raise an error on an attempt to read beyond the end
 	if(result == XZ_STREAM_END) m_finished = true;
 
-	m_position += static_cast<uint32_t>(m_buffer.out_pos);
-	return static_cast<uint32_t>(m_buffer.out_pos);
+	m_position += m_buffer.out_pos;
+	return m_buffer.out_pos;
 }
 
 //-----------------------------------------------------------------------------
@@ -127,8 +131,12 @@ uint32_t XzStreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void XzStreamReader::Seek(uint32_t position)
+void XzStreamReader::Seek(size_t position)
 {
+#ifdef _WIN64
+	if(position > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
+
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	
 	// Use Read() to decompress and advance the stream

@@ -35,7 +35,8 @@
 //	value		- value to be aligned
 //	alignment	- Alignment boundary
 
-static uint32_t AlignUp(uint32_t value, uint32_t alignment)
+template <typename _type>
+static _type AlignUp(_type value, _type alignment)
 {
 	if(value == 0) return 0;
 	else return value + ((alignment - (value % alignment)) % alignment);
@@ -121,13 +122,13 @@ void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, st
 
 		// Read the entry path string
 		char_t path[_MAX_PATH];
-		if(reader->Read(path, ConvertHexString(header.c_namesize, 8)) == 0) path[0] = '\0';
+		if(reader->Read(path, static_cast<size_t>(ConvertHexString(header.c_namesize, 8))) == 0) path[0] = '\0';
 		
 		// A path of "TRAILER!!!" indicates there are no more entries to process
 		if(strcmp(path, "TRAILER!!!") == 0) return;
 
 		// 32-bit alignment for the file data in the archive
-		reader->Seek(AlignUp(reader->Position, 4));
+		reader->Seek(AlignUp<size_t>(reader->Position, 4));
 
 		// Create a FileStream around the current base stream position
 		uint32_t datalength = ConvertHexString(header.c_filesize, 8);
@@ -138,7 +139,7 @@ void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, st
 
 		// In the event the entire file stream was not read, seek beyond it and
 		// apply the 32-bit alignment to get to the next entry header
-		reader->Seek(AlignUp(reader->Position + (datalength - filestream.Position), 4));
+		reader->Seek(AlignUp<size_t>(reader->Position + (datalength - filestream.Position), 4));
 	}
 }
 
@@ -152,7 +153,7 @@ void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, st
 //	buffer		- Destination buffer (can be NULL)
 //	length		- Number of bytes to be read from the file stream
 
-uint32_t CpioArchive::FileStream::Read(void* buffer, uint32_t length)
+size_t CpioArchive::FileStream::Read(void* buffer, size_t length)
 {
 	// Check for null read and end-of-stream
 	if((length == 0) || (m_position >= m_length)) return 0;
@@ -161,7 +162,7 @@ uint32_t CpioArchive::FileStream::Read(void* buffer, uint32_t length)
 	if(m_position + length > m_length) length = (m_length - m_position);
 
 	// Read the data from the base stream
-	uint32_t out = m_basestream->Read(buffer, length);
+	size_t out = m_basestream->Read(buffer, length);
 	m_position += out;
 
 	return out;

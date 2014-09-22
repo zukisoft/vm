@@ -56,26 +56,11 @@ public:
 	Lz4StreamReader(const void* base, size_t length);
 	virtual ~Lz4StreamReader();
 
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// StreamReader::Read
+	// StreamReader Implementation
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length);
-
-	// StreamReader::Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position);
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// StreamReader::getPosition
-	//
-	// Gets the current position within the stream
-	virtual uint32_t getPosition(void) { return m_position; }
+	virtual size_t	Read(void* buffer, size_t length);
+	virtual void	Seek(size_t position);
+	virtual size_t	getPosition(void) { return m_position; }
 
 private:
 
@@ -93,7 +78,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	uint32_t				m_position = 0;		// Current stream position
+	size_t					m_position = 0;		// Current stream position
 	uint8_t*				m_block;			// Decompressed block data
 	uint8_t*				m_blockcurrent;		// Pointer into block data
 	uint32_t				m_blockremain;		// Remaining block data

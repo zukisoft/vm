@@ -37,7 +37,7 @@
 //	length			- Length of the output buffer, in bytes
 //	out				- Number of bytes written to the buffer
 
-bool StreamReader::TryRead(void* buffer, uint32_t length, uint32_t* out)
+bool StreamReader::TryRead(void* buffer, size_t length, size_t* out)
 {
 	if(!out) return false;					// Invalid [out] pointer
 
@@ -55,7 +55,7 @@ bool StreamReader::TryRead(void* buffer, uint32_t length, uint32_t* out)
 //
 //	position		- Position to advance the stream pointer to
 
-bool StreamReader::TrySeek(uint32_t position)
+bool StreamReader::TrySeek(size_t position)
 {
 	try { Seek(position); return true; }
 	catch(Exception&) { return false; }

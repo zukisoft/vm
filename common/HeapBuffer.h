@@ -69,8 +69,8 @@ public:
 	//
 	_type& operator[] (int index) 
 	{ 
-		if(index < m_count) return m_buffer[index]; 
-		else throw Exception(E_BOUNDS);
+		if((index < 0) || (static_cast<size_t>(index) < m_count)) throw Exception(E_BOUNDS);
+		return m_buffer[index]; 
 	}
 
 	// Array subscript operator

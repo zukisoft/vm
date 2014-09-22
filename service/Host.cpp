@@ -77,7 +77,7 @@ std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bin
 	// this may not be a bad idea regardless, it's kind of ugly and makes this look more complicated than it is
 
 	// Determine the size of the attributes buffer required to hold the inheritable handles property
-	size_t required = 0;
+	SIZE_T required = 0;
 	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
 	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
 
@@ -142,7 +142,7 @@ std::unique_ptr<Host> Host::TESTME(const tchar_t* binarypath, const tchar_t* bin
 	// this may not be a bad idea regardless, it's kind of ugly and makes this look more complicated than it is
 
 	// Determine the size of the attributes buffer required to hold the inheritable handles property
-	size_t required = 0;
+	SIZE_T required = 0;
 	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
 	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
 

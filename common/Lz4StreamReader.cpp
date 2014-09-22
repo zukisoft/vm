@@ -155,9 +155,13 @@ uint32_t Lz4StreamReader::ReadNextBlock(void)
 //	buffer			- Output buffer; can be NULL
 //	length			- Length of the output buffer, in bytes
 
-uint32_t Lz4StreamReader::Read(void* buffer, uint32_t length)
+size_t Lz4StreamReader::Read(void* buffer, size_t length)
 {
 	uint32_t		out = 0;				// Bytes returned to caller
+
+#ifdef _WIN64
+	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
 
 	if(length == 0) return 0;				// Nothing to do
 
@@ -166,7 +170,7 @@ uint32_t Lz4StreamReader::Read(void* buffer, uint32_t length)
 	while(length > 0) {
 
 		// Take the smaller of what we have and what we still need
-		uint32_t next = min(m_blockremain, length);
+		uint32_t next = min(m_blockremain, static_cast<uint32_t>(length));
 		if(next) {
 			
 			// The buffer pointer can be NULL to just skip over data
@@ -201,8 +205,12 @@ uint32_t Lz4StreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void Lz4StreamReader::Seek(uint32_t position)
+void Lz4StreamReader::Seek(size_t position)
 {
+#ifdef _WIN64
+	if(position > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
+
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	
 	// Use Read() to decompress and advance the stream

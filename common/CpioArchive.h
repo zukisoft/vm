@@ -203,34 +203,16 @@ private:
 		//
 		virtual ~FileStream()=default;
 
-		//-------------------------------------------------------------------------
-		// Member Functions
-
-		// StreamReader::Read
-		//
-		// Reads the specified number of bytes from the underlying stream
-		virtual uint32_t Read(void* buffer, uint32_t length);
-
-		// StreamReader::Seek
-		// NOT IMPLEMENTED
-		//
-		// Advances the stream to the specified position
-		virtual void Seek(uint32_t position) { UNREFERENCED_PARAMETER(position); throw Exception(E_NOTIMPL); }
-
-		//-------------------------------------------------------------------------
+		//---------------------------------------------------------------------
 		// Properties
 
-		// StreamReader::Length
-		//
-		// Gets the overall length of the stream
-		__declspec(property(get=getLength)) uint32_t Length;
-		virtual uint32_t getLength(void) const { return m_length; }
+		__declspec(property(get=getPosition)) size_t Position;
 
-		// StreamReader::Position
-		//
-		// Gets the current position within the stream
-		__declspec(property(get=getPosition)) uint32_t Position;
-		virtual uint32_t getPosition(void) { return m_position; }
+		// StreamReader Implementation
+		virtual size_t	Read(void* buffer, size_t length);
+		virtual void	Seek(size_t position) { UNREFERENCED_PARAMETER(position); throw Exception(E_NOTIMPL); }
+		virtual size_t	getLength(void) const { return m_length; }
+		virtual size_t	getPosition(void) { return m_position; }
 
 	private:
 
@@ -242,8 +224,8 @@ private:
 
 		// Stream
 		const std::unique_ptr<StreamReader>&	m_basestream;		// Base stream object
-		uint32_t								m_length;			// Stream length
-		uint32_t								m_position = 0;		// Current position
+		size_t									m_length;			// Stream length
+		size_t									m_position = 0;		// Current position
 	};
 };
 

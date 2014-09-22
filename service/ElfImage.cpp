@@ -82,23 +82,16 @@ std::unique_ptr<ElfImage> ElfImage::Load(ElfImage::Type type, HANDLE process, St
 	// Define an in-process reader that operates against the StreamReader instance
 	image_read_func inproc_reader = [&](void* destination, size_t offset, size_t count) -> size_t {
 
-#ifdef _M_X64
-		if(count > UINT32_MAX) throw Exception(E_BOUNDS);
-#endif
-		reader.Seek(static_cast<uint32_t>(offset));
-		return reader.Read(destination, static_cast<uint32_t>(count));
+		reader.Seek(offset);
+		return reader.Read(destination, count);
 	};
 
 	// Define an out-of-process reader that operates against the StreamReader instance
 	image_read_func outproc_reader = [&](void* destination, size_t offset, size_t count) -> size_t {
 
-#ifdef _M_X64
-		if(count > UINT32_MAX) throw Exception(E_BOUNDS);
-#endif
-
 		HeapBuffer<uint8_t> transfer(count);
-		reader.Seek(static_cast<uint32_t>(offset));
-		size_t read = reader.Read(&transfer, static_cast<uint32_t>(count));
+		reader.Seek(offset);
+		size_t read = reader.Read(&transfer, count);
 
 		SIZE_T written;
 		if(!WriteProcessMemory(process, destination, &transfer, read, &written)) throw Win32Exception();
@@ -158,7 +151,7 @@ ElfImage::Metadata ElfImage::LoadBinary(HANDLE process, image_read_func inproc_r
 
 	// Make an initial pass over the program headers to determine the memory footprint
 	uintptr_t minvaddr = UINTPTR_MAX, maxvaddr = 0;
-	for(int index = 0; index < progheaders.Count; index++) {
+	for(size_t index = 0; index < progheaders.Count; index++) {
 
 		// Pull out a reference to the current program header structure
 		const phdr_t& progheader = progheaders[index];
@@ -197,7 +190,7 @@ ElfImage::Metadata ElfImage::LoadBinary(HANDLE process, image_read_func inproc_r
 	// PROGRAM HEADERS PASS TWO
 
 	// Second pass over the program headers to load, commit and protect the program segments
-	for(int index = 0; index < progheaders.Count; index++) {
+	for(size_t index = 0; index < progheaders.Count; index++) {
 
 		// Pull out a reference to the current program header structure
 		const phdr_t& progheader = progheaders[index];

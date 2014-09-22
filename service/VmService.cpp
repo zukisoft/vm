@@ -45,11 +45,11 @@ void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 			{
 				FileSystem::HandlePtr p = m_vfs->CreateFile(path.c_str(), 0, file.Mode);
 				std::vector<uint8_t> buffer(64 KiB);
-				uint32_t read = file.Data.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+				size_t read = file.Data.Read(buffer.data(), buffer.size());
 				while(read > 0) {
 
 					p->Write(buffer.data(), read);
-					read = file.Data.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+					read = file.Data.Read(buffer.data(), buffer.size());
 				}
 			}
 				break;
@@ -61,7 +61,7 @@ void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 			case LINUX_S_IFLNK:
 			{
 				std::vector<char> buffer(file.Data.Length + 1);
-				file.Data.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+				file.Data.Read(buffer.data(), buffer.size());
 				std::tstring target = std::to_tstring(buffer.data());
 				m_vfs->CreateSymbolicLinkW(path.c_str(), target.c_str());
 			}

@@ -57,31 +57,12 @@ public:
 	LzmaStreamReader(const void* base, size_t length);
 	virtual ~LzmaStreamReader();
 
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// StreamReader::Read
+	// StreamReader Implementation
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length);
-
-	// StreamReader::Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position);
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// StreamReader::getLength
-	//
-	// Gets the length of the data stream, if known
-	virtual uint32_t getLength(void) { return (m_streamlen < UINT32_MAX) ? static_cast<uint32_t>(m_streamlen) : UINT32_MAX; }
-
-	// StreamReader::getPosition
-	//
-	// Gets the current position within the stream
-	virtual uint32_t getPosition(void) { return m_position; }
+	virtual size_t	Read(void* buffer, size_t length);
+	virtual void	Seek(size_t position);
+	virtual size_t	getLength(void);
+	virtual size_t	getPosition(void) { return m_position; }
 
 private:
 
@@ -95,8 +76,8 @@ private:
 	uint64_t				m_streamlen;			// Uncompressed stream length
 	uintptr_t				m_inputptr;				// Current input data pointer
 	const uintptr_t			m_baseptr;				// Base memory address pointer
-	const uint32_t			m_length;				// Length of memory buffer
-	uint32_t				m_position = 0;			// Current position in the stream
+	const size_t			m_length;				// Length of memory buffer
+	size_t					m_position = 0;			// Current position in the stream
 	bool					m_finished = false;		// Flag for end of stream
 };
 

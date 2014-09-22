@@ -75,10 +75,14 @@ GZipStreamReader::~GZipStreamReader()
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
+size_t GZipStreamReader::Read(void* buffer, size_t length)
 {
 	bool freemem = false;					// Flag to free buffer
 	uint32_t out = m_stream.total_out;		// Save the current total
+
+#ifdef _WIN64
+	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
 
 	if((length == 0) || (m_finished)) return 0;		// Nothing to do
 
@@ -93,7 +97,7 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 
 	// Set the output buffer pointer and length for zlib
 	m_stream.next_out = reinterpret_cast<uint8_t*>(buffer);
-	m_stream.avail_out = length;
+	m_stream.avail_out = static_cast<uint32_t>(length);
 
 	// Inflate up to the requested number of bytes from the compressed stream
 	int result = inflate(&m_stream, Z_SYNC_FLUSH);
@@ -120,8 +124,12 @@ uint32_t GZipStreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void GZipStreamReader::Seek(uint32_t position)
+void GZipStreamReader::Seek(size_t position)
 {
+#ifdef _WIN64
+	if(position > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
+
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	
 	// Use Read() to decompress and advance the stream

@@ -53,14 +53,10 @@ static ISzAlloc g_szalloc = { LzmaAlloc, LzmaFree };
 //	base		- Pointer to the start of the LZMA stream
 //	length		- Length of the input stream, in bytes
 
-LzmaStreamReader::LzmaStreamReader(const void* base, size_t length) : m_baseptr(uintptr_t(base)), m_length(static_cast<uint32_t>(length))
+LzmaStreamReader::LzmaStreamReader(const void* base, size_t length) : m_baseptr(uintptr_t(base)), m_length(length)
 {
 	if(!base) throw Exception(E_POINTER);
 	if(length == 0) throw Exception(E_INVALIDARG);
-
-#ifdef _WIN64
-	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
-#endif
 
 	// Initialize the LZMA state structure
 	LzmaDec_Construct(&m_state);
@@ -72,8 +68,8 @@ LzmaStreamReader::LzmaStreamReader(const void* base, size_t length) : m_baseptr(
 	m_streamlen = *reinterpret_cast<uint64_t*>(m_baseptr + LZMA_PROPS_SIZE);
 	m_inputptr = m_baseptr + LZMA_PROPS_SIZE + sizeof(uint64_t);
 
-#ifdef _WIN64
-	// If the stream length is known and is more than can fit in UINT32, that's a problem for Read()
+#ifndef _WIN64
+	// If the stream length is known and is more than can fit in UINT32, that's a problem on 32-bit builds
 	if((m_streamlen != UINT64_MAX) && (m_streamlen > UINT32_MAX)) throw Exception(E_DECOMPRESS_TOOBIG, COMPRESSION_METHOD);
 #endif
 
@@ -94,6 +90,22 @@ LzmaStreamReader::~LzmaStreamReader()
 }
 
 //-----------------------------------------------------------------------------
+// LzmaStreamReader::getLength (StreamReader)
+//
+// Gets the length of the stream
+
+size_t LzmaStreamReader::getLength(void)
+{ 
+#ifdef _WIN64
+	// No stream length truncation is required on 64-bit builds
+	return m_streamlen;
+#else
+	// 32-bit builds can't represent the entire stream length, truncate at UINT32_MAX if necessary
+	return (m_streamlen < UINT32_MAX) ? static_cast<uint32_t>(m_streamlen) : UINT32_MAX; 
+#endif
+}
+
+//-----------------------------------------------------------------------------
 // LzmaStreamReader::Read (StreamReader)
 //
 // Reads the specified number of bytes from the input stream into the output buffer
@@ -103,7 +115,7 @@ LzmaStreamReader::~LzmaStreamReader()
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t LzmaStreamReader::Read(void* buffer, uint32_t length)
+size_t LzmaStreamReader::Read(void* buffer, size_t length)
 {
 	ELzmaStatus			status;						// Decompression status
 	bool				freemem = false;			// Flag to free output buffer
@@ -126,16 +138,10 @@ uint32_t LzmaStreamReader::Read(void* buffer, uint32_t length)
 	ELzmaFinishMode finishMode = LZMA_FINISH_ANY;
 	if(m_position + length >= m_streamlen) finishMode = LZMA_FINISH_END;
 
-	// LzmaDec_DecodeToBuf needs a size_t pointer, not a uint32_t pointer
-	size_t sizet_length = length;
-	
 	// Attempt to decode the next block of compressed data into the output buffer
-	SRes result = LzmaDec_DecodeToBuf(&m_state, reinterpret_cast<uint8_t*>(buffer), &sizet_length,
+	SRes result = LzmaDec_DecodeToBuf(&m_state, reinterpret_cast<uint8_t*>(buffer), &length,
 		reinterpret_cast<uint8_t*>(m_inputptr), &inputlen, finishMode, &status);
 
-	// Cast the length back after the function call
-	length = static_cast<uint32_t>(sizet_length);
-	
 	// Always release a locally allocated output buffer and check for SZ_ERROR_DATA
 	if(freemem) free(buffer);
 	if(result == SZ_ERROR_DATA) throw Exception(E_DECOMPRESS_CORRUPT, COMPRESSION_METHOD);
@@ -175,7 +181,7 @@ uint32_t LzmaStreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void LzmaStreamReader::Seek(uint32_t position)
+void LzmaStreamReader::Seek(size_t position)
 {
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	

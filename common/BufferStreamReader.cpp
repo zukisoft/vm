@@ -43,7 +43,7 @@ BufferStreamReader::BufferStreamReader(const void* base, size_t length)
 #endif
 
 	m_base = base;
-	m_length = static_cast<uint32_t>(length);
+	m_length = length;
 	m_offset = 0;
 }
 
@@ -57,20 +57,23 @@ BufferStreamReader::BufferStreamReader(const void* base, size_t length)
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t BufferStreamReader::Read(void* buffer, uint32_t length)
+size_t BufferStreamReader::Read(void* buffer, size_t length)
 {
 	if(length == 0) return 0;				// Nothing to do
 
+#ifdef _WIN64
+	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
+
 	// Calulate the number of output bytes that can be returned
-	uint32_t out = min(length, m_length - m_offset);
+	size_t out = min(length, m_length - m_offset);
 
 	// Copy the memory from the source buffer into the output buffer.  The caller
 	// can provide NULL if they just want to skip over some bytes ...
 	if((buffer) && (out > 0)) memcpy(buffer, reinterpret_cast<const uint8_t*>(m_base) + m_offset, out);
 
-	// Move the current offset and return the number of bytes copied
-	m_offset += out;
-	return static_cast<uint32_t>(out);
+	m_offset += out;				// Advance current offset
+	return out;						// Return number of bytes copied
 }
 
 //-----------------------------------------------------------------------------
@@ -82,8 +85,12 @@ uint32_t BufferStreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void BufferStreamReader::Seek(uint32_t position)
+void BufferStreamReader::Seek(size_t position)
 {
+#ifdef _WIN64
+	if(position > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
+
 	// For consistency with the compressed streams, this is a forward-only operation
 	if((position < m_offset) || (position >= m_length)) throw Exception(E_INVALIDARG);
 	m_offset = position;

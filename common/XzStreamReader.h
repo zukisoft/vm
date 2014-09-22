@@ -45,6 +45,9 @@
 // - Define XZ_DEC_X86 preprocessor definition for above .c files
 // - Add external\xz-embedded\linux\include\linux and \external\xz-embedded\userspace
 //   to the project Additional Include Directories
+//
+// NOTE: StreamReader functions limited to 32-bit lengths/positions since the
+// XZ decoder library uses uint32_t internally and generates warnings on x64
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -61,26 +64,11 @@ public:
 	XzStreamReader(const void* base, size_t length);
 	virtual ~XzStreamReader();
 
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// StreamReader::Read
+	// StreamReader Implementation
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length);
-
-	// StreamReader::Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position);
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// StreamReader::getPosition
-	//
-	// Gets the current position within the stream
-	virtual uint32_t getPosition(void) { return m_position; }
+	virtual size_t	Read(void* buffer, size_t length);
+	virtual void	Seek(size_t position);
+	virtual size_t	getPosition(void) { return m_position; }
 
 private:
 
@@ -92,7 +80,7 @@ private:
 
 	xz_buf				m_buffer;				// XZ buffer structure
 	xz_dec*				m_decoder;				// XZ decoder structure
-	uint32_t			m_position = 0;			// Current position in the stream
+	size_t				m_position = 0;			// Current position in the stream
 	bool				m_finished = false;		// Flag for end of stream
 };
 

@@ -283,10 +283,6 @@ LzopStreamReader::LzopStreamReader(const void* base, size_t length)
 	if(!base) throw Exception(E_POINTER);
 	if(length == 0) throw Exception(E_INVALIDARG);
 
-#ifdef _WIN64
-	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
-#endif
-
 	intptr_t baseptr = intptr_t(base);
 
 	// Verify the magic number and read the LZOP header information
@@ -408,9 +404,9 @@ uint32_t LzopStreamReader::ReadNextBlock(void)
 //	buffer			- Output buffer; can be NULL
 //	length			- Length of the output buffer, in bytes
 
-uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
+size_t LzopStreamReader::Read(void* buffer, size_t length)
 {
-	uint32_t		out = 0;				// Bytes returned to caller
+	size_t			out = 0;				// Bytes returned to caller
 
 	if(length == 0) return 0;				// Nothing to do
 
@@ -419,7 +415,7 @@ uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
 	while(length > 0) {
 
 		// Take the smaller of what we have and what we still need
-		uint32_t next = min(m_blockremain, length);
+		size_t next = min(m_blockremain, length);
 		if(next) {
 			
 			// The buffer pointer can be NULL to just skip over data
@@ -454,7 +450,7 @@ uint32_t LzopStreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void LzopStreamReader::Seek(uint32_t position)
+void LzopStreamReader::Seek(size_t position)
 {
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	

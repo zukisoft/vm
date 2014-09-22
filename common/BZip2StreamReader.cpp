@@ -74,10 +74,14 @@ BZip2StreamReader::~BZip2StreamReader()
 //	buffer			- Output buffer
 //	length			- Length of the output buffer, in bytes
 
-uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
+size_t BZip2StreamReader::Read(void* buffer, size_t length)
 {
 	bool freemem = false;							// Flag to free buffer
 	uint32_t out = m_stream.total_out_lo32;			// Save the current total
+
+#ifdef _WIN64
+	if(length > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
 
 	if((length == 0) || (m_finished)) return 0;		// Nothing to do
 
@@ -92,7 +96,7 @@ uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
 
 	// Set the output buffer pointer and length for zlib
 	m_stream.next_out = reinterpret_cast<char*>(buffer);
-	m_stream.avail_out = length;
+	m_stream.avail_out = static_cast<uint32_t>(length);
 
 	// Inflate up to the requested number of bytes from the compressed stream
 	int result = BZ2_bzDecompress(&m_stream);
@@ -119,8 +123,12 @@ uint32_t BZip2StreamReader::Read(void* buffer, uint32_t length)
 //
 //	position		- Position to advance the input stream to
 
-void BZip2StreamReader::Seek(uint32_t position)
+void BZip2StreamReader::Seek(size_t position)
 {
+#ifdef _WIN64
+	if(position > UINT32_MAX) throw Exception(E_INVALIDARG);
+#endif
+
 	if(position < m_position) throw Exception(E_INVALIDARG);
 	
 	// Use Read() to decompress and advance the stream

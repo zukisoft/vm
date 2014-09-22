@@ -47,24 +47,24 @@ public:
 	// Read
 	//
 	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) = 0;
+	virtual size_t Read(void* buffer, size_t length) = 0;
 
 	// Seek
 	//
 	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) = 0;
+	virtual void Seek(size_t position) = 0;
 
 	// TryRead
 	//
 	// Reads the specified number of bytes from the underlying stream
 	// Returns boolean success/failure rather than throwing an exception
-	virtual bool TryRead(void* buffer, uint32_t length, uint32_t* out);
+	virtual bool TryRead(void* buffer, size_t length, size_t* out);
 
 	// TrySeek
 	//
 	// Advances the stream to the specified position, returns a boolean
 	// success/failure rather than throwing an exception
-	virtual bool TrySeek(uint32_t position);
+	virtual bool TrySeek(size_t position);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -72,14 +72,14 @@ public:
 	// Length
 	//
 	// Gets the overall length of the stream, if known
-	__declspec(property(get=getLength)) uint32_t Length;
-	virtual uint32_t getLength(void) const { return UINT32_MAX; }
+	__declspec(property(get=getLength)) size_t Length;
+	virtual size_t getLength(void) const { return MAXSIZE_T; }
 
 	// Position
 	//
 	// Gets the current position within the stream
-	__declspec(property(get=getPosition)) uint32_t Position;
-	virtual uint32_t getPosition(void) = 0;
+	__declspec(property(get=getPosition)) size_t Position;
+	virtual size_t getPosition(void) = 0;
 };
 
 //-----------------------------------------------------------------------------

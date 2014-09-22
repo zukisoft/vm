@@ -57,16 +57,6 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// StreamReader::Read
-	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length) { return m_stream->Read(buffer, length); }
-
-	// StreamReader::Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position) { m_stream->Seek(position); }
-
 	// FromFile
 	//
 	// Creates the compressed stream reader from a file
@@ -85,13 +75,12 @@ public:
 	static std::unique_ptr<StreamReader> FromFile(std::unique_ptr<File>&& file, size_t offset, size_t length)
 		{ return FromFile(std::forward<std::unique_ptr<File>&>(file), offset, length); }
 
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// StreamReader::getPosition
+	// StreamReader Implementation
 	//
-	// Gets the current position within the stream
-	virtual uint32_t getPosition(void) { return m_stream->Position; }
+	//
+	virtual size_t	Read(void* buffer, size_t length) { return m_stream->Read(buffer, length); }
+	virtual void	Seek(size_t position) { m_stream->Seek(position); }
+	virtual size_t	getPosition(void) { return m_stream->Position; }
 
 private:
 

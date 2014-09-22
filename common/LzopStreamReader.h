@@ -58,26 +58,11 @@ public:
 	LzopStreamReader(const void* base, size_t length);
 	virtual ~LzopStreamReader();
 
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	// StreamReader::Read
+	// StreamReader Implementation
 	//
-	// Reads the specified number of bytes from the underlying stream
-	virtual uint32_t Read(void* buffer, uint32_t length);
-
-	// StreamReader::Seek
-	//
-	// Advances the stream to the specified position
-	virtual void Seek(uint32_t position);
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// StreamReader::getPosition
-	//
-	// Gets the current position within the stream
-	virtual uint32_t getPosition(void) { return m_position; }
+	virtual size_t	Read(void* buffer, size_t length);
+	virtual void	Seek(size_t position);
+	virtual size_t	getPosition(void) { return m_position; }
 
 private:
 
@@ -95,11 +80,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	uint32_t				m_position = 0;		// Current stream position
+	size_t					m_position = 0;		// Current stream position
 	uint8_t*				m_block;			// Decompressed block data
 	size_t					m_blocklen;			// Block data buffer size
 	uint8_t*				m_blockcurrent;		// Pointer into block data
-	uint32_t				m_blockremain;		// Remaining block data
+	size_t					m_blockremain;		// Remaining block data
 	uint32_t				m_lzoflags;			// LZOP header flags
 	intptr_t				m_lzopos;			// Position in LZO stream
 	size_t					m_lzoremain;		// Remaining LZOP data
