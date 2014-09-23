@@ -35,23 +35,46 @@
 #include "SystemCalls.h"
 #include "VmFileSystem.h"
 #include "VmProcessManager.h"
+#include "VmSettings.h"
 #include "VmSystemLog.h"
 
 #include "Host.h"
 #include "RootFileSystem.h"
 
-#pragma warning(push, 4)			
+#include "VirtualMachine.h"
+#include "VmServiceParameters.h"
+
+#pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
 // Class VmService
+//
+// todo: rename me to "VirtualMachine", expose all of the child subsystems
+// via properties
 
-class VmService : public Service<VmService>, private SystemCalls
+// TODO TODO: Changed servicelib to use shared_ptr just for this hack to the
+// settings; that should be controllable in the templates themselves, like
+// public Service<VmService, std::shared_ptr<blah>> or something; using
+
+class VmService : public Service<VmService>, private SystemCalls, public VmServiceParameters,
+	public VirtualMachine, public std::enable_shared_from_this<VmServiceParameters>
 {
 public:
 
 	VmService()=default;
 
-	// CONTROL_HANDLER_MAP
+	// VirtualMachine Implementation
+	//
+	virtual std::unique_ptr<VmFileSystem>&	getFileSystem(void)	{ _ASSERTE(m_vfs);		return m_vfs; }
+	virtual std::unique_ptr<VmSettings>&	getSettings(void)	{ _ASSERTE(m_settings);	return m_settings; }
+	virtual std::unique_ptr<VmSystemLog>&	getSystemLog(void)	{ _ASSERTE(m_syslog);	return m_syslog; }
+
+private:
+
+	VmService(const VmService &rhs)=delete;
+	VmService& operator=(const VmService &rhs)=delete;
+
+	// Service<> Control Handler Map
 	//
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
@@ -59,21 +82,22 @@ public:
 		CONTROL_HANDLER_ENTRY(129, OnUserControl129)
 	END_CONTROL_HANDLER_MAP()
 
-	// PARAMETER_MAP
+	// Service<> Parameter Map
 	//
-	BEGIN_PARAMETER_MAP(VmService)
-		PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
-		PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
-		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
-		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
-		PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESSTIMEOUT, m_hostprocesstimeout)
-		PARAMETER_ENTRY(IDR_PARAM_INITPATH, m_initpath)
-	END_PARAMETER_MAP()
+	//BEGIN_PARAMETER_MAP(VmService)
+	//	PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
+	//	PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
+	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
+	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
+	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESSTIMEOUT, m_hostprocesstimeout)
+	//	PARAMETER_ENTRY(IDR_PARAM_INITPATH, m_initpath)
+	//END_PARAMETER_MAP()
 
-private:
-
-	VmService(const VmService &rhs)=delete;
-	VmService& operator=(const VmService &rhs)=delete;
+	virtual void IterateParameters(std::function<void(const svctl::tstring& name, svctl::parameter_base& param)> func)
+	{
+		// Delegate to the shared VmServiceParameters class
+		return VmServiceParameters::IterateParameters(func);
+	}
 
 	// LoadInitialFileSystem
 	//
@@ -94,8 +118,8 @@ private:
 	void OnUserControl128(void)
 	{
 		FileSystem::HandlePtr p = m_vfs->Open(L"/sbin/init", LINUX_O_RDONLY, 0);
-		std::tstring binpath = m_hostprocess32;
-		std::unique_ptr<Host> h = Host::TESTME(p, binpath.c_str(), m_bindstr32.c_str(), m_hostprocesstimeout);
+		std::tstring binpath = m_settings->Process.Host32;
+		std::unique_ptr<Host> h = Host::TESTME(p, binpath.c_str(), m_bindstr32.c_str(), m_settings->Process.HostTimeout);
 	}
 
 	// 64-bit host test
@@ -105,30 +129,20 @@ private:
 		//std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr64.c_str(), m_hostprocesstimeout);
 	}
 
-	// m_initramfs
-	//
-	// Path to the virtual machine's initramfs blob
-	StringParameter m_initramfs;
-
-
-
 	std::unique_ptr<VmProcessManager> m_procmgr;
-
-	// m_syslog
-	//
-	// System log implementation
-	std::unique_ptr<VmSystemLog> m_syslog;
-	DWordParameter m_sysloglength { 512 KiB };
-
-	std::unique_ptr<VmFileSystem> m_vfs;
 
 	// hosts
 	std::tstring m_bindstr32;
 	std::tstring m_bindstr64;				// won't be initialized on x86
-	StringParameter m_hostprocess32;
-	StringParameter m_hostprocess64;
-	DWordParameter m_hostprocesstimeout;	// miliseconds
-	StringParameter m_initpath;
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	// Virtual Machine Subsystems
+	//
+	std::unique_ptr<VmFileSystem>	m_vfs;
+	std::unique_ptr<VmSettings>		m_settings;
+	std::unique_ptr<VmSystemLog>	m_syslog;
 };
 
 //---------------------------------------------------------------------------

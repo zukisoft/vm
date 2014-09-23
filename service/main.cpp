@@ -74,14 +74,14 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;
-		harness.SetParameter(IDR_PARAM_INITRAMFS, _T("D:\\rootfs.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
+		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
 
 		// test parameters
-		harness.SetParameter(IDR_PARAM_SYSLOGLENGTH, 1 MiB);
-		harness.SetParameter(IDR_PARAM_HOSTPROCESS32, _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
-		harness.SetParameter(IDR_PARAM_HOSTPROCESS64, _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
-		harness.SetParameter(IDR_PARAM_HOSTPROCESSTIMEOUT, 10000);
-		harness.SetParameter(IDR_PARAM_INITPATH, _T("/sbin/init"));
+		harness.SetParameter(_T("systemlog.length"), 1 MiB);
+		harness.SetParameter(_T("process.host.32bit"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
+		harness.SetParameter(_T("process.host.64bit"), _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
+		harness.SetParameter(_T("process.host.timeout"), 10000);
+		harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()

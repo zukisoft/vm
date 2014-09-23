@@ -356,10 +356,13 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="VirtualMachine.h" />
     <ClInclude Include="VmFileSystem.h" />
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="VmProcessManager.h" />
     <ClInclude Include="VmService.h" />
+    <ClInclude Include="VmServiceParameters.h" />
+    <ClInclude Include="VmSettings.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
   </ItemGroup>

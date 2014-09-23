@@ -104,17 +104,21 @@ void VmService::OnStart(int, LPTSTR*)
 {
 	LARGE_INTEGER				qpcbias;			// QueryPerformanceCounter bias
 
-	// The system log needs to know what value acts as zero for the timestamps
+	// The system log needs to know what value acts as zero for the timestamps,
+	// therefore acquire this at the earliest possible opportunity
 	QueryPerformanceCounter(&qpcbias);
 
 	try {
+
+		// Create the settings subsystem instance first
+		m_settings = std::make_unique<VmSettings>(shared_from_this());
 
 		//
 		// SYSTEM LOG
 		//
 
 		// Create the system log instance and seed the time bias to now
-		m_syslog = std::make_unique<VmSystemLog>(m_sysloglength);
+		m_syslog = std::make_unique<VmSystemLog>(m_settings);
 		m_syslog->TimestampBias = qpcbias.QuadPart;
 
 		// TODO: Put a real log here with the zero-time bias and the size of the
@@ -135,7 +139,7 @@ void VmService::OnStart(int, LPTSTR*)
 		//
 
 		// Check that the initramfs archive file exists
-		std::tstring initramfs = m_initramfs;
+		std::tstring initramfs = m_settings->InitialRamFileSystem;
 		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
 
 		// Attempt to extract the contents of the initramfs into the tempfs
@@ -178,7 +182,7 @@ void VmService::OnStart(int, LPTSTR*)
 	//
 	// LAUNCH INIT
 	//
-	std::tstring initpath = m_initpath;
+	std::tstring initpath = m_settings->InitPath;
 	FileSystem::HandlePtr h = m_vfs->Open(initpath.c_str(), LINUX_O_RDONLY, 0);
 	// seems to work to here, can use this to create the new in-proc ELF loader
 	

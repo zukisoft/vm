@@ -24,22 +24,45 @@
 #define __PROCESS_H_
 #pragma once
 
+#include <memory>
 #include "Exception.h"
+#include "LinuxException.h"
 #include "Host.h"
+#include "VirtualMachine.h"
 
-#pragma warning(push, 4)			
+#pragma warning(push, 4)
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 class Process
 {
 public:
 
-	Process()=default;
+	// Destructor
+	//
 	~Process()=default;
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Create (static)
+	//
+	// Creates a new process instance
+	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm);
 
 private:
 
 	Process(const Process&)=delete;
 	Process& operator=(const Process&)=delete;
+
+	// Instance Constructor
+	//
+	Process(std::unique_ptr<Host>&& host) : m_host(std::move(host)) {}
+	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>>(std::unique_ptr<Host>&&);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	std::unique_ptr<Host>		m_host;			// Host process instance
 };
 
 //-----------------------------------------------------------------------------

@@ -55,6 +55,21 @@ public:
 
 	static std::unique_ptr<Host> TESTME(const FileSystem::HandlePtr handle, const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout);
 
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// ProcessHandle
+	//
+	// Gets the host process handle
+	__declspec(property(get=getProcessHandle)) HANDLE ProcessHandle;
+	HANDLE getProcessHandle(void) const { return m_procinfo.hProcess; }
+
+	// ProcessId
+	//
+	// Gets the host process identifier
+	__declspec(property(get=getProcessId)) DWORD ProcessId;
+	DWORD getProcessId(void) const { return m_procinfo.dwProcessId; }
+
 private:
 
 	Host(const Host&)=delete;
@@ -128,7 +143,6 @@ private:
 			return reinterpret_cast<__int32>(m_handle); 
 #endif
 		}
-
 
 		// Set
 		//

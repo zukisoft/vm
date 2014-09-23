@@ -20,27 +20,46 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Process.h"
+#ifndef __VIRTUALMACHINE_H_
+#define __VIRTUALMACHINE_H_
+#pragma once
+
+#include <memory.h>
+#include "VmFileSystem.h"
+#include "VmSettings.h"
+#include "VmSystemLog.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Process::Create (static)
+// VirtualMachine
 //
-// Creates a new Process instance
-//
-// Arguments:
-//
-//	vfs			- Reference to the Virtual File System
+// Interface implemented by the main service, provides a coherent view of all
+// the various VM subsystems so each can interoperate with one another
 
-std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm)
+struct __declspec(novtable) VirtualMachine
 {
-	vm->SystemLog->Push("Hello World");
+	// FileSystem
+	//
+	// Accesses the virtual machine's file system instance
+	__declspec(property(get=getFileSystem)) std::unique_ptr<VmFileSystem>& FileSystem;
+	virtual std::unique_ptr<VmFileSystem>& getFileSystem(void) = 0;
 
-	return std::make_unique<Process>(Host::Create(nullptr, nullptr, 0));
-}
+	// Settings
+	//
+	// Accesses the virtual machine's settings instance
+	__declspec(property(get=getSettings)) std::unique_ptr<VmSettings>& Settings;
+	virtual std::unique_ptr<VmSettings>& getSettings(void) = 0;
+	
+	// SystemLog
+	//
+	// Accesses the virtual machine's system log instance
+	__declspec(property(get=getSystemLog)) std::unique_ptr<VmSystemLog>& SystemLog;
+	virtual std::unique_ptr<VmSystemLog>& getSystemLog(void) = 0;
+};
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __VIRTUALMACHINE_H_

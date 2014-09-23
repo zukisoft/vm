@@ -30,10 +30,12 @@
 //
 // Arguments:
 //
-//	size		- Size of the system log buffer, in bytes
+//	settings		- Reference to the instance settings class
 
-VmSystemLog::VmSystemLog(size_t size)
+VmSystemLog::VmSystemLog(const std::unique_ptr<VmSettings>& settings)
 {
+	size_t size = settings->SystemLog.Length;
+
 	// Minimum log size is the page size, maximum is constant MAX_BUFFER
 	if(size < MemoryRegion::PageSize) size = MemoryRegion::PageSize;
 	else if(size > MAX_BUFFER) size = MAX_BUFFER;
