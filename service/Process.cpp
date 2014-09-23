@@ -32,13 +32,15 @@
 //
 // Arguments:
 //
-//	vfs			- Reference to the Virtual File System
+//	
 
-std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm)
+std::unique_ptr<Process> Process::Create(const VirtualMachine* vm)
 {
-	vm->SystemLog->Push("Hello World");
+	vm->SystemLog->Push("Hello");
+	std::tstring test = vm->Settings->Process.Host32;
 
-	return std::make_unique<Process>(Host::Create(nullptr, nullptr, 0));
+	//return std::make_unique<Process>(Host::Create(nullptr, nullptr, 0));
+	return nullptr;
 }
 
 //-----------------------------------------------------------------------------

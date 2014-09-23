@@ -24,6 +24,7 @@
 #define __VMSERVICE_H_
 #pragma once
 
+// omg clean these up, can't be using all of these
 #include <map>
 #include "resource.h"
 #include "syscalls.h"
@@ -43,6 +44,7 @@
 
 #include "VirtualMachine.h"
 #include "VmServiceParameters.h"
+#include "Process.h"
 
 #pragma warning(push, 4)
 
@@ -52,12 +54,8 @@
 // todo: rename me to "VirtualMachine", expose all of the child subsystems
 // via properties
 
-// TODO TODO: Changed servicelib to use shared_ptr just for this hack to the
-// settings; that should be controllable in the templates themselves, like
-// public Service<VmService, std::shared_ptr<blah>> or something; using
-
 class VmService : public Service<VmService>, private SystemCalls, public VmServiceParameters,
-	public VirtualMachine, public std::enable_shared_from_this<VmServiceParameters>
+	public VirtualMachine
 {
 public:
 
@@ -65,9 +63,9 @@ public:
 
 	// VirtualMachine Implementation
 	//
-	virtual std::unique_ptr<VmFileSystem>&	getFileSystem(void)	{ _ASSERTE(m_vfs);		return m_vfs; }
-	virtual std::unique_ptr<VmSettings>&	getSettings(void)	{ _ASSERTE(m_settings);	return m_settings; }
-	virtual std::unique_ptr<VmSystemLog>&	getSystemLog(void)	{ _ASSERTE(m_syslog);	return m_syslog; }
+	virtual const std::unique_ptr<VmFileSystem>&	getFileSystem(void)	const { _ASSERTE(m_vfs);		return m_vfs; }
+	virtual const std::unique_ptr<VmSettings>&		getSettings(void)	const { _ASSERTE(m_settings);	return m_settings; }
+	virtual const std::unique_ptr<VmSystemLog>&	getSystemLog(void)	const { _ASSERTE(m_syslog);	return m_syslog; }
 
 private:
 
@@ -82,17 +80,9 @@ private:
 		CONTROL_HANDLER_ENTRY(129, OnUserControl129)
 	END_CONTROL_HANDLER_MAP()
 
-	// Service<> Parameter Map
+	// Service<> Parameter Map --> VmServiceParameters
 	//
-	//BEGIN_PARAMETER_MAP(VmService)
-	//	PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
-	//	PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
-	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
-	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
-	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESSTIMEOUT, m_hostprocesstimeout)
-	//	PARAMETER_ENTRY(IDR_PARAM_INITPATH, m_initpath)
-	//END_PARAMETER_MAP()
-
+	// TODO: I want this to be supported in servicelib directly
 	virtual void IterateParameters(std::function<void(const svctl::tstring& name, svctl::parameter_base& param)> func)
 	{
 		// Delegate to the shared VmServiceParameters class
@@ -125,11 +115,10 @@ private:
 	// 64-bit host test
 	void OnUserControl129(void)
 	{
-		//std::tstring binpath = m_hostprocess64;
+		//std::tstring binpath = m_settings->Process.Host64;
 		//std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr64.c_str(), m_hostprocesstimeout);
 	}
 
-	std::unique_ptr<VmProcessManager> m_procmgr;
 
 	// hosts
 	std::tstring m_bindstr32;
@@ -140,9 +129,10 @@ private:
 
 	// Virtual Machine Subsystems
 	//
-	std::unique_ptr<VmFileSystem>	m_vfs;
-	std::unique_ptr<VmSettings>		m_settings;
-	std::unique_ptr<VmSystemLog>	m_syslog;
+	std::unique_ptr<VmFileSystem>		m_vfs;
+	std::unique_ptr<VmProcessManager>	m_procmgr;
+	std::unique_ptr<VmSettings>			m_settings;
+	std::unique_ptr<VmSystemLog>		m_syslog;
 };
 
 //---------------------------------------------------------------------------

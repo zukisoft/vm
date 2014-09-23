@@ -111,20 +111,11 @@ void VmService::OnStart(int, LPTSTR*)
 	try {
 
 		// Create the settings subsystem instance first
-		m_settings = std::make_unique<VmSettings>(shared_from_this());
+		m_settings = std::make_unique<VmSettings>(this);
 
-		//
-		// SYSTEM LOG
-		//
-
-		// Create the system log instance and seed the time bias to now
+		// Create the system log instance and seed the timestamp bias to now
 		m_syslog = std::make_unique<VmSystemLog>(m_settings);
 		m_syslog->TimestampBias = qpcbias.QuadPart;
-
-		// TODO: Put a real log here with the zero-time bias and the size of the
-		// configured system log
-		m_syslog->Push("System log initialized");
-		//// need the syslog overloads to do this better!
 
 		//
 		// VIRTUAL FILE SYSTEM
@@ -182,6 +173,8 @@ void VmService::OnStart(int, LPTSTR*)
 	//
 	// LAUNCH INIT
 	//
+	std::unique_ptr<Process> p = Process::Create(this);
+
 	std::tstring initpath = m_settings->InitPath;
 	FileSystem::HandlePtr h = m_vfs->Open(initpath.c_str(), LINUX_O_RDONLY, 0);
 	// seems to work to here, can use this to create the new in-proc ELF loader

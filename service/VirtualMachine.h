@@ -43,19 +43,19 @@ struct __declspec(novtable) VirtualMachine
 	//
 	// Accesses the virtual machine's file system instance
 	__declspec(property(get=getFileSystem)) std::unique_ptr<VmFileSystem>& FileSystem;
-	virtual std::unique_ptr<VmFileSystem>& getFileSystem(void) = 0;
+	virtual const std::unique_ptr<VmFileSystem>& getFileSystem(void) const = 0;
 
 	// Settings
 	//
 	// Accesses the virtual machine's settings instance
 	__declspec(property(get=getSettings)) std::unique_ptr<VmSettings>& Settings;
-	virtual std::unique_ptr<VmSettings>& getSettings(void) = 0;
+	virtual const std::unique_ptr<VmSettings>& getSettings(void) const = 0;
 	
 	// SystemLog
 	//
 	// Accesses the virtual machine's system log instance
 	__declspec(property(get=getSystemLog)) std::unique_ptr<VmSystemLog>& SystemLog;
-	virtual std::unique_ptr<VmSystemLog>& getSystemLog(void) = 0;
+	virtual const std::unique_ptr<VmSystemLog>& getSystemLog(void) const = 0;
 };
 
 //-----------------------------------------------------------------------------
