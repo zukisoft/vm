@@ -63,18 +63,14 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
-	// ElfCommon_Ehdr
-	//
-	// Common portion of the ELF header structure, can be used to determine
-	// what the size and type of the full header structure is
-	typedef struct {
+	typedef union {
 
-	  uint8_t		e_ident[LINUX_EI_NIDENT];
-	  uint16_t		e_type;
-	  uint16_t		e_machine;
-	  uint32_t		e_version;
-
-	} ElfCommon_Ehdr;
+		uint8_t	ansi_magic[3];				// 0x23, 0x21, 0x20
+		uint8_t	utf8_magic[6];				// 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20
+		uint8_t	utf16_magic[8];				// 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00
+		uint8_t	elf_ident[LINUX_EI_NIDENT];	// "\177ELF"
+	
+	} BinaryMagic;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

@@ -37,7 +37,7 @@
 
 std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* path)
 {
-	ElfCommon_Ehdr			elfheader;				// <-- TODO: needs to be a union with script bytes
+	BinaryMagic			magics;				// <-- TODO: dumb name
 
 	if(!path) throw LinuxException(LINUX_EFAULT);
 
@@ -47,22 +47,43 @@ std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// Attempt to open an execute handle for the specified path
 	FileSystem::HandlePtr handle = vm->FileSystem->OpenExec(path);
 
-	// Try to read in the first bytes of the file to examine it in more detail and move
-	// the file pointer back to the beginning so it can be cleanly handed off to a loader
-
-	// this needs to be a union with the interpreter script stuff (ANSI, UTF8+CHARS, UTF16+WCHARS),
-	// read up to the size of the Union, then check stuff.  Scripts, look for "#!", "[UTF8]#!", "[UTF16]#!",
-	// elf look for magic and then the ELF class flag (32/64)
-	size_t read = handle->Read(&elfheader, sizeof(ElfCommon_Ehdr));
+	// Read in just enough from the head of the file to look for magic numbers
+	size_t read = handle->Read(&magics, sizeof(BinaryMagic));
 	handle->Seek(0, LINUX_SEEK_SET);
 
-	if(handle->Read(&elfheader, sizeof(ElfCommon_Ehdr)) == sizeof(ElfCommon_Ehdr)) {
+	// Check for ELF
+	if((read >= sizeof(magics.elf_ident)) && (memcmp(&magics.elf_ident, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
 
-		// Reset the file pointer before creating a StreamReader instance against it
-		// to ensure that it's read from the beginning
-		handle->Seek(0, LINUX_SEEK_SET);
+		switch(magics.elf_ident[LINUX_EI_CLASS]) {
+
+			// ELFCLASS32: Create a 32-bit host process for the binary
+			case LINUX_ELFCLASS32: 
+				break;
+#ifdef _M_X64
+			// ELFCLASS64: Create a 64-bit host process for the binary
+			case LINUX_ELFCLASS64: 
+				break;
+#endif
+			// Any other ELFCLASS -> ENOEXEC	
+			default : throw LinuxException(LINUX_ENOEXEC);
+		}
 	}
 
+	// Check for UTF-16 interpreter script
+	else if(read >= sizeof(magics.utf16_magic)) {
+
+	}
+
+	// Check for UTF-8 interpreter script
+	else if(read >= sizeof(magics.utf8_magic)) {
+	}
+
+	// Check for ANSI interpreter script
+	else if(read >= sizeof(magics.ansi_magic)) {
+	}
+
+	// No other formats are recognized binaries
+	else throw LinuxException(LINUX_ENOEXEC);
 
 	// CHECK IF INTERPRETER SCRIPT
 	// CHECK IF ELF 32
