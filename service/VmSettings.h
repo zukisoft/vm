@@ -45,7 +45,8 @@ public:
 
 	// Constructor / Destructor
 	//
-	VmSettings(VmServiceParameters* parameters) : m_parameters(parameters), m_process(parameters), m_systemlog(parameters) {}
+	VmSettings(const std::shared_ptr<VmServiceParameters>& parameters) 
+		: m_parameters(parameters), m_process(parameters), m_systemlog(parameters) {}
 	~VmSettings()=default;
 
 	//-------------------------------------------------------------------------
@@ -87,7 +88,7 @@ private:
 	{
 	public:
 
-		ProcessSettings(VmServiceParameters* parameters) : m_parameters(parameters) {}
+		ProcessSettings(const std::shared_ptr<VmServiceParameters>& parameters) : m_parameters(parameters) {}
 
 		// Host32
 		//
@@ -109,7 +110,7 @@ private:
 	
 	private:
 
-		VmServiceParameters* m_parameters;
+		std::shared_ptr<VmServiceParameters> m_parameters;
 	};
 
 	// SystemLogSettings
@@ -119,7 +120,7 @@ private:
 	{
 	public:
 
-		SystemLogSettings(VmServiceParameters* parameters) : m_parameters(parameters) {}
+		SystemLogSettings(const std::shared_ptr<VmServiceParameters>& parameters) : m_parameters(parameters) {}
 
 		// Length
 		//
@@ -129,13 +130,13 @@ private:
 	
 	private:
 
-		VmServiceParameters* m_parameters;
+		std::shared_ptr<VmServiceParameters> m_parameters;
 	};
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	VmServiceParameters*	m_parameters;
+	std::shared_ptr<VmServiceParameters>	m_parameters;
 	
 	ProcessSettings							m_process;
 	SystemLogSettings						m_systemlog;

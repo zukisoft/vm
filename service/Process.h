@@ -47,7 +47,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance
-	static std::unique_ptr<Process> Create(const VirtualMachine* vm);
+	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm);
 
 private:
 

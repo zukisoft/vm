@@ -51,7 +51,6 @@ public:
 	// Create (static)
 	//
 	// Creates a new Host instance for a regular child process
-	// TODO: can get rid of the binarypath and timeout by passing in VmSettings instance -- do that instead
 	static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout);
 
 	static std::unique_ptr<Host> TESTME(const FileSystem::HandlePtr handle, const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout);
