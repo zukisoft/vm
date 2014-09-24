@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include <linux/elf.h>
 #include "Exception.h"
 #include "LinuxException.h"
 #include "Host.h"
@@ -47,7 +48,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance
-	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm);
+	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* path);
 
 private:
 
@@ -58,6 +59,22 @@ private:
 	//
 	Process(std::unique_ptr<Host>&& host) : m_host(std::move(host)) {}
 	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>>(std::unique_ptr<Host>&&);
+
+	//-------------------------------------------------------------------------
+	// Private Type Declarations
+
+	// ElfCommon_Ehdr
+	//
+	// Common portion of the ELF header structure, can be used to determine
+	// what the size and type of the full header structure is
+	typedef struct {
+
+	  uint8_t		e_ident[LINUX_EI_NIDENT];
+	  uint16_t		e_type;
+	  uint16_t		e_machine;
+	  uint32_t		e_version;
+
+	} ElfCommon_Ehdr;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

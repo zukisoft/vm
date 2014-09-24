@@ -57,7 +57,7 @@
 // public Service<VmService, std::shared_ptr<blah>> or something; using
 
 class VmService : public Service<VmService>, private SystemCalls, public VmServiceParameters,
-	public VirtualMachine, public std::enable_shared_from_this<VmServiceParameters>
+	public VirtualMachine, public std::enable_shared_from_this<VmService>
 {
 public:
 
@@ -82,17 +82,8 @@ private:
 		CONTROL_HANDLER_ENTRY(129, OnUserControl129)
 	END_CONTROL_HANDLER_MAP()
 
-	// Service<> Parameter Map
-	//
-	//BEGIN_PARAMETER_MAP(VmService)
-	//	PARAMETER_ENTRY(IDR_PARAM_INITRAMFS, m_initramfs)
-	//	PARAMETER_ENTRY(IDR_PARAM_SYSLOGLENGTH, m_sysloglength)
-	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS32, m_hostprocess32)
-	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESS64, m_hostprocess64)
-	//	PARAMETER_ENTRY(IDR_PARAM_HOSTPROCESSTIMEOUT, m_hostprocesstimeout)
-	//	PARAMETER_ENTRY(IDR_PARAM_INITPATH, m_initpath)
-	//END_PARAMETER_MAP()
-
+	// Detached Service<> PARAMETER_MAP
+	// (expecting to add direct support for this to servicelib)
 	virtual void IterateParameters(std::function<void(const svctl::tstring& name, svctl::parameter_base& param)> func)
 	{
 		// Delegate to the shared VmServiceParameters class

@@ -152,6 +152,12 @@ struct __declspec(novtable) FileSystem
 		// Creates a FileSystem::Handle instance for this node
 		virtual HandlePtr Open(int flags) = 0;
 
+		// Open
+		//
+		// Creates a FileSystem::Handle instance for this node, specifically
+		// for use as a process creation handle
+		virtual HandlePtr OpenExec(int flags) = 0;
+
 		// Resolve
 		//
 		// Resolves a relative path from this node to an Alias instance

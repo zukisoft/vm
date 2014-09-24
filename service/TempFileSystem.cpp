@@ -371,6 +371,34 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
 	else return std::make_shared<Handle>(shared_from_this(), flags, permission);
 }
 
+//-----------------------------------------------------------------------------
+// TempFileSystem::FileNode::OpenExec
+//
+// Opens a Handle instance against this node for the purposes of creating a
+// new process object
+//
+// Arguments:
+//
+//	flags		- Operational flags and attributes
+
+FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(int flags)
+{
+	// TODO: This should really only be called by the Virtual Machine itself, not
+	// sure exactly what flags and attributes to check for yet
+
+	// If the file system was mounted with no-execute, no files can be used for a process
+	if(m_mountpoint->Options.NoExecute) throw LinuxException(LINUX_EACCES);
+
+	// Demand execute permissions for this object
+	m_permission.Demand(FilePermission::Access::Execute);
+
+	// TODO: for now only put read and execute on the handle permission,
+	// may want to consider a special handle instance that doesn't demand Read
+	FilePermission permission(LINUX_S_IRUSR | LINUX_S_IRGRP | LINUX_S_IROTH | LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH);
+
+	return std::make_shared<Handle>(shared_from_this(), flags, permission);
+}
+
 // FileNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const AliasPtr& current, const tchar_t* path, int flags, int*)

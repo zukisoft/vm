@@ -530,4 +530,9 @@
       <Filter>Source Files\System Calls</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\external\servicelib\readme.txt">
+      <Filter>External Libraries\servicelib</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

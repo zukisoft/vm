@@ -82,6 +82,10 @@ public:
 	//
 	Handle Open(const tchar_t* path, int flags, uapi::mode_t mode);
 
+	// execve?
+	//
+	Handle OpenExec(const tchar_t* path);
+
 	// mount
 	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);
 

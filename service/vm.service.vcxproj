@@ -658,6 +658,9 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <None Include="syscalls32.acf" />
     <None Include="syscalls64.acf" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\external\servicelib\readme.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

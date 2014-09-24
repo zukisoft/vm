@@ -218,6 +218,14 @@ void VmService::OnStop(void)
 	// Remove the 32-bit system calls RPC interface
 	syscall32_listener::RemoveObject(this->ObjectID32);
 	syscall32_listener::Unregister(true);
+
+	// Shut down and destroy all of the virtual machine subsystems
+	// (they hold shared_ptr<>s to this service class and will prevent
+	// the destructor from being called -- clearly need to reevaluate this)
+
+	m_vfs.reset();
+	m_syslog.reset();
+	m_settings.reset();
 }
 
 //---------------------------------------------------------------------------

@@ -213,6 +213,15 @@ VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags, uapi::mo
 	else return ResolvePath(path)->Node->Open(flags);
 }
 
+VmFileSystem::Handle VmFileSystem::OpenExec(const tchar_t* path)
+{
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+
+	// todo: Remove flags from OpenExec?  Nothing can be specified by the user
+	return ResolvePath(path)->Node->OpenExec(0);
+}
+
 //-----------------------------------------------------------------------------
 // VmFileSystem::ResolvePath (private)
 //
