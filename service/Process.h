@@ -30,7 +30,6 @@
 #include "Exception.h"
 #include "HeapBuffer.h"
 #include "LinuxException.h"
-#include "Host.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
@@ -49,7 +48,7 @@ public:
 
 	// Destructor
 	//
-	~Process()=default;
+	~Process();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -79,8 +78,8 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, std::unique_ptr<AuxiliaryVector>&& auxvec) : m_host(std::move(host)), m_auxvec(std::move(auxvec)) {}
-	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>>(std::unique_ptr<Host>&&);
+	Process(const PROCESS_INFORMATION& procinfo, std::unique_ptr<AuxiliaryVector>&& auxvec) : m_procinfo(procinfo), m_auxvec(std::move(auxvec)) {}
+	friend std::unique_ptr<Process> std::make_unique<Process, PROCESS_INFORMATION&>(PROCESS_INFORMATION&, std::unique_ptr<AuxiliaryVector>&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -164,45 +163,23 @@ private:
 		std::array<HANDLE, 1>			m_handles;		// Contained array of HANDLEs
 	};
 
-	class Host
-	{
-	public:
-
-		// Destructor
-		//
-		~Host();
-
-		// Create (static)
-		//
-		// Creates a new host process, will be suspened by default
-		static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* bindingstring, HANDLE* handles, size_t count);
-
-	private:
-
-		Host(const Host&)=delete;
-		Host& operator=(const Host&)=delete;
-
-		// Instance Constructor
-		//
-		Host(const PROCESS_INFORMATION& procinfo);
-		friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
-
-		PROCESS_INFORMATION m_procinfo;
-	};
-
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
 	// CreateELF32 (static)
 	//
 	// Constructs a new process instance from an ELF32 binary file
-	static std::unique_ptr<Process> CreateELF32(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
-		const uapi::char_t** arguments, const uapi::char_t** environment);
+	static std::unique_ptr<Process> CreateELF32(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
 
 	// CreateELF64 (static)
 	//
 	// Constructs a new process instance from an ELF64 binary file
 	static std::unique_ptr<Process> CreateELF64(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
+
+	// CreateHostProcess (static)
+	//
+	// Creates a new suspended process from a host system executable
+	PROCESS_INFORMATION CreateHostProcess(const tchar_t* path, const tchar_t* arguments, HANDLE** handles, size_t numhandles);
 
 	// CreateScriptInterpreter (static)
 	//
@@ -212,8 +189,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
+	PROCESS_INFORMATION					m_procinfo;	// Host process information
 	std::unique_ptr<AuxiliaryVector>	m_auxvec;	// Auxiliary vector
-	std::unique_ptr<Host>				m_host;		// Host process instance
 	std::unique_ptr<Signals>			m_signals;	// Process signals
 };
 
