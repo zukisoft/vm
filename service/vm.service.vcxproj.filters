@@ -302,6 +302,9 @@
     <ClInclude Include="VmServiceParameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ElfArguments.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -497,6 +500,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ElfImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfArguments.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

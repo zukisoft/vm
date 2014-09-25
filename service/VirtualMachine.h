@@ -45,6 +45,20 @@ struct __declspec(novtable) VirtualMachine
 	__declspec(property(get=getFileSystem)) std::unique_ptr<VmFileSystem>& FileSystem;
 	virtual std::unique_ptr<VmFileSystem>& getFileSystem(void) = 0;
 
+	// Listener32Binding
+	//
+	// Gets the 32-bit system calls interface binding string
+	__declspec(property(get=getListener32Binding, put=putListener32Binding)) const tchar_t* Listener32Binding;
+	virtual const tchar_t* getListener32Binding(void) = 0;
+
+#ifdef _M_X64
+	// Listener64Binding
+	//
+	// Gets the 64-bit system calls interface binding string
+	__declspec(property(get=getListener64Binding, put=putListener64Binding)) const tchar_t* Listener64Binding;
+	virtual const tchar_t* getListener64Binding(void) = 0;
+#endif
+
 	// Settings
 	//
 	// Accesses the virtual machine's settings instance

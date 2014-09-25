@@ -66,6 +66,8 @@ public:
 	// VirtualMachine Implementation
 	//
 	virtual std::unique_ptr<VmFileSystem>&	getFileSystem(void)	{ _ASSERTE(m_vfs);		return m_vfs; }
+	virtual const tchar_t* getListener32Binding(void)			{ return m_bindstr32.c_str(); }
+	virtual const tchar_t* getListener64Binding(void)			{ return m_bindstr64.c_str(); }
 	virtual std::unique_ptr<VmSettings>&	getSettings(void)	{ _ASSERTE(m_settings);	return m_settings; }
 	virtual std::unique_ptr<VmSystemLog>&	getSystemLog(void)	{ _ASSERTE(m_syslog);	return m_syslog; }
 

@@ -24,15 +24,24 @@
 #define __PROCESS_H_
 #pragma once
 
+#include <array>
 #include <memory>
 #include <linux/elf.h>
 #include "Exception.h"
+#include "HeapBuffer.h"
 #include "LinuxException.h"
 #include "Host.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
+
+//-----------------------------------------------------------------------------
+// Process
+//
+// Process represents a single hosted process instance.
+//
+// TODO: needs lot more words
 
 class Process
 {
@@ -48,16 +57,29 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance
-	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* path);
+	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const uapi::char_t* path,
+		const uapi::char_t** arguments, const uapi::char_t** environment);
+
+	// Resume
+	//
+	// Resumes the process from a suspended state
+
+	// Suspend
+	//
+	// Suspends the process
 
 private:
 
 	Process(const Process&)=delete;
 	Process& operator=(const Process&)=delete;
 
+	// Forward Declarations
+	//
+	class AuxiliaryVector;
+
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host) : m_host(std::move(host)) {}
+	Process(std::unique_ptr<Host>&& host, std::unique_ptr<AuxiliaryVector>&& auxvec) : m_host(std::move(host)), m_auxvec(std::move(auxvec)) {}
 	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>>(std::unique_ptr<Host>&&);
 
 	//-------------------------------------------------------------------------
@@ -72,10 +94,127 @@ private:
 	
 	} BinaryMagic;
 
+	class AuxiliaryVector
+	{
+	public:
+
+		AuxiliaryVector(const uapi::char_t** arguments, const uapi::char_t** environment) { (arguments); (environment); }
+		~AuxiliaryVector()=default;
+
+	private:
+
+		AuxiliaryVector(const AuxiliaryVector&)=delete;
+		AuxiliaryVector& operator=(const AuxiliaryVector&)=delete;
+	};
+
+	enum class Signal
+	{
+		Ready = 0,
+	};
+
+	class Signals
+	{
+	public:
+
+		// Instance Constructor
+		//
+		// TODO: MOVE TO CPP FILE
+		Signals()
+		{
+			// Initialize all handles to INVALID_HANDLE_VALUE to start with
+			for(auto iterator : m_handles) iterator = INVALID_HANDLE_VALUE;
+
+			SECURITY_ATTRIBUTES inherit = { sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };
+			m_handles[static_cast<size_t>(Signal::Ready)] = CreateEvent(&inherit, TRUE, FALSE, nullptr);
+		}
+
+		// Destructor
+		//
+		~Signals() { for(auto iterator : m_handles) if(iterator != INVALID_HANDLE_VALUE) CloseHandle(iterator); }
+
+		// Array subscript operator
+		//
+		HANDLE operator[](Signal index) const { return m_handles[static_cast<size_t>(index)]; }
+
+		// HANDLE* conversion operator
+		//
+		operator HANDLE*() { return m_handles.data(); }
+
+		// Set
+
+		// Reset
+
+		// Wait
+		// Wait (+ additional handles)
+
+
+		// Count
+		//
+		// Number of handles in the array
+		__declspec(property(get=getCount)) size_t Count;
+		size_t getCount(void) const { return m_handles.size(); }
+
+	private:
+
+		Signals(const Signals&)=delete;
+		Signals& operator=(const Signals&)=delete;
+
+		// Member Variables
+		//
+		std::array<HANDLE, 1>			m_handles;		// Contained array of HANDLEs
+	};
+
+	class Host
+	{
+	public:
+
+		// Destructor
+		//
+		~Host();
+
+		// Create (static)
+		//
+		// Creates a new host process, will be suspened by default
+		static std::unique_ptr<Host> Create(const tchar_t* binarypath, const tchar_t* bindingstring, HANDLE* handles, size_t count);
+
+	private:
+
+		Host(const Host&)=delete;
+		Host& operator=(const Host&)=delete;
+
+		// Instance Constructor
+		//
+		Host(const PROCESS_INFORMATION& procinfo);
+		friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
+
+		PROCESS_INFORMATION m_procinfo;
+	};
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// CreateELF32 (static)
+	//
+	// Constructs a new process instance from an ELF32 binary file
+	static std::unique_ptr<Process> CreateELF32(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
+		const uapi::char_t** arguments, const uapi::char_t** environment);
+
+	// CreateELF64 (static)
+	//
+	// Constructs a new process instance from an ELF64 binary file
+	static std::unique_ptr<Process> CreateELF64(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
+
+	// CreateScriptInterpreter (static)
+	//
+	// Constructs a new process instance from an interpreter script
+	static std::unique_ptr<Process> CreateScriptInterpreter(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>		m_host;			// Host process instance
+	std::unique_ptr<AuxiliaryVector>	m_auxvec;	// Auxiliary vector
+	std::unique_ptr<Host>				m_host;		// Host process instance
+	std::unique_ptr<Signals>			m_signals;	// Process signals
 };
 
 //-----------------------------------------------------------------------------

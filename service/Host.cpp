@@ -181,7 +181,6 @@ std::unique_ptr<Host> Host::TESTME(const FileSystem::HandlePtr handle, const tch
 
 		HandleStreamReader reader(handle);
 		std::unique_ptr<ElfImage> img = ElfImage::Load<LINUX_ELFCLASS32>(reader, procinfo.hProcess);
-		int x = 123;
 		ResumeThread(procinfo.hThread);
 	}
 
