@@ -29,9 +29,8 @@
 //
 // RtlNtStatusToDosError function pointer
 std::function<ULONG(NTSTATUS status)> StructuredException::s_convertfunc = 
-reinterpret_cast<ULONG(WINAPI*)(NTSTATUS)>([]() -> FARPROC {
+reinterpret_cast<ULONG(NTAPI*)(NTSTATUS)>([]() -> FARPROC {
 
-	// Load ntdll.dll to get the function pointer and just let the handle leak
 	HMODULE module = LoadLibrary(_T("ntdll.dll"));
 	return (module) ? GetProcAddress(module, "RtlNtStatusToDosError") : nullptr;
 }());

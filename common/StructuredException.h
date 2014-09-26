@@ -26,6 +26,7 @@
 
 #include <functional>
 #include <Windows.h>
+#include <winternl.h>
 #include "Exception.h"
 #include "generic_text.h"
 
@@ -41,13 +42,20 @@
 // When possible, the low level NTSTATUS codes will be mapped to their corresponding 
 // Win32 error codes.  This was done mainly because the message table resources in 
 // NTDLL.DLL that have insertions are generally incompatible with FormatMessage().
-//
-// This exception class cannot be directly instantiated, it must be raised via the
-// structured exception translator; as a result inner exceptions are not supported.
 
 class StructuredException : public Exception
 {
 public:
+
+	// Instance Constructor (NTSTATUS)
+	//
+	StructuredException(const NTSTATUS& status) : 
+		Exception((s_convertfunc) ? HRESULT_FROM_WIN32(s_convertfunc(status)) : status) {}
+
+	// Instance Constructor (NTSTATUS + Inner Exception)
+	//
+	StructuredException(const NTSTATUS& status, const Exception& inner) :
+		Exception((s_convertfunc) ? HRESULT_FROM_WIN32(s_convertfunc(status)) : status, inner) {}
 
 	// Destructor
 	//
@@ -59,11 +67,6 @@ public:
 	static void SeTranslator(unsigned int code, LPEXCEPTION_POINTERS);
 
 protected:
-
-	// Instance Constructor (unsigned int)
-	//
-	StructuredException(unsigned int status) : 
-		Exception((s_convertfunc) ? HRESULT_FROM_WIN32(s_convertfunc(status)) : status) {}
 
 	// GetDefaultMessage (Exception)
 	//
