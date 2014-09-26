@@ -305,6 +305,9 @@
     <ClInclude Include="ElfArguments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HandleStreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -503,6 +506,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ElfArguments.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HandleStreamReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -34,9 +34,6 @@ uint8_t utf16_magic[]	= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
 
 Process::~Process()
 {
-	// Close the process handles created along with the host process
-	CloseHandle(m_procinfo.hThread);
-	CloseHandle(m_procinfo.hProcess);
 }
 
 //-----------------------------------------------------------------------------
@@ -107,6 +104,8 @@ std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// No other formats are recognized binaries
 	else throw LinuxException(LINUX_ENOEXEC);
 
+
+
 	// ELF:
 	// Create a host instance
 	// Load the binary
@@ -124,15 +123,48 @@ std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	std::unique_ptr<AuxiliaryVector> auxvec = std::make_unique<AuxiliaryVector>(arguments, environment);
 	// SET AUXVEC stuff here
 
-	PROCESS_INFORMATION pinfo;
-	return std::make_unique<Process>(pinfo, std::move(auxvec));
+	//return std::make_unique<Process>(pinfo, std::move(auxvec));
+	return nullptr;
 }
 
 // CreateELF32 (static)
 //
 // Constructs a new process instance from an ELF32 binary file
+//
+// Can use template?  Differences:
+// - path to host process (argument, perhaps pass in vm)
+// - ElfImage<>
+// - ElfArguments<>
+
 std::unique_ptr<Process> Process::CreateELF32(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle)
 {
+	// Construct a stream reader around the image file handle
+	HandleStreamReader reader(handle);
+
+	// Create the signals for this process (may need to be a shared pointer for process groups)
+	std::unique_ptr<Signals> signals = std::make_unique<Signals>();
+
+	// Create the external host process in which to load the ELF binary image (suspended by defualt)
+	std::unique_ptr<Host> host = Host::Create(vm->Settings->Process.Host32.c_str(), nullptr, signals->Handles, signals->Count);
+
+	try {
+
+		std::unique_ptr<ElfImage> img = ElfImage::Load<LINUX_ELFCLASS32>(reader, host->ProcessHandle);
+		if(img->Interpreter) {
+
+			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(std::to_tstring(img->Interpreter).c_str());
+			HandleStreamReader interpreader(interphandle);
+			std::unique_ptr<ElfImage> interp = ElfImage::Load<LINUX_ELFCLASS32>(interpreader, host->ProcessHandle);
+
+		}
+
+		// build the aux vector; need to pass in:
+		// argv, envp, image, interpreter
+	}
+
+	// Terminate the host process on exception since it doesn'y get killed by the Host destructor
+	catch(...) { host->Terminate(E_FAIL); }
+
 	throw Exception(E_NOTIMPL);
 	return nullptr;
 }
@@ -153,58 +185,6 @@ std::unique_ptr<Process> Process::CreateScriptInterpreter(const std::shared_ptr<
 {
 	throw Exception(E_NOTIMPL);
 	return nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// Proces::CreateHostProcess (static)
-//
-// Creates a new suspended process from a host system executable
-//
-// Arguments:
-//
-//	path			- Path to the host executable
-//	arguments		- Arguments to be passed to the host executable
-//	handles			- Handles to be inherited by the host executable
-//	numhandles		- Number of handles in the handles array
-
-PROCESS_INFORMATION Process::CreateHostProcess(const tchar_t* path, const tchar_t* arguments, HANDLE** handles, size_t numhandles)
-{
-	PROCESS_INFORMATION				procinfo;			// Process information
-
-	// Generate the command line for the child process
-	tchar_t commandline[MAX_PATH];
-	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\"%s%s"), path, (arguments) ? _T(" ") : _T(""), arguments);
-
-	// Determine the size of the attributes buffer required to hold the inheritable handles property
-	SIZE_T required = 0;
-	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
-	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
-
-	// Allocate a buffer large enough to hold the attribute data and initialize it
-	HeapBuffer<uint8_t> buffer(required);
-	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&buffer);
-	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) throw Win32Exception();
-
-	try {
-
-		// Add the array of handles as inheritable by the client process
-		if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, 
-			numhandles * sizeof(HANDLE), nullptr, nullptr)) throw Win32Exception();
-
-		// Attempt to launch the process using the CREATE_SUSPENDED and EXTENDED_STARTUP_INFO_PRESENT flags
-		// TODO: NEEDS SECURITY SETTINGS AND REMAINING OPTIONS
-		zero_init<STARTUPINFOEX> startinfo;
-		startinfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
-		startinfo.lpAttributeList = attributes;
-		if(!CreateProcess(path, commandline, nullptr, nullptr, TRUE, CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT,
-			nullptr, nullptr, &startinfo.StartupInfo, &procinfo)) throw Win32Exception();
-
-		DeleteProcThreadAttributeList(attributes);			// Clean up the PROC_THREAD_ATTRIBUTE_LIST
-	}
-
-	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
-
-	return procinfo;				// Return copy of the PROCESS_INFORMATION
 }
 
 //-----------------------------------------------------------------------------

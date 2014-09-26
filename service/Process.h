@@ -27,8 +27,11 @@
 #include <array>
 #include <memory>
 #include <linux/elf.h>
+#include "ElfImage.h"
 #include "Exception.h"
+#include "HandleStreamReader.h"
 #include "HeapBuffer.h"
+#include "Host.h"
 #include "LinuxException.h"
 #include "VirtualMachine.h"
 
@@ -78,8 +81,8 @@ private:
 
 	// Instance Constructor
 	//
-	Process(const PROCESS_INFORMATION& procinfo, std::unique_ptr<AuxiliaryVector>&& auxvec) : m_procinfo(procinfo), m_auxvec(std::move(auxvec)) {}
-	friend std::unique_ptr<Process> std::make_unique<Process, PROCESS_INFORMATION&>(PROCESS_INFORMATION&, std::unique_ptr<AuxiliaryVector>&&);
+	Process(std::unique_ptr<Host>&& host) : m_host(std::move(host)) {}
+	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>>(std::unique_ptr<Host>&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -153,6 +156,12 @@ private:
 		__declspec(property(get=getCount)) size_t Count;
 		size_t getCount(void) const { return m_handles.size(); }
 
+		// Handles
+		//
+		// Gets the array of handles
+		__declspec(property(get=getHandles)) HANDLE* Handles;
+		HANDLE* getHandles(void) { return m_handles.data(); }
+
 	private:
 
 		Signals(const Signals&)=delete;
@@ -176,11 +185,6 @@ private:
 	// Constructs a new process instance from an ELF64 binary file
 	static std::unique_ptr<Process> CreateELF64(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
 
-	// CreateHostProcess (static)
-	//
-	// Creates a new suspended process from a host system executable
-	PROCESS_INFORMATION CreateHostProcess(const tchar_t* path, const tchar_t* arguments, HANDLE** handles, size_t numhandles);
-
 	// CreateScriptInterpreter (static)
 	//
 	// Constructs a new process instance from an interpreter script
@@ -189,9 +193,9 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	PROCESS_INFORMATION					m_procinfo;	// Host process information
-	std::unique_ptr<AuxiliaryVector>	m_auxvec;	// Auxiliary vector
-	std::unique_ptr<Signals>			m_signals;	// Process signals
+	std::unique_ptr<Host>				m_host;		// Hosted windows process
+	//std::unique_ptr<AuxiliaryVector>	m_auxvec;	// Auxiliary vector
+	//std::unique_ptr<Signals>			m_signals;	// Process signals
 };
 
 //-----------------------------------------------------------------------------

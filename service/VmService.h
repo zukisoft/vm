@@ -110,9 +110,9 @@ private:
 	// 32-bit host test
 	void OnUserControl128(void)
 	{
-		FileSystem::HandlePtr p = m_vfs->Open(L"/sbin/init", LINUX_O_RDONLY, 0);
-		std::tstring binpath = m_settings->Process.Host32;
-		std::unique_ptr<Host> h = Host::TESTME(p, binpath.c_str(), m_bindstr32.c_str(), m_settings->Process.HostTimeout);
+		//FileSystem::HandlePtr p = m_vfs->Open(L"/sbin/init", LINUX_O_RDONLY, 0);
+		//std::tstring binpath = m_settings->Process.Host32;
+		//std::unique_ptr<Host> h = Host::TESTME(p, binpath.c_str(), m_bindstr32.c_str(), m_settings->Process.HostTimeout);
 	}
 
 	// 64-bit host test

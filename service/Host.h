@@ -38,7 +38,7 @@
 //-----------------------------------------------------------------------------
 // Class Host
 //
-// Manages 
+// Manages the Windows-based host process that is manipulated to run ELF binaries
 
 class Host
 {
@@ -103,7 +103,7 @@ private:
 
 	// Instance Constructor
 	//
-	Host(const PROCESS_INFORMATION& procinfo);
+	Host(const PROCESS_INFORMATION& procinfo) : m_procinfo(procinfo) {}
 	friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
 
 	//-------------------------------------------------------------------------

@@ -46,18 +46,6 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC {
 }());
 
 //-----------------------------------------------------------------------------
-// Host Constructor
-//
-// Arguments:
-//
-//	procinfo		- PROCESS_INFORMATION for the hosted process
-
-Host::Host(const PROCESS_INFORMATION& procinfo)
-{
-	m_procinfo = procinfo;
-}
-
-//-----------------------------------------------------------------------------
 // Host Destructor
 
 Host::~Host()
