@@ -25,10 +25,25 @@
 
 #pragma warning(push, 4)
 
-// Host::ReadySignal::s_inheritflags
+// Host::s_resumefunc
 //
-// Static SECURITY_ATTRIBUTES structure with bInheritHandle set to TRUE
-SECURITY_ATTRIBUTES Host::ReadySignal::s_inherit = { sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };
+// NtResumeProcess function pointer
+std::function<NTSTATUS(HANDLE status)> Host::s_resumefunc = 
+reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC {
+
+	HMODULE module = LoadLibrary(_T("ntdll.dll"));
+	return (module) ? GetProcAddress(module, "NtResumeProcess") : nullptr;
+}());
+
+// Host::s_suspendfunc
+//
+// NtSuspendProcess function pointer
+std::function<NTSTATUS(HANDLE status)> Host::s_suspendfunc = 
+reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC {
+
+	HMODULE module = LoadLibrary(_T("ntdll.dll"));
+	return (module) ? GetProcAddress(module, "NtSuspendProcess") : nullptr;
+}());
 
 //-----------------------------------------------------------------------------
 // Host Constructor
@@ -59,22 +74,21 @@ Host::~Host()
 //
 // Arguments:
 //
-//	binarypath		- Path to the host binary
-//	bindingstring	- RPC binding string to pass to the host binary
-//	timeout			- Timeout value, in milliseconds, to wait for a host process
+//	path			- Path to the host binary
+//	arguments		- Arguments to pass to the host binary
+//	handles			- Optional array of inheritable handle objects
+//	numhandles		- Number of elements in the handles array
 
-std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout)
+std::unique_ptr<Host> Host::Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles)
 {
 	PROCESS_INFORMATION				procinfo;			// Process information
-	ReadySignal						readysignal;		// Event for child to signal
 
-	// Generate the command line for the child process, which includes the RPC binding string as argv[1] and
-	// a 32-bit serialized copy of the inheritable event handle as argv[2]
+	// If a null argument string was provided, change it to an empty string
+	if(arguments == nullptr) arguments = _T("");
+
+	// Generate the command line for the child process, using the specifed path as argument zero
 	tchar_t commandline[MAX_PATH];
-	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\" \"%s\" \"%ld\""), binarypath, bindingstring, static_cast<__int32>(readysignal));
-
-	// TODO: If this technique will be used anywhere else, break out the PROCTHREADATTRIBUTE stuff into a class object;
-	// this may not be a bad idea regardless, it's kind of ugly and makes this look more complicated than it is
+	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\"%s%s"), path, (arguments[0]) ? _T(" ") : _T(""), arguments);
 
 	// Determine the size of the attributes buffer required to hold the inheritable handles property
 	SIZE_T required = 0;
@@ -82,176 +96,78 @@ std::unique_ptr<Host> Host::Create(const tchar_t* binarypath, const tchar_t* bin
 	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
 
 	// Allocate a buffer large enough to hold the attribute data and initialize it
-	std::vector<uint8_t> buffer(required);
-	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(buffer.data());
+	HeapBuffer<uint8_t> buffer(required);
+	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&buffer);
 	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) throw Win32Exception();
 
 	try {
 
-		// Add the ready event as in inheritable handle attribute for the client process
-		HANDLE handles[] = { readysignal };
-		if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, sizeof(handles), nullptr, nullptr)) throw Win32Exception();
+		// Add the array of handles as inheritable handles for the client process
+		if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, numhandles * sizeof(HANDLE), 
+			nullptr, nullptr)) throw Win32Exception();
 
-		// Attempt to launch the process using the EXTENDED_STARTUP_INFO_PRESENT flag
-		// TODO: NEEDS SECURITY SETTINGS AND OPTIONS
+		// Attempt to launch the process using the CREATE_SUSPENDED and EXTENDED_STARTUP_INFO_PRESENT flag
 		zero_init<STARTUPINFOEX> startinfo;
 		startinfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
 		startinfo.lpAttributeList = attributes;
-		if(!CreateProcess(binarypath, commandline, nullptr, nullptr, TRUE, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, 
-			&startinfo.StartupInfo, &procinfo)) throw Win32Exception();
+		if(!CreateProcess(path, commandline, nullptr, nullptr, TRUE, CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT, nullptr, 
+			nullptr, &startinfo.StartupInfo, &procinfo)) throw Win32Exception();
 
 		DeleteProcThreadAttributeList(attributes);			// Clean up the PROC_THREAD_ATTRIBUTE_LIST
 	}
 
 	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
 
-	// The process is alive, wait for it to either signal the ready event or to terminate
-	HANDLE waithandles[] = { readysignal, procinfo.hProcess };
-	DWORD wait = WaitForMultipleObjects(2, waithandles, FALSE, timeout);
-	if(wait != WAIT_OBJECT_0) {
-
-		// Process did not respond to the event, kill it if it's not already dead
-		if(wait == WAIT_TIMEOUT) TerminateProcess(procinfo.hProcess, ERROR_TIMEOUT);
-
-		// Close the process and thread handles returned from CreateProcess()
-		CloseHandle(procinfo.hThread);
-		CloseHandle(procinfo.hProcess);
-
-		throw Exception(E_HOSTUNRESPONSIVE, binarypath);
-	}
-
 	// Process was successfully created and initialized, pass it off to a Host instance
 	return std::make_unique<Host>(procinfo);
 }
 
 //-----------------------------------------------------------------------------
-
-std::unique_ptr<Host> Host::TESTME(const FileSystem::HandlePtr handle, const tchar_t* binarypath, const tchar_t* bindingstring, DWORD timeout)
-{
-	PROCESS_INFORMATION				procinfo;			// Process information
-	ReadySignal						readysignal;		// Event for child to signal
-
-	// Generate the command line for the child process, which includes the RPC binding string as argv[1] and
-	// a 32-bit serialized copy of the inheritable event handle as argv[2]
-	tchar_t commandline[MAX_PATH];
-	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\" \"%s\" \"%ld\""), binarypath, bindingstring, static_cast<__int32>(readysignal));
-
-	// TODO: If this technique will be used anywhere else, break out the PROCTHREADATTRIBUTE stuff into a class object;
-	// this may not be a bad idea regardless, it's kind of ugly and makes this look more complicated than it is
-
-	// Determine the size of the attributes buffer required to hold the inheritable handles property
-	SIZE_T required = 0;
-	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
-	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
-
-	// Allocate a buffer large enough to hold the attribute data and initialize it
-	std::vector<uint8_t> buffer(required);
-	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(buffer.data());
-	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) throw Win32Exception();
-
-	try {
-
-		// Add the ready event as in inheritable handle attribute for the client process
-		HANDLE handles[] = { readysignal };
-		if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, sizeof(handles), nullptr, nullptr)) throw Win32Exception();
-
-		// Attempt to launch the process using the EXTENDED_STARTUP_INFO_PRESENT flag
-		// TODO: NEEDS SECURITY SETTINGS AND OPTIONS
-		// TEST: CREATE_SUSPENDED
-		zero_init<STARTUPINFOEX> startinfo;
-		startinfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
-		startinfo.lpAttributeList = attributes;
-		if(!CreateProcess(binarypath, commandline, nullptr, nullptr, TRUE, CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, 
-			&startinfo.StartupInfo, &procinfo)) throw Win32Exception();
-
-		DeleteProcThreadAttributeList(attributes);			// Clean up the PROC_THREAD_ATTRIBUTE_LIST
-	}
-
-	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
-
-	///////////////////////
-
-	// testing VirtualAllocEx; do not run as Administrator to ensure this works as normal user
-
-	// NOTE: can use a job object to group all processes together, that may be better to manage
-	// when service dies killing all clients too.  Perhaps start the job with INIT rather than
-	// the service, this mimicks userspace and the service can kill the entire job on PANIC
-
-	try {
-
-		HandleStreamReader reader(handle);
-		std::unique_ptr<ElfImage> img = ElfImage::Load<LINUX_ELFCLASS32>(reader, procinfo.hProcess);
-		ResumeThread(procinfo.hThread);
-	}
-
-	catch(...) { 
-		
-		TerminateProcess(procinfo.hProcess, (UINT)E_FAIL);
-		CloseHandle(procinfo.hThread);
-		CloseHandle(procinfo.hProcess);
-	}
-
-	// If anything above doesn't work, need to call TerminateProcess() to kill it otherwise it will
-	// sit there suspended forever
-
-	//////////////////////
-
-	// The process is alive, wait for it to either signal the ready event or to terminate
-	HANDLE waithandles[] = { readysignal, procinfo.hProcess };
-	DWORD wait = WaitForMultipleObjects(2, waithandles, FALSE, timeout);
-	if(wait != WAIT_OBJECT_0) {
-
-		// Process did not respond to the event, kill it if it's not already dead
-		if(wait == WAIT_TIMEOUT) TerminateProcess(procinfo.hProcess, ERROR_TIMEOUT);
-
-		// Close the process and thread handles returned from CreateProcess()
-		CloseHandle(procinfo.hThread);
-		CloseHandle(procinfo.hProcess);
-
-		throw Exception(E_HOSTUNRESPONSIVE, binarypath);
-	}
-
-	// Process was successfully created and initialized, pass it off to a Host instance
-	return std::make_unique<Host>(procinfo);
-}
-
-//-----------------------------------------------------------------------------
-// Host::HandleStreamReader::Read
+// Host::Resume
 //
-// Reads data from a FileSystem::Handle instance
+// Resumes a suspended host process
 //
 // Arguments:
 //
-//	buffer		- Destination buffer
-//	length		- Number of bytes to be read from the file stream
+//	NONE
 
-size_t Host::HandleStreamReader::Read(void* buffer, size_t length)
+void Host::Resume(void)
 {
-	// Just ask the Handle instance to read the data into the destination
-	return m_handle->Read(buffer, length);
+	if(!s_resumefunc) throw Exception(E_NOTIMPL);
+
+	NTSTATUS result = s_resumefunc(m_procinfo.hProcess);
+	if(result != 0) throw StructuredException(result);
 }
 
 //-----------------------------------------------------------------------------
-// Host::HandleStreamReader::Seek
+// Host::Suspend
 //
-// Seeks the stream to the specified position
+// Suspends the hosted process
 //
 // Arguments:
 //
-//	position		- Position to set the stream pointer to
+//	NONE
 
-void Host::HandleStreamReader::Seek(size_t position)
+void Host::Suspend(void)
 {
-	// Handles use uapi::loff_t, which is a signed 64-bit value
-	if(position > INT64_MAX) throw Exception(E_INVALIDARG);
+	if(!s_suspendfunc) throw Exception(E_NOTIMPL);
 
-	// StreamReaders are supposed to be forward-only; even though the Handle
-	// can technically support this, follow the interface contract
-	if(position < m_position) throw Exception(E_INVALIDARG);
+	NTSTATUS result = s_suspendfunc(m_procinfo.hProcess);
+	if(result != 0) throw StructuredException(result);
+}
 
-	// Attempt to set the file pointer to the specified position
-	uapi::loff_t offset = static_cast<uapi::loff_t>(position);
-	if(m_handle->Seek(offset, LINUX_SEEK_SET) != offset) throw Exception(E_INVALIDARG);
+//-----------------------------------------------------------------------------
+// Host::Terminate
+//
+// Terminates the hosted process
+//
+// Arguments:
+//
+//	exitcode	- Exit code to use for process termination
+
+void Host::Terminate(HRESULT exitcode)
+{
+	if(!TerminateProcess(m_procinfo.hProcess, static_cast<UINT>(exitcode))) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
