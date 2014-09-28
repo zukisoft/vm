@@ -28,9 +28,9 @@
 // XXXX_MAGIC
 //
 // Arrays that define the supported binary magic numbers
-static uint8_t ANSI_MAGIC[]		= { 0x23, 0x21, 0x20 };
-static uint8_t UTF8_MAGIC[]		= { 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20 };
-static uint8_t UTF16_MAGIC[]	= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
+static uint8_t ANSI_SCRIPT_MAGIC[]		= { 0x23, 0x21, 0x20 };
+static uint8_t UTF8_SCRIPT_MAGIC[]		= { 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20 };
+static uint8_t UTF16_SCRIPT_MAGIC[]		= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
 
 //-----------------------------------------------------------------------------
 // Process::Create (static)
@@ -52,23 +52,19 @@ std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// Attempt to open an execute handle for the specified path
 	FileSystem::HandlePtr handle = vm->FileSystem->OpenExec(std::to_tstring(path).c_str());
 
-	// todo: put an ExecuteHandle in TempFileSystem and return that, it will always
-	// be called by the kernel so there is a lot less to watch out for
-
 	// Read in just enough from the head of the file to look for magic numbers
 	MagicNumbers magics;
 	size_t read = handle->Read(&magics, sizeof(MagicNumbers));
 	handle->Seek(0, LINUX_SEEK_SET);
 
 	// Check for an ELF binary image
-	if((read >= sizeof(magics.ELF)) && (memcmp(&magics.ELF, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
+	if((read >= sizeof(magics.ElfBinary)) && (memcmp(&magics.ElfBinary, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
 
-		switch(magics.ELF[LINUX_EI_CLASS]) {
+		switch(magics.ElfBinary[LINUX_EI_CLASS]) {
 
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			case LINUX_ELFCLASS32: 
 				return Create<LINUX_ELFCLASS32>(vm, handle, arguments, environment, vm->Settings->Process.Host32.c_str(), vm->Listener32Binding);
-
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
 			case LINUX_ELFCLASS32: 
@@ -80,21 +76,21 @@ std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	}
 
 	// Check for UTF-16 interpreter script
-	else if((read >= sizeof(UTF16_MAGIC)) && (memcmp(&magics.UTF16, &UTF16_MAGIC, sizeof(UTF16_MAGIC)) == 0)) {
+	else if((read >= sizeof(UTF16_SCRIPT_MAGIC)) && (memcmp(&magics.UTF16Script, &UTF16_SCRIPT_MAGIC, sizeof(UTF16_SCRIPT_MAGIC)) == 0)) {
 
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
 
 	// Check for UTF-8 interpreter script
-	else if((read >= sizeof(UTF8_MAGIC)) && (memcmp(&magics.UTF8, &UTF8_MAGIC, sizeof(UTF8_MAGIC)) == 0)) {
+	else if((read >= sizeof(UTF8_SCRIPT_MAGIC)) && (memcmp(&magics.UTF8Script, &UTF8_SCRIPT_MAGIC, sizeof(UTF8_SCRIPT_MAGIC)) == 0)) {
 
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
 
 	// Check for ANSI interpreter script
-	else if((read >= sizeof(ANSI_MAGIC)) && (memcmp(&magics.ANSI, &ANSI_MAGIC, sizeof(ANSI_MAGIC)) == 0)) {
+	else if((read >= sizeof(ANSI_SCRIPT_MAGIC)) && (memcmp(&magics.AnsiScript, &ANSI_SCRIPT_MAGIC, sizeof(ANSI_SCRIPT_MAGIC)) == 0)) {
 
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
@@ -146,10 +142,11 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		// TODO: CONSTRUCT AUXILIARY VECTORS HERE
 		//
 
+		// The image was successfully loaded into the host, construct the Process instance
 		return std::make_unique<Process>(std::move(host));
 	}
 
-	// Terminate the host process on exception since it doesn'y get killed by the Host destructor
+	// Terminate the host process on exception since it doesn't get killed by the Host destructor
 	catch(...) { host->Terminate(E_FAIL); throw; }
 }
 
