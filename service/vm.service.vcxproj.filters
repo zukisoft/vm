@@ -278,9 +278,6 @@
     <ClInclude Include="FileDescriptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Host.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\elf.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
@@ -302,10 +299,13 @@
     <ClInclude Include="VmServiceParameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ElfArguments.h">
+    <ClInclude Include="HandleStreamReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HandleStreamReader.h">
+    <ClInclude Include="..\common\linux\signal.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="Host.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -499,16 +499,13 @@
     <ClCompile Include="FileDescriptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Host.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ElfImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ElfArguments.cpp">
+    <ClCompile Include="HandleStreamReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HandleStreamReader.cpp">
+    <ClCompile Include="Host.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

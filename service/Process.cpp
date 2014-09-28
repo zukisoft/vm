@@ -25,16 +25,12 @@
 
 #pragma warning(push, 4)
 
-uint8_t ansi_magic[]	= { 0x23, 0x21, 0x20 };
-uint8_t utf8_magic[]	= { 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20 };
-uint8_t utf16_magic[]	= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
-
-//-----------------------------------------------------------------------------
-// Process Destructor
-
-Process::~Process()
-{
-}
+// XXXX_MAGIC
+//
+// Arrays that define the supported binary magic numbers
+static uint8_t ANSI_MAGIC[]		= { 0x23, 0x21, 0x20 };
+static uint8_t UTF8_MAGIC[]		= { 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20 };
+static uint8_t UTF16_MAGIC[]	= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
 
 //-----------------------------------------------------------------------------
 // Process::Create (static)
@@ -51,140 +47,110 @@ Process::~Process()
 std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const uapi::char_t* path,
 	const uapi::char_t** arguments, const uapi::char_t** environment)
 {
-	BinaryMagic			magics;				// <-- TODO: dumb name
-
 	if(!path) throw LinuxException(LINUX_EFAULT);
 
-	// todo: need to use working directory, requires a calling process context?
-
 	// Attempt to open an execute handle for the specified path
-	// todo: put an ExecuteHandle in TempFileSystem and return that, it will always
-	// be called by the kernel so there is a lot less to watch out for
 	FileSystem::HandlePtr handle = vm->FileSystem->OpenExec(std::to_tstring(path).c_str());
 
+	// todo: put an ExecuteHandle in TempFileSystem and return that, it will always
+	// be called by the kernel so there is a lot less to watch out for
+
 	// Read in just enough from the head of the file to look for magic numbers
-	size_t read = handle->Read(&magics, sizeof(BinaryMagic));
+	MagicNumbers magics;
+	size_t read = handle->Read(&magics, sizeof(MagicNumbers));
 	handle->Seek(0, LINUX_SEEK_SET);
 
 	// Check for an ELF binary image
-	if((read >= sizeof(magics.elf_ident)) && (memcmp(&magics.elf_ident, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
+	if((read >= sizeof(magics.ELF)) && (memcmp(&magics.ELF, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
 
-		switch(magics.elf_ident[LINUX_EI_CLASS]) {
+		switch(magics.ELF[LINUX_EI_CLASS]) {
 
 			// ELFCLASS32: Create a 32-bit host process for the binary
-			case LINUX_ELFCLASS32: return CreateELF32(vm, handle);
+			case LINUX_ELFCLASS32: 
+				return Create<LINUX_ELFCLASS32>(vm, handle, arguments, environment, vm->Settings->Process.Host32.c_str(), vm->Listener32Binding);
 
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
-			case LINUX_ELFCLASS64: return CreateELF64(vm, handle);
+			case LINUX_ELFCLASS32: 
+				return Create<LINUX_ELFCLASS64>(vm, handle, arguments, environment, vm->Settings->Process.Host64.c_str(), vm->Listener64Binding);
 #endif
 			// Any other ELFCLASS -> ENOEXEC	
-			default : throw LinuxException(LINUX_ENOEXEC);
+			default: throw LinuxException(LINUX_ENOEXEC);
 		}
 	}
 
 	// Check for UTF-16 interpreter script
-	else if((read >= sizeof(utf16_magic)) && (memcmp(&magics.utf16_magic, &utf16_magic, sizeof(utf16_magic)) == 0)) {
+	else if((read >= sizeof(UTF16_MAGIC)) && (memcmp(&magics.UTF16, &UTF16_MAGIC, sizeof(UTF16_MAGIC)) == 0)) {
 
-		return CreateScriptInterpreter(vm, handle);
+		// parse binary and command line, recursively call back into Create()
+		throw Exception(E_NOTIMPL);
 	}
 
 	// Check for UTF-8 interpreter script
-	else if((read >= sizeof(utf8_magic)) && (memcmp(&magics.utf8_magic, &utf8_magic, sizeof(utf8_magic)) == 0)) {
+	else if((read >= sizeof(UTF8_MAGIC)) && (memcmp(&magics.UTF8, &UTF8_MAGIC, sizeof(UTF8_MAGIC)) == 0)) {
 
-		return CreateScriptInterpreter(vm, handle);
+		// parse binary and command line, recursively call back into Create()
+		throw Exception(E_NOTIMPL);
 	}
 
 	// Check for ANSI interpreter script
-	else if((read >= sizeof(ansi_magic)) && (memcmp(&magics.ansi_magic, &ansi_magic, sizeof(ansi_magic)) == 0)) {
+	else if((read >= sizeof(ANSI_MAGIC)) && (memcmp(&magics.ANSI, &ANSI_MAGIC, sizeof(ANSI_MAGIC)) == 0)) {
 
-		return CreateScriptInterpreter(vm, handle);
+		// parse binary and command line, recursively call back into Create()
+		throw Exception(E_NOTIMPL);
 	}
 
-	// No other formats are recognized binaries
-	else throw LinuxException(LINUX_ENOEXEC);
-
-
-
-	// ELF:
-	// Create a host instance
-	// Load the binary
-	// LOOP to load interpreters:
-	//	if interpreter, vm->FileSystem->OpenExec(interpreter)
-	//	adjust entry point and whatever else needs adjusting
-	// Unsuspend host to launch?
-	
-	// SCRIPT:
-	// Process interperter, recursively call this function with that 
-
-	// return a Process instance
-
-	// Build the auxiliary vector for this process from the provided arguments and environment variables
-	std::unique_ptr<AuxiliaryVector> auxvec = std::make_unique<AuxiliaryVector>(arguments, environment);
-	// SET AUXVEC stuff here
-
-	//return std::make_unique<Process>(pinfo, std::move(auxvec));
-	return nullptr;
+	// No other formats are currently recognized as valid executable binaries
+	throw LinuxException(LINUX_ENOEXEC);
 }
 
-// CreateELF32 (static)
+//-----------------------------------------------------------------------------
+// Process::Create (static, private)
 //
-// Constructs a new process instance from an ELF32 binary file
+// Constructs a new process instance from an ELF binary
 //
-// Can use template?  Differences:
-// - path to host process (argument, perhaps pass in vm)
-// - ElfImage<>
-// - ElfArguments<>
+// Arguments:
+//
+//	vm			- Reference to the VirtualMachine instance
+//	handle		- Open FileSystem::Handle against the ELF binary to load
+//	argv		- ELF command line arguments from caller
+//	envp		- ELF environment variables from caller
+//	hostpath	- Path to the external host to load
+//	hostargs	- Command line arguments to pass to the host
 
-std::unique_ptr<Process> Process::CreateELF32(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle)
+template <int elfclass>
+static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
+	const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs)
 {
-	// Construct a stream reader around the image file handle
-	HandleStreamReader reader(handle);
+	std::unique_ptr<ElfImage>		executable;				// The main ELF binary image to be loaded
+	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
 
-	// Create the signals for this process (may need to be a shared pointer for process groups)
-	std::unique_ptr<Signals> signals = std::make_unique<Signals>();
+	(argv);		// TODO --> pass to auxiliary vector generator
+	(envp);		// TODO --> pass to auxiliary vector generator
 
-	// Create the external host process in which to load the ELF binary image (suspended by defualt)
-	std::unique_ptr<Host> host = Host::Create(vm->Settings->Process.Host32.c_str(), nullptr, signals->Handles, signals->Count);
+	// Create the external host process (suspended by default)
+	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 
 	try {
 
-		std::unique_ptr<ElfImage> img = ElfImage::Load<LINUX_ELFCLASS32>(reader, host->ProcessHandle);
-		if(img->Interpreter) {
+		// Attempt to load the binary image into the process, then check for an interpreter
+		executable = ElfImage::Load<elfclass>(HandleStreamReader(handle), host->ProcessHandle);
+		if(executable->Interpreter) {
 
-			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(std::to_tstring(img->Interpreter).c_str());
-			HandleStreamReader interpreader(interphandle);
-			std::unique_ptr<ElfImage> interp = ElfImage::Load<LINUX_ELFCLASS32>(interpreader, host->ProcessHandle);
-
+			// Acquire a handle to the interpreter binary and attempt to load that into the process
+			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(std::to_tstring(executable->Interpreter).c_str());
+			interpreter = ElfImage::Load<elfclass>(HandleStreamReader(interphandle), host->ProcessHandle);
 		}
 
-		// build the aux vector; need to pass in:
-		// argv, envp, image, interpreter
+		//
+		// TODO: CONSTRUCT AUXILIARY VECTORS HERE
+		//
+
+		return std::make_unique<Process>(std::move(host));
 	}
 
 	// Terminate the host process on exception since it doesn'y get killed by the Host destructor
-	catch(...) { host->Terminate(E_FAIL); }
-
-	throw Exception(E_NOTIMPL);
-	return nullptr;
-}
-
-// CreateELF64 (static)
-//
-// Constructs a new process instance from an ELF64 binary file
-std::unique_ptr<Process> Process::CreateELF64(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle)
-{
-	throw Exception(E_NOTIMPL);
-	return nullptr;
-}
-
-// CreateScriptInterpreter (static)
-//
-// Constructs a new process instance from an interpreter script
-std::unique_ptr<Process> Process::CreateScriptInterpreter(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle)
-{
-	throw Exception(E_NOTIMPL);
-	return nullptr;
+	catch(...) { host->Terminate(E_FAIL); throw; }
 }
 
 //-----------------------------------------------------------------------------

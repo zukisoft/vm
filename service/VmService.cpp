@@ -161,6 +161,9 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall32_listener::AddObject(this->ObjectID32); 
 		m_bindstr32 = syscall32_listener::GetBindingString(this->ObjectID32);
 		// m_syslog->Push(something)
+		OutputDebugString(L"BINDSTR32: ");
+		OutputDebugString(m_bindstr32.c_str());
+		OutputDebugString(L"\r\n");
 
 #ifdef _M_X64
 		// x64 builds also register the 64-bit system calls interface
@@ -168,6 +171,9 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall64_listener::AddObject(this->ObjectID64);
 		m_bindstr64 = syscall64_listener::GetBindingString(this->ObjectID64);
 		// m_syslog->Push(something)
+		OutputDebugString(L"BINDSTR64: ");
+		OutputDebugString(m_bindstr64.c_str());
+		OutputDebugString(L"\r\n");
 #endif
 	} 
 

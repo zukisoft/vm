@@ -310,6 +310,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\errno.h" />
     <ClInclude Include="..\common\linux\fcntl.h" />
     <ClInclude Include="..\common\linux\fs.h" />
+    <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
     <ClInclude Include="..\common\linux\types.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
@@ -341,7 +342,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
     <ClInclude Include="Device.h" />
-    <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="FileDescriptor.h" />
     <ClInclude Include="FileSystem.h" />
@@ -606,7 +606,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="FileDescriptor.cpp" />
     <ClCompile Include="FilePermission.cpp" />

@@ -58,6 +58,10 @@ public:
 	template <int elfclass>
 	static std::unique_ptr<ElfImage> Load(StreamReader& reader, HANDLE process = INVALID_HANDLE_VALUE);
 
+	template <int elfclass>
+	static std::unique_ptr<ElfImage> Load(StreamReader&& reader, HANDLE process = INVALID_HANDLE_VALUE)
+		{ return Load<elfclass>(std::forward<StreamReader&>(reader), process); }
+
 	//-------------------------------------------------------------------------
 	// Properties
 

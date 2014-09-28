@@ -38,7 +38,6 @@
 #include "VmSettings.h"
 #include "VmSystemLog.h"
 
-#include "Host.h"
 #include "RootFileSystem.h"
 
 #include "VirtualMachine.h"

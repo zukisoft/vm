@@ -51,7 +51,7 @@ public:
 
 	// Destructor
 	//
-	~Process();
+	~Process()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -65,19 +65,22 @@ public:
 	// Resume
 	//
 	// Resumes the process from a suspended state
+	void Resume(void) { _ASSERTE(m_host); m_host->Resume(); }
 
 	// Suspend
 	//
 	// Suspends the process
+	void Suspend(void) { _ASSERTE(m_host); m_host->Suspend(); }
+
+	// Terminate
+	//
+	// Terminates the process
+	void Terminate(int exitcode) { _ASSERTE(m_host); m_host->Terminate(-exitcode); }
 
 private:
 
 	Process(const Process&)=delete;
 	Process& operator=(const Process&)=delete;
-
-	// Forward Declarations
-	//
-	class AuxiliaryVector;
 
 	// Instance Constructor
 	//
@@ -87,115 +90,32 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
+	// MagicNumbers
+	//
+	// Union that defines the magic numbers for supported binary formats
 	typedef union {
 
-		uint8_t	ansi_magic[3];				// 0x23, 0x21, 0x20
-		uint8_t	utf8_magic[6];				// 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20
-		uint8_t	utf16_magic[8];				// 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00
-		uint8_t	elf_ident[LINUX_EI_NIDENT];	// "\177ELF"
+		uint8_t	ANSI[3];				// 0x23, 0x21, 0x20
+		uint8_t	UTF8[6];				// 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20
+		uint8_t	UTF16[8];				// 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00
+		uint8_t	ELF[LINUX_EI_NIDENT];	// "\177ELF"
 	
-	} BinaryMagic;
-
-	class AuxiliaryVector
-	{
-	public:
-
-		AuxiliaryVector(const uapi::char_t** arguments, const uapi::char_t** environment) { (arguments); (environment); }
-		~AuxiliaryVector()=default;
-
-	private:
-
-		AuxiliaryVector(const AuxiliaryVector&)=delete;
-		AuxiliaryVector& operator=(const AuxiliaryVector&)=delete;
-	};
-
-	enum class Signal
-	{
-		Ready = 0,
-	};
-
-	class Signals
-	{
-	public:
-
-		// Instance Constructor
-		//
-		// TODO: MOVE TO CPP FILE
-		Signals()
-		{
-			// Initialize all handles to INVALID_HANDLE_VALUE to start with
-			for(auto iterator : m_handles) iterator = INVALID_HANDLE_VALUE;
-
-			SECURITY_ATTRIBUTES inherit = { sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };
-			m_handles[static_cast<size_t>(Signal::Ready)] = CreateEvent(&inherit, TRUE, FALSE, nullptr);
-		}
-
-		// Destructor
-		//
-		~Signals() { for(auto iterator : m_handles) if(iterator != INVALID_HANDLE_VALUE) CloseHandle(iterator); }
-
-		// Array subscript operator
-		//
-		HANDLE operator[](Signal index) const { return m_handles[static_cast<size_t>(index)]; }
-
-		// HANDLE* conversion operator
-		//
-		operator HANDLE*() { return m_handles.data(); }
-
-		// Set
-
-		// Reset
-
-		// Wait
-		// Wait (+ additional handles)
-
-
-		// Count
-		//
-		// Number of handles in the array
-		__declspec(property(get=getCount)) size_t Count;
-		size_t getCount(void) const { return m_handles.size(); }
-
-		// Handles
-		//
-		// Gets the array of handles
-		__declspec(property(get=getHandles)) HANDLE* Handles;
-		HANDLE* getHandles(void) { return m_handles.data(); }
-
-	private:
-
-		Signals(const Signals&)=delete;
-		Signals& operator=(const Signals&)=delete;
-
-		// Member Variables
-		//
-		std::array<HANDLE, 1>			m_handles;		// Contained array of HANDLEs
-	};
+	} MagicNumbers;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// CreateELF32 (static)
+	// Create (static)
 	//
-	// Constructs a new process instance from an ELF32 binary file
-	static std::unique_ptr<Process> CreateELF32(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
-
-	// CreateELF64 (static)
-	//
-	// Constructs a new process instance from an ELF64 binary file
-	static std::unique_ptr<Process> CreateELF64(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
-
-	// CreateScriptInterpreter (static)
-	//
-	// Constructs a new process instance from an interpreter script
-	static std::unique_ptr<Process> CreateScriptInterpreter(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle);
+	// Creates a new process instance via an external Windows host binary
+	template <int elfclass>
+	static std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
+		const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>				m_host;		// Hosted windows process
-	//std::unique_ptr<AuxiliaryVector>	m_auxvec;	// Auxiliary vector
-	//std::unique_ptr<Signals>			m_signals;	// Process signals
+	std::unique_ptr<Host>		m_host;		// Hosted windows process
 };
 
 //-----------------------------------------------------------------------------
