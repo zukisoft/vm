@@ -67,7 +67,7 @@ std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 				return Create<LINUX_ELFCLASS32>(vm, handle, arguments, environment, vm->Settings->Process.Host32.c_str(), vm->Listener32Binding);
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
-			case LINUX_ELFCLASS32: 
+			case LINUX_ELFCLASS64: 
 				return Create<LINUX_ELFCLASS64>(vm, handle, arguments, environment, vm->Settings->Process.Host64.c_str(), vm->Listener64Binding);
 #endif
 			// Any other ELFCLASS -> ENOEXEC	
