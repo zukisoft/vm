@@ -304,7 +304,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\HeapBuffer.h" />
     <ClInclude Include="..\common\IndexPool.h" />
     <ClInclude Include="..\common\LinuxException.h" />
-    <ClInclude Include="..\common\linuxtypes.h" />
     <ClInclude Include="..\common\linux\elf-em.h" />
     <ClInclude Include="..\common\linux\elf.h" />
     <ClInclude Include="..\common\linux\errno.h" />
@@ -648,12 +647,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ResourceCompile Include="vm.service.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="linuxtypes.idl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Midl>
     <Midl Include="syscalls32.idl" />
     <Midl Include="syscalls64.idl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

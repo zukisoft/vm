@@ -182,9 +182,6 @@
     <ClInclude Include="..\common\linux\types.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\linuxtypes.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\fs.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
@@ -530,9 +527,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="linuxtypes.idl">
-      <Filter>Source Files</Filter>
-    </Midl>
     <Midl Include="syscalls64.idl">
       <Filter>Source Files\System Calls</Filter>
     </Midl>
