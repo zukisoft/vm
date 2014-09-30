@@ -116,11 +116,11 @@ private:
 		test.AppendEnvironmentVariable("KeyWithNoValue", nullptr);
 		test.AppendEnvironmentVariable("KeyAndValuePair=SomethingInteresting");
 
-		void* gen = test.Generate(ElfArguments::MemoryFormat::Stack,
-		[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
-		[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });
+		ElfArguments::MemoryImage img = test.GenerateMemoryImage(
+			[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
+			[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });
 		
-		delete[] reinterpret_cast<uint8_t*>(gen);
+		delete[] reinterpret_cast<uint8_t*>(img.AllocationBase);
 
 		//FileSystem::HandlePtr p = m_vfs->Open(L"/sbin/init", LINUX_O_RDONLY, 0);
 		//std::tstring binpath = m_settings->Process.Host32;

@@ -209,54 +209,97 @@ size_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(const void* buffer, size_t leng
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::Generate
+// ElfArgumentsT::GenerateMemoryImage
 //
-// Creates the vector of values in one of the supported formats
+// Generates the memory image for the ELF arguments
 //
 // Arguments:
 //
-//	format		- Specifies the desired output format (see header file)
 //	allocator	- Function used to allocate the memory required
 //	writer		- Function used to write data into the allocated memory
 
 template <class addr_t, class auxv_t>
-void* ElfArgumentsT<addr_t, auxv_t>::Generate(MemoryFormat format, allocator_func allocator, writer_func writer)
+auto ElfArgumentsT<addr_t, auxv_t>::GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage
 {
-	// calculate size
+	zero_init<MemoryImage>			image;				// Resultant memory image data
+	size_t							stackoffset;		// Offset into memory image of the stack
 
-	(format);
-	(allocator);
-	(writer);
+	if(!allocator) throw Exception(E_ARGUMENTNULL, "allocator");
+	if(!writer) throw Exception(E_ARGUMENTNULL, "writer");
 
-	// TODO: CONTINUE FROM HERE -- old version below
+	// Align the information block to 16 bytes; this becomes the start of the stack image
+	stackoffset = AlignUp(m_info.size(), 16);
 
-	size_t length = AlignUp(m_info.size(), 16);
-	size_t begin = length;
-	length += sizeof(addr_t) * (m_argv.size() + 1);
-	length += sizeof(addr_t) * (m_env.size() + 1);
-	length += sizeof(auxv_t) * (m_auxv.size() + 1);
-	length += sizeof(addr_t);
-	length = AlignUp(length, 16);
+	// Calculate the additional size required to hold the vectors
+	image.AllocationLength = stackoffset;
+	image.AllocationLength += sizeof(addr_t);								// argc
+	image.AllocationLength += sizeof(addr_t) * (m_argv.size() + 1);			// argv + NULL
+	image.AllocationLength += sizeof(addr_t) * (m_env.size() + 1);			// envp + NULL
+	image.AllocationLength += sizeof(auxv_t) * (m_auxv.size() + 1);			// auxv + AT_NULL
+	image.AllocationLength += sizeof(addr_t);								// NULL
+	image.AllocationLength = AlignUp(image.AllocationLength, 16);			// alignment
 
-	uint8_t* out = reinterpret_cast<uint8_t*>(allocator(length));
+	// Allocate the entire memory image at once using the provided function; it is
+	// expected to be zero initialized after allocation
+	image.AllocationBase = reinterpret_cast<addr_t>(allocator(image.AllocationLength));
+	if(!image.AllocationBase) throw Exception(E_OUTOFMEMORY);
 
-	size_t offset = 0;
-	writer(m_info.data(), out + offset, m_info.size());
-	offset = AlignUp(m_info.size(), 16);
-	for_each(m_argv.begin(), m_argv.end(), [&](addr_t& addr) { writer(&addr, out + offset, sizeof(addr_t)); offset += sizeof(addr_t); });
-	offset += sizeof(addr_t);
-	for_each(m_env.begin(), m_env.end(), [&](addr_t& addr) { writer(&addr, out + offset, sizeof(addr_t)); offset += sizeof(addr_t); });
-	offset += sizeof(addr_t);
-	for_each(m_auxv.begin(), m_auxv.end(), [&](auxv_t& auxv) { writer(&auxv, out + offset, sizeof(auxv_t)); offset += sizeof(auxv_t); });
-	offset += sizeof(auxv_t);
-	offset += sizeof(addr_t);
-	offset = AlignUp(offset, 16);
+	// Initialize the pointer to and length of the stack image portion for the caller
+	image.StackImage = image.AllocationBase + stackoffset;
+	image.StackImageLength = image.AllocationLength - stackoffset;
 
-	_ASSERTE(length == offset);
+	// Use a local HeapBuffer to expedite copying all of the data into the stack image at once
+	HeapBuffer<uint8_t> stackimage(image.StackImageLength);
+	memset(&stackimage, 0, stackimage.Size);
 
-	(begin);
+	// a StreamWriter class would be nice here
 
-	return out;
+	stackoffset = 0;
+
+	//// ARGC
+	//stackimage.Cast<addr_t>(stackoffset) = m_argv.size();
+	//stackoffset += sizeof(addr_t);
+
+	//// ARGV
+	//for_each(m_argv.begin(), m_argv.end(), [&](addr_t& offset) 
+	//{ 
+	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
+	//	stackoffset += sizeof(addr_t);
+	//});
+	//stackoffset += sizeof(addr_t);		// null
+
+	//// ENVP
+	//for_each(m_env.begin(), m_env.end(), [&](addr_t& offset) 
+	//{ 
+	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
+	//	stackoffset += sizeof(addr_t);
+	//});
+	//stackoffset += sizeof(addr_t);		// null
+
+	// AUXV
+
+	// bah, thinking just replace this entire class with a new one
+
+	// Write the information block and the stack image into the allocated memory
+	writer(m_info.data(), reinterpret_cast<void*>(image.AllocationBase), m_info.size());
+	writer(stackimage, reinterpret_cast<void*>(image.StackImage), stackimage.Size);
+
+	//// envp
+	//for_each(m_env.begin(), m_env.end(), [&](addr_t& addr) { writer(&addr, out + offset, sizeof(addr_t)); offset += sizeof(addr_t); });
+	//offset += sizeof(addr_t);
+
+	//// auxv
+	//for_each(m_auxv.begin(), m_auxv.end(), [&](auxv_t& auxv) { writer(&auxv, out + offset, sizeof(auxv_t)); offset += sizeof(auxv_t); });
+	//offset += sizeof(auxv_t);
+
+	//offset += sizeof(addr_t);
+	//offset = AlignUp(offset, 16);
+
+	//_ASSERTE(length == offset);
+
+	//(begin);
+
+	return image;
 }
 
 //const void* ElfArgumentsT<addr_t, auxv_t>::CreateArgumentVector(size_t* length)

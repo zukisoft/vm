@@ -69,7 +69,7 @@ public:
 	//
 	_type& operator[] (int index) 
 	{ 
-		if((index < 0) || (static_cast<size_t>(index) < m_count)) throw Exception(E_BOUNDS);
+		if((index < 0) || (static_cast<size_t>(index) >= m_count)) throw Exception(E_BOUNDS);
 		return m_buffer[index]; 
 	}
 

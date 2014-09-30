@@ -37,6 +37,7 @@ typedef unsigned __int64				sys32_ulonglong_t;
 
 // Derived Data Types
 //
+typedef sys32_ulong_t					sys32_addr_t;
 typedef sys32_uint_t					sys32_mode_t;
 typedef sys32_ulong_t					sys32_size_t;
 typedef sys32_long_t					sys32_ssize_t;
@@ -46,6 +47,26 @@ typedef sys32_long_t					sys32_ssize_t;
 // Defines the UUID to assign to the 32-bit system call entry point vector
 cpp_quote("__declspec(selectany) extern uuid_t EPVID_SYSTEMCALLS32 = ")
 cpp_quote("{ 0xd967a755, 0x869f, 0x4180, { 0xa9, 0xc0, 0xba, 0x96, 0xd7, 0xb4, 0x1e, 0x18 } };")
+
+// sys32_startup_info
+//
+// Structure passed into the host process on startup
+typedef struct _sys32_startup_info {
+
+	// stack_image
+	//
+	// Stack image loaded into the host process on startup
+	sys32_addr_t	stack_image;
+	sys32_size_t	stack_image_length;
+
+	// entry_point
+	//
+	// Address to jump into to begin execution
+	sys32_addr_t	entry_point;
+
+	// signal handles go here
+	
+} _sys32_startup_info;
 
 // Interface SystemCalls32
 //

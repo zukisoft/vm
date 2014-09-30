@@ -29,8 +29,7 @@
 #include <linux/auxvec.h>
 #include <linux/elf.h>
 #include "Exception.h"
-#include "MemoryRegion.h"
-#include "Win32Exception.h"
+#include "HeapBuffer.h"
 
 #pragma warning(push, 4)				
 
@@ -40,8 +39,6 @@
 // ELF arguments on the x86/x64 platform are provided by pushing a vector of
 // values/pointers onto the stack prior to jumping to the entry point.  The
 // typical memory format is as follows:
-//
-// (MemoryFormat::Normal)
 //
 //  STACK POINTER -->   argc          number of arguments
 //                      argv[0-n]     pointers to command line arguments
@@ -62,8 +59,6 @@
 // is allocated, and the arguments/variables/aux vectors are appended it to it.
 // When complete, the ELF arguments are allocated in the same chunk of memory.
 // The arguments can then be copied into the process/thread stack for execution:
-//
-// (MemoryFormat::Stack)
 //
 //  BASE ADDRESS --->   [info]         packed information block  <--+
 //                      zero[0-15]     16-byte alignment            |
@@ -89,13 +84,25 @@ public:
 
 	// TODO: use static Create() methodology
 
-	// MemoryFormat Enumeration
+	// MemoryImage Structure
 	//
-	// Dictates the memory format to use when generating the arguments
-	enum class MemoryFormat
+	// Defines the addresses and lengths of an allocated memory image
+	struct MemoryImage
 	{
-		Normal		= 0,		// Normal memory format (see above)
-		Stack		= 1,		// Stack memory format (see above)
+		addr_t		AllocationBase;			// Overall allocation pointer
+		size_t		AllocationLength;		// Overall allocation length
+		addr_t		StackImage;				// Stack image pointer
+		size_t		StackImageLength;		// Stack image length
+
+		// argc
+		// arguments
+		// environment
+		// aux vectors
+		// INFO
+		// aux vectors
+		// environment
+		// arguments
+		// argc
 	};
 
 	// allocator_func
@@ -131,11 +138,11 @@ public:
 	void AppendEnvironmentVariable(const uapi::char_t* keyandvalue);
 	void AppendEnvironmentVariable(const uapi::char_t* key, const uapi::char_t* value);
 
-	// Generate
+	// GenerateMemoryImage
 	//
 	// Creates the argument vector in the specified format using the allocator and
-	// writer functions provided (this allows for things like WriteProcessMemory)
-	void* Generate(MemoryFormat format, allocator_func allocator, writer_func writer);
+	// writer functions provided (this allows for using WriteProcessMemory)
+	auto GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage;
 
 private:
 
