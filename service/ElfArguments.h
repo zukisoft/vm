@@ -28,6 +28,8 @@
 #include <vector>
 #include "ElfClass.h"
 #include "Exception.h"
+#include "HeapBuffer.h"
+#include "MemoryRegion.h"
 
 #pragma warning(push, 4)				
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization

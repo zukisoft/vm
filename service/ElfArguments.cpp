@@ -196,6 +196,13 @@ uintptr_t ElfArguments::AppendInfo(const void* buffer, size_t length)
 	return offset;
 }
 
+template <typename _type>
+inline uint8_t* Write(uint8_t* dest, const _type& source)
+{
+	*reinterpret_cast<_type*>(dest) = source;
+	return dest + sizeof(_type);
+}
+
 //-----------------------------------------------------------------------------
 // ElfArguments::GenerateStackImage
 //
@@ -210,15 +217,60 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 {
 	using elf = elf_traits<_elfclass>;
 
-	zero_init<StackImage> image;
-	(process);
+	size_t					stackoffset;
+	size_t					imagelen;
+
+	// Align the information block to 16 bytes; this becomes the start of the stack image
+	imagelen = stackoffset = AlignUp(m_info.size(), 16);
+
+	// Calculate the additional size required to hold the vectors
+	imagelen += sizeof(typename elf::addr_t);							// argc
+	imagelen += sizeof(typename elf::addr_t) * (m_argv.size() + 1);		// argv + NULL
+	imagelen += sizeof(typename elf::addr_t) * (m_env.size() + 1);		// envp + NULL
+	imagelen += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);		// auxv + AT_NULL
+	imagelen += sizeof(typename elf::addr_t);							// NULL
+	imagelen = AlignUp(imagelen, 16);									// alignment
+
+	// Allocate the memory to hold the arguments in the hosted process and dump the information block
+	std::unique_ptr<MemoryRegion> allocation = MemoryRegion::Reserve(process, imagelen, MEM_COMMIT | MEM_TOP_DOWN);
+	if(!WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) throw Win32Exception();
+	
+	// Use a local heap buffer to collect all of the stack image data locally before writing it
+	HeapBuffer<uint8_t> stackimage(imagelen - stackoffset);
+	memset(&stackimage, 0, stackimage.Size);
+
+	// StreamWriter class would be nice here
+	// Need to check boundaries for Class::x86 addr_t
+
+	// ARGC
+	uint8_t* next = Write<typename elf::addr_t>(stackimage, static_cast<typename elf::addr_t>(m_argv.size()));
+
+	// ARGV
+	//for_each(m_argv.begin(), m_argv.end(), [&](typename elf::addr_t& offset) 
+	//	next = Write<typename elf::addr_t>(next, 
+//	//for_each(m_argv.begin(), m_argv.end(), [&](addr_t& offset) 
+//	//{ 
+//	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
+//	//	stackoffset += sizeof(addr_t);
+//	//});
+//	//stackoffset += sizeof(addr_t);		// null
+//
+//	//// ENVP
+//	//for_each(m_env.begin(), m_env.end(), [&](addr_t& offset) 
+//	//{ 
+//	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
+//	//	stackoffset += sizeof(addr_t);
+//	//});
+//	//stackoffset += sizeof(addr_t);		// null
+
+// check for in-process/out-process writes
 
 	// do this in 2 writes to the target process only; first dump the info
 	// block then all of the arguments.  Use a HeapBuffer or something
 	//
 	// Consider renaming/aligning to more how ElfImage is called ("Load") ??
 
-	return image;
+	return StackImage { reinterpret_cast<uint8_t*>(allocation->Pointer) + stackoffset, stackimage.Size };
 }
 
 //-----------------------------------------------------------------------------
