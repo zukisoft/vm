@@ -23,35 +23,34 @@
 #include "stdafx.h"
 #include "ElfArguments.h"
 
-#pragma warning(push, 4)				
+#pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// Explicit Instantiations
+template ElfArguments<ElfClass::x86>;
 
 #ifdef _M_X64
-template ElfArgumentsT<uapi::Elf64_Addr, uapi::Elf64_auxv_t>;
-#else
-template ElfArgumentsT<uapi::Elf32_Addr, uapi::Elf32_auxv_t>;
+template ElfArguments<ElfClass::x86_64>;
 #endif
 
 //---------------------------------------------------------------------------
-// ElfArgumentsT Constructor
+// ElfArguments Constructor
 //
 // Arguments:
 //
 //	argc		- Pointer to the initial set of command line arguments
 //	envp		- Pointer to the initial set of environment variables
 
-template <class addr_t, class auxv_t>
-ElfArgumentsT<addr_t, auxv_t>::ElfArgumentsT(const uapi::char_t** argv, const uapi::char_t** envp)
+template <ElfClass _class>
+ElfArguments<_class>::ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp)
 {
-	// Iterate over all the command line arguments and environment variables
+	// Iterate over all the command line arguments and environment variables and
+	// append them as-is into the information block; this will not check for syntax
+	// of the environment variables, they are assumed to be valid enough
 	while(argv && *argv) { AppendArgument(*argv); ++argv; }
 	while(envp && *envp) { AppendEnvironmentVariable(*envp); ++envp; }
 }
 
 //---------------------------------------------------------------------------
-// ElfArgumentsT::AlignUp (private, static)
+// ElfArguments::AlignUp (private, static)
 //
 // Aligns an offset up to the specified alignment
 //
@@ -60,8 +59,8 @@ ElfArgumentsT<addr_t, auxv_t>::ElfArgumentsT(const uapi::char_t** argv, const ua
 //	offset		- Offset to be aligned
 //	alignment	- Alignment
 
-template <class addr_t, class auxv_t>
-size_t ElfArgumentsT<addr_t, auxv_t>::AlignUp(size_t offset, size_t alignment)
+template <ElfClass _class>
+inline size_t ElfArguments<_class>::AlignUp(size_t offset, size_t alignment)
 {
 	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
 
@@ -70,7 +69,7 @@ size_t ElfArgumentsT<addr_t, auxv_t>::AlignUp(size_t offset, size_t alignment)
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendArgument
+// ElfArguments::AppendArgument
 //
 // Appends an argument to the contained argument list
 //
@@ -78,15 +77,15 @@ size_t ElfArgumentsT<addr_t, auxv_t>::AlignUp(size_t offset, size_t alignment)
 //
 //	value		- Command-line argument to be added
 
-template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendArgument(const uapi::char_t* value)
+template <ElfClass _class>
+void ElfArguments<_class>::AppendArgument(const uapi::char_t* value)
 {
 	if(!value) throw Exception(E_ARGUMENTNULL, _T("value"));
 	m_argv.push_back(AppendInfo(value, strlen(value) + 1));
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendAuxiliaryVector
+// ElfArguments::AppendAuxiliaryVector
 //
 // Appends an auxiliary vector to the contained list
 //
@@ -95,14 +94,14 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendArgument(const uapi::char_t* value)
 //	type		- Auxiliary vector type code
 //	value		- Auxiliary vector value
 
-template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, addr_t value)
+template <ElfClass _class>
+void ElfArguments<_class>::AppendAuxiliaryVector(typename elf::addr_t type, typename elf::addr_t value)
 {
-	m_auxv.push_back(auxv_t(type, value));
+	m_auxv.push_back(typename elf::auxv_t(type, value));
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendAuxiliaryVector
+// ElfArguments::AppendAuxiliaryVector
 //
 // Appends an auxiliary vector to the contained list
 //
@@ -111,17 +110,17 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, addr_t va
 //	type		- Auxiliary vector type code
 //	value		- Auxiliary vector value
 
-template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const uapi::char_t* value)
+template <ElfClass _class>
+void ElfArguments<_class>::AppendAuxiliaryVector(typename elf::addr_t type, const uapi::char_t* value)
 {
-	auxv_t vector(type);				// Initialize with a NULL/zero value
-
-	if(value) vector.a_val = AppendInfo(value, strlen(value) + 1); 
-	m_auxv.push_back(vector);
+	// If a non-null pointer was provided, append the data to the info block and store the 
+	// offset to it in the aux vector value; this will be resolved to a pointer later
+	if(value) m_auxv.push_back(typename elf::auxv_t(type | AT_ISOFFSET, static_cast<typename elf::addr_t>(AppendInfo(value, strlen(value) + 1))));
+	else m_auxv.push_back(typename elf::auxv_t(type));
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendAuxiliaryVector
+// ElfArguments::AppendAuxiliaryVector
 //
 // Appends an auxiliary vector to the contained list
 //
@@ -131,17 +130,17 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const uap
 //	buffer		- Buffer holding binary auxiliary vector data
 //	length		- Length of the input buffer
 
-template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const void* buffer, size_t length)
+template <ElfClass _class>
+void ElfArguments<_class>::AppendAuxiliaryVector(typename elf::addr_t type, const void* buffer, size_t length)
 {
-	auxv_t vector(type);				// Initialize with a NULL/zero value
-
-	if(buffer) vector.a_val = AppendInfo(buffer, length);
-	m_auxv.push_back(vector);
+	// If a non-null pointer was provided, append the data to the info block and store the 
+	// offset to it in the aux vector value; this will be resolved to a pointer later
+	if(buffer) m_auxv.push_back(typename elf::auxv_t(type | AT_ISOFFSET, static_cast<typename elf::addr_t>(AppendInfo(buffer, length))));
+	else m_auxv.push_back(typename elf::auxv_t(type));
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendEnvironmentVariable
+// ElfArguments::AppendEnvironmentVariable
 //
 // Appends a preformatted environment variable to the contained list
 //
@@ -149,15 +148,15 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendAuxiliaryVector(addr_t type, const voi
 //
 //	variable	- Preformatted environment variable in KEY=VALUE format
 
-template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const uapi::char_t* keyandvalue)
+template <ElfClass _class>
+void ElfArguments<_class>::AppendEnvironmentVariable(const uapi::char_t* keyandvalue)
 {
 	if(!keyandvalue) throw Exception(E_ARGUMENTNULL, _T("keyandvalue"));
 	m_env.push_back(AppendInfo(keyandvalue, strlen(keyandvalue) + 1));
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendEnvironmentVariable
+// ElfArguments::AppendEnvironmentVariable
 //
 // Appends an environment variable to the contained list
 //
@@ -166,8 +165,8 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const uapi::char_t
 //	key			- Environment variable key
 //	value		- Environment variable value
 
-template <class addr_t, class auxv_t>
-void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const uapi::char_t* key, const uapi::char_t* value)
+template <ElfClass _class>
+void ElfArguments<_class>::AppendEnvironmentVariable(const uapi::char_t* key, const uapi::char_t* value)
 {
 	if(!key) throw Exception(E_ARGUMENTNULL, _T("key"));
 
@@ -184,7 +183,7 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const uapi::char_t
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::AppendInfo (private)
+// ElfArguments::AppendInfo (private)
 //
 // Appends data to the information block
 //
@@ -194,11 +193,14 @@ void ElfArgumentsT<addr_t, auxv_t>::AppendEnvironmentVariable(const uapi::char_t
 //	length		- Length of the data to be appended
 //	align		- Flag to align the data (false if appending multiple)
 
-template <class addr_t, class auxv_t>
-size_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(const void* buffer, size_t length, bool align)
+template <ElfClass _class>
+size_t ElfArguments<_class>::AppendInfo(const void* buffer, size_t length, bool align)
 {
 	// Align the data to addr_t size before appending; this also becomes the offset
-	size_t offset = (align) ? AlignUp(m_info.size(), sizeof(addr_t)) : m_info.size();
+	size_t offset = (align) ? AlignUp(m_info.size(), sizeof(typename elf::addr_t)) : m_info.size();
+	if(offset >= elf::max_addr_t) throw Exception(E_OUTOFMEMORY);
+
+	// If aligning the data buffer, increase the size of the vector to accomodate
 	if(align) m_info.resize(offset);
 
 	// Use a const byte pointer and the range-insert method to copy
@@ -209,7 +211,7 @@ size_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(const void* buffer, size_t leng
 }
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT::GenerateMemoryImage
+// ElfArguments::GenerateMemoryImage
 //
 // Generates the memory image for the ELF arguments
 //
@@ -218,8 +220,8 @@ size_t ElfArgumentsT<addr_t, auxv_t>::AppendInfo(const void* buffer, size_t leng
 //	allocator	- Function used to allocate the memory required
 //	writer		- Function used to write data into the allocated memory
 
-template <class addr_t, class auxv_t>
-auto ElfArgumentsT<addr_t, auxv_t>::GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage
+template <ElfClass _class>
+auto ElfArguments<_class>::GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage
 {
 	zero_init<MemoryImage>			image;				// Resultant memory image data
 	size_t							stackoffset;		// Offset into memory image of the stack
@@ -232,20 +234,20 @@ auto ElfArgumentsT<addr_t, auxv_t>::GenerateMemoryImage(allocator_func allocator
 
 	// Calculate the additional size required to hold the vectors
 	image.AllocationLength = stackoffset;
-	image.AllocationLength += sizeof(addr_t);								// argc
-	image.AllocationLength += sizeof(addr_t) * (m_argv.size() + 1);			// argv + NULL
-	image.AllocationLength += sizeof(addr_t) * (m_env.size() + 1);			// envp + NULL
-	image.AllocationLength += sizeof(auxv_t) * (m_auxv.size() + 1);			// auxv + AT_NULL
-	image.AllocationLength += sizeof(addr_t);								// NULL
+	image.AllocationLength += sizeof(typename elf::addr_t);								// argc
+	image.AllocationLength += sizeof(typename elf::addr_t) * (m_argv.size() + 1);			// argv + NULL
+	image.AllocationLength += sizeof(typename elf::addr_t) * (m_env.size() + 1);			// envp + NULL
+	image.AllocationLength += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);			// auxv + AT_NULL
+	image.AllocationLength += sizeof(typename elf::addr_t);								// NULL
 	image.AllocationLength = AlignUp(image.AllocationLength, 16);			// alignment
 
 	// Allocate the entire memory image at once using the provided function; it is
 	// expected to be zero initialized after allocation
-	image.AllocationBase = reinterpret_cast<addr_t>(allocator(image.AllocationLength));
+	image.AllocationBase = allocator(image.AllocationLength);
 	if(!image.AllocationBase) throw Exception(E_OUTOFMEMORY);
 
 	// Initialize the pointer to and length of the stack image portion for the caller
-	image.StackImage = image.AllocationBase + stackoffset;
+	image.StackImage = reinterpret_cast<uint8_t*>(image.AllocationBase) + stackoffset;
 	image.StackImageLength = image.AllocationLength - stackoffset;
 
 	// Use a local HeapBuffer to expedite copying all of the data into the stack image at once
@@ -302,7 +304,7 @@ auto ElfArgumentsT<addr_t, auxv_t>::GenerateMemoryImage(allocator_func allocator
 	return image;
 }
 
-//const void* ElfArgumentsT<addr_t, auxv_t>::CreateArgumentVector(size_t* length)
+//const void* ElfArguments<_class>::CreateArgumentVector(size_t* length)
 //{
 //	(length);
 //	return nullptr;

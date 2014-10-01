@@ -308,7 +308,13 @@
     <ClInclude Include="ElfArguments.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ElfType.h">
+    <ClInclude Include="StartupInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\auxvec.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="elf_traits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

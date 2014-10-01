@@ -304,6 +304,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\HeapBuffer.h" />
     <ClInclude Include="..\common\IndexPool.h" />
     <ClInclude Include="..\common\LinuxException.h" />
+    <ClInclude Include="..\common\linux\auxvec.h" />
     <ClInclude Include="..\common\linux\elf-em.h" />
     <ClInclude Include="..\common\linux\elf.h" />
     <ClInclude Include="..\common\linux\errno.h" />
@@ -343,7 +344,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Device.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
-    <ClInclude Include="ElfType.h" />
+    <ClInclude Include="elf_traits.h" />
     <ClInclude Include="FileDescriptor.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="HandleStreamReader.h" />
@@ -352,6 +353,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
+    <ClInclude Include="StartupInfo.h" />
     <ClInclude Include="syscalls.h" />
     <ClInclude Include="SystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />

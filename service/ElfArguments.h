@@ -28,13 +28,14 @@
 #include <vector>
 #include <linux/auxvec.h>
 #include <linux/elf.h>
+#include "elf_traits.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
 
 #pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
-// ElfArgumentsT
+// ElfArguments
 //
 // ELF arguments on the x86/x64 platform are provided by pushing a vector of
 // values/pointers onto the stack prior to jumping to the entry point.  The
@@ -54,11 +55,9 @@
 //                      [argv]        packed command line argument strings
 //  STACK BOTTOM ---->  NULL          terminator
 //
-// ElfArguments can also do things differently since we want to use the existing 
-// stack space of an existing process/thread.  A single chunk of virtual memory 
-// is allocated, and the arguments/variables/aux vectors are appended it to it.
-// When complete, the ELF arguments are allocated in the same chunk of memory.
-// The arguments can then be copied into the process/thread stack for execution:
+// ElfArguments uses a single buffer to collect all of the arguments, envrionment
+// variables and pointer-based auxiliary vector data as the data is collected.
+// TODO: recomment this
 //
 //  BASE ADDRESS --->   [info]         packed information block  <--+
 //                      zero[0-15]     16-byte alignment            |
@@ -72,16 +71,20 @@
 //                      NULL           terminator
 //                      zero[0-15]     16-byte alignment
 
-template <class addr_t, class auxv_t>
-class ElfArgumentsT
+template <ElfClass _class>
+class ElfArguments
 {
 public:
 
+	// elf
+	//
+	// Alias for elf_traits<_class>
+	using elf = elf_traits<_class>;
+
 	// Instance constructors
 	//
-	ElfArgumentsT() : ElfArgumentsT(nullptr, nullptr) {}
-	ElfArgumentsT(const uapi::char_t** argv, const uapi::char_t** envp);
-
+	ElfArguments() : ElfArguments(nullptr, nullptr) {}
+	ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
 	// TODO: use static Create() methodology
 
 	// MemoryImage Structure
@@ -89,20 +92,10 @@ public:
 	// Defines the addresses and lengths of an allocated memory image
 	struct MemoryImage
 	{
-		addr_t		AllocationBase;			// Overall allocation pointer
-		size_t		AllocationLength;		// Overall allocation length
-		addr_t		StackImage;				// Stack image pointer
+		void*		AllocationBase;			// Base allocation pointer
+		size_t		AllocationLength;		// Base allocation length
+		void*		StackImage;				// Stack image pointer
 		size_t		StackImageLength;		// Stack image length
-
-		// argc
-		// arguments
-		// environment
-		// aux vectors
-		// INFO
-		// aux vectors
-		// environment
-		// arguments
-		// argc
 	};
 
 	// allocator_func
@@ -126,11 +119,11 @@ public:
 	// AppendAuxiliaryVector
 	//
 	// Appends an auxiliary vector
-	void AppendAuxiliaryVector(addr_t type, addr_t value);
-	void AppendAuxiliaryVector(addr_t type, const uapi::char_t* value);
-	void AppendAuxiliaryVector(addr_t type, const void* buffer, size_t length);
-	void AppendAuxiliaryVector(addr_t type, int value) { AppendAuxiliaryVector(type, static_cast<addr_t>(value)); }
-	void AppendAuxiliaryVector(addr_t type, const void* value) { AppendAuxiliaryVector(type, reinterpret_cast<addr_t>(value)); }
+	void AppendAuxiliaryVector(typename elf::addr_t type, typename elf::addr_t value);
+	void AppendAuxiliaryVector(typename elf::addr_t type, const uapi::char_t* value);
+	void AppendAuxiliaryVector(typename elf::addr_t type, const void* buffer, size_t length);
+	void AppendAuxiliaryVector(typename elf::addr_t type, int value) { AppendAuxiliaryVector(type, static_cast<typename elf::addr_t>(value)); }
+	void AppendAuxiliaryVector(typename elf::addr_t type, const void* value) { AppendAuxiliaryVector(type, reinterpret_cast<typename elf::addr_t>(value)); }
 
 	// AppendEnvironmentVariable
 	//
@@ -146,8 +139,16 @@ public:
 
 private:
 
-	ElfArgumentsT(const ElfArgumentsT&)=delete;
-	ElfArgumentsT& operator=(const ElfArgumentsT&)=delete;
+	ElfArguments(const ElfArguments&)=delete;
+	ElfArguments& operator=(const ElfArguments&)=delete;
+
+	// AT_ISOFFSET
+	//
+	// Flag combined with the AT_ value of an auxiliary vector to indicate
+	// that the specified value is an offset into the info block; this will be
+	// stripped out during generation of the stack image and replaced with
+	// a pointer to that data
+	const typename elf::addr_t AT_ISOFFSET = 0xF0000000;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -165,22 +166,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::vector<uint8_t>		m_info;			// Information block
-	std::vector<size_t>			m_argv;			// Argument string offsets
-	std::vector<size_t>			m_env;			// Environment var string offsets
-	std::vector<auxv_t>			m_auxv;			// Auxiliary vectors
+	std::vector<uint8_t>				m_info;			// Information block
+	std::vector<size_t>					m_argv;			// Argument string offsets
+	std::vector<size_t>					m_env;			// Environment var string offsets
+	std::vector<typename elf::auxv_t>	m_auxv;			// Auxiliary vectors
 };
-
-//-----------------------------------------------------------------------------
-// ElfArgumentBuilder
-//
-// Typedef of ElfArgumentBuilderT<> based on build configuration
-
-#ifdef _M_X64
-typedef ElfArgumentsT<uapi::Elf64_Addr, uapi::Elf64_auxv_t>	ElfArguments;
-#else
-typedef ElfArgumentsT<uapi::Elf32_Addr, uapi::Elf32_auxv_t>	ElfArguments;
-#endif
 
 //-----------------------------------------------------------------------------
 

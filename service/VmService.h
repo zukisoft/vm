@@ -110,13 +110,13 @@ private:
 	// 32-bit host test
 	void OnUserControl128(void)
 	{
-		ElfArgumentsT<uapi::Elf64_Addr, uapi::Elf64_auxv_t> test;
+		ElfArguments<ElfClass::x86> test;
 		test.AppendArgument("Hello World");
 		test.AppendArgument("Moochos Smoochos");
 		test.AppendEnvironmentVariable("KeyWithNoValue", nullptr);
 		test.AppendEnvironmentVariable("KeyAndValuePair=SomethingInteresting");
 
-		ElfArguments::MemoryImage img = test.GenerateMemoryImage(
+		ElfArguments<ElfClass::x86>::MemoryImage img = test.GenerateMemoryImage(
 			[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
 			[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });
 		
