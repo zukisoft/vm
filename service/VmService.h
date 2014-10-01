@@ -110,17 +110,17 @@ private:
 	// 32-bit host test
 	void OnUserControl128(void)
 	{
-		ElfArguments<ElfClass::x86> test;
-		test.AppendArgument("Hello World");
-		test.AppendArgument("Moochos Smoochos");
-		test.AppendEnvironmentVariable("KeyWithNoValue", nullptr);
-		test.AppendEnvironmentVariable("KeyAndValuePair=SomethingInteresting");
+		auto test = ElfArguments::Create();
+		test->AppendArgument("Hello World");
+		test->AppendArgument("Moochos Smoochos");
+		test->AppendEnvironmentVariable("KeyWithNoValue", nullptr);
+		test->AppendEnvironmentVariable("KeyAndValuePair=SomethingInteresting");
 
-		ElfArguments<ElfClass::x86>::MemoryImage img = test.GenerateMemoryImage(
-			[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
-			[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });
-		
-		delete[] reinterpret_cast<uint8_t*>(img.AllocationBase);
+		//ElfArguments::MemoryImage img = test.GenerateMemoryImage(
+		//	[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
+		//	[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });
+		//
+		//delete[] reinterpret_cast<uint8_t*>(img.AllocationBase);
 
 		//FileSystem::HandlePtr p = m_vfs->Open(L"/sbin/init", LINUX_O_RDONLY, 0);
 		//std::tstring binpath = m_settings->Process.Host32;

@@ -353,7 +353,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
-    <ClInclude Include="StartupInfo.h" />
     <ClInclude Include="syscalls.h" />
     <ClInclude Include="SystemCalls.h" />
     <ClInclude Include="TempFileSystem.h" />

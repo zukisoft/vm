@@ -26,13 +26,13 @@
 
 #include <memory>
 #include <vector>
-#include <linux/auxvec.h>
-#include <linux/elf.h>
-#include "elf_traits.h"
+//#include <linux/auxvec.h>
+//#include <linux/elf.h>
+//#include "elf_traits.h"
 #include "Exception.h"
-#include "HeapBuffer.h"
 
 #pragma warning(push, 4)				
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // ElfArguments
@@ -41,7 +41,7 @@
 // values/pointers onto the stack prior to jumping to the entry point.  The
 // typical memory format is as follows:
 //
-//  STACK POINTER -->   argc          number of arguments
+//  STACK POINTER --->  argc          number of arguments
 //                      argv[0-n]     pointers to command line arguments
 //                      NULL          separator
 //                      env[0-n]      pointers to environment variables
@@ -50,18 +50,24 @@
 //                      AT_NULL       separator
 //                      NULL          terminator
 //                      zero[0-15]    16-byte alignment
-//  INFO BLOCK ----->   [auxv]        packed auxiliary vector data
+//  INFO BLOCK ------>  [auxv]        packed auxiliary vector data
 //                      [env]         packed environment strings
 //                      [argv]        packed command line argument strings
 //  STACK BOTTOM ---->  NULL          terminator
 //
-// ElfArguments uses a single buffer to collect all of the arguments, envrionment
-// variables and pointer-based auxiliary vector data as the data is collected.
-// TODO: recomment this
+// ElfArguments differs mainly in the location and format of the INFO BLOCK
+// data.  This data is collected into a single buffer as arguments/variables
+// are appended.  When the memory image is generated, this buffer will be 
+// copied into the base of the allocation and then followed by the standard
+// pointers and auxiliary vectors (STACK POINTER in above table).  This provides
+// the ability for the host process to merely copy the STACK IMAGE data directly
+// from the allocation into the stack prior to execution.  The pointers to the
+// strings and variable length auxiliary vectors remain valid, but will not
+// consume any stack space in the process:
 //
-//  BASE ADDRESS --->   [info]         packed information block  <--+
+//  ALLOCATION BASE ->  [info]         packed information block  <--+
 //                      zero[0-15]     16-byte alignment            |
-//  ARGUMENTS ------>   argc           number of arguments          |
+//  STACK IMAGE ----->  argc           number of arguments          |
 //                      argv           argument pointers -----------+ 
 //                      NULL           separator                    |
 //                      env[0-n]       environment pointers --------+
@@ -71,42 +77,30 @@
 //                      NULL           terminator
 //                      zero[0-15]     16-byte alignment
 
-template <ElfClass _class>
 class ElfArguments
 {
 public:
 
-	// elf
-	//
-	// Alias for elf_traits<_class>
-	using elf = elf_traits<_class>;
+	//// MemoryImage Structure
+	////
+	//// Defines the addresses and lengths of an allocated memory image
+	//struct MemoryImage
+	//{
+	//	void*		AllocationBase;			// Base allocation pointer
+	//	size_t		AllocationLength;		// Base allocation length
+	//	void*		StackImage;				// Stack image pointer
+	//	size_t		StackImageLength;		// Stack image length
+	//};
 
-	// Instance constructors
-	//
-	ElfArguments() : ElfArguments(nullptr, nullptr) {}
-	ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
-	// TODO: use static Create() methodology
+	//// allocator_func
+	////
+	//// Function passed into Generate() to allocate the output buffer space
+	//using allocator_func = std::function<void*(size_t length)>;
 
-	// MemoryImage Structure
-	//
-	// Defines the addresses and lengths of an allocated memory image
-	struct MemoryImage
-	{
-		void*		AllocationBase;			// Base allocation pointer
-		size_t		AllocationLength;		// Base allocation length
-		void*		StackImage;				// Stack image pointer
-		size_t		StackImageLength;		// Stack image length
-	};
-
-	// allocator_func
-	//
-	// Function passed into Generate() to allocate the output buffer space
-	using allocator_func = std::function<void*(size_t length)>;
-
-	// writer_func
-	//
-	// Function passed into Generate() to write data into the allocated output buffer
-	using writer_func = std::function<void(const void* source, void* destination, size_t length)>;
+	//// writer_func
+	////
+	//// Function passed into Generate() to write data into the allocated output buffer
+	//using writer_func = std::function<void(const void* source, void* destination, size_t length)>;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -119,11 +113,11 @@ public:
 	// AppendAuxiliaryVector
 	//
 	// Appends an auxiliary vector
-	void AppendAuxiliaryVector(typename elf::addr_t type, typename elf::addr_t value);
-	void AppendAuxiliaryVector(typename elf::addr_t type, const uapi::char_t* value);
-	void AppendAuxiliaryVector(typename elf::addr_t type, const void* buffer, size_t length);
-	void AppendAuxiliaryVector(typename elf::addr_t type, int value) { AppendAuxiliaryVector(type, static_cast<typename elf::addr_t>(value)); }
-	void AppendAuxiliaryVector(typename elf::addr_t type, const void* value) { AppendAuxiliaryVector(type, reinterpret_cast<typename elf::addr_t>(value)); }
+	void AppendAuxiliaryVector(int type, uintptr_t value);
+	void AppendAuxiliaryVector(int type, const uapi::char_t* value);
+	void AppendAuxiliaryVector(int type, const void* buffer, size_t length);
+	void AppendAuxiliaryVector(int type, int value) { AppendAuxiliaryVector(type, uintptr_t(value)); }
+	void AppendAuxiliaryVector(int type, const void* value) { AppendAuxiliaryVector(type, uintptr_t(value)); }
 
 	// AppendEnvironmentVariable
 	//
@@ -131,24 +125,44 @@ public:
 	void AppendEnvironmentVariable(const uapi::char_t* keyandvalue);
 	void AppendEnvironmentVariable(const uapi::char_t* key, const uapi::char_t* value);
 
+	// Create (static)
+	//
+	// Creates an ElfArguments instance
+	static std::unique_ptr<ElfArguments> Create(void) { return Create(nullptr, nullptr); }
+	static std::unique_ptr<ElfArguments> Create(const uapi::char_t** argv, const uapi::char_t** envp) { return std::make_unique<ElfArguments>(argv, envp); }
+
 	// GenerateMemoryImage
 	//
 	// Creates the argument vector in the specified format using the allocator and
 	// writer functions provided (this allows for using WriteProcessMemory)
-	auto GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage;
+	//auto GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage;
 
 private:
 
 	ElfArguments(const ElfArguments&)=delete;
 	ElfArguments& operator=(const ElfArguments&)=delete;
 
-	// AT_ISOFFSET
+	// Instance Constructor
 	//
-	// Flag combined with the AT_ value of an auxiliary vector to indicate
-	// that the specified value is an offset into the info block; this will be
-	// stripped out during generation of the stack image and replaced with
-	// a pointer to that data
-	const typename elf::addr_t AT_ISOFFSET = 0xF0000000;
+	ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
+	friend std::unique_ptr<ElfArguments> std::make_unique<ElfArguments, const uapi::char_t**&, const uapi::char_t**&>(const uapi::char_t**&, const uapi::char_t**&);
+
+	//-------------------------------------------------------------------------
+	// Private Type Declarations
+
+	// auxvec_t
+	//
+	// Generic auxiliary vector structure, converted to ELF class specific
+	// structure during generation.  Indicate that the value is an offset into
+	// the information block by specifying type as a negative
+	struct auxvec_t
+	{
+		auxvec_t(int type) : a_type(type), a_val(0) {}
+		auxvec_t(int type, uintptr_t value) : a_type(type), a_val(value) {}
+
+		int			a_type;		// Type code (negative = a_val is an offset)
+		uintptr_t	a_val;		// Value or offset into the info block
+	};
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -160,16 +174,16 @@ private:
 
 	// AppendInfo
 	//
-	// Appends data to the information block
-	size_t AppendInfo(const void* buffer, size_t length, bool align = true);
+	// Appends data to the information block and returns the offset
+	uintptr_t AppendInfo(const void* buffer, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::vector<uint8_t>				m_info;			// Information block
-	std::vector<size_t>					m_argv;			// Argument string offsets
-	std::vector<size_t>					m_env;			// Environment var string offsets
-	std::vector<typename elf::auxv_t>	m_auxv;			// Auxiliary vectors
+	std::vector<uint8_t>		m_info;			// Information block
+	std::vector<uintptr_t>		m_argv;			// Argument string offsets
+	std::vector<uintptr_t>		m_env;			// Environment var string offsets
+	std::vector<auxvec_t>		m_auxv;			// Auxiliary vectors / offsets
 };
 
 //-----------------------------------------------------------------------------
