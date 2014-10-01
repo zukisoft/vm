@@ -311,7 +311,7 @@
     <ClInclude Include="..\common\linux\auxvec.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="elf_traits.h">
+    <ClInclude Include="ElfClass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

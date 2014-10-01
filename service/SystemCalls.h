@@ -27,7 +27,7 @@
 #include <concrt.h>
 #include <map>
 
-#pragma warning(push, 4)			
+#pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
 // Class SystemCalls (abstract)

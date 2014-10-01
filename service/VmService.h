@@ -116,6 +116,9 @@ private:
 		test->AppendEnvironmentVariable("KeyWithNoValue", nullptr);
 		test->AppendEnvironmentVariable("KeyAndValuePair=SomethingInteresting");
 
+		auto dummy = test->GenerateStackImage<ElfClass::x86>(INVALID_HANDLE_VALUE);
+		(dummy);
+
 		//ElfArguments::MemoryImage img = test.GenerateMemoryImage(
 		//	[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
 		//	[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });

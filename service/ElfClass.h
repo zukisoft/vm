@@ -38,49 +38,45 @@
 enum class ElfClass
 {
 	x86			= 0,				// 32-bit ELF data types
+#ifdef _M_X64
 	x86_64		= 1,				// 64-bit ELF data types
+#endif
 };
 
 //-----------------------------------------------------------------------------
 // elf_traits
 //
 // Used to collect the various ELF types that differ between the platforms
-// to ease the number of arguments that need to be specified with templates
+// to ease the number of template arguments that need to be specified
 
-template <ElfClass _class>
-struct elf_traits {};
+// elf_traits
+//
+template <ElfClass _class> struct elf_traits {};
 
 // elf_traits<x86>
 //
-template <>
-struct elf_traits<ElfClass::x86>
+template <> struct elf_traits<ElfClass::x86>
 {
 	typedef uapi::Elf32_Addr		addr_t;
 	typedef uapi::Elf32_auxv_t		auxv_t;
 	typedef uapi::Elf32_Ehdr		elfheader_t;
 	typedef uapi::Elf32_Phdr		progheader_t;
 	typedef uapi::Elf32_Shdr		sectheader_t;
-
-	// max_addr_t - Maximum size of addr_t
-	//
-	static const addr_t max_addr_t = 0xFFFFFFFF;
 };
 
+
+#ifdef _M_X64
 // elf_traits<x86_64>
 //
-template <>
-struct elf_traits<ElfClass::x86_64>
+template <> struct elf_traits<ElfClass::x86_64>
 {
 	typedef uapi::Elf64_Addr		addr_t;
 	typedef uapi::Elf64_auxv_t		auxv_t;
 	typedef uapi::Elf64_Ehdr		elfheader_t;
 	typedef uapi::Elf64_Phdr		progheader_t;
 	typedef uapi::Elf64_Shdr		sectheader_t;
-
-	// max_addr_t - Maximum size of addr_t
-	//
-	static const addr_t max_addr_t = 0xFFFFFFFFFFFFFFFF;
 };
+#endif
 
 //-----------------------------------------------------------------------------
 

@@ -25,6 +25,13 @@
 
 #pragma warning(push, 4)
 
+// Explicit Instantiations
+//
+template ElfArguments::StackImage ElfArguments::GenerateStackImage<ElfClass::x86>(HANDLE);
+#ifdef _M_X64
+template ElfArguments::StackImage ElfArguments::GenerateStackImage<ElfClass::x86_64>(HANDLE);
+#endif
+
 //---------------------------------------------------------------------------
 // ElfArguments Constructor
 //
@@ -187,6 +194,31 @@ uintptr_t ElfArguments::AppendInfo(const void* buffer, size_t length)
 	m_info.insert(m_info.end(), pointer, pointer + length);
 
 	return offset;
+}
+
+//-----------------------------------------------------------------------------
+// ElfArguments::GenerateStackImage
+//
+// Generates the memory image for the collected ELF arguments
+//
+// Arguments:
+//
+//	TODO
+
+template <ElfClass _elfclass>
+ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
+{
+	using elf = elf_traits<_elfclass>;
+
+	zero_init<StackImage> image;
+	(process);
+
+	// do this in 2 writes to the target process only; first dump the info
+	// block then all of the arguments.  Use a HeapBuffer or something
+	//
+	// Consider renaming/aligning to more how ElfImage is called ("Load") ??
+
+	return image;
 }
 
 //-----------------------------------------------------------------------------

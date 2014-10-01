@@ -344,7 +344,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Device.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
-    <ClInclude Include="elf_traits.h" />
+    <ClInclude Include="ElfClass.h" />
     <ClInclude Include="FileDescriptor.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="HandleStreamReader.h" />
