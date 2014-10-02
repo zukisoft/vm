@@ -64,11 +64,11 @@ std::unique_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			case LINUX_ELFCLASS32: 
-				return Create<LINUX_ELFCLASS32>(vm, handle, arguments, environment, vm->Settings->Process.Host32.c_str(), vm->Listener32Binding);
+				return Create<ElfClass::x86>(vm, handle, arguments, environment, vm->Settings->Process.Host32.c_str(), vm->Listener32Binding);
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
 			case LINUX_ELFCLASS64: 
-				return Create<LINUX_ELFCLASS64>(vm, handle, arguments, environment, vm->Settings->Process.Host64.c_str(), vm->Listener64Binding);
+				return Create<ElfClass::x86_64>(vm, handle, arguments, environment, vm->Settings->Process.Host64.c_str(), vm->Listener64Binding);
 #endif
 			// Any other ELFCLASS -> ENOEXEC	
 			default: throw LinuxException(LINUX_ENOEXEC);
@@ -114,30 +114,29 @@ std::unique_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 //	hostpath	- Path to the external host to load
 //	hostargs	- Command line arguments to pass to the host
 
-template <int elfclass>
+template <ElfClass _class>
 static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
 	const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs)
 {
+	using elf = elf_traits<_class>;
+
 	std::unique_ptr<ElfImage>		executable;				// The main ELF binary image to be loaded
 	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
 
 	// Create the external host process (suspended by default)
+	// todo: need the handles
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 
 	try {
 
 		// Attempt to load the binary image into the process, then check for an interpreter
-		executable = ElfImage::Load<elfclass>(HandleStreamReader(handle), host->ProcessHandle);
+		executable = ElfImage::Load<_class>(HandleStreamReader(handle), host->ProcessHandle);
 		if(executable->Interpreter) {
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
 			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(std::to_tstring(executable->Interpreter).c_str());
-			interpreter = ElfImage::Load<elfclass>(HandleStreamReader(interphandle), host->ProcessHandle);
+			interpreter = ElfImage::Load<_class>(HandleStreamReader(interphandle), host->ProcessHandle);
 		}
-
-		//
-		// TODO: CONSTRUCT AUXILIARY VECTORS HERE
-		//
 
 		// Construct the ELF arguments stack image for the hosted process
 		ElfArguments args(argv, envp);
@@ -147,7 +146,7 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		if(executable->ProgramHeaders) {
 
 			args.AppendAuxiliaryVector(LINUX_AT_PHDR, executable->ProgramHeaders);				// 3
-			args.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(uapi::Elf32_Phdr));				// 4 - TODO with elf_traits
+			args.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(typename elf::progheader_t));		// 4
 			args.AppendAuxiliaryVector(LINUX_AT_PHNUM, executable->NumProgramHeaders);			// 5
 		}
 		args.AppendAuxiliaryVector(LINUX_AT_PAGESZ, MemoryRegion::PageSize);					// 6
@@ -159,7 +158,7 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		(LINUX_AT_EUID);																		// 12
 		(LINUX_AT_GID);																			// 13
 		(LINUX_AT_EGID);																		// 14
-		args.AppendAuxiliaryVector(LINUX_AT_PLATFORM, "i686");									// 15 - TODO with elf_traits
+		args.AppendAuxiliaryVector(LINUX_AT_PLATFORM, elf::platform);							// 15
 		(LINUX_AT_HWCAP);																		// 16
 		(LINUX_AT_CLKTCK);																		// 17
 		args.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);											// 23
@@ -171,14 +170,11 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		//args.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);					// 33 - TODO
 
 		// Generate the stack image for the arguments into the hosted process address space
-		ElfArguments::StackImage img = args.GenerateStackImage<ElfClass::x86>(host->ProcessHandle);
+		ElfArguments::StackImage img = args.GenerateStackImage<_class>(host->ProcessHandle);
+		(img);
 
 		// The image was successfully loaded into the host, construct the Process instance
-		//return std::make_unique<Process>(std::move(host));
-
-		// TESTING ONLY
-		host->Terminate(E_FAIL);
-		return nullptr;
+		return std::make_unique<Process>(std::move(host) /*, img */);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

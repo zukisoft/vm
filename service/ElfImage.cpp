@@ -120,26 +120,26 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 //
 //	reader	- StreamReader instance positioned at the the start of the image data
 
-template <> std::unique_ptr<ElfImage> ElfImage::Load<LINUX_ELFCLASS32>(StreamReader& reader, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(StreamReader& reader, HANDLE process)
 {
 	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
-	return std::make_unique<ElfImage>(LoadBinary<LINUX_ELFCLASS32, uapi::Elf32_Ehdr, uapi::Elf32_Phdr, uapi::Elf32_Shdr>(reader, process));
+	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86>(reader, process));
 }
 
 //-----------------------------------------------------------------------------
 // ElfImage::Load (ELFCLASS64)
 //
-// Loads a 32-bit ELF image into virtual memory
+// Loads a 64-bit ELF image into virtual memory
 //
 // Arguments:
 //
 //	reader	- StreamReader instance positioned at the the start of the image data
 
 #ifdef _M_X64
-template <> std::unique_ptr<ElfImage> ElfImage::Load<LINUX_ELFCLASS64>(StreamReader& reader, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(StreamReader& reader, HANDLE process)
 {
 	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
-	return std::make_unique<ElfImage>(LoadBinary<LINUX_ELFCLASS64, uapi::Elf64_Ehdr, uapi::Elf64_Phdr, uapi::Elf64_Shdr>(reader, process));
+	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86_64>(reader, process));
 }
 #endif
 
@@ -148,32 +148,27 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<LINUX_ELFCLASS64>(StreamRea
 //
 // Loads an ELF binary image into virtual memory
 //
-// Template Arguments:
-//
-//	elfclass	- Expected ELF binary class value
-//	ehdr_t		- ELF header structure type
-//	phdr_t		- ELF program header structure type
-//	shdr_t		- ELF section header structure type
-//
 // Arguments:
 //
 //	reader				- StreamReader instance for the binary image data
 //	process				- Handle to the process in which to load the image
 
-template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
+template <ElfClass _class>
 ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 {
+	using elf = elf_traits<_class>;
+
 	Metadata						metadata;		// Metadata to return about the loaded image
-	ehdr_t							elfheader;		// ELF binary image header structure
+	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
 	std::unique_ptr<MemoryRegion>	region;			// Allocated virtual memory region
 
 	// Acquire a copy of the ELF header from the binary file and validate it
-	size_t read = InProcessRead(reader, 0, &elfheader, sizeof(ehdr_t));
-	if(read != sizeof(ehdr_t)) throw Exception(E_TRUNCATEDELFHEADER);
-	ValidateHeader<elfclass, ehdr_t, phdr_t, shdr_t>(&elfheader);
+	size_t read = InProcessRead(reader, 0, &elfheader, sizeof(typename elf::elfheader_t));
+	if(read != sizeof(typename elf::elfheader_t)) throw Exception(E_TRUNCATEDELFHEADER);
+	ValidateHeader<_class>(&elfheader);
 
 	// Read all of the program headers from the binary image file into a heap buffer
-	HeapBuffer<phdr_t> progheaders(elfheader.e_phnum);
+	HeapBuffer<typename elf::progheader_t> progheaders(elfheader.e_phnum);
 	read = InProcessRead(reader, elfheader.e_phoff, &progheaders, progheaders.Size);
 	if(read != progheaders.Size) throw Exception(E_ELFIMAGETRUNCATED);
 
@@ -185,7 +180,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	for(size_t index = 0; index < progheaders.Count; index++) {
 
 		// Pull out a reference to the current program header structure
-		const phdr_t& progheader = progheaders[index];
+		const typename elf::progheader_t& progheader = progheaders[index];
 
 		// PT_LOAD - Loadable segment
 		if((progheader.p_type == LINUX_PT_LOAD) && (progheader.p_memsz)) {
@@ -224,7 +219,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	for(size_t index = 0; index < progheaders.Count; index++) {
 
 		// Pull out a reference to the current program header structure
-		const phdr_t& progheader = progheaders[index];
+		const typename elf::progheader_t& progheader = progheaders[index];
 
 		// PT_PHDR - if it falls within the boundaries of the loadable segments, set this so that it can be passed into
 		// the hosted process as an auxiliary vector
@@ -292,27 +287,22 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 //
 // Validates an ELF binary header; this is a helper function to LoadBinary
 //
-// Template Arguments:
-//
-//	elfclass	- Expected ELF binary class value
-//	ehdr_t		- ELF header structure type
-//	phdr_t		- ELF program header structure type
-//	shdr_t		- ELF section header structure type
-//
 // Arguments:
 //
 //	elfheader	- Pointer to the ELF header loaded by LoadBinary
 
-template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
-void ElfImage::ValidateHeader(const ehdr_t* elfheader)
+template <ElfClass _class>
+void ElfImage::ValidateHeader(const typename elf_traits<_class>::elfheader_t* elfheader)
 {
+	using elf = elf_traits<_class>;
+
 	if(!elfheader) throw Exception(E_POINTER);
 
 	// Check the ELF header magic number
 	if(memcmp(&elfheader->e_ident[LINUX_EI_MAG0], LINUX_ELFMAG, LINUX_SELFMAG) != 0) throw Exception(E_INVALIDELFMAGIC);
 
 	// Verify the ELF class is appropriate for this image loader instance
-	if(elfheader->e_ident[LINUX_EI_CLASS] != elfclass) throw Exception(E_INVALIDELFCLASS, elfheader->e_ident[LINUX_EI_CLASS]);
+	if(elfheader->e_ident[LINUX_EI_CLASS] != elf::elfclass) throw Exception(E_INVALIDELFCLASS, elfheader->e_ident[LINUX_EI_CLASS]);
 
 	// Verify the endianness and version of the ELF binary
 	if(elfheader->e_ident[LINUX_EI_DATA] != LINUX_ELFDATA2LSB) throw Exception(E_INVALIDELFENCODING, elfheader->e_ident[LINUX_EI_DATA]);
@@ -321,18 +311,17 @@ void ElfImage::ValidateHeader(const ehdr_t* elfheader)
 	// Only ET_EXEC and ET_DYN images can currently be loaded
 	if((elfheader->e_type != LINUX_ET_EXEC) && (elfheader->e_type != LINUX_ET_DYN)) throw Exception(E_INVALIDELFTYPE, elfheader->e_type);
 
-	// The machine type must either be x86 (32 bit) or x86-64 (64 bit)
-	const int elfmachinetype = (elfclass == LINUX_ELFCLASS32) ? LINUX_EM_386 : LINUX_EM_X86_64;
-	if(elfheader->e_machine != elfmachinetype) throw Exception(E_INVALIDELFMACHINETYPE, elfheader->e_machine);
+	// The machine type must match the value defined for the elf_traits<>
+	if(elfheader->e_machine != elf::machinetype) throw Exception(E_INVALIDELFMACHINETYPE, elfheader->e_machine);
 
 	// Verify that the version code matches the ELF headers used
 	if(elfheader->e_version != LINUX_EV_CURRENT) throw Exception(E_INVALIDELFVERSION, elfheader->e_version);
 
 	// Verify that the length of the header is the same size as the Elfxx_Ehdr struct and that the
 	// header entries are at least as big as the known structures
-	if(elfheader->e_ehsize != sizeof(ehdr_t)) throw Exception(E_ELFHEADERFORMAT);
-	if((elfheader->e_phentsize) && (elfheader->e_phentsize < sizeof(phdr_t))) throw Exception(E_ELFPROGHEADERFORMAT);
-	if((elfheader->e_shentsize) && (elfheader->e_shentsize < sizeof(shdr_t))) throw Exception(E_ELFSECTHEADERFORMAT);
+	if(elfheader->e_ehsize != sizeof(typename elf::elfheader_t)) throw Exception(E_ELFHEADERFORMAT);
+	if((elfheader->e_phentsize) && (elfheader->e_phentsize < sizeof(typename elf::progheader_t))) throw Exception(E_ELFPROGHEADERFORMAT);
+	if((elfheader->e_shentsize) && (elfheader->e_shentsize < sizeof(typename elf::sectheader_t))) throw Exception(E_ELFSECTHEADERFORMAT);
 }
 
 //-----------------------------------------------------------------------------

@@ -235,11 +235,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	std::unique_ptr<MemoryRegion> allocation = MemoryRegion::Reserve(process, imagelen, MEM_COMMIT | MEM_TOP_DOWN);
 
 	// If there is any data in the information block, write that into the hosted process
-	if(m_info.data() && !WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) {
-		
-		DWORD dw = GetLastError();
-		throw Win32Exception();
-	}
+	if(m_info.data() && !WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) throw Win32Exception();
 	
 	// Use a local heap buffer to collect all of the stack image data locally before writing it
 	HeapBuffer<uint8_t> stackimage(imagelen - stackoffset);
@@ -253,7 +249,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	// ARGV
 	for_each(m_argv.begin(), m_argv.end(), [&](uintptr_t& offset) {
 
-		// verify resultant pointer on x86
+		// todo: verify resultant pointer on x86
 		next = Write<typename elf::addr_t>(next, allocptr + offset);
 	});
 
@@ -263,7 +259,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	// ENVP
 	for_each(m_envp.begin(), m_envp.end(), [&](uintptr_t& offset) {
 
-		// verify resultant pointer on x86
+		// todo: verify resultant pointer on x86
 		next = Write<typename elf::addr_t>(next, allocptr + offset);
 	});
 
@@ -277,6 +273,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 		typename elf::addr_t type = static_cast<typename elf::addr_t>(std::abs(auxv.a_type));
 
 		// If a_type is positive, this is a straight value, otherwise it's an offset into the information block
+		// todo: verify type conversions on x64
 		if(auxv.a_type >= 0) next = Write<typename elf::auxv_t>(next, { type, auxv.a_val });
 		else next = Write<typename elf::auxv_t>(next, { type, allocptr + auxv.a_val });
 	});
@@ -292,11 +289,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 #endif
 
 	void* pv = reinterpret_cast<uint8_t*>(allocation->Pointer) + stackoffset;
-	if(!WriteProcessMemory(process, pv, &stackimage, stackimage.Size, nullptr)) {
-		
-		DWORD dw = GetLastError();
-		throw Win32Exception();
-	}
+	if(!WriteProcessMemory(process, pv, &stackimage, stackimage.Size, nullptr)) throw Win32Exception();
 
 	// detach the allocation and return
 	return StackImage { reinterpret_cast<uint8_t*>(allocation->Detach()) + stackoffset, stackimage.Size };

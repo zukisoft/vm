@@ -62,8 +62,30 @@ template <> struct elf_traits<ElfClass::x86>
 	typedef uapi::Elf32_Ehdr		elfheader_t;
 	typedef uapi::Elf32_Phdr		progheader_t;
 	typedef uapi::Elf32_Shdr		sectheader_t;
+
+	// elfclass
+	//
+	// Defines the ELFCLASS value for this elf_traits<>
+	static const int elfclass = LINUX_ELFCLASS32;
+
+	// machinetype
+	//
+	// Defines the ELF_EM value for this elf_traits<>
+	static const int machinetype = LINUX_EM_386;
+
+	// platform
+	//
+	// Defines the platform string for this elf_traits<>
+	static const uapi::char_t* platform;
+
+	elf_traits(const elf_traits&)=delete;
+	elf_traits& operator=(const elf_traits&)=delete;
 };
 
+// elf_traits<x86> static initializers
+//
+__declspec(selectany)
+const uapi::char_t* elf_traits<ElfClass::x86>::platform = "i686";
 
 #ifdef _M_X64
 // elf_traits<x86_64>
@@ -75,7 +97,30 @@ template <> struct elf_traits<ElfClass::x86_64>
 	typedef uapi::Elf64_Ehdr		elfheader_t;
 	typedef uapi::Elf64_Phdr		progheader_t;
 	typedef uapi::Elf64_Shdr		sectheader_t;
+
+	// elfclass
+	//
+	// Defines the ELFCLASS value for this elf_traits<>
+	static const int elfclass = LINUX_ELFCLASS64;
+
+	// machinetype
+	//
+	// Defines the ELF_EM value for this elf_traits<>
+	static const int machinetype = LINUX_EM_X86_64;
+
+	// platform
+	//
+	// Defines the platform string for this elf_traits<>
+	static const uapi::char_t* platform;
+
+	elf_traits(const elf_traits&)=delete;
+	elf_traits& operator=(const elf_traits&)=delete;
 };
+
+// elf_traits<x86_64> static initializers
+//
+__declspec(selectany)
+const uapi::char_t* elf_traits<ElfClass::x86_64>::platform = "x86_64";
 #endif
 
 //-----------------------------------------------------------------------------

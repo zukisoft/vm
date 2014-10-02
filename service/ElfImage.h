@@ -27,6 +27,7 @@
 #include <linux/elf.h>
 #include <linux/elf-em.h>
 #include <linux/fs.h>
+#include "ElfClass.h"
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
@@ -55,12 +56,12 @@ public:
 	// Load (StreamReader)
 	//
 	// Loads an ELF image into memory from a StreamReader instance
-	template <int elfclass>
+	template <ElfClass _class>
 	static std::unique_ptr<ElfImage> Load(StreamReader& reader, HANDLE process = INVALID_HANDLE_VALUE);
 
-	template <int elfclass>
+	template <ElfClass _class>
 	static std::unique_ptr<ElfImage> Load(StreamReader&& reader, HANDLE process = INVALID_HANDLE_VALUE)
-		{ return Load<elfclass>(std::forward<StreamReader&>(reader), process); }
+		{ return Load<_class>(std::forward<StreamReader&>(reader), process); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -136,14 +137,14 @@ private:
 	// LoadBinary
 	//
 	// Loads an ELF binary image into virtual memory
-	template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
+	template <ElfClass _class>
 	static Metadata LoadBinary(StreamReader& reader, HANDLE process);
 
 	// ValidateHeader
 	//
 	// Validates the contents of an ELF binary header
-	template <int elfclass, class ehdr_t, class phdr_t, class shdr_t>
-	static void ValidateHeader(const ehdr_t* elfheader);
+	template <ElfClass _class>
+	static void ValidateHeader(const typename elf_traits<_class>::elfheader_t* elfheader);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

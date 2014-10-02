@@ -28,6 +28,7 @@
 #include <memory>
 #include <linux/elf.h>
 #include "ElfArguments.h"
+#include "ElfClass.h"
 #include "ElfImage.h"
 #include "Exception.h"
 #include "HandleStreamReader.h"
@@ -109,7 +110,7 @@ private:
 	// Create (static)
 	//
 	// Creates a new process instance via an external Windows host binary
-	template <int elfclass>
+	template <ElfClass _class>
 	static std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
 		const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
