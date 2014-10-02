@@ -149,7 +149,7 @@ void ElfArguments::AppendAuxiliaryVector(int type, const void* buffer, size_t le
 void ElfArguments::AppendEnvironmentVariable(const uapi::char_t* keyandvalue)
 {
 	if(!keyandvalue) throw Exception(E_ARGUMENTNULL, "keyandvalue");
-	m_env.push_back(AppendInfo(keyandvalue, strlen(keyandvalue) + 1));
+	m_envp.push_back(AppendInfo(keyandvalue, strlen(keyandvalue) + 1));
 }
 
 //-----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ void ElfArguments::AppendEnvironmentVariable(const uapi::char_t* key, const uapi
 	AppendInfo("=", 1);
 	AppendInfo(value, strlen(value) + 1);
 	
-	m_env.push_back(offset);
+	m_envp.push_back(offset);
 }
 
 //-----------------------------------------------------------------------------
@@ -226,51 +226,80 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	// Calculate the additional size required to hold the vectors
 	imagelen += sizeof(typename elf::addr_t);							// argc
 	imagelen += sizeof(typename elf::addr_t) * (m_argv.size() + 1);		// argv + NULL
-	imagelen += sizeof(typename elf::addr_t) * (m_env.size() + 1);		// envp + NULL
+	imagelen += sizeof(typename elf::addr_t) * (m_envp.size() + 1);		// envp + NULL
 	imagelen += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);		// auxv + AT_NULL
 	imagelen += sizeof(typename elf::addr_t);							// NULL
 	imagelen = AlignUp(imagelen, 16);									// alignment
 
-	// Allocate the memory to hold the arguments in the hosted process and dump the information block
+	// Allocate the memory to hold the arguments in the hosted process
 	std::unique_ptr<MemoryRegion> allocation = MemoryRegion::Reserve(process, imagelen, MEM_COMMIT | MEM_TOP_DOWN);
-	if(!WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) throw Win32Exception();
+
+	// If there is any data in the information block, write that into the hosted process
+	if(m_info.data() && !WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) {
+		
+		DWORD dw = GetLastError();
+		throw Win32Exception();
+	}
 	
 	// Use a local heap buffer to collect all of the stack image data locally before writing it
 	HeapBuffer<uint8_t> stackimage(imagelen - stackoffset);
 	memset(&stackimage, 0, stackimage.Size);
 
-	// StreamWriter class would be nice here
-	// Need to check boundaries for Class::x86 addr_t
+	uintptr_t allocptr = uintptr_t(allocation->Pointer);
 
 	// ARGC
 	uint8_t* next = Write<typename elf::addr_t>(stackimage, static_cast<typename elf::addr_t>(m_argv.size()));
 
 	// ARGV
-	//for_each(m_argv.begin(), m_argv.end(), [&](typename elf::addr_t& offset) 
-	//	next = Write<typename elf::addr_t>(next, 
-//	//for_each(m_argv.begin(), m_argv.end(), [&](addr_t& offset) 
-//	//{ 
-//	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
-//	//	stackoffset += sizeof(addr_t);
-//	//});
-//	//stackoffset += sizeof(addr_t);		// null
-//
-//	//// ENVP
-//	//for_each(m_env.begin(), m_env.end(), [&](addr_t& offset) 
-//	//{ 
-//	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
-//	//	stackoffset += sizeof(addr_t);
-//	//});
-//	//stackoffset += sizeof(addr_t);		// null
+	for_each(m_argv.begin(), m_argv.end(), [&](uintptr_t& offset) {
 
-// check for in-process/out-process writes
+		// verify resultant pointer on x86
+		next = Write<typename elf::addr_t>(next, allocptr + offset);
+	});
 
-	// do this in 2 writes to the target process only; first dump the info
-	// block then all of the arguments.  Use a HeapBuffer or something
-	//
-	// Consider renaming/aligning to more how ElfImage is called ("Load") ??
+	// NULL
+	next = Write<typename elf::addr_t>(next, 0);
 
-	return StackImage { reinterpret_cast<uint8_t*>(allocation->Pointer) + stackoffset, stackimage.Size };
+	// ENVP
+	for_each(m_envp.begin(), m_envp.end(), [&](uintptr_t& offset) {
+
+		// verify resultant pointer on x86
+		next = Write<typename elf::addr_t>(next, allocptr + offset);
+	});
+
+	// NULL
+	next = Write<typename elf::addr_t>(next, 0);
+
+	// AUXV
+	for_each(m_auxv.begin(), m_auxv.end(), [&](auxvec_t auxv) {
+
+		// Cast the stored AT_ type code back into a non-negative addr_t
+		typename elf::addr_t type = static_cast<typename elf::addr_t>(std::abs(auxv.a_type));
+
+		// If a_type is positive, this is a straight value, otherwise it's an offset into the information block
+		if(auxv.a_type >= 0) next = Write<typename elf::auxv_t>(next, { type, auxv.a_val });
+		else next = Write<typename elf::auxv_t>(next, { type, allocptr + auxv.a_val });
+	});
+
+	// AT_NULL
+	next = Write<typename elf::auxv_t>(next, { LINUX_AT_NULL, 0 });
+
+	// TERMINATOR
+	next  = Write<typename elf::addr_t>(next, 0);
+
+#ifdef _DEBUG
+	// todo: align next and check it against allocated length
+#endif
+
+	void* pv = reinterpret_cast<uint8_t*>(allocation->Pointer) + stackoffset;
+	if(!WriteProcessMemory(process, pv, &stackimage, stackimage.Size, nullptr)) {
+		
+		DWORD dw = GetLastError();
+		throw Win32Exception();
+	}
+
+	// detach the allocation and return
+	return StackImage { reinterpret_cast<uint8_t*>(allocation->Detach()) + stackoffset, stackimage.Size };
 }
 
 //-----------------------------------------------------------------------------
@@ -299,7 +328,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 //	image.AllocationLength = stackoffset;
 //	image.AllocationLength += sizeof(typename elf::addr_t);								// argc
 //	image.AllocationLength += sizeof(typename elf::addr_t) * (m_argv.size() + 1);			// argv + NULL
-//	image.AllocationLength += sizeof(typename elf::addr_t) * (m_env.size() + 1);			// envp + NULL
+//	image.AllocationLength += sizeof(typename elf::addr_t) * (m_envp.size() + 1);			// envp + NULL
 //	image.AllocationLength += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);			// auxv + AT_NULL
 //	image.AllocationLength += sizeof(typename elf::addr_t);								// NULL
 //	image.AllocationLength = AlignUp(image.AllocationLength, 16);			// alignment
@@ -334,7 +363,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 //	//stackoffset += sizeof(addr_t);		// null
 //
 //	//// ENVP
-//	//for_each(m_env.begin(), m_env.end(), [&](addr_t& offset) 
+//	//for_each(m_envp.begin(), m_envp.end(), [&](addr_t& offset) 
 //	//{ 
 //	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
 //	//	stackoffset += sizeof(addr_t);
@@ -350,7 +379,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 //	writer(stackimage, reinterpret_cast<void*>(image.StackImage), stackimage.Size);
 //
 //	//// envp
-//	//for_each(m_env.begin(), m_env.end(), [&](addr_t& addr) { writer(&addr, out + offset, sizeof(addr_t)); offset += sizeof(addr_t); });
+//	//for_each(m_envp.begin(), m_envp.end(), [&](addr_t& addr) { writer(&addr, out + offset, sizeof(addr_t)); offset += sizeof(addr_t); });
 //	//offset += sizeof(addr_t);
 //
 //	//// auxv
@@ -383,7 +412,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	//AppendInfo(static_cast<addr_t>(NULL));
 
 	//// ENVIRONMENT VARIABLES
-	//for_each(m_env.begin(), m_env.end(), [&](addr_t addr) { AppendInfo(addr); });
+	//for_each(m_envp.begin(), m_envp.end(), [&](addr_t addr) { AppendInfo(addr); });
 	//AppendInfo(static_cast<addr_t>(NULL));
 
 	//// AUXILIARY VECTORS

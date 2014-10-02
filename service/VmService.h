@@ -110,22 +110,10 @@ private:
 	// 32-bit host test
 	void OnUserControl128(void)
 	{
-		auto test = ElfArguments::Create();
-		test->AppendArgument("Hello World");
-		test->AppendArgument("Moochos Smoochos");
-		test->AppendEnvironmentVariable("KeyWithNoValue", nullptr);
-		test->AppendEnvironmentVariable("KeyAndValuePair=SomethingInteresting");
-
-		auto dummy = test->GenerateStackImage<ElfClass::x86>(INVALID_HANDLE_VALUE);
-		(dummy);
-
-		//ElfArguments::MemoryImage img = test.GenerateMemoryImage(
-		//	[](size_t length) -> void* { void* result = new uint8_t[length]; memset(result, 0, length); return result; }, 
-		//	[](const void* source, void* destination, size_t length) -> void { memcpy(destination, source, length); });
-		//
-		//delete[] reinterpret_cast<uint8_t*>(img.AllocationBase);
-
 		//FileSystem::HandlePtr p = m_vfs->Open(L"/sbin/init", LINUX_O_RDONLY, 0);
+		//auto x = shared_from_this();
+		//std::shared_ptr<VirtualMachine> x = shared_from_this();
+		std::unique_ptr<Process> proc = Process::Create(shared_from_this(), "/sbin/init", nullptr, nullptr);
 		//std::tstring binpath = m_settings->Process.Host32;
 		//std::unique_ptr<Host> h = Host::TESTME(p, binpath.c_str(), m_bindstr32.c_str(), m_settings->Process.HostTimeout);
 	}

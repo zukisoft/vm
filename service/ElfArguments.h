@@ -24,6 +24,7 @@
 #define __ELFARGUMENTS_H_
 #pragma once
 
+#include <cstdlib>
 #include <memory>
 #include <vector>
 #include "ElfClass.h"
@@ -80,6 +81,9 @@
 class ElfArguments
 {
 public:
+
+	// decide
+	ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
 
 	// StackImage Structure
 	//
@@ -148,8 +152,8 @@ private:
 
 	// Instance Constructor
 	//
-	ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
-	friend std::unique_ptr<ElfArguments> std::make_unique<ElfArguments, const uapi::char_t**&, const uapi::char_t**&>(const uapi::char_t**&, const uapi::char_t**&);
+	//ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
+	//friend std::unique_ptr<ElfArguments> std::make_unique<ElfArguments, const uapi::char_t**&, const uapi::char_t**&>(const uapi::char_t**&, const uapi::char_t**&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -186,7 +190,7 @@ private:
 
 	std::vector<uint8_t>		m_info;			// Information block
 	std::vector<uintptr_t>		m_argv;			// Argument string offsets
-	std::vector<uintptr_t>		m_env;			// Environment var string offsets
+	std::vector<uintptr_t>		m_envp;			// Environment var string offsets
 	std::vector<auxvec_t>		m_auxv;			// Auxiliary vectors / offsets
 };
 

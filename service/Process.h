@@ -27,6 +27,7 @@
 #include <array>
 #include <memory>
 #include <linux/elf.h>
+#include "ElfArguments.h"
 #include "ElfImage.h"
 #include "Exception.h"
 #include "HandleStreamReader.h"
@@ -59,7 +60,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance
-	std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const uapi::char_t* path,
+	static std::unique_ptr<Process> Create(std::shared_ptr<VirtualMachine> vm, const uapi::char_t* path,
 		const uapi::char_t** arguments, const uapi::char_t** environment);
 
 	// Resume

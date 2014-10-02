@@ -90,9 +90,13 @@ std::unique_ptr<Host> Host::Create(const tchar_t* path, const tchar_t* arguments
 
 	try {
 
-		// Add the array of handles as inheritable handles for the client process
-		if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, numhandles * sizeof(HANDLE), 
-			nullptr, nullptr)) throw Win32Exception();
+		// UpdateProcThreadAttribute will fail if there are no handles in the specified array
+		if((handles != nullptr) && (numhandles > 0)) {
+			
+			// Add the array of handles as inheritable handles for the client process
+			if(!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, numhandles * sizeof(HANDLE), 
+				nullptr, nullptr)) throw Win32Exception();
+		}
 
 		// Attempt to launch the process using the CREATE_SUSPENDED and EXTENDED_STARTUP_INFO_PRESENT flag
 		zero_init<STARTUPINFOEX> startinfo;

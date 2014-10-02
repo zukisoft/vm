@@ -72,12 +72,6 @@ namespace uapi {
 	//
 	typedef struct _auxv_32 { 
 
-	#ifdef __cplusplus
-		// Convenience initializers for C++
-		_auxv_32(Elf32_Addr type) : a_type(type), a_val(0) {}
-		_auxv_32(Elf32_Addr type, Elf32_Addr val) : a_type(type), a_val(val) {}
-	#endif
-
 		Elf32_Addr		a_type;
 		Elf32_Addr		a_val;
 
@@ -86,12 +80,6 @@ namespace uapi {
 	// Elf64_auxv_t
 	//
 	typedef struct _auxv_64 {
-
-	#ifdef __cplusplus
-		// Convenience initializers for C++
-		_auxv_64(Elf64_Addr type) : a_type(type), a_val(0) {}
-		_auxv_64(Elf64_Addr type, Elf64_Addr val) : a_type(type), a_val(val) {}
-	#endif
 
 		Elf64_Addr		a_type;
 		Elf64_Addr		a_val;

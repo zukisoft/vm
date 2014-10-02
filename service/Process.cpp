@@ -39,12 +39,12 @@ static uint8_t UTF16_SCRIPT_MAGIC[]		= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x2
 //
 // Arguments:
 //
-//	vm				- Reference to the VirtualMachine instance
+//	vm				- VirtualMachine instance
 //	path			- Path to the file system object to execute as a process
 //	arguments		- Pointer to an array of command line argument strings
 //	environment		- Pointer to the process environment variables
 
-std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const uapi::char_t* path,
+std::unique_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, const uapi::char_t* path,
 	const uapi::char_t** arguments, const uapi::char_t** environment)
 {
 	if(!path) throw LinuxException(LINUX_EFAULT);
@@ -121,9 +121,6 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 	std::unique_ptr<ElfImage>		executable;				// The main ELF binary image to be loaded
 	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
 
-	(argv);		// TODO --> pass to auxiliary vector generator
-	(envp);		// TODO --> pass to auxiliary vector generator
-
 	// Create the external host process (suspended by default)
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 
@@ -142,8 +139,46 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		// TODO: CONSTRUCT AUXILIARY VECTORS HERE
 		//
 
+		// Construct the ELF arguments stack image for the hosted process
+		ElfArguments args(argv, envp);
+
+		///////////////////////////
+		(LINUX_AT_EXECFD);																		// 2
+		if(executable->ProgramHeaders) {
+
+			args.AppendAuxiliaryVector(LINUX_AT_PHDR, executable->ProgramHeaders);				// 3
+			args.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(uapi::Elf32_Phdr));				// 4 - TODO with elf_traits
+			args.AppendAuxiliaryVector(LINUX_AT_PHNUM, executable->NumProgramHeaders);			// 5
+		}
+		args.AppendAuxiliaryVector(LINUX_AT_PAGESZ, MemoryRegion::PageSize);					// 6
+		if(interpreter) args.AppendAuxiliaryVector(LINUX_AT_BASE, interpreter->BaseAddress);	// 7
+		args.AppendAuxiliaryVector(LINUX_AT_FLAGS, 0);											// 8 - TODO
+		args.AppendAuxiliaryVector(LINUX_AT_ENTRY, executable->EntryPoint);						// 9
+		(LINUX_AT_NOTELF);																		// 10 - NOT IMPLEMENTED
+		(LINUX_AT_UID);																			// 11
+		(LINUX_AT_EUID);																		// 12
+		(LINUX_AT_GID);																			// 13
+		(LINUX_AT_EGID);																		// 14
+		args.AppendAuxiliaryVector(LINUX_AT_PLATFORM, "i686");									// 15 - TODO with elf_traits
+		(LINUX_AT_HWCAP);																		// 16
+		(LINUX_AT_CLKTCK);																		// 17
+		args.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);											// 23
+		(LINUX_AT_BASE_PLATFORM);																// 24 - NOT IMPLEMENTED
+		//args.AppendAuxiliaryVector(LINUX_AT_RANDOM, &pseudorandom, sizeof(GUID));				// 25 - TODO
+		(LINUX_AT_HWCAP2);																		// 26
+		(LINUX_AT_EXECFN);																		// 31
+		(LINUX_AT_SYSINFO);																		// 32
+		//args.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);					// 33 - TODO
+
+		// Generate the stack image for the arguments into the hosted process address space
+		ElfArguments::StackImage img = args.GenerateStackImage<ElfClass::x86>(host->ProcessHandle);
+
 		// The image was successfully loaded into the host, construct the Process instance
-		return std::make_unique<Process>(std::move(host));
+		//return std::make_unique<Process>(std::move(host));
+
+		// TESTING ONLY
+		host->Terminate(E_FAIL);
+		return nullptr;
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
