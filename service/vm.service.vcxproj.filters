@@ -320,6 +320,9 @@
     <ClInclude Include="ElfImage.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\Random.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -522,6 +525,9 @@
     </ClCompile>
     <ClCompile Include="ElfImage.cpp">
       <Filter>Source Files\Elf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Random.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -35,6 +35,7 @@
 #include "HeapBuffer.h"
 #include "Host.h"
 #include "LinuxException.h"
+#include "Random.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
@@ -104,8 +105,22 @@ private:
 	
 	} MagicNumbers;
 
+	// SystemInfo
+	//
+	// Used to initialize a static SYSTEM_INFO structure
+	struct SystemInfo : public SYSTEM_INFO
+	{
+		SystemInfo() { GetNativeSystemInfo(static_cast<SYSTEM_INFO*>(this)); }
+	};
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
+
+	// CheckHostProcessClass (static)
+	//
+	// Verifies that the created host process type matches what is expected
+	template <ElfClass _class>
+	static void CheckHostProcessClass(HANDLE process);
 
 	// Create (static)
 	//
@@ -117,7 +132,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>		m_host;		// Hosted windows process
+	std::unique_ptr<Host>	m_host;			// Hosted windows process
+	static SystemInfo		s_sysinfo;		// System information
 };
 
 //-----------------------------------------------------------------------------

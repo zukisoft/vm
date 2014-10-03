@@ -32,6 +32,11 @@ static uint8_t ANSI_SCRIPT_MAGIC[]		= { 0x23, 0x21, 0x20 };
 static uint8_t UTF8_SCRIPT_MAGIC[]		= { 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20 };
 static uint8_t UTF16_SCRIPT_MAGIC[]		= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
 
+// Process::s_sysinfo
+//
+// Static SYSTEM_INFO information
+Process::SystemInfo Process::s_sysinfo;
+
 //-----------------------------------------------------------------------------
 // Process::Create (static)
 //
@@ -101,6 +106,47 @@ std::unique_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 }
 
 //-----------------------------------------------------------------------------
+// Process::CheckHostProcessClass<x86> (static, private)
+//
+// Verifies that the created host process is 32-bit
+//
+// Arguments:
+//
+//	process		- Handle to the created host process
+
+template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE process)
+{
+	BOOL			result;				// Result from IsWow64Process
+
+	// 32-bit systems can only create 32-bit processes; nothing to worry about
+	if(s_sysinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL) return;
+
+	// 64-bit system; verify that the process is running under WOW64
+	if(!IsWow64Process(process, &result)) throw Win32Exception();
+	if(!result) throw Exception(E_FAIL);	// <--- todo: Exception
+}
+
+//-----------------------------------------------------------------------------
+// Process::CheckHostProcessClass<x86_64> (static, private)
+//
+// Verifies that the created host process is 64-bit
+//
+// Arguments:
+//
+//	process		- Handle to the created host process
+
+#ifdef _M_X64
+template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE process)
+{
+	BOOL				result;				// Result from IsWow64Process
+
+	// 64-bit system; verify that the process is not running under WOW64
+	if(!IsWow64Process(process, &result)) throw Win32Exception();
+	if(result) throw Exception(E_FAIL);		// <-- todo: exception
+}
+#endif
+
+//-----------------------------------------------------------------------------
 // Process::Create (static, private)
 //
 // Constructs a new process instance from an ELF binary
@@ -122,12 +168,18 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 
 	std::unique_ptr<ElfImage>		executable;				// The main ELF binary image to be loaded
 	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
+	uint8_t							random[16];				// 16-bytes of random data for AT_RANDOM auxvec
 
-	// Create the external host process (suspended by default)
-	// todo: need the handles
+	// Create the external host process (suspended by default) and verify the class/architecture
+	// as this will all go south very quickly if it's not what we're expecting it to be
+	// todo: need the handles to stuff
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+	CheckHostProcessClass<_class>(host->ProcessHandle);
 
 	try {
+
+		// Generate the AT_RANDOM data to be associated with this process
+		Random::Generate(random, 16);
 
 		// Attempt to load the binary image into the process, then check for an interpreter
 		executable = ElfImage::Load<_class>(HandleStreamReader(handle), host->ProcessHandle);
@@ -163,7 +215,7 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		(LINUX_AT_CLKTCK);																		// 17
 		args.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);											// 23
 		(LINUX_AT_BASE_PLATFORM);																// 24 - NOT IMPLEMENTED
-		//args.AppendAuxiliaryVector(LINUX_AT_RANDOM, &pseudorandom, sizeof(GUID));				// 25 - TODO
+		args.AppendAuxiliaryVector(LINUX_AT_RANDOM, random, 16);								// 25
 		(LINUX_AT_HWCAP2);																		// 26
 		(LINUX_AT_EXECFN);																		// 31
 		(LINUX_AT_SYSINFO);																		// 32
