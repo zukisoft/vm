@@ -72,6 +72,12 @@
     <Filter Include="Header Files\System Calls">
       <UniqueIdentifier>{7813127d-e6b1-4b3c-8869-be5edc4b6a8a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Elf">
+      <UniqueIdentifier>{c4bb8625-8a77-45af-94c5-fc57c0663cf9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Elf">
+      <UniqueIdentifier>{b644b66c-6e6a-424b-a08e-5755df58d637}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -281,9 +287,6 @@
     <ClInclude Include="..\common\linux\elf-em.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="ElfImage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\HeapBuffer.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -305,14 +308,17 @@
     <ClInclude Include="Host.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ElfArguments.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\auxvec.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="ElfArguments.h">
+      <Filter>Header Files\Elf</Filter>
+    </ClInclude>
     <ClInclude Include="ElfClass.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Elf</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfImage.h">
+      <Filter>Header Files\Elf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -505,9 +511,6 @@
     <ClCompile Include="FileDescriptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ElfImage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="HandleStreamReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -515,7 +518,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ElfArguments.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Elf</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfImage.cpp">
+      <Filter>Source Files\Elf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

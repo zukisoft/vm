@@ -32,6 +32,24 @@ template ElfArguments::StackImage ElfArguments::GenerateStackImage<ElfClass::x86
 template ElfArguments::StackImage ElfArguments::GenerateStackImage<ElfClass::x86_64>(HANDLE);
 #endif
 
+//-----------------------------------------------------------------------------
+// ::BufferWrite
+//
+// Helper function for ElfArguments::GenerateStackImage, writes a value of
+// a specific data type into a buffer and returns an updated pointer
+//
+// Arguments:
+//
+//	dest		- Destination buffer pointer
+//	source		- Source value
+
+template <typename _type>
+inline uint8_t* BufferWrite(uint8_t* dest, const _type& source)
+{
+	*reinterpret_cast<_type*>(dest) = source;
+	return dest + sizeof(_type);
+}
+
 //---------------------------------------------------------------------------
 // ElfArguments Constructor
 //
@@ -168,7 +186,7 @@ void ElfArguments::AppendEnvironmentVariable(const uapi::char_t* key, const uapi
 	if(!value) value = "\0";
 
 	// Append the key, an equal sign and the value to the information block
-	uintptr_t offset = AppendInfo(key, strlen(key));
+	uint32_t offset = AppendInfo(key, strlen(key));
 	AppendInfo("=", 1);
 	AppendInfo(value, strlen(value) + 1);
 	
@@ -185,22 +203,21 @@ void ElfArguments::AppendEnvironmentVariable(const uapi::char_t* key, const uapi
 //	buffer		- Buffer with data to be appended or NULL to reserve
 //	length		- Length of the data to be appended
 
-uintptr_t ElfArguments::AppendInfo(const void* buffer, size_t length)
+uint32_t ElfArguments::AppendInfo(const void* buffer, size_t length)
 {
+	// Offsets are cast into unsigned 32-bit integers, the max must be smaller
+	static_assert(MAX_INFO_BUFFER < UINT32_MAX, "ElfArguments::MAX_INFO_BUFFER must not be >= UINT32_MAX");
+
 	size_t offset = m_info.size();		// Get current end as the offset
 
 	// Use a const byte pointer and the range-insert method to copy
 	const uint8_t* pointer = reinterpret_cast<const uint8_t*>(buffer);
 	m_info.insert(m_info.end(), pointer, pointer + length);
 
-	return offset;
-}
+	// There is a limit to how big this buffer can be
+	if(m_info.size() > MAX_INFO_BUFFER) throw Exception(E_ELFARGUMENTSTOOBIG, static_cast<uint32_t>(m_info.size()), MAX_INFO_BUFFER);
 
-template <typename _type>
-inline uint8_t* Write(uint8_t* dest, const _type& source)
-{
-	*reinterpret_cast<_type*>(dest) = source;
-	return dest + sizeof(_type);
+	return static_cast<uint32_t>(offset);
 }
 
 //-----------------------------------------------------------------------------
@@ -210,15 +227,15 @@ inline uint8_t* Write(uint8_t* dest, const _type& source)
 //
 // Arguments:
 //
-//	TODO
+//	process		- Handle to the target process
 
 template <ElfClass _elfclass>
 ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 {
 	using elf = elf_traits<_elfclass>;
 
-	size_t					stackoffset;
-	size_t					imagelen;
+	size_t					imagelen;					// Length of the entire image
+	size_t					stackoffset;				// Offset to the stack image
 
 	// Align the information block to 16 bytes; this becomes the start of the stack image
 	imagelen = stackoffset = AlignUp(m_info.size(), 16);
@@ -235,196 +252,50 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	std::unique_ptr<MemoryRegion> allocation = MemoryRegion::Reserve(process, imagelen, MEM_COMMIT | MEM_TOP_DOWN);
 
 	// If there is any data in the information block, write that into the hosted process
-	if(m_info.data() && !WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) throw Win32Exception();
+	try { if(m_info.data() && !WriteProcessMemory(process, allocation->Pointer, m_info.data(), m_info.size(), nullptr)) throw Win32Exception(); }
+	catch(Exception& ex) { throw Exception(E_ELFWRITEARGUMENTS, ex); }
 	
 	// Use a local heap buffer to collect all of the stack image data locally before writing it
 	HeapBuffer<uint8_t> stackimage(imagelen - stackoffset);
 	memset(&stackimage, 0, stackimage.Size);
 
-	uintptr_t allocptr = uintptr_t(allocation->Pointer);
+	// Cast the allocation pointer into an elf::addr_t for simpler arithmetic
+	typename elf::addr_t allocptr = reinterpret_cast<typename elf::addr_t>(allocation->Pointer);
 
 	// ARGC
-	uint8_t* next = Write<typename elf::addr_t>(stackimage, static_cast<typename elf::addr_t>(m_argv.size()));
+	uint8_t* next = BufferWrite<typename elf::addr_t>(stackimage, static_cast<typename elf::addr_t>(m_argv.size()));
 
-	// ARGV
-	for_each(m_argv.begin(), m_argv.end(), [&](uintptr_t& offset) {
+	// ARGV + NULL
+	for_each(m_argv.begin(), m_argv.end(), [&](uint32_t& offset) { next = BufferWrite<typename elf::addr_t>(next, allocptr + offset); });
+	next = BufferWrite<typename elf::addr_t>(next, 0);
 
-		// todo: verify resultant pointer on x86
-		next = Write<typename elf::addr_t>(next, allocptr + offset);
-	});
-
-	// NULL
-	next = Write<typename elf::addr_t>(next, 0);
-
-	// ENVP
-	for_each(m_envp.begin(), m_envp.end(), [&](uintptr_t& offset) {
-
-		// todo: verify resultant pointer on x86
-		next = Write<typename elf::addr_t>(next, allocptr + offset);
-	});
-
-	// NULL
-	next = Write<typename elf::addr_t>(next, 0);
+	// ENVP + NULL
+	for_each(m_envp.begin(), m_envp.end(), [&](uint32_t& offset) { next = BufferWrite<typename elf::addr_t>(next, allocptr + offset); });
+	next = BufferWrite<typename elf::addr_t>(next, 0);
 
 	// AUXV
 	for_each(m_auxv.begin(), m_auxv.end(), [&](auxvec_t auxv) {
 
 		// Cast the stored AT_ type code back into a non-negative addr_t
-		typename elf::addr_t type = static_cast<typename elf::addr_t>(std::abs(auxv.a_type));
+		typename elf::addr_t type = static_cast<typename elf::addr_t>(abs(auxv.a_type));
 
 		// If a_type is positive, this is a straight value, otherwise it's an offset into the information block
-		// todo: verify type conversions on x64
-		if(auxv.a_type >= 0) next = Write<typename elf::auxv_t>(next, { type, auxv.a_val });
-		else next = Write<typename elf::auxv_t>(next, { type, allocptr + auxv.a_val });
+		if(auxv.a_type >= 0) next = BufferWrite<typename elf::auxv_t>(next, { type, static_cast<typename elf::addr_t>(auxv.a_val) });
+		else next = BufferWrite<typename elf::auxv_t>(next, { type, allocptr + static_cast<typename elf::addr_t>(auxv.a_val) });
 	});
 
-	// AT_NULL
-	next = Write<typename elf::auxv_t>(next, { LINUX_AT_NULL, 0 });
+	// AT_NULL + TERMINATOR
+	next = BufferWrite<typename elf::auxv_t>(next, { LINUX_AT_NULL, 0 });
+	next = BufferWrite<typename elf::addr_t>(next, 0);
 
-	// TERMINATOR
-	next  = Write<typename elf::addr_t>(next, 0);
-
-#ifdef _DEBUG
-	// todo: align next and check it against allocated length
-#endif
-
+	// Write the stack image portion of the arguments into the host process address space
 	void* pv = reinterpret_cast<uint8_t*>(allocation->Pointer) + stackoffset;
-	if(!WriteProcessMemory(process, pv, &stackimage, stackimage.Size, nullptr)) throw Win32Exception();
+	try { if(!WriteProcessMemory(process, pv, &stackimage, stackimage.Size, nullptr)) throw Win32Exception(); }
+	catch(Exception& ex) { throw Exception(E_ELFWRITEARGUMENTS, ex); }
 
-	// detach the allocation and return
+	// Detach the MemoryRegion allocation and return the metadata to the caller
 	return StackImage { reinterpret_cast<uint8_t*>(allocation->Detach()) + stackoffset, stackimage.Size };
 }
-
-//-----------------------------------------------------------------------------
-// ElfArguments::GenerateMemoryImage
-//
-// Generates the memory image for the ELF arguments
-//
-// Arguments:
-//
-//	allocator	- Function used to allocate the memory required
-//	writer		- Function used to write data into the allocated memory
-
-//template <ElfClass _class>
-//auto ElfArguments<_class>::GenerateMemoryImage(allocator_func allocator, writer_func writer) -> MemoryImage
-//{
-//	zero_init<MemoryImage>			image;				// Resultant memory image data
-//	size_t							stackoffset;		// Offset into memory image of the stack
-//
-//	if(!allocator) throw Exception(E_ARGUMENTNULL, "allocator");
-//	if(!writer) throw Exception(E_ARGUMENTNULL, "writer");
-//
-//	// Align the information block to 16 bytes; this becomes the start of the stack image
-//	stackoffset = AlignUp(m_info.size(), 16);
-//
-//	// Calculate the additional size required to hold the vectors
-//	image.AllocationLength = stackoffset;
-//	image.AllocationLength += sizeof(typename elf::addr_t);								// argc
-//	image.AllocationLength += sizeof(typename elf::addr_t) * (m_argv.size() + 1);			// argv + NULL
-//	image.AllocationLength += sizeof(typename elf::addr_t) * (m_envp.size() + 1);			// envp + NULL
-//	image.AllocationLength += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);			// auxv + AT_NULL
-//	image.AllocationLength += sizeof(typename elf::addr_t);								// NULL
-//	image.AllocationLength = AlignUp(image.AllocationLength, 16);			// alignment
-//
-//	// Allocate the entire memory image at once using the provided function; it is
-//	// expected to be zero initialized after allocation
-//	image.AllocationBase = allocator(image.AllocationLength);
-//	if(!image.AllocationBase) throw Exception(E_OUTOFMEMORY);
-//
-//	// Initialize the pointer to and length of the stack image portion for the caller
-//	image.StackImage = reinterpret_cast<uint8_t*>(image.AllocationBase) + stackoffset;
-//	image.StackImageLength = image.AllocationLength - stackoffset;
-//
-//	// Use a local HeapBuffer to expedite copying all of the data into the stack image at once
-//	HeapBuffer<uint8_t> stackimage(image.StackImageLength);
-//	memset(&stackimage, 0, stackimage.Size);
-//
-//	// a StreamWriter class would be nice here
-//
-//	stackoffset = 0;
-//
-//	//// ARGC
-//	//stackimage.Cast<addr_t>(stackoffset) = m_argv.size();
-//	//stackoffset += sizeof(addr_t);
-//
-//	//// ARGV
-//	//for_each(m_argv.begin(), m_argv.end(), [&](addr_t& offset) 
-//	//{ 
-//	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
-//	//	stackoffset += sizeof(addr_t);
-//	//});
-//	//stackoffset += sizeof(addr_t);		// null
-//
-//	//// ENVP
-//	//for_each(m_envp.begin(), m_envp.end(), [&](addr_t& offset) 
-//	//{ 
-//	//	stackimage.Cast<addr_t>(stackoffset) = image.AllocationBase + offset;
-//	//	stackoffset += sizeof(addr_t);
-//	//});
-//	//stackoffset += sizeof(addr_t);		// null
-//
-//	// AUXV
-//
-//	// bah, thinking just replace this entire class with a new one
-//
-//	// Write the information block and the stack image into the allocated memory
-//	writer(m_info.data(), reinterpret_cast<void*>(image.AllocationBase), m_info.size());
-//	writer(stackimage, reinterpret_cast<void*>(image.StackImage), stackimage.Size);
-//
-//	//// envp
-//	//for_each(m_envp.begin(), m_envp.end(), [&](addr_t& addr) { writer(&addr, out + offset, sizeof(addr_t)); offset += sizeof(addr_t); });
-//	//offset += sizeof(addr_t);
-//
-//	//// auxv
-//	//for_each(m_auxv.begin(), m_auxv.end(), [&](auxv_t& auxv) { writer(&auxv, out + offset, sizeof(auxv_t)); offset += sizeof(auxv_t); });
-//	//offset += sizeof(auxv_t);
-//
-//	//offset += sizeof(addr_t);
-//	//offset = AlignUp(offset, 16);
-//
-//	//_ASSERTE(length == offset);
-//
-//	//(begin);
-//
-//	return image;
-//}
-
-//const void* ElfArguments<_class>::CreateArgumentVector(size_t* length)
-//{
-//	(length);
-//	return nullptr;
-	//if(!length) throw Exception(E_ARGUMENTNULL, _T("length"));
-
-	//// ALIGNMENT
-	//m_offset = AlignUp(m_offset, 16);
-	//if(m_offset > m_info->Length) throw Exception(E_OUTOFMEMORY);
-
-	//// ARGC / ARGV
-	//uintptr_t begin = uintptr_t(AppendInfo(static_cast<addr_t>(m_argv.size())));
-	//for_each(m_argv.begin(), m_argv.end(), [&](addr_t& addr) { AppendInfo(addr); });
-	//AppendInfo(static_cast<addr_t>(NULL));
-
-	//// ENVIRONMENT VARIABLES
-	//for_each(m_envp.begin(), m_envp.end(), [&](addr_t addr) { AppendInfo(addr); });
-	//AppendInfo(static_cast<addr_t>(NULL));
-
-	//// AUXILIARY VECTORS
-	//for_each(m_auxv.begin(), m_auxv.end(), [&](auxv_t auxv) { AppendInfo(auxv); });
-	//AppendInfo(auxv_t(LINUX_AT_NULL, 0));
-
-	//// TERMINATOR
-	//AppendInfo(static_cast<addr_t>(NULL));
-
-	//// ALIGNMENT
-	//m_offset = AlignUp(m_offset, 16);
-	//if(m_offset > m_info->Length) throw Exception(E_OUTOFMEMORY);
-
-	//// Calculate the end address and the overall length
-	//uintptr_t end = uintptr_t(m_info->Pointer) + m_offset;
-	//*length = (end - begin);
-
-	//return reinterpret_cast<const void*>(begin);
-//}
 
 //-----------------------------------------------------------------------------
 

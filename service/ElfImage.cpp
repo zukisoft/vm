@@ -164,7 +164,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 
 	// Acquire a copy of the ELF header from the binary file and validate it
 	size_t read = InProcessRead(reader, 0, &elfheader, sizeof(typename elf::elfheader_t));
-	if(read != sizeof(typename elf::elfheader_t)) throw Exception(E_TRUNCATEDELFHEADER);
+	if(read != sizeof(typename elf::elfheader_t)) throw Exception(E_ELFTRUNCATEDHEADER);
 	ValidateHeader<_class>(&elfheader);
 
 	// Read all of the program headers from the binary image file into a heap buffer
@@ -195,7 +195,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 		else if(progheader.p_type == LINUX_PT_GNU_STACK) {
 
 			// If the segment flags are executable, that's not currently supported
-			if(progheader.p_flags & LINUX_PF_X) throw Exception(E_EXECUTABLESTACKFLAG);
+			if(progheader.p_flags & LINUX_PF_X) throw Exception(E_ELFEXECUTABLESTACK);
 		}
 	}
 
@@ -208,7 +208,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 		if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
 		else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
 
-	} catch(Exception& ex) { throw Exception(E_RESERVEIMAGEREGION, ex); }
+	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
 	intptr_t vaddrdelta = (elfheader.e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(region->Pointer) - minvaddr;
@@ -235,13 +235,15 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 			// Get the base address of the loadable segment and commit the virtual memory
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
 			try { region->Commit(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
-			catch(Exception& ex) { throw Exception(E_COMMITIMAGESEGMENT, ex); }
+			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(progheader.p_filesz) {
 
 				// Read the data from the input stream into the target process address space at segbase
-				read = OutOfProcessRead(reader, process, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz);
+				try { read = OutOfProcessRead(reader, process, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
+				catch(Exception& ex) { throw Exception(E_ELFWRITESEGMENT, ex); }
+
 				if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 			}
 
@@ -251,7 +253,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 
 			// Attempt to apply the proper virtual memory protection flags to the segment
 			try { region->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
-			catch(Exception& ex) { throw Exception(E_PROTECTIMAGESEGMENT, ex); }
+			catch(Exception& ex) { throw Exception(E_ELFPROTECTSEGMENT, ex); }
 		}
 
 		// PT_INTERP
@@ -265,7 +267,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 			if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 
 			// Ensure that the string is NULL terminated and convert it into an std::tstring
-			if(interpreter[interpreter.Count - 1] != 0) throw Exception(E_INVALIDINTERPRETER);
+			if(interpreter[interpreter.Count - 1] != 0) throw Exception(E_ELFINVALIDINTERPRETER);
 			metadata.Interpreter = std::to_tstring(static_cast<char_t*>(interpreter));
 		}
 	}
@@ -296,26 +298,26 @@ void ElfImage::ValidateHeader(const typename elf_traits<_class>::elfheader_t* el
 {
 	using elf = elf_traits<_class>;
 
-	if(!elfheader) throw Exception(E_POINTER);
+	if(!elfheader) throw Exception(E_ARGUMENTNULL, "elfheader");
 
 	// Check the ELF header magic number
-	if(memcmp(&elfheader->e_ident[LINUX_EI_MAG0], LINUX_ELFMAG, LINUX_SELFMAG) != 0) throw Exception(E_INVALIDELFMAGIC);
+	if(memcmp(&elfheader->e_ident[LINUX_EI_MAG0], LINUX_ELFMAG, LINUX_SELFMAG) != 0) throw Exception(E_ELFINVALIDMAGIC);
 
 	// Verify the ELF class is appropriate for this image loader instance
-	if(elfheader->e_ident[LINUX_EI_CLASS] != elf::elfclass) throw Exception(E_INVALIDELFCLASS, elfheader->e_ident[LINUX_EI_CLASS]);
+	if(elfheader->e_ident[LINUX_EI_CLASS] != elf::elfclass) throw Exception(E_ELFINVALIDCLASS, elfheader->e_ident[LINUX_EI_CLASS]);
 
 	// Verify the endianness and version of the ELF binary
-	if(elfheader->e_ident[LINUX_EI_DATA] != LINUX_ELFDATA2LSB) throw Exception(E_INVALIDELFENCODING, elfheader->e_ident[LINUX_EI_DATA]);
-	if(elfheader->e_ident[LINUX_EI_VERSION] != LINUX_EV_CURRENT) throw Exception(E_INVALIDELFVERSION, elfheader->e_ident[LINUX_EI_VERSION]);
+	if(elfheader->e_ident[LINUX_EI_DATA] != LINUX_ELFDATA2LSB) throw Exception(E_ELFINVALIDENCODING, elfheader->e_ident[LINUX_EI_DATA]);
+	if(elfheader->e_ident[LINUX_EI_VERSION] != LINUX_EV_CURRENT) throw Exception(E_ELFINVALIDVERSION, elfheader->e_ident[LINUX_EI_VERSION]);
 
 	// Only ET_EXEC and ET_DYN images can currently be loaded
-	if((elfheader->e_type != LINUX_ET_EXEC) && (elfheader->e_type != LINUX_ET_DYN)) throw Exception(E_INVALIDELFTYPE, elfheader->e_type);
+	if((elfheader->e_type != LINUX_ET_EXEC) && (elfheader->e_type != LINUX_ET_DYN)) throw Exception(E_ELFINVALIDTYPE, elfheader->e_type);
 
 	// The machine type must match the value defined for the elf_traits<>
-	if(elfheader->e_machine != elf::machinetype) throw Exception(E_INVALIDELFMACHINETYPE, elfheader->e_machine);
+	if(elfheader->e_machine != elf::machinetype) throw Exception(E_ELFINVALIDMACHINETYPE, elfheader->e_machine);
 
 	// Verify that the version code matches the ELF headers used
-	if(elfheader->e_version != LINUX_EV_CURRENT) throw Exception(E_INVALIDELFVERSION, elfheader->e_version);
+	if(elfheader->e_version != LINUX_EV_CURRENT) throw Exception(E_ELFINVALIDVERSION, elfheader->e_version);
 
 	// Verify that the length of the header is the same size as the Elfxx_Ehdr struct and that the
 	// header entries are at least as big as the known structures

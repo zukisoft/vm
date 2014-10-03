@@ -24,8 +24,6 @@
 #define __ELFIMAGE_H_
 #pragma once
 
-#include <linux/elf.h>
-#include <linux/elf-em.h>
 #include <linux/fs.h>
 #include "ElfClass.h"
 #include "Exception.h"
@@ -33,6 +31,7 @@
 #include "HeapBuffer.h"
 #include "MemoryRegion.h"
 #include "StreamReader.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization

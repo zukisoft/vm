@@ -26,9 +26,9 @@ FacilityNames=(
 			Generic=0:FACILITY_GENERIC
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
-			ElfImage=3:FACILITY_ELFIMAGE
-			HostProcess=4:FACILITY_HOSTPROCESS
-			Service=5:FACILITY_SERVICE
+			Elf=3:FACILITY_ELF
+			HostProcess=5:FACILITY_HOSTPROCESS
+			Service=6:FACILITY_SERVICE
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1073,56 +1073,49 @@ EHWPOISON: Memory page has hardware error
 .
 
 ;//----------------------------------------------------------------------------
-;// ElfImage
+;// Elf
 ;//
 ;// Messages specific to the parsing and loading of an ELF image
 
 MessageId=1
 Severity=Error
-Facility=ElfImage
-SymbolicName=E_TRUNCATEDELFHEADER
-Language=English
-ELF image header has been truncated.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_INVALIDELFMAGIC
+Facility=Elf
+SymbolicName=E_ELFINVALIDMAGIC
 Language=English
 ELF image header does not contain the required magic number.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFCLASS
+SymbolicName=E_ELFINVALIDCLASS
 Language=English
 ELF image class %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFENCODING
+SymbolicName=E_ELFINVALIDENCODING
 Language=English
 ELF image encoding %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFVERSION
+SymbolicName=E_ELFINVALIDVERSION
 Language=English
 ELF image format version %1!d! is not supported.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFTYPE
+SymbolicName=E_ELFINVALIDTYPE
 Language=English
 Elf image type %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDELFMACHINETYPE
+SymbolicName=E_ELFINVALIDMACHINETYPE
 Language=English
 Elf image machine type %1!d! is not valid for execution on this platform.
 .
@@ -1150,6 +1143,13 @@ ELF image section header format is not supported.
 
 MessageId=
 Severity=Error
+SymbolicName=E_ELFTRUNCATEDHEADER
+Language=English
+ELF image header has been truncated.
+.
+
+MessageId=
+Severity=Error
 SymbolicName=E_ELFIMAGETRUNCATED
 Language=English
 ELF image indicates a source data offset that lies beyond the end of the file.
@@ -1157,72 +1157,58 @@ ELF image indicates a source data offset that lies beyond the end of the file.
 
 MessageId=
 Severity=Error
-SymbolicName=E_INVALIDINTERPRETER
-Language=English
-ELF image interpreter path is invalid or corrupt.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_EXECUTABLESTACKFLAG
+SymbolicName=E_ELFEXECUTABLESTACK
 Language=English
 ELF image specifies that the stack must be executable, which is not valid for this platform.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_RESERVEIMAGEREGION
+SymbolicName=E_ELFRESERVEREGION
 Language=English
 Unable to reserve the virtual memory region required to load the ELF image.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_COMMITIMAGESEGMENT
+SymbolicName=E_ELFCOMMITSEGMENT
 Language=English
 Unable to commit the virtual memory required to load an ELF image segment.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROTECTIMAGESEGMENT
+SymbolicName=E_ELFWRITESEGMENT
+Language=English
+Unable to write to the virtual memory region allocated for an ELF image segment.
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_ELFPROTECTSEGMENT
 Language=English
 Unable to set protection attributes on loaded ELF image segment.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_LOADELFIMAGEFAILED
+SymbolicName=E_ELFINVALIDINTERPRETER
 Language=English
-Cannot load ELF image %1.
+ELF image interpreter path is invalid or corrupt.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_NULLELFENTRYPOINT
+SymbolicName=E_ELFARGUMENTSTOOBIG
 Language=English
-ELF image cannot be executed as no entry point has been specified
+The amount of memory allocated (%1!lu! bytes) for an ELF startup information block exceeds the maximum size of %2!lu! bytes.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_ARGUMENTVECTORALIGNMENT
+SymbolicName=E_ELFWRITEARGUMENTS
 Language=English
-Internal Error: The ELF argument vector has not been aligned properly for the stack
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_SYSCALLNOTFOUND
-Language=English
-System call number %1!d! could not be located in the virtual system call module
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_SYSCALLARGUMENTCOUNT
-Language=English
-An invalid number of arguments have been specified for virtual system call number %1!d!
+Unable to write ELF argument data to the allocated virtual memory region.
 .
 
 ;//----------------------------------------------------------------------------
