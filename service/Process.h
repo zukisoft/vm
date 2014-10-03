@@ -80,6 +80,27 @@ public:
 	// Terminates the process
 	void Terminate(int exitcode) { _ASSERTE(m_host); m_host->Terminate(-exitcode); }
 
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// HostProcessId
+	//
+	// Gets the host process identifier
+	__declspec(property(get=getHostProcessId)) DWORD HostProcessId;
+	DWORD getHostProcessId(void) const { return m_host->ProcessId; }
+
+	// StackImage
+	//
+	// Pointer to the stack image loaded into the hosted process
+	__declspec(property(get=getStackImage)) void* StackImage;
+	void* getStackImage(void) const { return m_stackimg.BaseAddress; }
+
+	// StackImageLength
+	//
+	// Length of the stack image loaded into the hosted process
+	__declspec(property(get=getStackImageLength)) size_t StackImageLength;
+	size_t getStackImageLength(void) const { return m_stackimg.Length; }
+
 private:
 
 	Process(const Process&)=delete;
@@ -87,8 +108,8 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host) : m_host(std::move(host)) {}
-	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>>(std::unique_ptr<Host>&&);
+	Process(std::unique_ptr<Host>&& host, ElfArguments::StackImage&& stackimg) : m_host(std::move(host)), m_stackimg(stackimg) {}
+	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>, ElfArguments::StackImage>(std::unique_ptr<Host>&&, ElfArguments::StackImage&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -132,8 +153,9 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>	m_host;			// Hosted windows process
-	static SystemInfo		s_sysinfo;		// System information
+	std::unique_ptr<Host>		m_host;			// Hosted windows process
+	ElfArguments::StackImage	m_stackimg;		// Hosted process stack image
+	static SystemInfo			s_sysinfo;		// System information
 };
 
 //-----------------------------------------------------------------------------

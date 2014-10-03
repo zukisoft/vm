@@ -39,7 +39,6 @@
 #include "VmSystemLog.h"
 
 #include "RootFileSystem.h"
-#include "ElfArguments.h"
 
 #include "VirtualMachine.h"
 #include "VmServiceParameters.h"
@@ -49,12 +48,7 @@
 //---------------------------------------------------------------------------
 // Class VmService
 //
-// todo: rename me to "VirtualMachine", expose all of the child subsystems
-// via properties
-
-// TODO TODO: Changed servicelib to use shared_ptr just for this hack to the
-// settings; that should be controllable in the templates themselves, like
-// public Service<VmService, std::shared_ptr<blah>> or something; using
+// TODO: oh so many words need to go here
 
 class VmService : public Service<VmService>, private SystemCalls, public VmServiceParameters,
 	public VirtualMachine, public std::enable_shared_from_this<VmService>
@@ -70,6 +64,7 @@ public:
 	virtual const tchar_t* getListener64Binding(void)			{ return m_bindstr64.c_str(); }
 	virtual std::unique_ptr<VmSettings>&	getSettings(void)	{ _ASSERTE(m_settings);	return m_settings; }
 	virtual std::unique_ptr<VmSystemLog>&	getSystemLog(void)	{ _ASSERTE(m_syslog);	return m_syslog; }
+	// need process manager next!
 
 private:
 
@@ -112,6 +107,11 @@ private:
 	{
 		// test process
 		std::unique_ptr<Process> proc = Process::Create(shared_from_this(), "/sbin/init", nullptr, nullptr);
+		proc->Terminate(0);
+
+		// need a mapping for host PID -> virtual PID
+		// need a VirtualMachine function to acquire a process from the PID for the RPC call
+		// process should probably be shared_ptr<> not unique_ptr<>
 	}
 
 	// 64-bit host test

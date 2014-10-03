@@ -171,8 +171,8 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 	uint8_t							random[16];				// 16-bytes of random data for AT_RANDOM auxvec
 
 	// Create the external host process (suspended by default) and verify the class/architecture
-	// as this will all go south very quickly if it's not what we're expecting it to be
-	// todo: need the handles to stuff
+	// as this will all go south very quickly if it's not the expected architecture
+	// todo: need the handles to stuff that are to be inherited (signals, etc)
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 	CheckHostProcessClass<_class>(host->ProcessHandle);
 
@@ -221,12 +221,8 @@ static std::unique_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		(LINUX_AT_SYSINFO);																		// 32
 		//args.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);					// 33 - TODO
 
-		// Generate the stack image for the arguments into the hosted process address space
-		ElfArguments::StackImage img = args.GenerateStackImage<_class>(host->ProcessHandle);
-		(img);
-
 		// The image was successfully loaded into the host, construct the Process instance
-		return std::make_unique<Process>(std::move(host) /*, img */);
+		return std::make_unique<Process>(std::move(host), args.GenerateStackImage<_class>(host->ProcessHandle));
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
