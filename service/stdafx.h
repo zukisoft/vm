@@ -70,7 +70,6 @@ struct zero_init : public _type
 	zero_init() { memset(this, 0, sizeof(_type)); }
 };
 
-
 //-----------------------------------------------------------------------------
 
 #endif	// __STDAFX_H_

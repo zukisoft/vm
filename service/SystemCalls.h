@@ -26,8 +26,13 @@
 
 #include <concrt.h>
 #include <map>
+#include <memory>
 
 #pragma warning(push, 4)
+
+// Forward Declarations
+//
+class Process;
 
 //-----------------------------------------------------------------------------
 // Class SystemCalls (abstract)
@@ -53,6 +58,17 @@ public:
 	//
 	// Retrieves a SystemCalls instance based on it's object id
 	static SystemCalls* FromObjectID(const uuid_t& objectid);
+
+	//-------------------------------------------------------------------------
+	// Internal System Calls
+
+	// FindClientProcess
+	//
+	// Locates a Process instance associated with a hosted client PID
+	virtual std::shared_ptr<Process> FindClientProcess(uint32_t clientpid) = 0;
+
+	//-------------------------------------------------------------------------
+	// Linux API
 
 	//
 	// TODO: the API goes here

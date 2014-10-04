@@ -25,6 +25,14 @@
 
 #pragma warning(push, 4)
 
+std::shared_ptr<Process> VmService::FindClientProcess(uint32_t clientpid)
+{
+	// dummy for testing
+	(clientpid);
+	return m_initprocess;
+}
+
+
 void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 {
 	// Attempt to open the specified file read-only with sequential scan optimization
@@ -188,8 +196,12 @@ void VmService::OnStart(int, LPTSTR*)
 	//
 	// LAUNCH INIT
 	//
-	std::tstring initpath = m_settings->InitPath;
-	FileSystem::HandlePtr h = m_vfs->Open(initpath.c_str(), LINUX_O_RDONLY, 0);
+	std::string initpath = std::to_string(m_settings->InitPath);
+	const uapi::char_t* args[] = { "First Argument", "Second Argument", nullptr };
+	m_initprocess = Process::Create(shared_from_this(), initpath.c_str(), args, nullptr);
+	//proc->Terminate(0);
+	m_initprocess->Resume();
+
 	// seems to work to here, can use this to create the new in-proc ELF loader
 	
 	// need to convert h into a FileDescriptor? Perhaps process should accept Handle
@@ -197,6 +209,7 @@ void VmService::OnStart(int, LPTSTR*)
 
 	// need to maintain a reference to the Process object since
 	// this will need a watcher thread to panic if init stops before service stops
+	// other processes will be caught by RPC context rundown
 
 	// TODO: throwing an exception from here messes up the ServiceHarness, you get
 	// that damn "abort() has been called" from the std::thread ... fix that 

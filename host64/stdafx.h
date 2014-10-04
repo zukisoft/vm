@@ -52,6 +52,13 @@
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "rpcns4.lib")
 
+// find a place to put this
+template <typename _type>
+struct zero_init : public _type
+{
+	zero_init() { memset(this, 0, sizeof(_type)); }
+};
+
 //-----------------------------------------------------------------------------
 
 #endif	// __STDAFX_H_

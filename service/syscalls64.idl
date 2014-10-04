@@ -53,20 +53,18 @@ cpp_quote("{ 0x94f810e2, 0x56fe, 0x4fab, { 0xa0, 0xa6, 0x2f, 0x63, 0x1c, 0x80, 0
 // Structure passed into the host process on startup
 typedef struct _sys64_startup_info {
 
-	// stack_image
-	//
-	// Stack image loaded into the host process on startup
-	sys64_addr_t	stack_image;
-	sys64_size_t	stack_image_length;
-
 	// entry_point
 	//
 	// Address to jump into to begin execution
 	sys64_addr_t	entry_point;
 
-	// signal handles go here
+	// stack_image
+	//
+	// Stack image loaded into the host process on startup
+	sys64_addr_t	stack_image;
+	sys64_size_t	stack_image_length;
 	
-} _sys64_startup_info;
+} sys64_startup_info;
 
 // Interface SystemCalls64
 //
@@ -94,8 +92,8 @@ interface SystemCalls64
 
 	// sys64_acquire_context
 	//
-	// Allocates a new context handle for a child process
-	HRESULT sys64_acquire_context([out, ref] sys64_context_exclusive_t* context);
+	// Allocates a new context handle and startup information for a child process
+	HRESULT sys64_acquire_context([out, ref] sys64_startup_info* startinfo, [out, ref] sys64_context_exclusive_t* context);
 
 	// sys64_release_context
 	//

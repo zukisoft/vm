@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "Process.h"
 #include "SystemCalls.h"
 #include <syscalls32.h>
 
@@ -43,14 +44,14 @@ public:
 	// Create (static)
 	//
 	// Constructs a new Context instance
-	static Context* Create(const RPC_CALL_ATTRIBUTES* attributes, SystemCalls* syscalls)
+	static Context* Create(const RPC_CALL_ATTRIBUTES* attributes, SystemCalls* syscalls, const std::shared_ptr<Process>& process)
 	{
 		// Allocate the backing storage for the class object using MIDL_user_allocate
 		void* instance = MIDL_user_allocate(sizeof(Context));
 		if(!instance) return nullptr;
 
 		// Use placement new to construct the object on the storage
-		return new(instance) Context(attributes, syscalls);
+		return new(instance) Context(attributes, syscalls, process);
 	}
 
 	// Destroy (static)
@@ -85,20 +86,22 @@ private:
 
 	// Instance Constructor
 	//
-	Context(const RPC_CALL_ATTRIBUTES* attributes, ::SystemCalls* syscalls)
+	Context(const RPC_CALL_ATTRIBUTES* attributes, ::SystemCalls* syscalls, const std::shared_ptr<Process>& process)
 	{
 		_ASSERTE(attributes);
 		_ASSERTE(syscalls);
 
 		m_pid = reinterpret_cast<DWORD>(attributes->ClientPID);
 		m_syscalls = syscalls;
+		m_process = process;
 	}
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	DWORD				m_pid;				// Client process identifier
-	::SystemCalls*		m_syscalls;			// SystemCalls instance pointer
+	DWORD						m_pid;			// Client process identifier
+	::SystemCalls*				m_syscalls;		// SystemCalls instance pointer
+	std::shared_ptr<Process>	m_process;		// Process object instance
 };
 
 //-----------------------------------------------------------------------------
@@ -109,9 +112,10 @@ private:
 // Arguments:
 //
 //	rpchandle		- RPC binding handle
+//	startinfo		- [out] set to the startup information for the process
 //	context			- [out] set to the newly allocated context handle
 
-static HRESULT acquire_context(handle_t rpchandle, sys32_context_exclusive_t* context)
+static HRESULT acquire_context(handle_t rpchandle, sys32_startup_info* startinfo, sys32_context_exclusive_t* context)
 {
 	uuid_t					objectid;			// RPC object identifier
 	SystemCalls*			syscalls;			// SystemCalls interface
@@ -134,8 +138,16 @@ static HRESULT acquire_context(handle_t rpchandle, sys32_context_exclusive_t* co
 	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
 	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
 
+	// Look up the startup information for this process from the virtual machine
+	std::shared_ptr<Process> process = syscalls->FindClientProcess((DWORD)attributes.ClientPID);
+
+	// TODO: CHECK THESE POINTERS FOR OVERFLOW - THIS IS 32BIT INTERFACE
+	startinfo->entry_point = reinterpret_cast<sys32_addr_t>(process->EntryPoint);
+	startinfo->stack_image = reinterpret_cast<sys32_addr_t>(process->StackImage);
+	startinfo->stack_image_length = static_cast<sys32_size_t>(process->StackImageLength);
+
 	// Create a Context object instance to be converted into the context handle
-	*context = reinterpret_cast<sys32_context_exclusive_t>(Context::Create(&attributes, syscalls));
+	*context = reinterpret_cast<sys32_context_exclusive_t>(Context::Create(&attributes, syscalls, process));
 	return (*context) ? S_OK : E_OUTOFMEMORY;
 }
 

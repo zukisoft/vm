@@ -53,20 +53,18 @@ cpp_quote("{ 0xd967a755, 0x869f, 0x4180, { 0xa9, 0xc0, 0xba, 0x96, 0xd7, 0xb4, 0
 // Structure passed into the host process on startup
 typedef struct _sys32_startup_info {
 
-	// stack_image
-	//
-	// Stack image loaded into the host process on startup
-	sys32_addr_t	stack_image;
-	sys32_size_t	stack_image_length;
-
 	// entry_point
 	//
 	// Address to jump into to begin execution
 	sys32_addr_t	entry_point;
 
-	// signal handles go here
+	// stack_image
+	//
+	// Stack image loaded into the host process on startup
+	sys32_addr_t	stack_image;
+	sys32_size_t	stack_image_length;
 	
-} _sys32_startup_info;
+} sys32_startup_info;
 
 // Interface SystemCalls32
 //
@@ -94,8 +92,8 @@ interface SystemCalls32
 
 	// sys32_acquire_context
 	//
-	// Allocates a new context handle for a child process
-	HRESULT sys32_acquire_context([out, ref] sys32_context_exclusive_t* context);
+	// Allocates a new context handle and startup information for a child process
+	HRESULT sys32_acquire_context([out, ref] sys32_startup_info* startinfo, [out, ref] sys32_context_exclusive_t* context);
 
 	// sys32_release_context
 	//

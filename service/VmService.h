@@ -106,8 +106,8 @@ private:
 	void OnUserControl128(void)
 	{
 		// test process
-		std::unique_ptr<Process> proc = Process::Create(shared_from_this(), "/sbin/init", nullptr, nullptr);
-		proc->Terminate(0);
+		//std::shared_ptr<Process> proc = Process::Create(shared_from_this(), "/sbin/init", nullptr, nullptr);
+		//proc->Terminate(0);
 
 		// need a mapping for host PID -> virtual PID
 		// need a VirtualMachine function to acquire a process from the PID for the RPC call
@@ -121,6 +121,15 @@ private:
 		//std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr64.c_str(), m_hostprocesstimeout);
 	}
 
+	//-------------------------------------------------------------------------
+	// SystemCalls Implementation
+
+	// FindClientProcess
+	//
+	// Locates a Process instance associated with a hosted client PID
+	virtual std::shared_ptr<Process> FindClientProcess(uint32_t clientpid);
+
+	std::shared_ptr<Process> m_initprocess;
 	std::unique_ptr<VmProcessManager> m_procmgr;
 
 	// hosts

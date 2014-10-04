@@ -62,7 +62,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance
-	static std::unique_ptr<Process> Create(std::shared_ptr<VirtualMachine> vm, const uapi::char_t* path,
+	static std::shared_ptr<Process> Create(std::shared_ptr<VirtualMachine> vm, const uapi::char_t* path,
 		const uapi::char_t** arguments, const uapi::char_t** environment);
 
 	// Resume
@@ -83,6 +83,12 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// EntryPoint
+	//
+	// Gets the entry point address of the hosted process
+	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
+	const void* getEntryPoint(void) const { return m_startinfo.EntryPoint; }
+
 	// HostProcessId
 	//
 	// Gets the host process identifier
@@ -91,25 +97,31 @@ public:
 
 	// StackImage
 	//
-	// Pointer to the stack image loaded into the hosted process
-	__declspec(property(get=getStackImage)) void* StackImage;
-	void* getStackImage(void) const { return m_stackimg.BaseAddress; }
+	// Gets the location of the stack image in the hosted process
+	__declspec(property(get=getStackImage)) const void* StackImage;
+	const void* getStackImage(void) const { return m_startinfo.StackImage; }
 
 	// StackImageLength
 	//
-	// Length of the stack image loaded into the hosted process
+	// Gets the length of the stack image in the hosted process
 	__declspec(property(get=getStackImageLength)) size_t StackImageLength;
-	size_t getStackImageLength(void) const { return m_stackimg.Length; }
+	size_t getStackImageLength(void) const { return m_startinfo.StackImageLength; }
 
 private:
 
 	Process(const Process&)=delete;
 	Process& operator=(const Process&)=delete;
 
+	// Forward Declarations
+	//
+	struct Metadata;
+	struct StartupInfo;
+
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, ElfArguments::StackImage&& stackimg) : m_host(std::move(host)), m_stackimg(stackimg) {}
-	friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>, ElfArguments::StackImage>(std::unique_ptr<Host>&&, ElfArguments::StackImage&&);
+	Process(std::unique_ptr<Host>&& host, StartupInfo&& startinfo) : m_host(std::move(host)), m_startinfo(startinfo) {}
+	//friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>, StartupInfo>(std::unique_ptr<Host>&&, StartupInfo&&);
+	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -125,6 +137,17 @@ private:
 		uint8_t	ElfBinary[LINUX_EI_NIDENT];	// "\177ELF"
 	
 	} MagicNumbers;
+
+	// StartupInfo
+	//
+	// Information generated when the host process was created that is
+	// required for it to know how to get itself up and running
+	struct StartupInfo
+	{
+		const void*		EntryPoint;				// Execution entry point
+		const void*		StackImage;				// Pointer to the stack image
+		size_t			StackImageLength;		// Length of the stack image
+	};
 
 	// SystemInfo
 	//
@@ -147,15 +170,15 @@ private:
 	//
 	// Creates a new process instance via an external Windows host binary
 	template <ElfClass _class>
-	static std::unique_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
+	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
 		const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>		m_host;			// Hosted windows process
-	ElfArguments::StackImage	m_stackimg;		// Hosted process stack image
-	static SystemInfo			s_sysinfo;		// System information
+	std::unique_ptr<Host>	m_host;			// Hosted windows process
+	const StartupInfo		m_startinfo;	// Hosted process start information
+	static SystemInfo		s_sysinfo;		// System information
 };
 
 //-----------------------------------------------------------------------------
