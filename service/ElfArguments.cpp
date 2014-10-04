@@ -61,8 +61,8 @@ inline uint8_t* BufferWrite(uint8_t* dest, const _type& source)
 ElfArguments::ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp)
 {
 	// Iterate over any provided arguments/variables and append them
-	while(argv) { if(*argv) AppendArgument(*argv); ++argv; }
-	while(envp) { if(*envp) AppendEnvironmentVariable(*envp); ++envp; }
+	while(argv && *argv) { AppendArgument(*argv); ++argv; }
+	while(envp && *envp) { AppendEnvironmentVariable(*envp); ++envp; }
 }
 
 //---------------------------------------------------------------------------
