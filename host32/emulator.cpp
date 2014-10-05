@@ -25,21 +25,7 @@
 #include "ContextRecord.h"
 #include "Instruction.h"
 #include "ModRM.h"
-
-//-----------------------------------------------------------------------------
-// Type Declarations
-
-// SYSCALL - Prototype for a system call handler
-//
-typedef int (*SYSCALL)(PCONTEXT context);
-
-//-----------------------------------------------------------------------------
-// Global Variables
-
-// g_syscalls
-//
-// Table of all available system calls by ordinal
-static SYSCALL g_syscalls[512];
+#include "syscalls.h"
 
 // t_gs (TLS)
 //
@@ -93,9 +79,12 @@ Instruction INT_80(0xCD, 0x80, [](ContextRecord& context) -> bool {
 	uint32_t syscall = context.Registers.EAX;
 #endif
 
+	// There are slots implemented for only 512 system call ordinals
+	if(syscall > 511) return -LINUX_ENOSYS;
+
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit
-	SYSCALL func = g_syscalls[context.Registers.EAX];
+	syscall_t func = g_syscalls[context.Registers.EAX];
 	context.Registers.EAX = static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS);
 
 #ifdef _DEBUG
