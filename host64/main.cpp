@@ -32,7 +32,7 @@ extern "C" void elfmain(uint64_t address, uint64_t stackimg, size_t stackimglen)
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
-sys64_context_exclusive_t g_rpccontext;
+sys64_context_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
 // WinMain

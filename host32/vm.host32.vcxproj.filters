@@ -23,6 +23,9 @@
     <Filter Include="Header Files\Common">
       <UniqueIdentifier>{4461e233-7df7-4cbd-9905-596a0cd9cb72}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\System Calls">
+      <UniqueIdentifier>{d18dffed-47ae-4c57-8c9b-420e74043ef7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -89,6 +92,9 @@
     </ClCompile>
     <ClCompile Include="syscalls.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sys000_template.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

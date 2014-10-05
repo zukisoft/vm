@@ -201,6 +201,19 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 	/* sys32_acquire_context = */	acquire_context,
 	/* sys32_release_context = */	release_context,
 
+	// 122: sys32_uname
+	[](sys32_context_t context, sys32_utsname* buf) -> sys32_long_t
+	{
+		(context);
+		strncpy_s(buf->sysname, 64, "MYSYSTEMNAME", 64);
+		strncpy_s(buf->nodename, 64, "MYNODENAME", 64);
+		strncpy_s(buf->release, 64, "MYRELEASENAME", 64);
+		strncpy_s(buf->version, 64, "MYKERNELVERSION", 64);
+		strncpy_s(buf->machine, 64, "i686", 64);
+		strncpy_s(buf->domainname, 64, "MYDOMAINNAME", 64);
+		return 0;
+	},
+
 	// 006: sys32_close
 	[](sys32_context_t context, sys32_int_t fd) -> sys32_long_t 
 	{ 

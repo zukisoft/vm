@@ -80,7 +80,7 @@ Instruction INT_80(0xCD, 0x80, [](ContextRecord& context) -> bool {
 #endif
 
 	// There are slots implemented for only 512 system call ordinals
-	if(syscall > 511) return -LINUX_ENOSYS;
+	if(syscall > 511) { context.Registers.EAX = -LINUX_ENOSYS; return true; }
 
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit

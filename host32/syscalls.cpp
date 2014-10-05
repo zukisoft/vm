@@ -25,15 +25,42 @@
 
 #pragma warning(push, 4)
 
+// g_rpccontext (main.cpp)
+//
+// RPC context handle
+extern sys32_context_t g_rpccontext;
+
+// INLINE_SYSCALL_X
+//
+// Inline system call implementations; each argument must be valid to be passed directly
+// into the RPC interface or require any RPC memory allocation/release operations
+
+#define INLINE_SYSCALL_0(_syscall) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext); }
+
+#define INLINE_SYSCALL_1(_syscall, _type_0) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx)); }
+
+#define INLINE_SYSCALL_2(_syscall, _type_0, _type_1) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx)); }
+
+#define INLINE_SYSCALL_3(_syscall, _type_0, _type_1, _type_2) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx)); };
+
+#define INLINE_SYSCALL_4(_syscall, _type_0, _type_1, _type_2, _type_3) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi)); };
+
+#define INLINE_SYSCALL_5(_syscall, _type_0, _type_1, _type_2, _type_3, _type_4) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi)); };
+
+#define INLINE_SYSCALL_6(_syscall, _type_0, _type_1, _type_2, _type_3, _type_4, _type_5) \
+[](PCONTEXT context) -> sys32_long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi), (_type_5)(context->Ebp)); };
+
 //-----------------------------------------------------------------------------
 // sys_noentry
 //
 // Stub system call entry for ordinals that aren't implemented
-int sys_noentry(PCONTEXT context)
-{
-	UNREFERENCED_PARAMETER(context);
-	return -LINUX_ENOSYS;
-}
+int sys_noentry(PCONTEXT) { return -LINUX_ENOSYS; }
 
 //-----------------------------------------------------------------------------
 // g_syscalls
@@ -163,7 +190,7 @@ syscall_t g_syscalls[512] = {
 /* 119 */	sys_noentry,
 /* 120 */	sys_noentry,
 /* 121 */	sys_noentry,
-/* 122 */	sys_noentry,
+/* 122 */	INLINE_SYSCALL_1(sys32_uname,	sys32_utsname*),
 /* 123 */	sys_noentry,
 /* 124 */	sys_noentry,
 /* 125 */	sys_noentry,

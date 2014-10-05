@@ -187,6 +187,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="sys000_template.cpp" />
     <ClCompile Include="syscalls.cpp" />
   </ItemGroup>
   <ItemGroup>

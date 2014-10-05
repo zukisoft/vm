@@ -37,7 +37,7 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
-sys32_context_exclusive_t g_rpccontext;
+sys32_context_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
 // WinMain
