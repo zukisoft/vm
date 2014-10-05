@@ -37,8 +37,11 @@
 
 size_t HandleStreamReader::Read(void* buffer, size_t length)
 {
-	// Just ask the Handle instance to read the data into the destination
-	return m_handle->Read(buffer, length);
+	// Ask the Handle instance to read the data into the destination
+	size_t read = m_handle->Read(buffer, length);
+
+	m_position += read;				// Update stream position
+	return read;					// Return bytes read
 }
 
 //-----------------------------------------------------------------------------
@@ -57,11 +60,15 @@ void HandleStreamReader::Seek(size_t position)
 
 	// StreamReaders are supposed to be forward-only; even though the Handle
 	// can technically support this, follow the interface contract
-	if(position < m_position) throw Exception(E_INVALIDARG);
+	// TODO: Removed this to fix something temporarily; StreamReader is not the
+	// best choice for dealing with ELF images
+	///if(position < m_position) throw Exception(E_INVALIDARG);
 
 	// Attempt to set the file pointer to the specified position
 	uapi::loff_t offset = static_cast<uapi::loff_t>(position);
 	if(m_handle->Seek(offset, LINUX_SEEK_SET) != offset) throw Exception(E_INVALIDARG);
+
+	m_position = position;
 }
 
 //-----------------------------------------------------------------------------
