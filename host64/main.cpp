@@ -24,8 +24,9 @@
 #include "Exception.h"
 #include "Win32Exception.h"
 
-// Function Prototypes
+// elfmain (elfmain.asm)
 //
+// Entry point used to launch the hosted ELF image
 extern "C" void elfmain(uint64_t address, uint64_t stackimg, size_t stackimglen);
 
 // g_rpccontext

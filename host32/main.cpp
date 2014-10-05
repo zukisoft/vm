@@ -24,9 +24,15 @@
 #include "Exception.h"
 #include "Win32Exception.h"
 
-// Function Prototypes
+// elfmain (elfmain.asm)
 //
+// Entry point used to launch the hosted ELF image
 extern "C" void __stdcall elfmain(uint32_t address, uint32_t stackimg, size_t stackimglen);
+
+// EmulationExceptionHandler (emulator.cpp)
+//
+// Vectored Exception handler used to provide emulation
+LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
 
 // g_rpccontext
 //
@@ -65,6 +71,9 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	// Attempt to acquire the host runtime context handle from the server
 	hresult = sys32_acquire_context(binding, &startinfo, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
+
+	// Install the emulator, which operates by intercepting low-level exceptions
+	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
 
 	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
 	// so that CreateThread() can be used rather than _beginthreadex
