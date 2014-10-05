@@ -74,7 +74,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;
-		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
+		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
 
 		// test parameters
 		harness.SetParameter(_T("systemlog.length"), 1 MiB);

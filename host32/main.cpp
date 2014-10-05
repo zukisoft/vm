@@ -24,6 +24,10 @@
 #include "Exception.h"
 #include "Win32Exception.h"
 
+// Function Prototypes
+//
+extern "C" void __stdcall elfmain(uint32_t address, uint32_t stackimg, size_t stackimglen);
+
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
@@ -62,10 +66,11 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	hresult = sys32_acquire_context(binding, &startinfo, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
-	//
-	// TODO: just release the context and exit, more interesting things go here later
-	//
+	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
+	// so that CreateThread() can be used rather than _beginthreadex
+	elfmain(startinfo.entry_point, startinfo.stack_image, startinfo.stack_image_length);
 
+	// TODO: this is temporary; the main thread needs to wait for signals and whatnot
 	return static_cast<int>(sys32_release_context(&g_rpccontext));
 }
 
