@@ -41,6 +41,12 @@
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
+// ProcessPtr
+//
+// alias for a shared_ptr<Process> instance
+class Process;
+using ProcessPtr = std::shared_ptr<Process>;
+
 //-----------------------------------------------------------------------------
 // Process
 //

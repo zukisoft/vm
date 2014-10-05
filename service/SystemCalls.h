@@ -27,12 +27,11 @@
 #include <concrt.h>
 #include <map>
 #include <memory>
+#include <linux/types.h>
+#include <linux/utsname.h>
+#include "Process.h"
 
 #pragma warning(push, 4)
-
-// Forward Declarations
-//
-class Process;
 
 //-----------------------------------------------------------------------------
 // Class SystemCalls (abstract)
@@ -70,9 +69,7 @@ public:
 	//-------------------------------------------------------------------------
 	// Linux API
 
-	//
-	// TODO: the API goes here
-	//
+	virtual uapi::long_t newuname(const ProcessPtr& process, uapi::new_utsname* buf) = 0;
 
 protected:
 

@@ -310,9 +310,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\errno.h" />
     <ClInclude Include="..\common\linux\fcntl.h" />
     <ClInclude Include="..\common\linux\fs.h" />
+    <ClInclude Include="..\common\linux\ldt.h" />
+    <ClInclude Include="..\common\linux\mman.h" />
     <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
     <ClInclude Include="..\common\linux\types.h" />
+    <ClInclude Include="..\common\linux\utsname.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
     <ClInclude Include="..\common\LzmaStreamReader.h" />
     <ClInclude Include="..\common\LzopStreamReader.h" />

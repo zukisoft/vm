@@ -88,6 +88,8 @@ typedef char						__kernel_char_t;
 
 typedef uint32_t					__kernel_dev_t;
 
+typedef __kernel_long_t				linux_long_t;
+typedef __kernel_ulong_t			linux_ulong_t;
 typedef __kernel_dev_t				linux_dev_t;
 typedef __kernel_ino_t				linux_ino_t;
 typedef __kernel_mode_t				linux_mode_t;
@@ -117,6 +119,8 @@ typedef __kernel_char_t				linux_char_t;
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
+	typedef linux_long_t			long_t;
+	typedef linux_ulong_t			ulong_t;
 	typedef linux_dev_t				dev_t;
 	typedef linux_ino_t				ino_t;
 	typedef linux_mode_t			mode_t;

@@ -247,6 +247,40 @@ void VmService::OnStop(void)
 	m_settings.reset();
 }
 
+//
+// API
+//
+// DO I WANT TO BREAK THESE OUT INTO SEPARATE .CPP FILES, ONE FOR EACH?  SOME WILL
+// GET EXTRAORDINARILY COMPLICATED TO IMPLEMENT
+//
+
+uapi::long_t VmService::newuname(const ProcessPtr& process, uapi::new_utsname* buf)
+{
+	uapi::char_t	nodename[MAX_COMPUTERNAME_LENGTH + 1];
+	DWORD			cch = MAX_COMPUTERNAME_LENGTH + 1;
+
+	UNREFERENCED_PARAMETER(process);
+
+	if(buf == nullptr) throw LinuxException(LINUX_EFAULT);
+
+	// Get the NetBIOS computer name to act as the node name, just null it out on erro
+	if(!GetComputerNameA(nodename, &cch)) nodename[0] = '\0';
+
+	// TODO: These are generally just placeholders, not even sure that "i686" is correct
+	strncpy_s(buf->sysname, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator", _TRUNCATE);
+	strncpy_s(buf->nodename, LINUX__NEW_UTS_LEN + 1, nodename, _TRUNCATE);
+	strncpy_s(buf->release, LINUX__NEW_UTS_LEN + 1, "3.0.0-0-todo", _TRUNCATE);
+	strncpy_s(buf->version, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator Version", _TRUNCATE);
+#ifdef _M_X64
+	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "x86_64", _TRUNCATE);
+#else
+	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "i686", _TRUNCATE);
+#endif
+	strncpy_s(buf->domainname, LINUX__NEW_UTS_LEN + 1, "TODO: DOMAINNAME", _TRUNCATE);
+
+	return 0;
+}
+
 //---------------------------------------------------------------------------
 
 #pragma warning(pop)

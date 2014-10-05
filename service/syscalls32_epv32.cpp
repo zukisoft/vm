@@ -75,6 +75,12 @@ public:
 	__declspec(property(get=getClientPID)) DWORD ClientPID;
 	DWORD getClientPID(void) const { return m_pid; }
 
+	// Process
+	//
+	// Gets the process object instance
+	__declspec(property(get=getProcess)) ProcessPtr Process;
+	ProcessPtr getProcess(void) const { return m_process; }
+
 	// SystemCalls
 	//
 	// Gets the contained SystemCalls instance pointer
@@ -89,7 +95,7 @@ private:
 
 	// Instance Constructor
 	//
-	Context(const RPC_CALL_ATTRIBUTES* attributes, ::SystemCalls* syscalls, const std::shared_ptr<Process>& process)
+	Context(const RPC_CALL_ATTRIBUTES* attributes, ::SystemCalls* syscalls, const ProcessPtr& process)
 	{
 		_ASSERTE(attributes);
 		_ASSERTE(syscalls);
@@ -102,9 +108,9 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	DWORD						m_pid;			// Client process identifier
-	::SystemCalls*				m_syscalls;		// SystemCalls instance pointer
-	std::shared_ptr<Process>	m_process;		// Process object instance
+	DWORD					m_pid;			// Client process identifier
+	::SystemCalls*			m_syscalls;		// SystemCalls instance pointer
+	ProcessPtr				m_process;		// Process object instance
 };
 
 //-----------------------------------------------------------------------------
@@ -204,14 +210,13 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 	// 122: sys32_uname
 	[](sys32_context_t context, sys32_utsname* buf) -> sys32_long_t
 	{
-		(context);
-		strncpy_s(buf->sysname, 64, "MYSYSTEMNAME", 64);
-		strncpy_s(buf->nodename, 64, "MYNODENAME", 64);
-		strncpy_s(buf->release, 64, "MYRELEASENAME", 64);
-		strncpy_s(buf->version, 64, "MYKERNELVERSION", 64);
-		strncpy_s(buf->machine, 64, "i686", 64);
-		strncpy_s(buf->domainname, 64, "MYDOMAINNAME", 64);
-		return 0;
+		Context* instance = reinterpret_cast<Context*>(context);
+
+		// clean this up, don't cast new_utsname like this
+		try { return instance->SystemCalls->newuname(instance->Process, (uapi::new_utsname*)(buf)); }
+		catch(LinuxException& linuxex) { return -linuxex.Code; }
+		catch(Exception&) { return -1; }		// TODO
+		catch(...) { return -1; }				// TODO
 	},
 
 	// 006: sys32_close

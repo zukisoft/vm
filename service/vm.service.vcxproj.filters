@@ -323,6 +323,15 @@
     <ClInclude Include="..\common\Random.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\ldt.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\mman.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\utsname.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
