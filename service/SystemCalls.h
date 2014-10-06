@@ -69,6 +69,7 @@ public:
 	//-------------------------------------------------------------------------
 	// Linux API
 
+	//virtual uapi::long_t brk(const ProcessPtr& process, void* addr) = 0;
 	virtual uapi::long_t newuname(const ProcessPtr& process, uapi::new_utsname* buf) = 0;
 
 protected:

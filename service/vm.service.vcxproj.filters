@@ -332,6 +332,9 @@
     <ClInclude Include="..\common\linux\utsname.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\uapi.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -556,6 +559,9 @@
     </Midl>
     <Midl Include="syscalls32.idl">
       <Filter>Source Files\System Calls</Filter>
+    </Midl>
+    <Midl Include="uapi.idl">
+      <Filter>Source Files</Filter>
     </Midl>
   </ItemGroup>
   <ItemGroup>

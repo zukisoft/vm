@@ -129,7 +129,6 @@ private:
 	// Locates a Process instance associated with a hosted client PID
 	virtual std::shared_ptr<Process> FindClientProcess(uint32_t clientpid);
 
-	
 	virtual uapi::long_t newuname(const ProcessPtr& process, uapi::new_utsname* buf);
 
 

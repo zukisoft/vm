@@ -208,12 +208,12 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 	/* sys32_release_context = */	release_context,
 
 	// 122: sys32_uname
-	[](sys32_context_t context, sys32_utsname* buf) -> sys32_long_t
+	[](sys32_context_t context, uapi::new_utsname* buf) -> sys32_long_t
 	{
 		Context* instance = reinterpret_cast<Context*>(context);
 
 		// clean this up, don't cast new_utsname like this
-		try { return instance->SystemCalls->newuname(instance->Process, (uapi::new_utsname*)(buf)); }
+		try { return instance->SystemCalls->newuname(instance->Process, buf); }
 		catch(LinuxException& linuxex) { return -linuxex.Code; }
 		catch(Exception&) { return -1; }		// TODO
 		catch(...) { return -1; }				// TODO

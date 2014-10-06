@@ -20,36 +20,12 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
+#ifndef __UAPI_H_
+#define __UAPI_H_
+#pragma once
 
-#pragma warning(push, 4)
+#include <linux/types.h>
+#include <linux/utsname.h>
 
-// g_rpccontext (main.cpp)
-//
-// RPC context handle
-extern sys32_context_t g_rpccontext;
+#endif		// __UAPI_H_
 
-//
-// SAMPLE FUNCTION
-//
-
-//-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
-//
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
-//
-int sys000_template(PCONTEXT context)
-{
-	_ASSERTE(context->Eax == 122);			// Verify system call number
-
-	return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));
-}
-
-//-----------------------------------------------------------------------------
-
-#pragma warning(pop)

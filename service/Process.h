@@ -120,7 +120,6 @@ private:
 
 	// Forward Declarations
 	//
-	struct Metadata;
 	struct StartupInfo;
 
 	// Instance Constructor

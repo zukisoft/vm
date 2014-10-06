@@ -315,6 +315,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
     <ClInclude Include="..\common\linux\types.h" />
+    <ClInclude Include="..\common\linux\uapi.h" />
     <ClInclude Include="..\common\linux\utsname.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
     <ClInclude Include="..\common\LzmaStreamReader.h" />
@@ -657,6 +658,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <Midl Include="syscalls64.idl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Midl>
+    <Midl Include="uapi.idl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </Midl>
   </ItemGroup>
   <ItemGroup>

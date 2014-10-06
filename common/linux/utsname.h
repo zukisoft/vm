@@ -33,36 +33,43 @@
 #define LINUX__OLD_UTS_LEN				8
 #define LINUX__NEW_UTS_LEN				64
 
+typedef struct {
+
+	linux_char_t sysname[LINUX__OLD_UTS_LEN + 1];
+	linux_char_t nodename[LINUX__OLD_UTS_LEN + 1];
+	linux_char_t release[LINUX__OLD_UTS_LEN + 1];
+	linux_char_t version[LINUX__OLD_UTS_LEN + 1];
+	linux_char_t machine[LINUX__OLD_UTS_LEN + 1];
+
+} linux_oldold_utsname;
+
+typedef struct {
+
+	linux_char_t sysname[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t nodename[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t release[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t version[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t machine[LINUX__NEW_UTS_LEN + 1];
+
+} linux_old_utsname;
+
+typedef struct {
+
+	linux_char_t sysname[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t nodename[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t release[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t version[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t machine[LINUX__NEW_UTS_LEN + 1];
+	linux_char_t domainname[LINUX__NEW_UTS_LEN + 1];
+
+} linux_new_utsname;
+
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
-	struct oldold_utsname {
-
-		char_t sysname[LINUX__OLD_UTS_LEN + 1];
-		char_t nodename[LINUX__OLD_UTS_LEN + 1];
-		char_t release[LINUX__OLD_UTS_LEN + 1];
-		char_t version[LINUX__OLD_UTS_LEN + 1];
-		char_t machine[LINUX__OLD_UTS_LEN + 1];
-	};
-
-	struct old_utsname {
-
-		char_t sysname[LINUX__NEW_UTS_LEN + 1];
-		char_t nodename[LINUX__NEW_UTS_LEN + 1];
-		char_t release[LINUX__NEW_UTS_LEN + 1];
-		char_t version[LINUX__NEW_UTS_LEN + 1];
-		char_t machine[LINUX__NEW_UTS_LEN + 1];
-	};
-
-	struct new_utsname {
-
-		char_t sysname[LINUX__NEW_UTS_LEN + 1];
-		char_t nodename[LINUX__NEW_UTS_LEN + 1];
-		char_t release[LINUX__NEW_UTS_LEN + 1];
-		char_t version[LINUX__NEW_UTS_LEN + 1];
-		char_t machine[LINUX__NEW_UTS_LEN + 1];
-		char_t domainname[LINUX__NEW_UTS_LEN + 1];
-	};
+	typedef linux_oldold_utsname	oldold_utsname;
+	typedef linux_old_utsname		old_utsname;
+	typedef linux_new_utsname		new_utsname;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)
