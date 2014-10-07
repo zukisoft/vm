@@ -36,9 +36,19 @@
 //
 // Wrapper class to contain a memory region allocated with VirtualAlloc(Ex) so
 // that an automatic destructor can be provided to release it
+//
+// TODO: Not sure why I added all that alignment crap in the bulk of the member
+// functions, it doesn't really need to be there?  Need to test everything, and
+// if they still work just remove it all.  These functions aren't that hard to call?!?!
 
 class MemoryRegion
 {
+private:
+
+	// Forward Declarations
+	//
+	class ReservationInfo;
+
 public:
 
 	// Destructor
@@ -47,16 +57,6 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Member Functions
-
-	// AlignToAllocationGranularity
-	//
-	// Aligns an address down to the allocation granularity
-	static void* AlignToAllocationGranularity(void* address);
-
-	// AlignToPageSize
-	//
-	// Aligns an address down to the system page size
-	static void* AlignToPageSize(void* address);
 
 	// Commit
 	//
@@ -145,6 +145,12 @@ public:
 	__declspec(property(get=getPointer)) void* Pointer;
 	void* getPointer(void) const { return m_base; }
 
+	// Reservation
+	//
+	// Gets a reference to the contained ReservationInfo class
+	__declspec(property(get=getReservation)) const ReservationInfo& Reservation;
+	const ReservationInfo& getReservation(void) const { return m_reservation; }
+
 private:
 
 	MemoryRegion(const MemoryRegion&)=delete;
@@ -152,8 +158,45 @@ private:
 
 	// Instance Constructor
 	//
-	MemoryRegion(HANDLE process, void* base, size_t length) : m_process(process), m_base(base), m_length(length) {}
-	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, HANDLE&, void*&, size_t&>(HANDLE&, void*&, size_t&);
+	MemoryRegion(HANDLE process, void* base, size_t length, MEMORY_BASIC_INFORMATION&& meminfo) : m_process(process), m_base(base), m_length(length), m_reservation(std::move(meminfo)) {}
+	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION>(HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION&&);
+
+	// ReservationInfo
+	//
+	// Stores the underlying allocation information for the memory region
+	class ReservationInfo
+	{
+	public:
+
+		ReservationInfo(MEMORY_BASIC_INFORMATION&& meminfo) : m_base(meminfo.AllocationBase), 
+			m_length(MemoryRegion::AlignUp(meminfo.RegionSize, MemoryRegion::AllocationGranularity)) {}
+		~ReservationInfo()=default;
+
+		//---------------------------------------------------------------------
+		// Properties
+
+		// BaseAddress
+		//
+		// Gets the base address of the memory reservation
+		__declspec(property(get=getBaseAddress)) const void* BaseAddress;
+		const void* getBaseAddress(void) const { return m_base; }
+
+		// Length
+		//
+		// Gets the lenght of the memory reservation
+		__declspec(property(get=getLength)) size_t Length;
+		size_t getLength(void) const { return m_length; }
+
+	private:
+
+		ReservationInfo(const ReservationInfo&)=delete;
+		ReservationInfo& operator=(const ReservationInfo&)=delete;
+
+		//---------------------------------------------------------------------
+		// Member Variables
+		const void*		m_base;				// Reservation base address
+		size_t			m_length;			// Reservation length
+	};
 
 	// SystemInfo
 	//
@@ -180,10 +223,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	void*				m_base;				// Base pointer for the memory region
-	size_t				m_length;			// Length of the memory region
-	HANDLE				m_process;			// Process to operate against
-	static SystemInfo	s_sysinfo;			// System information class
+	void*					m_base;			// Base pointer for the memory region
+	size_t					m_length;		// Length of the memory region
+	HANDLE					m_process;		// Process to operate against
+	const ReservationInfo	m_reservation;	// Reservation information
+	static SystemInfo		s_sysinfo;		// System information class
 };
 
 //-----------------------------------------------------------------------------

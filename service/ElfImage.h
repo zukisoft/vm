@@ -39,7 +39,7 @@
 //-----------------------------------------------------------------------------
 // ElfImage
 //
-// Base interface exposed by various ELF image format classes
+// Loads an ELF binary image into virtual memory
 
 class ElfImage
 {
@@ -69,31 +69,37 @@ public:
 	//
 	// Gets the virtual memory base address of the loaded image
 	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-	virtual const void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
+	const void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
 
 	// EntryPoint
 	//
 	// Gets the entry point for the image
 	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
-	virtual const void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
+	const void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
 
 	// Interpreter
 	//
 	// Indicates the path to the program interpreter, if one is present
 	__declspec(property(get=getInterpreter)) const tchar_t* Interpreter;
-	virtual const tchar_t* getInterpreter(void) const { return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str(); }
+	const tchar_t* getInterpreter(void) const { return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str(); }
+
+	// ProgramBreak
+	//
+	// Pointer to the initial program break address
+	__declspec(property(get=getProgramBreak)) const void* ProgramBreak;
+	const void* getProgramBreak(void) const { return m_metadata.ProgramBreak; }
 
 	// NumProgramHeaders
 	//
 	// Number of program headers defines as part of the loaded image
 	__declspec(property(get=getNumProgramHeaders)) size_t NumProgramHeaders;
-	virtual size_t getNumProgramHeaders(void) const { return m_metadata.NumProgramHeaders; }
+	size_t getNumProgramHeaders(void) const { return m_metadata.NumProgramHeaders; }
 
 	// ProgramHeaders
 	//
 	// Pointer to program headers that were defined as part of the loaded image
 	__declspec(property(get=getProgramHeaders)) const void* ProgramHeaders;
-	virtual const void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
+	const void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
 
 private:
 
@@ -119,6 +125,7 @@ private:
 	struct Metadata
 	{
 		void*					BaseAddress = nullptr;
+		void*					ProgramBreak = nullptr;
 		void*					ProgramHeaders = nullptr;
 		size_t					NumProgramHeaders = 0;
 		void*					EntryPoint = nullptr;

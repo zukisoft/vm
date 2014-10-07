@@ -207,6 +207,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 		// so reserve them at the highest available virtual address to try and avoid conflicts
 		if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
 		else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
+		// TODO ^^^ MEM_TOP_DOWN is crazy slow, is this a good idea here??
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
@@ -276,6 +277,9 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 
 	// Base address of the image is the original minimum virtual address, adjusted for load delta
 	metadata.BaseAddress = reinterpret_cast<void*>(minvaddr + vaddrdelta);
+
+	// The initial program break is the address just beyond the region allocated for the image
+	metadata.ProgramBreak = reinterpret_cast<void*>(uintptr_t(region->Reservation.BaseAddress) + region->Reservation.Length);
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	metadata.EntryPoint = (elfheader.e_entry) ? reinterpret_cast<void*>(elfheader.e_entry + vaddrdelta) : nullptr;

@@ -77,6 +77,9 @@ int sys_noentry(PCONTEXT context)
 	return -LINUX_ENOSYS; 
 }
 
+//////
+int sys045_brk(PCONTEXT);
+
 //-----------------------------------------------------------------------------
 // g_syscalls
 //
@@ -128,7 +131,7 @@ syscall_t g_syscalls[512] = {
 /* 042 */	sys_noentry,
 /* 043 */	sys_noentry,
 /* 044 */	sys_noentry,
-/* 045 */	sys_noentry,			// brk() - Implemented in host
+/* 045 */	INLINE_SYSCALL_1(sys32_brk, sys32_addr_t),
 /* 046 */	sys_noentry,
 /* 047 */	sys_noentry,
 /* 048 */	sys_noentry,

@@ -54,34 +54,6 @@ MemoryRegion::~MemoryRegion()
 }
 
 //-----------------------------------------------------------------------------
-// MemoryRegion::AlignToAllocationGranularity (static)
-//
-// Aligns an address down to the system allocation granularity
-//
-// Arguments:
-//
-//	address		- Address to be aligned
-
-void* MemoryRegion::AlignToAllocationGranularity(void* address)
-{
-	return reinterpret_cast<void*>(AlignDown(uintptr_t(address), MemoryRegion::AllocationGranularity));
-}
-
-//-----------------------------------------------------------------------------
-// MemoryRegion::AlignToPageSize (static)
-//
-// Aligns an address down to the system page size
-//
-// Arguments:
-//
-//	address		- Address to be aligned
-
-void* MemoryRegion::AlignToPageSize(void* address)
-{
-	return reinterpret_cast<void*>(AlignDown(uintptr_t(address), MemoryRegion::PageSize));
-}
-
-//-----------------------------------------------------------------------------
 // MemoryRegion::AlignDown (private, static)
 //
 // Aligns an offset down to the specified alignment
@@ -134,15 +106,18 @@ void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 {
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
 	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
 	// Use the appropriate VirtualAlloc version to commit the page(s) within the region
-	return (m_process == INVALID_HANDLE_VALUE) ? VirtualAlloc(reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect) :
-		VirtualAllocEx(m_process, reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect);
+	void* result = (m_process == INVALID_HANDLE_VALUE) ? VirtualAlloc(address, length, MEM_COMMIT, protect) :
+		VirtualAllocEx(m_process, address, length, MEM_COMMIT, protect);
+	if(result == nullptr) throw Win32Exception();
+
+	return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -159,7 +134,7 @@ void* MemoryRegion::Decommit(void* address, size_t length)
 {
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -215,7 +190,7 @@ void* MemoryRegion::Lock(void* address, size_t length)
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -244,7 +219,7 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -272,7 +247,7 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t length, void* address, uint32_t flags, uint32_t protect)
 {
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = uintptr_t(AlignToAllocationGranularity(address));
+	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::AllocationGranularity);
 
 	// Adjust the requested length to accomodate any downward alignment
 	length += requested - aligned;
@@ -282,8 +257,24 @@ std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t lengt
 		VirtualAllocEx(process, address, length, flags, protect);
 	if(!base) throw Win32Exception();
 
+	// Some callers have a need to know exactly what memory was reserved, run VirtualQuery()
+	// before any pages are changed to get metadata about the entire region
+	MEMORY_BASIC_INFORMATION meminfo;
+	BOOL result = (process == INVALID_HANDLE_VALUE) ? VirtualQuery(base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)) :
+		VirtualQueryEx(process, base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
+	if(!result) {
+
+		Win32Exception exception;				// GetLastError-based exception object
+
+		// In the unlikely event that VirtualQuery(Ex) fails, the region has to be released
+		// before throwing the exception up to the caller
+		if(process == INVALID_HANDLE_VALUE) VirtualFree(base, 0, MEM_RELEASE);
+		else VirtualFreeEx(process, base, 0, MEM_RELEASE);
+		throw exception;
+	}
+
 	// Construct the MemoryRegion instance to take ownership of the pointer
-	return std::make_unique<MemoryRegion>(process, base, length);
+	return std::make_unique<MemoryRegion>(process, base, length, std::move(meminfo));
 }
 
 //-----------------------------------------------------------------------------
@@ -303,7 +294,7 @@ void* MemoryRegion::Unlock(void* address, size_t length)
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = uintptr_t(AlignToPageSize(address));
+	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;

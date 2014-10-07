@@ -207,6 +207,17 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 	/* sys32_acquire_context = */	acquire_context,
 	/* sys32_release_context = */	release_context,
 
+	// 045: sys32_brk
+	[](sys32_context_t context, sys32_addr_t addr) -> sys32_long_t
+	{
+		Context* instance = reinterpret_cast<Context*>(context);
+		// TODO: should be a system call, don't do this directly like this
+		try { return reinterpret_cast<sys32_long_t>(instance->Process->SetProgramBreak(reinterpret_cast<void*>(addr))); }
+		catch(LinuxException& linuxex) { return -linuxex.Code; }
+		catch(Exception&) { return -1; }		// TODO
+		catch(...) { return -1; }				// TODO
+	},
+
 	// 122: sys32_uname
 	[](sys32_context_t context, uapi::new_utsname* buf) -> sys32_long_t
 	{

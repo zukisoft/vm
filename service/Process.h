@@ -76,6 +76,11 @@ public:
 	// Resumes the process from a suspended state
 	void Resume(void) { _ASSERTE(m_host); m_host->Resume(); }
 
+	// SetProgramBreak
+	//
+	// Adjusts the program break address (end of the heap)
+	void* SetProgramBreak(void* address);
+
 	// Suspend
 	//
 	// Suspends the process
@@ -124,8 +129,8 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, StartupInfo&& startinfo) : m_host(std::move(host)), m_startinfo(startinfo) {}
-	//friend std::unique_ptr<Process> std::make_unique<Process, std::unique_ptr<Host>, StartupInfo>(std::unique_ptr<Host>&&, StartupInfo&&);
+	Process(std::unique_ptr<Host>&& host, StartupInfo&& startinfo, uintptr_t programbreak) : 
+		m_host(std::move(host)), m_startinfo(startinfo), m_initialbreak(programbreak), m_currentbreak(programbreak) {}
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -165,6 +170,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
+	// AlignUp (static)
+	//
+	// Address alignment helper function
+	static uintptr_t AlignUp(uintptr_t offset, size_t alignment);
+
 	// CheckHostProcessClass (static)
 	//
 	// Verifies that the created host process type matches what is expected
@@ -181,9 +191,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>	m_host;			// Hosted windows process
-	const StartupInfo		m_startinfo;	// Hosted process start information
-	static SystemInfo		s_sysinfo;		// System information
+	std::unique_ptr<Host>	m_host;				// Hosted windows process
+	const StartupInfo		m_startinfo;		// Hosted process start information
+	const uintptr_t			m_initialbreak;		// Initial program break
+	uintptr_t				m_currentbreak;		// Current program break
+	static SystemInfo		s_sysinfo;			// System information
 };
 
 //-----------------------------------------------------------------------------
