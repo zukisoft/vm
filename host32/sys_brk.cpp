@@ -48,11 +48,14 @@ static SYSTEM_INFO s_sysinfo = []() -> SYSTEM_INFO {
 // sys_brk
 //
 // Sets the process program break, which is extra space reserved by a process
-// to implement a heap.  Specify nullptr to get the current break address
+// to implement a heap.  Specify nullptr to get the current break address.  This
+// function is not capable of returning an error code on Linux, to indicate that
+// the operation could not be completed, return the previously set break address,
+// the interpretation of which has been left as a runtime library detail
 //
 // Arguments:
 //
-//	address		- Address to set the program break to -- treated as a hint
+//	address		- Address to set the program break to (hint)
 
 uapi::long_t sys_brk(void* address)
 {
