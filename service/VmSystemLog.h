@@ -162,12 +162,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// Align
-	//
-	// Address alignment helper function
-	template <typename _type, size_t _align = __alignof(void*)>
-	inline _type Align(_type value) { return value + ((_align - (value % _align)) % _align); }
-
 	// IncrementTail
 	//
 	// Increments a tail pointer to reference the next log entry

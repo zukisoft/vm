@@ -155,11 +155,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// AlignUp
-	//
-	// Address alignment helper function
-	static size_t AlignUp(size_t offset, size_t alignment);
-
 	// AppendInfo
 	//
 	// Appends data to the information block and returns the offset

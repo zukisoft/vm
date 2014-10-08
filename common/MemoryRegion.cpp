@@ -54,42 +54,6 @@ MemoryRegion::~MemoryRegion()
 }
 
 //-----------------------------------------------------------------------------
-// MemoryRegion::AlignDown (private, static)
-//
-// Aligns an offset down to the specified alignment
-//
-// Arguments:
-//
-//	address		- Address to be aligned
-//	alignment	- Alignment
-
-uintptr_t MemoryRegion::AlignDown(uintptr_t address, size_t alignment)
-{
-	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
-
-	if(address < alignment) return 0;
-	else return AlignUp(address - (alignment - 1), alignment);
-}
-
-//---------------------------------------------------------------------------
-// MemoryRegion::AlignUp (private, static)
-//
-// Aligns an offset up to the specified alignment
-//
-// Arguments:
-//
-//	address		- Address to be aligned
-//	alignment	- Alignment
-
-uintptr_t MemoryRegion::AlignUp(uintptr_t address, size_t alignment)
-{
-	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
-
-	if(address == 0) return 0;
-	else return address + ((alignment - (address % alignment)) % alignment);
-}
-
-//-----------------------------------------------------------------------------
 // MemoryRegion::Commit
 //
 // Commits page(s) of memory within the region using the specified protection
@@ -106,7 +70,7 @@ void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 {
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
+	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -134,7 +98,7 @@ void* MemoryRegion::Decommit(void* address, size_t length)
 {
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
+	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -190,7 +154,7 @@ void* MemoryRegion::Lock(void* address, size_t length)
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
+	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -219,7 +183,7 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
+	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;
@@ -246,8 +210,17 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 
 std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t length, void* address, uint32_t flags, uint32_t protect)
 {
+	//
+	// TODO: This is completely screwed up, why did I do this?  What SHOULD happen here
+	// is that the base address is stored so that VirtualFree(Ex) can be called, BUT the
+	// pointer ultimately returned to the caller needs to be the original address or if NULL,
+	// the base address.  All these functions are aligning crap for no reason?
+	//
+
+	// Can calculate the MEMORY_BASIC_INFORMATION, don't need VirtualQuery(Ex)
+
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::AllocationGranularity);
+	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::AllocationGranularity);
 
 	// Adjust the requested length to accomodate any downward alignment
 	length += requested - aligned;
@@ -294,7 +267,7 @@ void* MemoryRegion::Unlock(void* address, size_t length)
 
 	uintptr_t base = uintptr_t(m_base);
 	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = AlignDown(uintptr_t(address), MemoryRegion::PageSize);
+	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
 
 	// Verify the requested address space is not outside of the region
 	length += requested - aligned;

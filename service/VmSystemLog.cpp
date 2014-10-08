@@ -235,7 +235,7 @@ void VmSystemLog::Push(VmSystemLogLevel level, VmSystemLogFacility facility, con
 	size_t messagelength = min(strlen(message) * sizeof(char_t), UINT16_MAX);
 
 	// Determine the length of the entire log entry, and discard it if > UINT16_MAX
-	size_t entrylength = Align(sizeof(LogEntry) + messagelength);
+	size_t entrylength = align::up(sizeof(LogEntry) + messagelength, __alignof(void*));
 	if(entrylength == UINT16_MAX) return;
 
 	// Check if writing this entry would wrap around to the top of the buffer

@@ -63,7 +63,8 @@
 //#include <vm.service.h>
 #include <messages.h>
 
-// find a place to put this
+// find a place to put this stuff
+#include <align.h>
 template <typename _type>
 struct zero_init : public _type
 {

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include "align.h"
 #include "Exception.h"
 #include "Win32Exception.h"
 
@@ -169,7 +170,7 @@ private:
 	public:
 
 		ReservationInfo(MEMORY_BASIC_INFORMATION&& meminfo) : m_base(meminfo.AllocationBase), 
-			m_length(MemoryRegion::AlignUp(meminfo.RegionSize, MemoryRegion::AllocationGranularity)) {}
+			m_length(align::up(meminfo.RegionSize, MemoryRegion::AllocationGranularity)) {}
 		~ReservationInfo()=default;
 
 		//---------------------------------------------------------------------
@@ -208,12 +209,6 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
-
-	// AlignDown/AlignUp
-	//
-	// Address alignment helper functions
-	static uintptr_t AlignDown(uintptr_t address, size_t alignment);
-	static uintptr_t AlignUp(uintptr_t address, size_t alignment);
 
 	// Reserve
 	//

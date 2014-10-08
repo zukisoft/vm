@@ -170,11 +170,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// AlignUp (static)
-	//
-	// Address alignment helper function
-	static uintptr_t AlignUp(uintptr_t offset, size_t alignment);
-
 	// CheckHostProcessClass (static)
 	//
 	// Verifies that the created host process type matches what is expected

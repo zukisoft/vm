@@ -65,24 +65,6 @@ ElfArguments::ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp)
 	while(envp && *envp) { AppendEnvironmentVariable(*envp); ++envp; }
 }
 
-//---------------------------------------------------------------------------
-// ElfArguments::AlignUp (private, static)
-//
-// Aligns an offset up to the specified alignment
-//
-// Arguments:
-//
-//	offset		- Offset to be aligned
-//	alignment	- Alignment
-
-inline size_t ElfArguments::AlignUp(size_t offset, size_t alignment)
-{
-	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
-
-	if(offset == 0) return 0;
-	else return offset + ((alignment - (offset % alignment)) % alignment);
-}
-
 //-----------------------------------------------------------------------------
 // ElfArguments::AppendArgument
 //
@@ -238,7 +220,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	size_t					stackoffset;				// Offset to the stack image
 
 	// Align the information block to 16 bytes; this becomes the start of the stack image
-	imagelen = stackoffset = AlignUp(m_info.size(), 16);
+	imagelen = stackoffset = align::up(m_info.size(), 16);
 
 	// Calculate the additional size required to hold the vectors
 	imagelen += sizeof(typename elf::addr_t);							// argc
@@ -246,7 +228,7 @@ ElfArguments::StackImage ElfArguments::GenerateStackImage(HANDLE process)
 	imagelen += sizeof(typename elf::addr_t) * (m_envp.size() + 1);		// envp + NULL
 	imagelen += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);		// auxv + AT_NULL
 	imagelen += sizeof(typename elf::addr_t);							// NULL
-	imagelen = AlignUp(imagelen, 16);									// alignment
+	imagelen = align::up(imagelen, 16);									// alignment
 
 	// Allocate the memory to hold the arguments in the hosted process
 	std::unique_ptr<MemoryRegion> allocation = MemoryRegion::Reserve(process, imagelen, MEM_COMMIT | MEM_TOP_DOWN);

@@ -37,24 +37,6 @@ static uint8_t UTF16_SCRIPT_MAGIC[]		= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x2
 // Static SYSTEM_INFO information
 Process::SystemInfo Process::s_sysinfo;
 
-//---------------------------------------------------------------------------
-// Process::AlignUp (private, static)
-//
-// Aligns an offset up to the specified alignment
-//
-// Arguments:
-//
-//	address		- Address to be aligned
-//	alignment	- Alignment
-
-inline uintptr_t Process::AlignUp(uintptr_t address, size_t alignment)
-{
-	if(alignment < 1) throw Exception(E_ARGUMENTOUTOFRANGE, _T("alignment"));
-
-	if(address == 0) return 0;
-	else return address + ((alignment - (address % alignment)) % alignment);
-}
-
 //-----------------------------------------------------------------------------
 // Process::CheckHostProcessClass<x86> (static, private)
 //
@@ -275,7 +257,7 @@ void* Process::SetProgramBreak(void* address)
 	if(address == nullptr) return reinterpret_cast<void*>(m_currentbreak);
 
 	uintptr_t newbreak = uintptr_t(address);
-	uintptr_t delta = AlignUp(newbreak - m_currentbreak, MemoryRegion::AllocationGranularity);
+	uintptr_t delta = align::up(newbreak - m_currentbreak, MemoryRegion::AllocationGranularity);
 
 	MEMORY_BASIC_INFORMATION meminfo;
 	VirtualQueryEx(m_host->ProcessHandle, (void*)m_currentbreak, &meminfo, sizeof(MEMORY_BASIC_INFORMATION));

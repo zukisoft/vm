@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\align.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\generic_text.h" />
     <ClInclude Include="..\common\Win32Exception.h" />

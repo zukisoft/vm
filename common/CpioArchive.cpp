@@ -26,23 +26,6 @@
 #pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
-// AlignUp
-//
-// Aligns a numeric value up to a specific boundary
-//
-// Arguments:
-//
-//	value		- value to be aligned
-//	alignment	- Alignment boundary
-
-template <typename _type>
-static _type AlignUp(_type value, _type alignment)
-{
-	if(value == 0) return 0;
-	else return value + ((alignment - (value % alignment)) % alignment);
-}
-
-//-----------------------------------------------------------------------------
 // ConvertHexString
 //
 // Converts an ANSI hexadecimal string into a numeric value
@@ -128,7 +111,7 @@ void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, st
 		if(strcmp(path, "TRAILER!!!") == 0) return;
 
 		// 32-bit alignment for the file data in the archive
-		reader->Seek(AlignUp<size_t>(reader->Position, 4));
+		reader->Seek(align::up(reader->Position, 4));
 
 		// Create a FileStream around the current base stream position
 		uint32_t datalength = ConvertHexString(header.c_filesize, 8);
@@ -139,7 +122,7 @@ void CpioArchive::EnumerateFiles(const std::unique_ptr<StreamReader>& reader, st
 
 		// In the event the entire file stream was not read, seek beyond it and
 		// apply the 32-bit alignment to get to the next entry header
-		reader->Seek(AlignUp<size_t>(reader->Position + (datalength - filestream.Position), 4));
+		reader->Seek(align::up(reader->Position + (datalength - filestream.Position), 4));
 	}
 }
 

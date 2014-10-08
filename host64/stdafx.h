@@ -52,7 +52,8 @@
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "rpcns4.lib")
 
-// find a place to put this
+// find a place to put this stuff
+#include <align.h>
 template <typename _type>
 struct zero_init : public _type
 {
