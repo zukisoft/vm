@@ -101,9 +101,6 @@ uapi::long_t sys_noentry(PCONTEXT context)
 	return -LINUX_ENOSYS; 
 }
 
-//////
-int sys045_brk(PCONTEXT);
-
 //-----------------------------------------------------------------------------
 // g_syscalls
 //
@@ -353,7 +350,7 @@ syscall_t g_syscalls[512] = {
 /* 240 */	sys_noentry,
 /* 241 */	sys_noentry,
 /* 242 */	sys_noentry,
-/* 243 */	sys_noentry,
+/* 243 */	LOCAL_SYSCALL_1(sys_set_thread_area, uapi::user_desc*),
 /* 244 */	sys_noentry,
 /* 245 */	sys_noentry,
 /* 246 */	sys_noentry,

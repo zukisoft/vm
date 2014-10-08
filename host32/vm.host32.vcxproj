@@ -191,6 +191,7 @@
     <ClCompile Include="sys000_template.cpp" />
     <ClCompile Include="syscalls.cpp" />
     <ClCompile Include="sys_brk.cpp" />
+    <ClCompile Include="sys_set_thread_area.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />

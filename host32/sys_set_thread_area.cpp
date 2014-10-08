@@ -20,33 +20,45 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
+#include "stdafx.h"
 #include <linux/errno.h>
 #include <linux/ldt.h>
 
 #pragma warning(push, 4)
 
-// syscall_t
+//-----------------------------------------------------------------------------
+// sys_set_thread_area
 //
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
-
-// g_syscalls
+// Arguments:
 //
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
+//	u_info		- Thread-locl storage descriptor
 
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
+uapi::long_t sys_set_thread_area(uapi::user_desc* u_info)
+{
+	if(u_info == nullptr) return -LINUX_EFAULT;
 
-/* 045 */ extern uapi::long_t sys_brk(void*);
-/* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
+	// Windows doesn't allow us to set a specific TLS slot
+	if(u_info->entry_number != -1) return -LINUX_EINVAL;
+
+	// Allocate a Thread Local Storage slot for the calling process
+	uint32_t slot = TlsAlloc();
+	if(slot == TLS_OUT_OF_INDEXES) return -LINUX_ESRCH;
+
+	// LIBC/Bionic will turn around and put the returned slot number into the GS
+	// segment register.  Unfortunately, if the munged slot number happens to be
+	// valid, that call will not raise an access violation and the vectored handler
+	// won't be triggered.  For now I'm shifting it left 8 bits to try and guarantee
+	// it won't bump into anything, but this results in a maximum slot number of 31
+	if(slot > 31) { TlsFree(slot); return -LINUX_ESRCH; }
+
+	u_info->entry_number = (slot << 8);
+	TlsSetValue(slot, reinterpret_cast<void*>(u_info->base_addr));
+
+	return 0;
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __SYSCALLS_H_
+
