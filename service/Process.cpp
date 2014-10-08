@@ -228,60 +228,18 @@ static std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 
 		// Load the StartupInfo structure with the necessary information to get the ELF binary running
 		startinfo.EntryPoint = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
+		startinfo.ProgramBreak = executable->ProgramBreak;
 		startinfo.StackImage = stackimg.BaseAddress;
 		startinfo.StackImageLength = stackimg.Length;
 
 		// Create the Process object, transferring the host and startup information
-		return std::make_shared<Process>(std::move(host), std::move(startinfo), uintptr_t(executable->ProgramBreak));
+		return std::make_shared<Process>(std::move(host), std::move(startinfo));
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
 	// TODO: should be LinuxException wrapping the underlying one?  Only case right now where
 	// that wouldn't be true is interpreter's OpenExec() call which should already throw LinuxExceptions
 	catch(...) { host->Terminate(E_FAIL); throw; }
-}
-
-//-----------------------------------------------------------------------------
-// Process::SetProgramBreak
-//
-// Adjusts the address of the program break, which defines the dynamic heap
-// for the hosted process
-//
-// Arguments:
-//
-//	address		- Process relative address to set the program break to
-
-void* Process::SetProgramBreak(void* address)
-{
-	// When null is provided, Linux will return the current program break
-	if(address == nullptr) return reinterpret_cast<void*>(m_currentbreak);
-
-	uintptr_t newbreak = uintptr_t(address);
-	uintptr_t delta = align::up(newbreak - m_currentbreak, MemoryRegion::AllocationGranularity);
-
-	MEMORY_BASIC_INFORMATION meminfo;
-	VirtualQueryEx(m_host->ProcessHandle, (void*)m_currentbreak, &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
-	
-	// NEW BREAK > OLD BREAK
-	// TODO - testing with VirtualAlloc
-	try { 
-		
-		// for now, just see what happens trying to allocate/commit the region being asked for
-		auto region = MemoryRegion::Reserve(m_host->ProcessHandle, delta, reinterpret_cast<void*>(m_currentbreak), MEM_COMMIT);
-
-		m_currentbreak = uintptr_t(region->Detach(&delta));
-		m_currentbreak += delta;
-	}
-	catch(Exception& ex) { 
-		/* TODO: something with exception, like syslog it */ 
-		ex;
-		return reinterpret_cast<void*>(m_currentbreak);
-	}
-
-	// NEW BREAK < OLD BREAK
-	// TODO - need to watch for underallocation
-
-	return reinterpret_cast<void*>(m_currentbreak);
 }
 
 //-----------------------------------------------------------------------------

@@ -76,11 +76,6 @@ public:
 	// Resumes the process from a suspended state
 	void Resume(void) { _ASSERTE(m_host); m_host->Resume(); }
 
-	// SetProgramBreak
-	//
-	// Adjusts the program break address (end of the heap)
-	void* SetProgramBreak(void* address);
-
 	// Suspend
 	//
 	// Suspends the process
@@ -106,6 +101,12 @@ public:
 	__declspec(property(get=getHostProcessId)) DWORD HostProcessId;
 	DWORD getHostProcessId(void) const { return m_host->ProcessId; }
 
+	// ProgramBreak
+	//
+	// Gets the initial program break for the process
+	__declspec(property(get=getProgramBreak)) const void* ProgramBreak;
+	const void* getProgramBreak(void) const { return m_startinfo.ProgramBreak; }
+
 	// StackImage
 	//
 	// Gets the location of the stack image in the hosted process
@@ -129,8 +130,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, StartupInfo&& startinfo, uintptr_t programbreak) : 
-		m_host(std::move(host)), m_startinfo(startinfo), m_initialbreak(programbreak), m_currentbreak(programbreak) {}
+	Process(std::unique_ptr<Host>&& host, StartupInfo&& startinfo) : m_host(std::move(host)), m_startinfo(startinfo) {}
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -155,6 +155,7 @@ private:
 	struct StartupInfo
 	{
 		const void*		EntryPoint;				// Execution entry point
+		const void*		ProgramBreak;			// Pointer to the program break;
 		const void*		StackImage;				// Pointer to the stack image
 		size_t			StackImageLength;		// Length of the stack image
 	};
@@ -188,8 +189,6 @@ private:
 
 	std::unique_ptr<Host>	m_host;				// Hosted windows process
 	const StartupInfo		m_startinfo;		// Hosted process start information
-	const uintptr_t			m_initialbreak;		// Initial program break
-	uintptr_t				m_currentbreak;		// Current program break
 	static SystemInfo		s_sysinfo;			// System information
 };
 

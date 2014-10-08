@@ -39,7 +39,9 @@ using syscall_t = int (*)(PCONTEXT);
 extern syscall_t g_syscalls[512];
 
 // TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern int sys_noentry(PCONTEXT);
+extern uapi::long_t sys_noentry(PCONTEXT);
+
+/* 045 */ extern uapi::long_t sys_brk(void*);
 
 //-----------------------------------------------------------------------------
 

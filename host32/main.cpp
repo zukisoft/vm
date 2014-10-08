@@ -24,6 +24,21 @@
 #include "Exception.h"
 #include "Win32Exception.h"
 
+// g_break (sys_brk.cpp)
+//
+// Global program break; initialized by main()
+extern void* g_break;
+
+// g_rpccontext
+//
+// Global RPC context handle to the system calls server
+sys32_context_t g_rpccontext;
+
+// g_startupinfo
+//
+// Global process startup information retrieved from the server
+sys32_startup_info g_startupinfo;
+
 // elfmain (elfmain.asm)
 //
 // Entry point used to launch the hosted ELF image
@@ -33,11 +48,6 @@ extern "C" void __stdcall elfmain(uint32_t address, uint32_t stackimg, size_t st
 //
 // Vectored Exception handler used to provide emulation
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
-
-// g_rpccontext
-//
-// Global RPC context handle to the system calls server
-sys32_context_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
 // WinMain
@@ -53,7 +63,6 @@ sys32_context_t g_rpccontext;
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	zero_init<sys32_startup_info>	startinfo;			// Startup information from the service
 	RPC_BINDING_HANDLE				binding;			// RPC binding from command line
 	RPC_STATUS						rpcresult;			// Result from RPC function call
 	HRESULT							hresult;			// Result from system call API function
@@ -69,15 +78,18 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys32_acquire_context(binding, &startinfo, &g_rpccontext);
+	hresult = sys32_acquire_context(binding, &g_startupinfo, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Install the emulator, which operates by intercepting low-level exceptions
 	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
 
+	// Initialize the global program break value to match the initial value
+	g_break = reinterpret_cast<void*>(g_startupinfo.program_break);
+
 	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
 	// so that CreateThread() can be used rather than _beginthreadex
-	elfmain(startinfo.entry_point, startinfo.stack_image, startinfo.stack_image_length);
+	elfmain(g_startupinfo.entry_point, g_startupinfo.stack_image, g_startupinfo.stack_image_length);
 
 	// TODO: this is temporary; the main thread needs to wait for signals and whatnot
 	return static_cast<int>(sys32_release_context(&g_rpccontext));

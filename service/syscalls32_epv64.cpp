@@ -143,6 +143,7 @@ static HRESULT acquire_context(handle_t rpchandle, sys32_startup_info* startinfo
 
 	// TODO: CHECK THESE POINTERS FOR OVERFLOW - THIS IS 32BIT INTERFACE
 	startinfo->entry_point = reinterpret_cast<sys32_addr_t>(process->EntryPoint);
+	startinfo->program_break = reinterpret_cast<sys32_addr_t>(process->ProgramBreak);
 	startinfo->stack_image = reinterpret_cast<sys32_addr_t>(process->StackImage);
 	startinfo->stack_image_length = static_cast<sys32_size_t>(process->StackImageLength);
 

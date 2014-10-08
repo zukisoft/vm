@@ -22,64 +22,62 @@
 
 #include "stdafx.h"
 
-#include <functional>
-
 #pragma warning(push, 4)
 
-// Will need to maintain both the original program break passed in by the 
-// service as well as the current program break globally ...
-static void* g_baselinebreak = reinterpret_cast<void*>(0x08000000);
-static void* g_break = reinterpret_cast<void*>(0x08000000);
+// g_break
+//
+// Current program break address
+void* g_break = nullptr;
 
-//// would like to come up with a template of some kind to define the system 
-//// call such that the arguments and return code can be strongly typed
-////
-//// PTR -> func(PCONTEXT) -> sys_func(int, long, void*, etc)
+// g_startupinfo (main.cpp)
 //
-//template <typename _retval = void, typename _arg0 = void, typename _arg1 = void>
-//class test
-//{
-//public:
-//	
-//	// this is the generic function
-//	uapi::long_t operator()(PCONTEXT& context) 
-//	{
-//		// will need placeholders? how to handle arguments, perhaps with enable_if<>??
-//		// static_cast or reinterpret_cast depends on if result is pointer type
-//		return reinterpret_cast<uapi::long_t>(*this(reinterpret_cast<void*>(context->Ebx)));
-//	}
-//
-//	// enable_if 1 argument, 2 arguments, 3 arguments, 4 arguments?
-//
-//	void* operator()(void* address)
-//	{
-//		return nullptr;
-//	}
-//};
+// Process startup information provided by the service
+extern sys32_startup_info g_startupinfo;
 
-void* sys_brk(void* address)
+// s_sysinfo
+//
+// Static copy of the system information; required to know allocation granularity
+static SYSTEM_INFO s_sysinfo = []() -> SYSTEM_INFO {
+
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	return sysinfo;
+}();
+
+//-----------------------------------------------------------------------------
+// sys_brk
+//
+// Sets the process program break, which is extra space reserved by a process
+// to implement a heap.  Specify nullptr to get the current break address
+//
+// Arguments:
+//
+//	address		- Address to set the program break to -- treated as a hint
+
+uapi::long_t sys_brk(void* address)
 {
-	MEMORY_BASIC_INFORMATION          meminfo;						
+	MEMORY_BASIC_INFORMATION	meminfo;	// Information on a memory region
 
-	if(address == nullptr) return g_break;
+	// NULL can be passed in as the address to retrieve the current program break
+	if(address == nullptr) return reinterpret_cast<uapi::long_t>(g_break);
 
+	// Create a working copy of the current break and calcuate the requested delta
 	intptr_t current = intptr_t(g_break);
-	intptr_t delta = align::up(intptr_t(address) - current, 0x10000);      // <-- MemoryRegion::AllocationGranularity
+	intptr_t delta = align::up(intptr_t(address) - current, s_sysinfo.dwAllocationGranularity);
 
 	// INCREASE PROGRAM BREAK
 	if(delta > 0) {
 
+		// Check to see if the region at the currently set break is MEM_FREE
 		VirtualQuery(reinterpret_cast<void*>(current), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
 		if(meminfo.State == MEM_FREE) {
                      
-			// Only ask for as much as is                    available to reserve
-			delta = min(delta, align::down(meminfo.RegionSize, 0x10000));   // <-- MemoryRegion::AllocationGranularity
+			// Only ask for as much as is available contiguously
+			delta = min(delta, align::down(intptr_t(meminfo.RegionSize), s_sysinfo.dwAllocationGranularity));
 
 			// Attempt to reserve and commit the calcuated region with READWRITE access
 			void* result = VirtualAlloc(reinterpret_cast<void*>(current), delta, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			if(result == nullptr) { /* TODO: WIN32EXCEPTION */ }
-
-			g_break = reinterpret_cast<void*>(current + delta);
+			if(result) g_break = reinterpret_cast<void*>(current + delta);
 		}
 	}
 
@@ -87,41 +85,27 @@ void* sys_brk(void* address)
 	else if(delta < 0) {
 
 		// Determine the target address, which can never be below the original program break
-		intptr_t target = max(intptr_t(g_baselinebreak), (current + delta));
+		intptr_t target = max(intptr_t(g_startupinfo.program_break), (current + delta));
 
 		// Work backwards from the previously allocated region to release as many as possible
 		VirtualQuery(reinterpret_cast<void*>(current - 1), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
 		while(target <= intptr_t(meminfo.AllocationBase)) {
 
-			// Release the region
-			if(!VirtualFree(meminfo.AllocationBase, 0, MEM_RELEASE)) { /* TODO: WIN32EXCEPTION */ }
+			// Attempt to decommit and release the entire region
+			if(!VirtualFree(meminfo.AllocationBase, 0, MEM_RELEASE)) break;
 
-			// Align the current break pointer with the released region base address and get
-			// information about the allocation immediately prior to keep going
+			// Align the current break pointer with the released region's base address
 			current = intptr_t(meminfo.AllocationBase);
+
+			// Get information on the next region lower in memory to check if it can be released
 			VirtualQuery(reinterpret_cast<void*>(current - 1), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
 		}
 
+		// Reset the program break to the last successfully released region base address
 		g_break = reinterpret_cast<void*>(current);
 	}
 
-	return g_break;                   // Return the (possibly) updated program break pointer
-}
-
-//-----------------------------------------------------------------------------
-// void* brk(void* address)
-//
-// EBX	- void*		address
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
-//
-uapi::long_t sys045_brk(PCONTEXT context)
-{
-	_ASSERTE(context->Eax == 45);			// Verify system call number
-	return 0;
+	return reinterpret_cast<uapi::long_t>(g_break);
 }
 
 //-----------------------------------------------------------------------------
