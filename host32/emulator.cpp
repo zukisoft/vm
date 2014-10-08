@@ -124,6 +124,33 @@ Instruction MOV16_GS_RM16(0x66, 0x8E, [](ContextRecord& context) -> bool {
 	return true;
 });
 
+// 65 89 : MOV GS:[r/m32],r32
+Instruction MOV_GS_RM32_R32(0x65, 0x89, [](ContextRecord& context) -> bool {
+
+	ModRM modrm(context.PopValue<uint8_t>());
+
+	uint32_t offset = *modrm.GetEffectiveAddress<uint32_t>(context);
+	uint32_t value = 0;
+
+	switch(modrm.reg) {
+
+		case 0x00: value = context.Registers.EAX; break;
+		case 0x01: value = context.Registers.ECX; break;
+		case 0x02: value = context.Registers.EDX; break;
+		case 0x03: value = context.Registers.EBX; break;
+		case 0x04: value = context.Registers.ESP; break;
+		case 0x05: value = context.Registers.EBP; break;
+		case 0x06: value = context.Registers.ESI; break;
+		case 0x07: value = context.Registers.EDI; break;
+	}
+
+	WriteGS<uint32_t>(value, offset);
+	return true;
+});
+
+// 66 65 89 : MOV GS:[r/m16],r16
+// TODO
+
 // 65 8B : MOV r32,GS:[r/m32]
 Instruction MOV_R32_GS_RM32(0x65, 0x8B, [](ContextRecord& context) -> bool {
 
@@ -179,6 +206,16 @@ Instruction MOV_AX_GS_MOFFS32(0x66, 0x65, 0xA1, [](ContextRecord& context) -> bo
 	context.Registers.AX = ReadGS<uint16_t>(context.PopValue<uint32_t>());
 	return true;
 });
+
+// 65 A3 : MOV GS:moffs32,EAX
+Instruction MOV_GS_MOFFS32_EAX(0x65, 0xA3, [](ContextRecord& context) -> bool {
+	
+	WriteGS<uint32_t>(context.Registers.EAX, context.PopValue<uint32_t>());
+	return true;
+});
+
+// 66 65 A3 : MOV GS:moffs32,AX
+// TODO
 
 // 65 83 : CMP GS:[xxxxxx],imm8
 Instruction CMP_GS_RM32_IMM8(0x65, 0x83, [](ContextRecord& context) -> bool {
@@ -238,8 +275,14 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 		if(MOV_EAX_GS_MOFFS32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 		if(MOV_AX_GS_MOFFS32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 
-		// MOV r32,GS:[r/m32]
-		// MOV r16,GS:[r/m32]
+		// MOV GS:moffs32, EAX
+		if(MOV_GS_MOFFS32_EAX.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
+
+		// MOV GS:[r/m32], r32
+		if(MOV_GS_RM32_R32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
+
+		// MOV r32, GS:[r/m32]
+		// MOV r16, GS:[r/m32]
 		if(MOV_R32_GS_RM32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 		if(MOV_R16_GS_RM32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 
