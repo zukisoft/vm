@@ -28,8 +28,7 @@
 //-----------------------------------------------------------------------------
 // ModRM::GetEffectiveAddress (private, static)
 //
-// Calcuates the memory address to which this ModR/M byte refers.  This can
-// be dereferenced to get the value or used as-is to set the value
+// Gets the effective address (displacement) associated with a ModR/M byte
 //
 // Arguments:
 //
@@ -37,7 +36,7 @@
 //	modrm		- Parent ModRM instance
 //	context		- Execution context record
 
-void* ModRM::GetEffectiveAddress(uint8_t directsize, ModRM& modrm, ContextRecord& context)
+uintptr_t ModRM::GetEffectiveAddress(uint8_t directsize, ModRM& modrm, ContextRecord& context)
 {
 	// Register-Direct operations need the address of actual structure member
 	PCONTEXT pcontext = context;
@@ -46,66 +45,68 @@ void* ModRM::GetEffectiveAddress(uint8_t directsize, ModRM& modrm, ContextRecord
 	switch (modrm.value & 0xC7) {
 
 		// Mod 00
-		case 0x00: return reinterpret_cast<void*>(context.Registers.EAX);
-		case 0x01: return reinterpret_cast<void*>(context.Registers.ECX);
-		case 0x02: return reinterpret_cast<void*>(context.Registers.EDX);
-		case 0x03: return reinterpret_cast<void*>(context.Registers.EBX);
+		case 0x00: return uintptr_t(context.Registers.EAX);
+		case 0x01: return uintptr_t(context.Registers.ECX);
+		case 0x02: return uintptr_t(context.Registers.EDX);
+		case 0x03: return uintptr_t(context.Registers.EBX);
 		case 0x04: return GetScaledEffectiveAddress(modrm, context);
-		case 0x05: return reinterpret_cast<void*>(context.PopInstruction<uint32_t>());
-		case 0x06: return reinterpret_cast<void*>(context.Registers.ESI);
-		case 0x07: return reinterpret_cast<void*>(context.Registers.EDI);
+		case 0x05: return uintptr_t(context.PopInstruction<uint32_t>());
+		case 0x06: return uintptr_t(context.Registers.ESI);
+		case 0x07: return uintptr_t(context.Registers.EDI);
 
 		// Mod 01
-		case 0x40: return reinterpret_cast<void*>(context.Registers.EAX + context.PopInstruction<uint8_t>());
-		case 0x41: return reinterpret_cast<void*>(context.Registers.ECX + context.PopInstruction<uint8_t>());
-		case 0x42: return reinterpret_cast<void*>(context.Registers.EDX + context.PopInstruction<uint8_t>());
-		case 0x43: return reinterpret_cast<void*>(context.Registers.EBX + context.PopInstruction<uint8_t>());
+		case 0x40: return uintptr_t(context.Registers.EAX + context.PopInstruction<uint8_t>());
+		case 0x41: return uintptr_t(context.Registers.ECX + context.PopInstruction<uint8_t>());
+		case 0x42: return uintptr_t(context.Registers.EDX + context.PopInstruction<uint8_t>());
+		case 0x43: return uintptr_t(context.Registers.EBX + context.PopInstruction<uint8_t>());
 		case 0x44: return GetScaledEffectiveAddress(modrm, context);
-		case 0x45: return reinterpret_cast<void*>(context.Registers.EBP + context.PopInstruction<uint8_t>());
-		case 0x46: return reinterpret_cast<void*>(context.Registers.ESI + context.PopInstruction<uint8_t>());
-		case 0x47: return reinterpret_cast<void*>(context.Registers.EDI + context.PopInstruction<uint8_t>());
+		case 0x45: return uintptr_t(context.Registers.EBP + context.PopInstruction<uint8_t>());
+		case 0x46: return uintptr_t(context.Registers.ESI + context.PopInstruction<uint8_t>());
+		case 0x47: return uintptr_t(context.Registers.EDI + context.PopInstruction<uint8_t>());
 
 		// Mod 10
-		case 0x80: return reinterpret_cast<void*>(context.Registers.EAX + context.PopInstruction<uint32_t>());
-		case 0x81: return reinterpret_cast<void*>(context.Registers.ECX + context.PopInstruction<uint32_t>());
-		case 0x82: return reinterpret_cast<void*>(context.Registers.EDX + context.PopInstruction<uint32_t>());
-		case 0x83: return reinterpret_cast<void*>(context.Registers.EBX + context.PopInstruction<uint32_t>());
+		case 0x80: return uintptr_t(context.Registers.EAX + context.PopInstruction<uint32_t>());
+		case 0x81: return uintptr_t(context.Registers.ECX + context.PopInstruction<uint32_t>());
+		case 0x82: return uintptr_t(context.Registers.EDX + context.PopInstruction<uint32_t>());
+		case 0x83: return uintptr_t(context.Registers.EBX + context.PopInstruction<uint32_t>());
 		case 0x84: return GetScaledEffectiveAddress(modrm, context);
-		case 0x85: return reinterpret_cast<void*>(context.Registers.EBP + context.PopInstruction<uint32_t>());
-		case 0x86: return reinterpret_cast<void*>(context.Registers.ESI + context.PopInstruction<uint32_t>());
-		case 0x87: return reinterpret_cast<void*>(context.Registers.EDI + context.PopInstruction<uint32_t>());
+		case 0x85: return uintptr_t(context.Registers.EBP + context.PopInstruction<uint32_t>());
+		case 0x86: return uintptr_t(context.Registers.ESI + context.PopInstruction<uint32_t>());
+		case 0x87: return uintptr_t(context.Registers.EDI + context.PopInstruction<uint32_t>());
 
 		// Mod 11 (Register-Direct)
 		//
-		// Register-Direct mode may access different registers depending on the operation
+		// Register-Direct mode may access different registers depending on the operation.
+		// Returns a pointer to the context structure register field, which happens to be
+		// an offset into the data segment so this should behave as expected
 		//
 		// r32 -> EAX / ECX / EDX / EBX / ESP / EBP / ESI / EDI
 		// r16 -> AX  / CX  / DX  / BX  / SP  / BP  / SI  / DI
 		// r8  -> AL  / CL  / DL  / BL  / AH  / CH  / DH  / BH
 	
-		case 0xC0: return &pcontext->Eax;				// EAX/AX/AL
-		case 0xC1: return &pcontext->Ecx;				// ECX/CX/CL
-		case 0xC2: return &pcontext->Edx;				// EDX/DX/DL
-		case 0xC3: return &pcontext->Ebx;				// EBX/BX/BL
+		case 0xC0: return uintptr_t(&pcontext->Eax);	// EAX/AX/AL
+		case 0xC1: return uintptr_t(&pcontext->Ecx);	// ECX/CX/CL
+		case 0xC2: return uintptr_t(&pcontext->Edx);	// EDX/DX/DL
+		case 0xC3: return uintptr_t(&pcontext->Ebx);	// EBX/BX/BL
 
 		case 0xC4:										// ESP/SP/AH
-			if(directsize > sizeof(uint8_t)) return &pcontext->Esp;
-			else return reinterpret_cast<uint8_t*>(&pcontext->Eax) + 1;
+			if(directsize > sizeof(uint8_t)) return uintptr_t(&pcontext->Esp);
+			else return uintptr_t(&pcontext->Eax) + 1;
 
 		case 0xC5:										// EBP/BP/CH
-			if(directsize > sizeof(uint8_t)) return &pcontext->Ebp;
-			else return reinterpret_cast<uint8_t*>(&pcontext->Ecx) + 1;
+			if(directsize > sizeof(uint8_t)) return uintptr_t(&pcontext->Ebp);
+			else return uintptr_t(&pcontext->Ecx) + 1;
 
 		case 0xC6:										// ESI/SI/DH
-			if(directsize > sizeof(uint8_t)) return &pcontext->Esi;
-			else return reinterpret_cast<uint8_t*>(&pcontext->Edx) + 1;
+			if(directsize > sizeof(uint8_t)) return uintptr_t(&pcontext->Esi);
+			else return uintptr_t(&pcontext->Edx) + 1;
 
 		case 0xC7:										// EDI/DI/BH
-			if(directsize > sizeof(uint8_t)) return &pcontext->Edi;
-			else return reinterpret_cast<uint8_t*>(&pcontext->Ebx) + 1;
+			if(directsize > sizeof(uint8_t)) return uintptr_t(&pcontext->Edi);
+			else return uintptr_t(&pcontext->Ebx) + 1;
 	}
 
-	return NULL;					// <--- Can't happen
+	return 0;						// <--- Can't happen
 }
 
 //-----------------------------------------------------------------------------
@@ -119,7 +120,7 @@ void* ModRM::GetEffectiveAddress(uint8_t directsize, ModRM& modrm, ContextRecord
 //	modrm		- Parent ModRM instance
 //	context		- Execution context record
 
-void* ModRM::GetScaledEffectiveAddress(ModRM& modrm, ContextRecord& context)
+uintptr_t ModRM::GetScaledEffectiveAddress(ModRM& modrm, ContextRecord& context)
 {
 	uintptr_t effectiveaddr;			// Calculated effective address
 
@@ -156,8 +157,7 @@ void* ModRM::GetScaledEffectiveAddress(ModRM& modrm, ContextRecord& context)
 		case 0x07: effectiveaddr += uintptr_t(context.Registers.EDI); break;
 	}
 
-	// Return the calculated effective address as a void pointer
-	return reinterpret_cast<void*>(effectiveaddr);
+	return effectiveaddr;			// Return calculated effective address
 }
 
 //-----------------------------------------------------------------------------

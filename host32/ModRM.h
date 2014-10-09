@@ -54,9 +54,11 @@ public:
 
 	// GetEffectiveAddress
 	//
-	// Creates a pointer that can be used to either get or set the R/M value,
-	template<typename T> T* GetEffectiveAddress(ContextRecord& context) 
-		{ return reinterpret_cast<T*>(GetEffectiveAddress(sizeof(T), *this, context)); }
+	// Gets the effective address (displacement) associated with the ModR/M byte;
+	// width of the target is required for register-direct addressing mode
+	template <typename _width>
+	inline uintptr_t GetEffectiveAddress(ContextRecord& context)
+		{ return GetEffectiveAddress(sizeof(_width), *this, context); }
 
 	//-------------------------------------------------------------------------
 	// Fields
@@ -86,8 +88,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	static void* GetEffectiveAddress(uint8_t size, ModRM& modrm, ContextRecord& context);
-	static void* GetScaledEffectiveAddress(ModRM& modrm, ContextRecord& context);
+	static uintptr_t GetEffectiveAddress(uint8_t size, ModRM& modrm, ContextRecord& context);
+	static uintptr_t GetScaledEffectiveAddress(ModRM& modrm, ContextRecord& context);
 };
 
 //-----------------------------------------------------------------------------
