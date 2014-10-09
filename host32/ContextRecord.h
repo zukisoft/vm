@@ -326,20 +326,10 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// PopReference<T>
-	//
-	// Pulls the next value from the instruction pointer as a reference
-	template <typename T> T* PopReference(void)
-	{
-		T* value = reinterpret_cast<T*>(m_context->Eip);
-		m_context->Eip += sizeof(T);
-		return value;
-	}
-	
-	// PopValue<T>
+	// PopInstruction<T>
 	//
 	// Pulls the next value from the instruction pointer
-	template<typename T> T PopValue(void)
+	template<typename T> T PopInstruction(void)
 	{
 		T value = *reinterpret_cast<T*>(m_context->Eip);
 		m_context->Eip += sizeof(T);
