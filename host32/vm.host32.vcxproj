@@ -162,6 +162,7 @@
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h" />
+    <ClInclude Include="Context.h" />
     <ClInclude Include="ContextRecord.h" />
     <ClInclude Include="Instruction.h" />
     <ClInclude Include="ModRM.h" />

@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include <linux/errno.h>
+#include "Context.h"
 #include "ContextRecord.h"
 #include "Instruction.h"
 #include "ModRM.h"
