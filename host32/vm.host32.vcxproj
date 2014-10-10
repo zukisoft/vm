@@ -162,10 +162,8 @@
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h" />
-    <ClInclude Include="Context.h" />
     <ClInclude Include="ContextRecord.h" />
     <ClInclude Include="Instruction.h" />
-    <ClInclude Include="ModRM.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="syscalls.h" />
   </ItemGroup>
@@ -179,9 +177,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ContextRecord.cpp" />
     <ClCompile Include="emulator.cpp" />
     <ClCompile Include="Instruction.cpp" />
-    <ClCompile Include="ModRM.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

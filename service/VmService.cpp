@@ -206,7 +206,7 @@ void VmService::OnStart(int, LPTSTR*)
 	
 	// need to convert h into a FileDescriptor? Perhaps process should accept Handle
 	// instead, file descriptors are just per-process mappings of Handle
-
+	
 	// need to maintain a reference to the Process object since
 	// this will need a watcher thread to panic if init stops before service stops
 	// other processes will be caught by RPC context rundown

@@ -22,10 +22,8 @@
 
 #include "stdafx.h"
 #include <linux/errno.h>
-#include "Context.h"
 #include "ContextRecord.h"
 #include "Instruction.h"
-#include "ModRM.h"
 #include "syscalls.h"
 
 // t_gs (TLS)
@@ -105,40 +103,34 @@ Instruction INT_80(0xCD, 0x80, [](ContextRecord& context) -> bool {
 // 8E/r : MOV Sreg,r/m16
 Instruction MOV_GS_RM16(0x8E, [](ContextRecord& context) -> bool {
 
-	// Grab the ModR/M byte and verify that the target register is GS
-	ModRM modrm(context.PopInstruction<uint8_t>());
-	if(modrm.reg != 0x05) return false;
+	auto modrm = context.PopModRM<uint16_t>();
+	if(modrm.Reg != 0x05) return false;
 
 	// Replace the value stored in the virtual GS register on this thread
-	t_gs = *((uint16_t*)modrm.GetEffectiveAddress<uint16_t>(context));
+	t_gs = *reinterpret_cast<uint16_t*>(modrm.Pointer);
 
 	return true;
 });
-
-// 65 8E/r exists! MOV GS,GS:[EAX] for example
 
 // 66 8E/r : MOV Sreg,r/m16 (operand size override)
 Instruction MOV16_GS_RM16(0x66, 0x8E, [](ContextRecord& context) -> bool {
 
-	// Grab the ModR/M byte and verify that the target register is GS
-	ModRM modrm(context.PopInstruction<uint8_t>());
-	if(modrm.reg != 0x05) return false;
+	auto modrm = context.PopModRM<uint16_t>();
+	if(modrm.Reg != 0x05) return false;
 
 	// Replace the value stored in the virtual GS register on this thread
-	t_gs = *((uint16_t*)modrm.GetEffectiveAddress<uint16_t>(context));
+	t_gs = *reinterpret_cast<uint16_t*>(modrm.Pointer);
 
 	return true;
 });
 
-// 66 65 8E/r : MOV Sreg,GS:[r/m16]
-
 // 65 89 : MOV GS:[r/m32],r32
 Instruction MOV_GS_RM32_R32(0x65, 0x89, [](ContextRecord& context) -> bool {
 
-	ModRM		modrm(context.PopInstruction<uint8_t>());
-	uint32_t	value = 0;
+	auto modrm = context.PopModRM<uint32_t>();
+	uint32_t value = 0;
 
-	switch(modrm.reg) {
+	switch(modrm.Reg) {
 
 		case 0x00: value = context.Registers.EAX; break;
 		case 0x01: value = context.Registers.ECX; break;
@@ -150,20 +142,17 @@ Instruction MOV_GS_RM32_R32(0x65, 0x89, [](ContextRecord& context) -> bool {
 		case 0x07: value = context.Registers.EDI; break;
 	}
 
-	WriteGS<uint32_t>(value, modrm.GetEffectiveAddress<uint32_t>(context));
+	WriteGS<uint32_t>(value, modrm.Displacement);
 	return true;
 });
-
-// 66 65 89 : MOV GS:[r/m16],r16
-// TODO
 
 // 65 8B : MOV r32,GS:[r/m32]
 Instruction MOV_R32_GS_RM32(0x65, 0x8B, [](ContextRecord& context) -> bool {
 
-	ModRM		modrm(context.PopInstruction<uint8_t>());
-	uint32_t	value = ReadGS<uint32_t>(modrm.GetEffectiveAddress<uint32_t>(context));
+	auto modrm = context.PopModRM<uint32_t>();
+	uint32_t value = ReadGS<uint32_t>(modrm.Displacement);
 
-	switch(modrm.reg) {
+	switch(modrm.Reg) {
 
 		case 0x00: context.Registers.EAX = value; break;
 		case 0x01: context.Registers.ECX = value; break;
@@ -181,10 +170,10 @@ Instruction MOV_R32_GS_RM32(0x65, 0x8B, [](ContextRecord& context) -> bool {
 // 66 65 8B : MOV r16,GS:[r/m32]
 Instruction MOV_R16_GS_RM32(0x66, 0x65, 0x8B, [](ContextRecord& context) -> bool {
 
-	ModRM		 modrm(context.PopInstruction<uint8_t>());
-	uint16_t	value = ReadGS<uint16_t>(modrm.GetEffectiveAddress<uint32_t>(context));
+	auto modrm = context.PopModRM<uint32_t>();
+	uint32_t value = ReadGS<uint16_t>(modrm.Displacement);
 
-	switch(modrm.reg) {
+	switch(modrm.Reg) {
 
 		case 0x00: context.Registers.AX = value; break;
 		case 0x01: context.Registers.CX = value; break;
@@ -202,45 +191,40 @@ Instruction MOV_R16_GS_RM32(0x66, 0x65, 0x8B, [](ContextRecord& context) -> bool
 // 65 A1 : MOV EAX,GS:moffs32
 Instruction MOV_EAX_GS_MOFFS32(0x65, 0xA1, [](ContextRecord& context) -> bool {
 
-	context.Registers.EAX = ReadGS<uint32_t>(context.PopInstruction<uint32_t>());
+	// moffs32
+	context.Registers.EAX = ReadGS<uint32_t>(context.PopOffset<uint32_t>());
 	return true;
 });
 
 // 66 65 A1 : MOV AX,GS:moffs32
 Instruction MOV_AX_GS_MOFFS32(0x66, 0x65, 0xA1, [](ContextRecord& context) -> bool {
 
-	context.Registers.AX = ReadGS<uint16_t>(context.PopInstruction<uint32_t>());
+	context.Registers.AX = ReadGS<uint16_t>(context.PopOffset<uint32_t>());
 	return true;
 });
 
 // 65 A3 : MOV GS:moffs32,EAX
 Instruction MOV_GS_MOFFS32_EAX(0x65, 0xA3, [](ContextRecord& context) -> bool {
 	
-	WriteGS<uint32_t>(context.Registers.EAX, context.PopInstruction<uint32_t>());
+	WriteGS<uint32_t>(context.Registers.EAX, context.PopOffset<uint32_t>());
 	return true;
 });
-
-// 66 65 A3 : MOV GS:moffs32,AX
-// TODO
 
 // 65 C7 : MOV GS:[r/m32],imm32
 Instruction MOV_GS_RM32_IMM32(0x65, 0xC7, [](ContextRecord& context) -> bool {
 	
-	ModRM		modrm(context.PopInstruction<uint8_t>());
-	uint32_t	offset = modrm.GetEffectiveAddress<uint32_t>(context);
-
-	WriteGS<uint32_t>(context.PopInstruction<uint32_t>(), offset);
+	auto modrm = context.PopModRM<uint32_t>();
+	WriteGS<int32_t>(context.PopImmediate<int32_t>(), modrm.Displacement);
 	return true;
 });
 
-// 65 83 : CMP GS:[xxxxxx],imm8
+// 65 83 : CMP GS:[r/m32],imm8
 Instruction CMP_GS_RM32_IMM8(0x65, 0x83, [](ContextRecord& context) -> bool {
 
-	ModRM modrm(context.PopInstruction<uint8_t>());
+	auto modrm = context.PopModRM<uint32_t>();
 
-	// RHS is sign-extended to match the bit length of LHS
-	int32_t lhs = ReadGS<int32_t>(modrm.GetEffectiveAddress<uint32_t>(context));
-	int32_t rhs = context.PopInstruction<uint8_t>();
+	int32_t lhs = ReadGS<int32_t>(modrm.Displacement);
+	int32_t rhs = context.PopImmediate<int8_t>();		// <-- sign-extend
 
 	// Due to the flags, this operation is easier not to simulate
 	__asm mov eax, lhs
@@ -256,6 +240,29 @@ Instruction CMP_GS_RM32_IMM8(0x65, 0x83, [](ContextRecord& context) -> bool {
 	context.Flags.AF = ((rhs & 0x00000010) != 0);
 	context.Flags.PF = ((rhs & 0x00000004) != 0);
 	context.Flags.CF = ((rhs & 0x00000001) != 0);
+
+	return true;
+});
+
+// 65 33 : XOR r32,GS:[r/m32]
+Instruction XOR_R32_GS_RM32(0x65, 0x33, [](ContextRecord& context) -> bool {
+
+	auto modrm = context.PopModRM<uint32_t>();
+	uint32_t value = ReadGS<uint32_t>(modrm.Displacement);
+
+	switch(modrm.Reg) {
+
+		case 0x00: context.Registers.EAX ^= value; break;
+		case 0x01: context.Registers.ECX ^= value; break;
+		case 0x02: context.Registers.EDX ^= value; break;
+		case 0x03: context.Registers.EBX ^= value; break;
+		case 0x04: context.Registers.ESP ^= value; break;
+		case 0x05: context.Registers.EBP ^= value; break;
+		case 0x06: context.Registers.ESI ^= value; break;
+		case 0x07: context.Registers.EDI ^= value; break;
+	}
+
+	// TODO: FLAGS!!
 
 	return true;
 });
@@ -306,6 +313,8 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 
 		// CMP GS:[xxxxxx],imm8
 		if(CMP_GS_RM32_IMM8.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
+
+		if(XOR_R32_GS_RM32.Execute(context)) return EXCEPTION_CONTINUE_EXECUTION;
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;

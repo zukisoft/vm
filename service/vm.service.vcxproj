@@ -316,7 +316,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
     <ClInclude Include="..\common\linux\types.h" />
-    <ClInclude Include="..\common\linux\uapi.h" />
     <ClInclude Include="..\common\linux\utsname.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
     <ClInclude Include="..\common\LzmaStreamReader.h" />
@@ -330,6 +329,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\RpcInterface.h" />
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\StructuredException.h" />
+    <ClInclude Include="..\common\uapi.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\common\XzStreamReader.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
