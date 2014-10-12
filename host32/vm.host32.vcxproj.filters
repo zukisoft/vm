@@ -46,9 +46,6 @@
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="Instruction.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\errno.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -58,7 +55,10 @@
     <ClInclude Include="..\common\align.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="ContextRecord.h">
+    <ClInclude Include="ModRM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -84,9 +84,6 @@
     <ClCompile Include="emulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Instruction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="syscalls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -98,9 +95,6 @@
     </ClCompile>
     <ClCompile Include="sys_set_thread_area.cpp">
       <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="ContextRecord.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
