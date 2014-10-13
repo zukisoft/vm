@@ -77,8 +77,8 @@ void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
 
 	// Use the appropriate VirtualAlloc version to commit the page(s) within the region
-	void* result = (m_process == INVALID_HANDLE_VALUE) ? VirtualAlloc(address, length, MEM_COMMIT, protect) :
-		VirtualAllocEx(m_process, address, length, MEM_COMMIT, protect);
+	void* result = (m_process == INVALID_HANDLE_VALUE) ? VirtualAlloc(reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect) :
+		VirtualAllocEx(m_process, reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect);
 	if(result == nullptr) throw Win32Exception();
 
 	return result;

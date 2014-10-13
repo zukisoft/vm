@@ -47,7 +47,7 @@ elfmain proc
 	sub rsp, r8
 	mov rdi, rsp
 	mov rcx, r8
-	shr rcx, 4
+	shr rcx, 3
 	rep movsq
 
 	; zero out the general purpose registers
