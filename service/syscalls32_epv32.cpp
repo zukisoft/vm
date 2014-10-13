@@ -211,6 +211,11 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 	// 085: sys32_readlink
 	[](sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz) -> sys32_long_t
 	{
+		(context);
+		(pathname);
+		(buf);
+		(bufsiz);
+
 		return -1;
 	},
 

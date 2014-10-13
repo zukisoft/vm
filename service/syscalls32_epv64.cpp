@@ -69,8 +69,17 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// ClientPID
+	//
+	// Gets the host process identifier
 	__declspec(property(get=getClientPID)) DWORD ClientPID;
 	DWORD getClientPID(void) const { return m_pid; }
+
+	// Process
+	//
+	// Gets the process object instance
+	__declspec(property(get=getProcess)) ProcessPtr Process;
+	ProcessPtr getProcess(void) const { return m_process; }
 
 	// SystemCalls
 	//
@@ -86,7 +95,7 @@ private:
 
 	// Instance Constructor
 	//
-	Context(const RPC_CALL_ATTRIBUTES* attributes, ::SystemCalls* syscalls, const std::shared_ptr<Process>& process)
+	Context(const RPC_CALL_ATTRIBUTES* attributes, ::SystemCalls* syscalls, const ProcessPtr& process)
 	{
 		_ASSERTE(attributes);
 		_ASSERTE(syscalls);
@@ -99,9 +108,9 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	DWORD						m_pid;			// Client process identifier
-	::SystemCalls*				m_syscalls;		// SystemCalls instance pointer
-	std::shared_ptr<Process>	m_process;		// Process object instance
+	DWORD					m_pid;			// Client process identifier
+	::SystemCalls*			m_syscalls;		// SystemCalls instance pointer
+	ProcessPtr				m_process;		// Process object instance
 };
 
 //-----------------------------------------------------------------------------
@@ -198,6 +207,29 @@ SystemCalls32_v1_0_epv_t syscalls32_epv64 = {
 
 	/* sys32_acquire_context = */	acquire_context,
 	/* sys32_release_context = */	release_context,
+
+	// 085: sys32_readlink
+	[](sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz) -> sys32_long_t
+	{
+		(context);
+		(pathname);
+		(buf);
+		(bufsiz);
+
+		return -1;
+	},
+
+	// 122: sys32_uname
+	[](sys32_context_t context, uapi::new_utsname* buf) -> sys32_long_t
+	{
+		Context* instance = reinterpret_cast<Context*>(context);
+
+		// clean this up, don't cast new_utsname like this
+		try { return static_cast<sys32_long_t>(instance->SystemCalls->newuname(instance->Process, buf)); }
+		catch(LinuxException& linuxex) { return -linuxex.Code; }
+		catch(Exception&) { return -1; }		// TODO
+		catch(...) { return -1; }				// TODO
+	},
 
 	// 006: sys32_close
 	[](sys32_context_t context, sys32_int_t fd) -> sys32_long_t 

@@ -56,7 +56,7 @@ namespace align {
 	// align::up (pointers)
 	//
 	template <typename _type>
-	inline typename std::enable_if<std::is_pointer<_type>::value, _type>::type up(_type value, unsigned int alignment)
+	inline typename std::enable_if<std::is_pointer<_type>::value, _type>::type up(_type value, unsigned __int3264 alignment)
 	{
 		if(alignment < 1) throw std::out_of_range("alignment");
 		uintptr_t address = uintptr_t(value);
@@ -66,7 +66,7 @@ namespace align {
 	// align::up (unsigned integers)
 	//
 	template <typename _type>
-	inline typename std::enable_if<__align::is_unsigned_integral<_type>::value, _type>::type up(_type value, unsigned int alignment)
+	inline typename std::enable_if<__align::is_unsigned_integral<_type>::value, _type>::type up(_type value, unsigned __int3264 alignment)
 	{
 		if(alignment < 1) throw std::out_of_range("alignment");
 		return static_cast<_type>((value == 0) ? 0 : value + ((alignment - (value % alignment)) % alignment));
@@ -75,7 +75,7 @@ namespace align {
 	// align::up (signed integers)
 	//
 	template <typename _type>
-	inline typename std::enable_if<__align::is_signed_integral<_type>::value, _type>::type up(_type value, int alignment)
+	inline typename std::enable_if<__align::is_signed_integral<_type>::value, _type>::type up(_type value, __int3264 alignment)
 	{
 		if(alignment < 1) throw std::out_of_range("alignment");
 		return static_cast<_type>((value == 0) ? 0 : value + ((alignment - (value % alignment)) % alignment));
@@ -84,7 +84,7 @@ namespace align {
 	// align::down (pointers)
 	//
 	template <typename _type>
-	inline typename std::enable_if<std::is_pointer<_type>::value, _type>::type down(_type value, unsigned int alignment)
+	inline typename std::enable_if<std::is_pointer<_type>::value, _type>::type down(_type value, unsigned __int3264 alignment)
 	{
 		if(alignment < 1) throw std::out_of_range("alignment");
 		uintptr_t address = uintptr_t(value);
@@ -94,7 +94,7 @@ namespace align {
 	// align::down (unsigned integers)
 	//
 	template <typename _type>
-	inline typename std::enable_if<__align::is_unsigned_integral<_type>::value, _type>::type down(_type value, unsigned int alignment)
+	inline typename std::enable_if<__align::is_unsigned_integral<_type>::value, _type>::type down(_type value, unsigned __int3264 alignment)
 	{
 		if(alignment < 1) throw std::out_of_range("alignment");
 		return static_cast<_type>((value < alignment) ? 0 : up<_type>(value - (alignment - 1), alignment));
@@ -103,7 +103,7 @@ namespace align {
 	// align::down (signed integers)
 	//
 	template <typename _type>
-	inline typename std::enable_if<__align::is_signed_integral<_type>::value, _type>::type down(_type value, int alignment)
+	inline typename std::enable_if<__align::is_signed_integral<_type>::value, _type>::type down(_type value, __int3264 alignment)
 	{
 		if(alignment < 1) throw std::out_of_range("alignment");
 		return static_cast<_type>((value < alignment) ? 0 : up<_type>(value - (alignment - 1), alignment));

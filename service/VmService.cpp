@@ -253,8 +253,7 @@ void VmService::OnStop(void)
 // DO I WANT TO BREAK THESE OUT INTO SEPARATE .CPP FILES, ONE FOR EACH?  SOME WILL
 // GET EXTRAORDINARILY COMPLICATED TO IMPLEMENT
 //
-
-uapi::long_t VmService::newuname(const ProcessPtr& process, uapi::new_utsname* buf)
+__int3264 VmService::newuname(const ProcessPtr& process, uapi::new_utsname* buf)
 {
 	uapi::char_t	nodename[MAX_COMPUTERNAME_LENGTH + 1];
 	DWORD			cch = MAX_COMPUTERNAME_LENGTH + 1;

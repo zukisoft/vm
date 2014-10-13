@@ -233,9 +233,9 @@ std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t lengt
 	// Some callers have a need to know exactly what memory was reserved, run VirtualQuery()
 	// before any pages are changed to get metadata about the entire region
 	MEMORY_BASIC_INFORMATION meminfo;
-	BOOL result = (process == INVALID_HANDLE_VALUE) ? VirtualQuery(base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)) :
+	SIZE_T result = (process == INVALID_HANDLE_VALUE) ? VirtualQuery(base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)) :
 		VirtualQueryEx(process, base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
-	if(!result) {
+	if(result == 0) {
 
 		Win32Exception exception;				// GetLastError-based exception object
 
