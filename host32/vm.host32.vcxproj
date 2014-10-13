@@ -163,7 +163,6 @@
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h" />
     <ClInclude Include="emulator.h" />
-    <ClInclude Include="ModRM.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="syscalls.h" />
   </ItemGroup>

@@ -31,7 +31,15 @@
 #pragma warning(disable:4127)		// conditional expression is constant
 #pragma warning(disable:4201)		// nameless struct / union
 
+// emulator namespace
+//
+// Defines data types, classes and functions that are used to emulate x86 instructions
+// that cannot be executed natively, typically in response to an unhandled exception
+
 namespace emulator {
+
+	// Forward Declarations
+	template<typename size_type> class modrm;
 
 	// context_t
 	//
@@ -43,14 +51,14 @@ namespace emulator {
 	// Defines the lambda function that executes an instruction
 	typedef std::function<bool(context_t*)> handler_t;
 
-	// instruction_bytes_t
+	// decoder_t
 	//
-	// Base class for encoded instruction byte wrappers
-	template<typename size_type> struct instruction_bytes_t
+	// Base class for encoded instruction wrappers
+	template<typename size_type> struct decoder_t
 	{
 		// Instance Constructor
 		//
-		explicit instruction_bytes_t(context_t* context)
+		explicit decoder_t(context_t* context)
 		{
 			// Extract the value from the current instruction pointer and
 			// increment it to the next encoded instruction byte
@@ -68,23 +76,23 @@ namespace emulator {
 		size_type Value;
 	};
 
-	// modrm_byte_t
+	// modrm_t
 	//
 	// Union that defines the individual values within a ModR/M byte
-	union modrm_byte_t {
+	union modrm_t {
 
-		explicit modrm_byte_t(uint8_t val) : value(val) {}
+		explicit modrm_t(uint8_t val) : value(val) {}
 		struct	{ uint8_t rm:3; uint8_t reg:3; uint8_t mod:2; };
 		uint8_t	value;
 
 	};
 
-	// sib_byte_t
+	// sib_t
 	//
 	// Union that defines the individual values within a SIB byte
-	union sib_byte_t {
+	union sib_t {
 
-		explicit sib_byte_t(uint8_t val) : value(val) {}
+		explicit sib_t(uint8_t val) : value(val) {}
 		struct { uint8_t base:3; uint8_t index:3; uint8_t scale:2; };
 		uint8_t	value;
 	};
@@ -92,74 +100,95 @@ namespace emulator {
 	// byte
 	//
 	// 8-bit unsigned instruction
-	using byte			= instruction_bytes_t<uint8_t>;
+	using byte_t		= decoder_t<uint8_t>;
 
 	// word
 	//
 	// 16-bit unsigned instruction
-	using word			= instruction_bytes_t<uint16_t>;
+	using word_t		= decoder_t<uint16_t>;
 
 	// doubleword
 	//
 	// 32-bit unsigned instruction
-	using doubleword	= instruction_bytes_t<uint32_t>;
+	using doubleword_t	= decoder_t<uint32_t>;
 
 	// dispxx
 	//
 	// Displacement instructions
-	using disp8			= instruction_bytes_t<uint8_t>;
-	using disp16		= instruction_bytes_t<uint16_t>;
-	using disp32		= instruction_bytes_t<uint32_t>;
+	using disp8			= decoder_t<uint8_t>;
+	using disp16		= decoder_t<uint16_t>;
+	using disp32		= decoder_t<uint32_t>;
 
 	// immxx
 	//
 	// Immediate instructions
-	using imm8			= instruction_bytes_t<int8_t>;
-	using imm16			= instruction_bytes_t<int16_t>;
-	using imm32			= instruction_bytes_t<int32_t>;
+	using imm8			= decoder_t<int8_t>;
+	using imm16			= decoder_t<int16_t>;
+	using imm32			= decoder_t<int32_t>;
 
 	// moffsxx
 	//
 	// Memory offset instructions
-	using moffs8		= instruction_bytes_t<uint8_t>;
-	using moffs16		= instruction_bytes_t<uint16_t>;
-	using moffs32		= instruction_bytes_t<uint32_t>;
+	using moffs8		= decoder_t<uint8_t>;
+	using moffs16		= decoder_t<uint16_t>;
+	using moffs32		= decoder_t<uint32_t>;
 
 	// rmxx
 	//
 	// ModR/M instructions
-	template<typename size_type> class modrm_t;
+	using rm8			= modrm<uint8_t>;
+	using rm16			= modrm<uint16_t>;
+	using rm32			= modrm<uint32_t>;
 
-	using rm8		= modrm_t<uint8_t>;
-	using rm16		= modrm_t<uint16_t>;
-	using rm32		= modrm_t<uint32_t>;
-
-	// instruction_t
+	// instruction
 	//
 	// Defines an emulated instruction instance
-	class instruction_t 
+	class instruction 
 	{
 	public:
 
 		// Instance Constructors
 		//
-		instruction_t(uint8_t opcode0, handler_t handler) : m_opcount(1), m_opcode0(opcode0), m_handler(handler) {}
-		instruction_t(uint8_t opcode0, uint8_t opcode1, handler_t handler) : m_opcount(2), m_opcode0(opcode0), m_opcode1(opcode1), m_handler(handler) {}
-		instruction_t(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, handler_t handler) : m_opcount(3), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_handler(handler) {}
-		instruction_t(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, handler_t handler) : m_opcount(4), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_handler(handler) {}
-		instruction_t(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, uint8_t opcode4, handler_t handler) : m_opcount(5), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_opcode4(opcode4), m_handler(handler) {}
-		instruction_t(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, uint8_t opcode4, uint8_t opcode5, handler_t handler) : m_opcount(6), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_opcode4(opcode4), m_opcode5(opcode5), m_handler(handler) {}
-		instruction_t(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, uint8_t opcode4, uint8_t opcode5, uint8_t opcode6, handler_t handler) : m_opcount(7), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_opcode4(opcode4), m_opcode5(opcode5), m_opcode6(opcode6), m_handler(handler) {}
+		instruction(uint8_t opcode0, handler_t handler) : m_opcount(1), m_opcode0(opcode0), m_handler(handler) {}
+		instruction(uint8_t opcode0, uint8_t opcode1, handler_t handler) : m_opcount(2), m_opcode0(opcode0), m_opcode1(opcode1), m_handler(handler) {}
+		instruction(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, handler_t handler) : m_opcount(3), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_handler(handler) {}
+		instruction(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, handler_t handler) : m_opcount(4), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_handler(handler) {}
+		instruction(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, uint8_t opcode4, handler_t handler) : m_opcount(5), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_opcode4(opcode4), m_handler(handler) {}
+		instruction(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, uint8_t opcode4, uint8_t opcode5, handler_t handler) : m_opcount(6), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_opcode4(opcode4), m_opcode5(opcode5), m_handler(handler) {}
+		instruction(uint8_t opcode0, uint8_t opcode1, uint8_t opcode2, uint8_t opcode3, uint8_t opcode4, uint8_t opcode5, uint8_t opcode6, handler_t handler) : m_opcount(7), m_opcode0(opcode0), m_opcode1(opcode1), m_opcode2(opcode2), m_opcode3(opcode3), m_opcode4(opcode4), m_opcode5(opcode5), m_opcode6(opcode6), m_handler(handler) {}
 
-		// Execute
+		// function call operator
 		//
-		// Attempts to execute the defined instruction handler
-		bool Execute(context_t* context);
+		// Executes the defined instruction handler
+		bool operator()(context_t* context) 
+		{ 
+			uint8_t* eip = reinterpret_cast<uint8_t*>(context->Eip);
+
+			// This should work better than a loop; each case falls through
+			switch(m_opcount) {
+
+				case 7: if(m_opcode6 != eip[6]) return false;	// fall through
+				case 6: if(m_opcode5 != eip[5]) return false;	// fall through
+				case 5: if(m_opcode4 != eip[4]) return false;	// fall through
+				case 4: if(m_opcode3 != eip[3]) return false;	// fall through
+				case 3: if(m_opcode2 != eip[2]) return false;	// fall through
+				case 2: if(m_opcode1 != eip[1]) return false;	// fall through
+				case 1: if(m_opcode0 != eip[0]) return false;	break;
+				default: return false;
+			}
+
+			// Move the instruction pointer to the first byte after the opcodes
+			context->Eip += m_opcount;
+	
+			// If execution of the instruction fails, restore the instruction pointer
+			if(m_handler(context)) return true;
+			else { context->Eip = reinterpret_cast<uint32_t>(eip); return false; }
+		}
 
 	private:
 
-		instruction_t(const instruction_t&)=delete;
-		instruction_t& operator=(const instruction_t&)=delete;
+		instruction(const instruction&)=delete;
+		instruction& operator=(const instruction&)=delete;
 
 		uint8_t				m_opcode0 = 0;			// Opcode byte 0
 		uint8_t				m_opcode1 = 0;			// Opcode byte 1
@@ -172,20 +201,20 @@ namespace emulator {
 		handler_t			m_handler;				// Function to execute instruction
 	};
 
-	// modrm_t
+	// modrm
 	//
 	// Value type that processes the special ModR/M[+SIB] bytes of an instruction.
 	// The interpretation of the fields depends on the context in which the ModR/M
 	// value is being used.
-	template<typename size_type> class modrm_t
+	template<typename size_type> class modrm
 	{
 	public:
 
 		// Instance Constructor
 		//
-		explicit modrm_t(context_t* context)
+		explicit modrm(context_t* context)
 		{
-			modrm_byte_t modrm(byte(context).Value);
+			modrm_t modrm(byte_t(context).Value);
 
 			Opcode = modrm.reg;
 			Displacement = PopDisplacement(context, modrm);
@@ -222,7 +251,7 @@ namespace emulator {
 		// GetRegister (static)
 		//
 		// Gets a pointer to the register referened by the ModR/M byte
-		static size_type* GetRegister(context_t* context, modrm_byte_t modrm)
+		static size_type* GetRegister(context_t* context, modrm_t modrm)
 		{
 			// Get a pointer to the register referenced by the modrm.reg value
 			switch(modrm.reg) {
@@ -255,7 +284,7 @@ namespace emulator {
 		// PopDisplacement (static)
 		//
 		// Pops the effective address (displacement) referenced by the ModR/M byte
-		static uintptr_t PopDisplacement(context_t* context, modrm_byte_t modrm)
+		static uintptr_t PopDisplacement(context_t* context, modrm_t modrm)
 		{
 			// Switch on the Mod and R/M bits of the modr/m bytes (11000111 = 0xC7)
 			switch (modrm.value & 0xC7) {
@@ -328,12 +357,12 @@ namespace emulator {
 		// PopScaledIndex (static)
 		//
 		// Pops the scaled effective address based on the value of an SIB byte
-		static uintptr_t PopScaledIndex(context_t* context, modrm_byte_t modrm)
+		static uintptr_t PopScaledIndex(context_t* context, modrm_t modrm)
 		{
 			uintptr_t effectiveaddr;			// Calculated effective address
 
 			// Pop the SIB byte from the instruction queue
-			sib_byte_t sib(byte(context).Value);	
+			sib_t sib(byte_t(context).Value);	
 	
 			// scale * index
 			switch(sib.index) {

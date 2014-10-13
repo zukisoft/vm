@@ -22,109 +22,39 @@
 
 #include "stdafx.h"
 #include "emulator.h"
-#include <linux/errno.h>
 #include "syscalls.h"
+#include <linux/errno.h>
 
-namespace emulator {
-
-	//-------------------------------------------------------------------------
-	// instruction_t::Execute
-	//
-	// Executes the instruction by invoking the defined lambda function
-	//
-	// Arguments:
-	//
-	//	context			- Execution context record
-
-	bool instruction_t::Execute(context_t* context)
-	{
-		uint8_t* eip = reinterpret_cast<uint8_t*>(context->Eip);
-
-		// This should work better than a loop; each case falls through
-		switch(m_opcount) {
-
-			case 7: if(m_opcode6 != eip[6]) return false;	// fall through
-			case 6: if(m_opcode5 != eip[5]) return false;	// fall through
-			case 5: if(m_opcode4 != eip[4]) return false;	// fall through
-			case 4: if(m_opcode3 != eip[3]) return false;	// fall through
-			case 3: if(m_opcode2 != eip[2]) return false;	// fall through
-			case 2: if(m_opcode1 != eip[1]) return false;	// fall through
-			case 1: if(m_opcode0 != eip[0]) return false;	break;
-			default: return false;
-		}
-
-		// Move the instruction pointer to the first byte after the opcodes
-		context->Eip += m_opcount;
-	
-		// If execution of the instruction fails, restore the instruction pointer
-		if(m_handler(context)) return true;
-		else { context->Eip = reinterpret_cast<uint32_t>(eip); return false; }
-	}
-
-};	// namespace emulator
-
-
-///////////////////
-// GS STUFF
+// t_gs
 //
-// MOVE THESE OUT INTO THEIR OWN FILE(S)
-
-// t_gs (TLS)
-//
-// Emulated GS register
+// Emulated GS register value
 __declspec(thread) static uint16_t t_gs = 0;
 
-// TODO: ADD _DEBUG_TLS macro (or use _DEBUG) to dump everything that's 
-// happening with thread local storage; it's hard to diagnose
-
-
-//-----------------------------------------------------------------------------
-// ReadGS<T>
+// GS<>
 //
-// Reads a value from the emulated GS segment
-//
-// Arguments:
-//
-//	offset		- Offset into the emulated segment
-
-template <typename T> T ReadGS(uint32_t offset)
+// Accesses a value in the emulated GS segment via an offset.  The value
+// itself is munged up by sys_set_thread_area and the hosted libc binary
+// and must be decoded to get back to the TLS slot itself
+template<typename size_type> inline size_type& GS(uintptr_t offset)
 {
-	_ASSERTE(t_gs != 0);		// Should be set by set_thread_area()
+	_ASSERTE(t_gs);
 
+	// Demunge the thread local storage slot and return a reference to the
+	// specified offset as the requested data type
 	uintptr_t slot = ((uintptr_t(t_gs) - 3) >> 3) >> 8;
-	uintptr_t address = uintptr_t(TlsGetValue(slot)) + offset;
-	return *reinterpret_cast<T*>(address);
+	return *reinterpret_cast<size_type*>(uintptr_t(TlsGetValue(slot)) + offset);
 }
 
-//-----------------------------------------------------------------------------
-// WriteGS<T>
 //
-// Writes a value into the emulated GS segment
+// SYSTEM CALL EMULATION INSTRUCTIONS
 //
-// Arguments:
-//
-//	offset		- Offset into the emulated segment
-
-template <typename T> void WriteGS(T value, uint32_t offset)
-{
-	_ASSERTE(t_gs != 0);		// Should be set by set_thread_area()
-
-	uintptr_t slot = ((uintptr_t(t_gs) - 3) >> 3) >> 8;
-	uintptr_t address = uintptr_t(TlsGetValue(slot)) + offset;
-	*reinterpret_cast<T*>(address) = value;
-}
-
-//-----------------------------------------------------------------------------
-// Exception Handler Instructions
-//
-// MOVE THESE OUT INTO THEIR OWN FILE(S)
-//-----------------------------------------------------------------------------
 
 // CD 80 : INT 80
 //
-emulator::instruction_t INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
+emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
 
-	// There are only 512 system call slots defined	
+	// There are only 512 system call slots defined
+	_ASSERTE(context->Eax < 512);
 	if(context->Eax > 511) { context->Eax = -LINUX_ENOSYS; return true; }
 
 	// The system call number is stored in the EAX register on entry and
@@ -135,78 +65,102 @@ emulator::instruction_t INT_80(0xCD, 0x80, [](emulator::context_t* context) -> b
 	return true;
 });
 
-// REMAINING OPERATIONS ARE LISTED IN NUMERICAL ORDER BY PRIMARY OPCODE(S) (excludes prefixes)
-
-// 65 33 : XOR r32, GS:[r/m32]
 //
-emulator::instruction_t XOR_R32_GSRM32(0x65, 0x33, [](emulator::context_t* context) -> bool {
+// GS SEGMENT EMULATION INSTRUCTIONS
+//
+
+// 65 03 : ADD r32, GS:[r/m32]
+//
+emulator::instruction ADD_R32_GSRM32(0x65, 0x03, [](emulator::context_t* context) -> bool {
 
 	emulator::rm32 modrm(context);
 
-	uint32_t value = ReadGS<uint32_t>(modrm.Displacement);
+	uint32_t value = GS<uint32_t>(modrm.Displacement);
 
-	// todo: Decide on a standard format for eax, ebx, ecx, edx ... docs say to avoid ebx
-	__asm mov eax, value
-	__asm mov ebx, modrm.Register
-	__asm mov edx, context
-
-	__asm push [edx]context.EFlags
+	__asm mov esi, context
+	__asm push [esi]context.EFlags
 	__asm popfd
 	
-	__asm xor [ebx], eax
+	// ADD modrm.Register, value
+	__asm mov edi, modrm.Register
+	__asm mov eax, value
+	__asm add [edi], eax
 	
 	__asm pushfd
-	__asm pop [edx]context.EFlags
+	__asm pop [esi]context.EFlags
+
+	return true;
+});
+
+// 65 33 : XOR r32, GS:[r/m32]
+//
+emulator::instruction XOR_R32_GSRM32(0x65, 0x33, [](emulator::context_t* context) -> bool {
+
+	emulator::rm32 modrm(context);
+
+	uint32_t value = GS<uint32_t>(modrm.Displacement);
+
+	__asm mov esi, context
+	__asm push [esi]context.EFlags
+	__asm popfd
+	
+	// XOR modrm.Register, value
+	__asm mov edi, modrm.Register
+	__asm mov eax, value
+	__asm xor [edi], eax
+	
+	__asm pushfd
+	__asm pop [esi]context.EFlags
 
 	return true;
 });
 
 // 65 83 : CMP GS:[r/m32], imm8
 //
-emulator::instruction_t CMP_GSRM32_IMM8(0x65, 0x83, [](emulator::context_t* context) -> bool {
+emulator::instruction CMP_GSRM32_IMM8(0x65, 0x83, [](emulator::context_t* context) -> bool {
 
 	emulator::rm32 modrm(context);
 
-	int32_t rhs = ReadGS<int32_t>(modrm.Displacement);
-	int32_t lhs = emulator::imm8(context);					// <--- sign-extend
+	int32_t rhs = GS<int32_t>(modrm.Displacement);
+	int32_t lhs = emulator::imm8(context);				// <--- sign-extend
 
-	__asm mov edx, context
-	__asm push [edx]context.EFlags;
+	__asm mov esi, context
+	__asm push [esi]context.EFlags;
 	__asm popfd
 
-	// Execute the operation
+	// CMP rhs, lhs
 	__asm mov eax, rhs
 	__asm cmp eax, lhs
 
 	__asm pushfd
-	__asm pop [edx]context.EFlags;
+	__asm pop [esi]context.EFlags;
 
 	return true;
 });
 
 // 65 89 : MOV GS:[r/m32], r32
 //
-emulator::instruction_t MOV_GSRM32_R32(0x65, 0x89, [](emulator::context_t* context) -> bool {
+emulator::instruction MOV_GSRM32_R32(0x65, 0x89, [](emulator::context_t* context) -> bool {
 
 	emulator::rm32 modrm(context);
 
-	WriteGS<uint32_t>(*modrm.Register, modrm.Displacement);
+	GS<uint32_t>(modrm.Displacement) = *modrm.Register;
 	return true;
 });
 
 // 65 8B : MOV r32, GS:[r/m32]
 //
-emulator::instruction_t MOV_R32_GSRM32(0x65, 0x8B, [](emulator::context_t* context) -> bool {
+emulator::instruction MOV_R32_GSRM32(0x65, 0x8B, [](emulator::context_t* context) -> bool {
 
 	emulator::rm32 modrm(context);
 
-	*modrm.Register = ReadGS<uint32_t>(modrm.Displacement);
+	*modrm.Register = GS<uint32_t>(modrm.Displacement);
 	return true;
 });
 
 // 8E : MOV Sreg, r/m16
 //
-emulator::instruction_t MOV_SREG_RM16(0x8E, [](emulator::context_t* context) -> bool {
+emulator::instruction MOV_SREG_RM16(0x8E, [](emulator::context_t* context) -> bool {
 
 	emulator::rm16 modrm(context);
 	if(modrm.Opcode != 0x05) return false;			// 0x05 --> GS
@@ -217,60 +171,29 @@ emulator::instruction_t MOV_SREG_RM16(0x8E, [](emulator::context_t* context) -> 
 
 // 65 A1 : MOV EAX, GS:moffs32
 //
-emulator::instruction_t MOV_EAX_GSMOFFS32(0x65, 0xA1, [](emulator::context_t* context) -> bool {
+emulator::instruction MOV_EAX_GSMOFFS32(0x65, 0xA1, [](emulator::context_t* context) -> bool {
 
-	context->Eax = ReadGS<uint32_t>(emulator::moffs32(context));
+	context->Eax = GS<uint32_t>(emulator::moffs32(context));
 	return true;
 });
 
 // 65 A3 : MOV GS:moffs32, EAX
 //
-emulator::instruction_t MOV_GSMOFFS32_EAX(0x65, 0xA3, [](emulator::context_t* context) -> bool {
+emulator::instruction MOV_GSMOFFS32_EAX(0x65, 0xA3, [](emulator::context_t* context) -> bool {
 	
-	WriteGS<uint32_t>(context->Eax, emulator::moffs32(context));
+	GS<uint32_t>(emulator::moffs32(context)) = context->Eax;
 	return true;
 });
 
 // 65 C7 : MOV GS:[r/m32], imm32
 //
-emulator::instruction_t MOV_GSRM32_IMM32(0x65, 0xC7, [](emulator::context_t* context) -> bool {
+emulator::instruction MOV_GSRM32_IMM32(0x65, 0xC7, [](emulator::context_t* context) -> bool {
 	
 	emulator::rm32 modrm(context);
 
-	WriteGS<int32_t>(emulator::imm32(context), modrm.Displacement);
+	GS<uint32_t>(modrm.Displacement) = emulator::imm32(context);
 	return true;
 });
-
-
-//// 66 65 8B : MOV r16,GS:[r/m32]
-//Instruction MOV_R16_GS_RM32(0x66, 0x65, 0x8B, [](ContextRecord& context) -> bool {
-//
-//	auto modrm = context.PopModRM<uint32_t>();
-//	uint32_t value = ReadGS<uint16_t>(modrm.Displacement);
-//
-//	switch(modrm.Reg) {
-//
-//		case 0x00: context.Registers.AX = value; break;
-//		case 0x01: context.Registers.CX = value; break;
-//		case 0x02: context.Registers.DX = value; break;
-//		case 0x03: context.Registers.BX = value; break;
-//		case 0x04: context.Registers.SP = value; break;
-//		case 0x05: context.Registers.BP = value; break;
-//		case 0x06: context.Registers.SI = value; break;
-//		case 0x07: context.Registers.DI = value; break;
-//	}
-//
-//	return true;
-//});
-//
-//
-//// 66 65 A1 : MOV AX,GS:moffs32
-//Instruction MOV_AX_GS_MOFFS32(0x66, 0x65, 0xA1, [](ContextRecord& context) -> bool {
-//
-//	context.Registers.AX = ReadGS<uint16_t>(context.PopOffset<uint32_t>());
-//	return true;
-//});
-
 
 //-----------------------------------------------------------------------------
 // EmulationExceptionHandler
@@ -285,38 +208,32 @@ emulator::instruction_t MOV_GSRM32_IMM32(0x65, 0xC7, [](emulator::context_t* con
 
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 {
-	// All the exceptions that are handled here start as access violations
+	// All the exceptions that are handled here are access violations
 	if(exception->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
 
-		// INT 80
-		if(INT_80.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
+		// System Call Emulation
+		if(INT_80(exception->ContextRecord))			return EXCEPTION_CONTINUE_EXECUTION;
 
-		// MOV GS, r/m16
-		if(MOV_SREG_RM16.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-		//if(MOV16_GSRM16.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
+		// GS Segment Register Emulations
+		if(ADD_R32_GSRM32(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
+		if(CMP_GSRM32_IMM8(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
+		if(MOV_EAX_GSMOFFS32(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
+		if(MOV_GSMOFFS32_EAX(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
+		if(MOV_GSRM32_IMM32(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
+		if(MOV_GSRM32_R32(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
+		if(MOV_R32_GSRM32(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
+		if(MOV_SREG_RM16(exception->ContextRecord))		return EXCEPTION_CONTINUE_EXECUTION;
+		if(XOR_R32_GSRM32(exception->ContextRecord))	return EXCEPTION_CONTINUE_EXECUTION;
 
-		// MOV EAX, GS:moffs32
-		// MOV AX, GS:moffs32
-		if(MOV_EAX_GSMOFFS32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-		//if(MOV_AX_GSMOFFS32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
+#ifdef _DEBUG
 
-		// MOV GS:moffs32, EAX
-		if(MOV_GSMOFFS32_EAX.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-
-		if(MOV_GSRM32_IMM32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-
-		// MOV GS:[r/m32], r32
-		if(MOV_GSRM32_R32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-
-		// MOV r32, GS:[r/m32]
-		// MOV r16, GS:[r/m32]
-		if(MOV_R32_GSRM32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-		//if(MOV_R16_GSRM32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-
-		// CMP GS:[xxxxxx],imm8
-		if(CMP_GSRM32_IMM8.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
-
-		if(XOR_R32_GSRM32.Execute(exception->ContextRecord)) return EXCEPTION_CONTINUE_EXECUTION;
+		// 0x65 or 0x6566 - report an unhandled GS segment override prefix instruction
+		if((*reinterpret_cast<uint8_t*>(exception->ContextRecord->Eip) == 0x65) || (*reinterpret_cast<uint16_t*>(exception->ContextRecord->Eip) == 0x6566)) {
+			
+			uint8_t* bytes = reinterpret_cast<uint8_t*>(exception->ContextRecord->Eip);
+			_RPTF4(_CRT_ASSERT, "Unhandled GS segment override prefix instruction: 0x%02X 0x%02X 0x%02X 0x%02X\r\n", bytes[0], bytes[1], bytes[2], bytes[3]);
+		}
+#endif
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;
