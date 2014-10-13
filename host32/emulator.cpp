@@ -34,7 +34,7 @@ __declspec(thread) static uint16_t t_gs = 0;
 //
 // Accesses a value in the emulated GS segment via an offset.  The value
 // itself is munged up by sys_set_thread_area and the hosted libc binary
-// and must be decoded to get back to the TLS slot itself
+// and must be decoded to get back to the TLS slot
 template<typename size_type> inline size_type& GS(uintptr_t offset)
 {
 	_ASSERTE(t_gs);

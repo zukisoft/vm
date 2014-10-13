@@ -208,6 +208,12 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 	/* sys32_acquire_context = */	acquire_context,
 	/* sys32_release_context = */	release_context,
 
+	// 085: sys32_readlink
+	[](sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz) -> sys32_long_t
+	{
+		return -1;
+	},
+
 	// 122: sys32_uname
 	[](sys32_context_t context, uapi::new_utsname* buf) -> sys32_long_t
 	{

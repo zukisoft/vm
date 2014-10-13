@@ -192,7 +192,7 @@ syscall_t g_syscalls[512] = {
 /* 082 */	sys_noentry,
 /* 083 */	sys_noentry,
 /* 084 */	sys_noentry,
-/* 085 */	sys_noentry,
+/* 085 */	REMOTE_SYSCALL_3(sys32_readlink, const sys32_char_t*, sys32_char_t*, sys32_size_t),
 /* 086 */	sys_noentry,
 /* 087 */	sys_noentry,
 /* 088 */	sys_noentry,
