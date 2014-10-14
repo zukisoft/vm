@@ -142,6 +142,8 @@ void VmService::OnStart(int, LPTSTR*)
 		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
 		m_vfs->Mount(nullptr, L"/", L"tmpfs", 0, nullptr);
 
+		// ??? PROCFS / SYSFS ???
+
 		//
 		// INITRAMFS
 		//

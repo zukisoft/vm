@@ -20,45 +20,46 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __VMPROCESSMANAGER_H_
-#define __VMPROCESSMANAGER_H_
+#ifndef __STDAFX_H_
+#define __STDAFX_H_
 #pragma once
 
-
-#pragma warning(push, 4)
-
-//-----------------------------------------------------------------------------
-// VmProcessManager
+// Target Versions
 //
-// Manages all processes hosted by a virtual machine instance
+#define NTDDI_VERSION			NTDDI_WIN7
+#define	_WIN32_WINNT			_WIN32_WINNT_WIN7
+#define WINVER					_WIN32_WINNT_WIN7
+#define	_WIN32_IE				_WIN32_IE_IE80
 
-class VmProcessManager
+// Windows / CRT
+//
+#include <windows.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+// Generic Text Mappings
+//
+#include <generic_text.h>
+
+// Message Resources
+//
+#include <messages.h>
+
+// RPC
+//
+#include <syscalls64.h>
+#pragma comment(lib, "rpcrt4.lib")
+#pragma comment(lib, "rpcns4.lib")
+
+// find a place to put this stuff
+#include <align.h>
+template <typename _type>
+struct zero_init : public _type
 {
-public:
-
-	VmProcessManager()=default;
-	~VmProcessManager()=default;
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-private:
-
-	VmProcessManager(const VmProcessManager&)=delete;
-	VmProcessManager& operator=(const VmProcessManager&)=delete;
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
-
-	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	//-------------------------------------------------------------------------
-	// Member Variables
+	zero_init() { memset(this, 0, sizeof(_type)); }
 };
 
 //-----------------------------------------------------------------------------
 
-#pragma warning(pop)
-
-#endif	// __VMPROCESSMANAGER_H_
+#endif	// __STDAFX_H_

@@ -194,7 +194,6 @@ static std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		// Construct the ELF arguments stack image for the hosted process
 		ElfArguments args(argv, envp);
 
-		///////////////////////////
 		(LINUX_AT_EXECFD);																		//  2 - TODO
 		if(executable->ProgramHeaders) {
 

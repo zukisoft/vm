@@ -38,12 +38,6 @@
 
 class MemoryRegion
 {
-private:
-
-	// Forward Declarations
-	//
-	class ReservationInfo;
-
 public:
 
 	// Destructor

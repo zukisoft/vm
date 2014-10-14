@@ -173,10 +173,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	read = InProcessRead(reader, elfheader.e_phoff, &progheaders, progheaders.Size);
 	if(read != progheaders.Size) throw Exception(E_ELFIMAGETRUNCATED);
 
-	// TODO: Continue to clean this up, break out into helper functions
-	// PROGRAM HEADERS PASS ONE
-
-	// Make an initial pass over the program headers to determine the memory footprint
+	// PROGRAM HEADERS PASS ONE - GET MEMORY FOOTPRINT AND CHECK INVARIANTS
 	uintptr_t minvaddr = UINTPTR_MAX, maxvaddr = 0;
 	for(size_t index = 0; index < progheaders.Count; index++) {
 
@@ -201,23 +198,20 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	}
 
 	// MEMORY ALLOCATION
-
 	try {
 
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
-		// so reserve them at the highest available virtual address to try and avoid conflicts
+		// so reserve them at the highest available virtual address to allow for as much heap space
+		// as possible (MEM_TOP_DOWN is really slow and should be avoided, so this may need to change)
 		if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
 		else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
-		// TODO ^^^ MEM_TOP_DOWN is crazy slow, is this a good idea here??
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
 	intptr_t vaddrdelta = (elfheader.e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(region->Pointer) - minvaddr;
 
-	// PROGRAM HEADERS PASS TWO
-
-	// Second pass over the program headers to load, commit and protect the program segments
+	// PROGRAM HEADERS PASS TWO - LOAD, COMMIT AND PROTECT SEGMENTS
 	for(size_t index = 0; index < progheaders.Count; index++) {
 
 		// Pull out a reference to the current program header structure
@@ -248,10 +242,6 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 
 				if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 			}
-
-			// Memory that was not loaded from the ELF image must be initialized to zero
-			// TODO - should not be necessary, VirtualAlloc does this for us
-			// memset(reinterpret_cast<void*>(segbase + progheader->p_filesz), 0, progheader->p_memsz - progheader->p_filesz);
 
 			// Attempt to apply the proper virtual memory protection flags to the segment
 			try { region->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }

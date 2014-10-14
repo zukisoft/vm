@@ -20,45 +20,13 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __VMPROCESSMANAGER_H_
-#define __VMPROCESSMANAGER_H_
-#pragma once
-
+#include "stdafx.h"
+#include "VmProcessManager.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// VmProcessManager
-//
-// Manages all processes hosted by a virtual machine instance
 
-class VmProcessManager
-{
-public:
-
-	VmProcessManager()=default;
-	~VmProcessManager()=default;
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-private:
-
-	VmProcessManager(const VmProcessManager&)=delete;
-	VmProcessManager& operator=(const VmProcessManager&)=delete;
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
-
-	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-};
-
-//-----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __VMPROCESSMANAGER_H_
