@@ -21,8 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Exception.h"
-#include "Win32Exception.h"
 
 // elfmain (elfmain.asm)
 //

@@ -21,8 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Exception.h"
-#include "Win32Exception.h"
 
 // g_break (sys_brk.cpp)
 //

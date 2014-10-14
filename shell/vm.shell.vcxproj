@@ -98,7 +98,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <StackReserveSize>
       </StackReserveSize>
@@ -114,7 +114,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -130,7 +130,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
@@ -148,7 +148,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>

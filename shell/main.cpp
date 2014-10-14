@@ -21,8 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Exception.h"
-#include "Win32Exception.h"
 
 // g_rpccontext
 //
@@ -30,18 +28,16 @@
 sys64_context_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
-// WinMain
+// _tmain
 //
 // Application entry point
 //
 // Arguments:
 //
-//	hInstance			- Application instance handle (base address)
-//	hPrevInstance		- Unused in Win32
-//	pszCommandLine		- Pointer to the application command line
-//	nCmdShow			- Initial window show command
+//	argc		- Number of provided command line arguments
+//	argv		- Array of command line argument strings
 
-int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
+int _tmain(int argc, tchar_t** argv)
 {
 	zero_init<sys64_startup_info>	startinfo;			// Startup information from the service
 	RPC_BINDING_HANDLE				binding;			// RPC binding from command line
@@ -52,10 +48,10 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	//
 	// [0] - Executable path
 	// [1] - RPC binding string
-	if(__argc != 2) return static_cast<int>(ERROR_INVALID_PARAMETER);
+	if(argc != 2) return static_cast<int>(ERROR_INVALID_PARAMETER);
 
 	// The only argument passed into the host process is the RPC binding string necessary to connect to the server
-	rpcresult = RpcBindingFromStringBinding(reinterpret_cast<rpc_tchar_t*>(__targv[1]), &binding);
+	rpcresult = RpcBindingFromStringBinding(reinterpret_cast<rpc_tchar_t*>(argv[1]), &binding);
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
