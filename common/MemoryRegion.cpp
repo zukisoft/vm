@@ -45,20 +45,14 @@ size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
 
 MemoryRegion::~MemoryRegion()
 {
-	if(m_base) {
-
-		// Decommit and release the memory region with the appropriate API
-		if(m_process == INVALID_HANDLE_VALUE) VirtualFree(m_base, 0, MEM_RELEASE);
-		else VirtualFreeEx(m_process, m_base, 0, MEM_RELEASE);
-	}
+	// If the region has not been detached, release it with VirtualFreeEx()
+	if(m_base) VirtualFreeEx(m_process, m_meminfo.AllocationBase, 0, MEM_RELEASE);
 }
 
 //-----------------------------------------------------------------------------
 // MemoryRegion::Commit
 //
 // Commits page(s) of memory within the region using the specified protection
-// attributes.  If address does not align on a page boundary it will be aligned
-// down and returned as the result from this function
 //
 // Arguments:
 //
@@ -66,22 +60,11 @@ MemoryRegion::~MemoryRegion()
 //	length		- Length of the region to be committed
 //	protect		- Protection flags to be applied to the committed region
 
-void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
+void MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 {
-	uintptr_t base = uintptr_t(m_base);
-	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
-
-	// Verify the requested address space is not outside of the region
-	length += requested - aligned;
-	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
-
-	// Use the appropriate VirtualAlloc version to commit the page(s) within the region
-	void* result = (m_process == INVALID_HANDLE_VALUE) ? VirtualAlloc(reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect) :
-		VirtualAllocEx(m_process, reinterpret_cast<void*>(aligned), length, MEM_COMMIT, protect);
-	if(result == nullptr) throw Win32Exception();
-
-	return result;
+	// The system will automatically align the provided address downward and
+	// adjust the length such that entire page(s) will be committed
+	if(VirtualAllocEx(m_process, address, length, MEM_COMMIT, protect) == nullptr) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
@@ -94,76 +77,41 @@ void* MemoryRegion::Commit(void* address, size_t length, uint32_t protect)
 //	address		- Base address to be decommitted
 //	length		- Length of the region to be decommitted
 
-void* MemoryRegion::Decommit(void* address, size_t length)
+void MemoryRegion::Decommit(void* address, size_t length)
 {
-	uintptr_t base = uintptr_t(m_base);
-	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
-
-	// Verify the requested address space is not outside of the region
-	length += requested - aligned;
-	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
-
-	// Use the appropriate VirtualFree version to decommit the page(s) from within the region
-	BOOL result = (m_process == INVALID_HANDLE_VALUE) ? VirtualFree(reinterpret_cast<void*>(aligned), length, MEM_DECOMMIT) :
-		VirtualFreeEx(m_process, reinterpret_cast<void*>(aligned), length, MEM_DECOMMIT);
-	if(!result) throw Win32Exception();
-
-	return reinterpret_cast<void*>(aligned);
+	// The system will automatically align the provided address downward and
+	// adjust the length such that entire page(s) will be decommitted
+	if(!VirtualFreeEx(m_process, address, length, MEM_DECOMMIT)) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
 // MemoryRegion::Detach
 //
 // Detaches the memory region from the class so that it will not be released
-// on object destruction
+// when the memory region instance is destroyed.
 //
 // Arguments:
 //
+//	meminfo		- MEMORY_BASIC_INFORMATION pointer to receive region data
 //	length		- Optional size_t pointer to receive the region length
+//
+// NOTE: Returns the base pointer originally set up by Reserve(); the base
+// allocation pointer can be accessed via the MEMORY_BASIC_INFORMATION
 
-void* MemoryRegion::Detach(size_t* length)
+void* MemoryRegion::Detach(PMEMORY_BASIC_INFORMATION meminfo)
 {
-	// Save the region base pointer and optionally set the length [out] argument
-	void* base = m_base;
-	if(length) *length = m_length;
+	// Copy the data regarding the entire allocated region if requested
+	if(meminfo != nullptr) *meminfo = m_meminfo;
 
-	// Reset member variables to an uninitialized state
+	void* base = m_base;			// Save original pointer from Reserve()
+
+	// Reset member variables to an uninitialized state to prevent use
 	m_base = nullptr;
 	m_length = 0;
 	m_process = INVALID_HANDLE_VALUE;
+	memset(&m_meminfo, 0, sizeof(MEMORY_BASIC_INFORMATION));
 
-	// Return the previously held base address
-	return base;
-}
-
-//-----------------------------------------------------------------------------
-// MemoryRegion::Lock
-//
-// Locks page(s) of the region into physical memory
-//
-// Arguments:
-//
-//	address		- Base address to be locked
-//	length		- Length of the region to be locked
-
-void* MemoryRegion::Lock(void* address, size_t length)
-{
-	// Lock cannot be used on memory regions assigned to another process
-	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_HANDLE);
-
-	uintptr_t base = uintptr_t(m_base);
-	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
-
-	// Verify the requested address space is not outside of the region
-	length += requested - aligned;
-	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
-
-	// Use the appropriate version of VirtualLock to lock the page(s) into physical memory
-	if(!VirtualLock(reinterpret_cast<void*>(aligned), length)) throw Win32Exception();
-
-	return reinterpret_cast<void*>(aligned);
+	return base;					// Return the original base pointer
 }
 
 //-----------------------------------------------------------------------------
@@ -177,28 +125,22 @@ void* MemoryRegion::Lock(void* address, size_t length)
 //	length		- Length of the memory to apply the protection to
 //	protect		- Virtual memory protection flags
 
-void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
+uint32_t MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 {
-	DWORD		oldprotect;					// Old protection flags
+	DWORD				oldprotect;			// Previous protection flags
 
-	uintptr_t base = uintptr_t(m_base);
-	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
-
-	// Verify the requested address space is not outside of the region
-	length += requested - aligned;
-	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
-
-	// Apply the requested protection flags; throw away the old flags returned
-	BOOL result = (m_process == INVALID_HANDLE_VALUE) ? VirtualProtect(reinterpret_cast<void*>(aligned), length, protect, &oldprotect) :
-		VirtualProtectEx(m_process, reinterpret_cast<void*>(aligned), length, protect, &oldprotect);
-	if(!result) throw Win32Exception();
-
-	return reinterpret_cast<void*>(aligned);
+	// The system will automatically align the provided address downward and
+	// adjust the length such that entire page(s) will be decommitted
+	if(!VirtualProtectEx(m_process, address, length, protect, &oldprotect)) throw Win32Exception();
+	return oldprotect;
 }
 
 //-----------------------------------------------------------------------------
 // MemoryRegion::Reserve (private, static)
+//
+// Reserves (and optionally commits) a region of virtual memory.  When an address
+// has been specified, the system will attempt to construct a region that is aligned
+// down to the proper boundary that contains the requested address and length
 //
 // Arguments:
 //
@@ -210,73 +152,26 @@ void* MemoryRegion::Protect(void* address, size_t length, uint32_t protect)
 
 std::unique_ptr<MemoryRegion> MemoryRegion::Reserve(HANDLE process, size_t length, void* address, uint32_t flags, uint32_t protect)
 {
-	//
-	// TODO: This is completely screwed up, why did I do this?  What SHOULD happen here
-	// is that the base address is stored so that VirtualFree(Ex) can be called, BUT the
-	// pointer ultimately returned to the caller needs to be the original address or if NULL,
-	// the base address.  All these functions are aligning crap for no reason?
-	//
+	// Map INVALID_HANDLE_VALUE to the current process handle so that the Ex() version of the
+	// virtual memory API functions can be used exclusively by the MemoryRegion class instance
+	if(process == INVALID_HANDLE_VALUE) process = GetCurrentProcess();
 
-	// Can calculate the MEMORY_BASIC_INFORMATION, don't need VirtualQuery(Ex)
+	// Attempt to reserve a memory region large enough to hold the requested length.  If an
+	// address was specified, it will be automatically rounded down by the system as needed
+	void* regionbase = VirtualAllocEx(process, address, length, flags, protect);
+	if(regionbase == nullptr) throw Win32Exception();
 
-	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::AllocationGranularity);
-
-	// Adjust the requested length to accomodate any downward alignment
-	length += requested - aligned;
-
-	// Pass the arguments onto the appropriate VirtualAlloc and just throw any resultant error
-	void* base = (process == INVALID_HANDLE_VALUE) ? VirtualAlloc(address, length, flags, protect) :
-		VirtualAllocEx(process, address, length, flags, protect);
-	if(!base) throw Win32Exception();
-
-	// Some callers have a need to know exactly what memory was reserved, run VirtualQuery()
-	// before any pages are changed to get metadata about the entire region
+	// Query to determine the resultant memory region after adjustment by the system
 	MEMORY_BASIC_INFORMATION meminfo;
-	SIZE_T result = (process == INVALID_HANDLE_VALUE) ? VirtualQuery(base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)) :
-		VirtualQueryEx(process, base, &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
-	if(result == 0) {
+	if(VirtualQueryEx(process, regionbase, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)) == 0) {
 
-		Win32Exception exception;				// GetLastError-based exception object
-
-		// In the unlikely event that VirtualQuery(Ex) fails, the region has to be released
-		// before throwing the exception up to the caller
-		if(process == INVALID_HANDLE_VALUE) VirtualFree(base, 0, MEM_RELEASE);
-		else VirtualFreeEx(process, base, 0, MEM_RELEASE);
-		throw exception;
+		Win32Exception exception;									// Save exception code
+		VirtualFreeEx(process, regionbase, 0, MEM_RELEASE);			// Release the region
+		throw exception;											
 	}
-
-	// Construct the MemoryRegion instance to take ownership of the pointer
-	return std::make_unique<MemoryRegion>(process, base, length, std::move(meminfo));
-}
-
-//-----------------------------------------------------------------------------
-// MemoryRegion::Unlock
-//
-// Unlocks page(s) of the region from physical memory
-//
-// Arguments:
-//
-//	address		- Base address to be unlocked
-//	length		- Length of the region to be unlocked
-
-void* MemoryRegion::Unlock(void* address, size_t length)
-{
-	// Unlock cannot be used on memory regions assigned to another process
-	if(m_process != INVALID_HANDLE_VALUE) throw Win32Exception(ERROR_INVALID_HANDLE);
-
-	uintptr_t base = uintptr_t(m_base);
-	uintptr_t requested = uintptr_t(address);
-	uintptr_t aligned = align::down(uintptr_t(address), MemoryRegion::PageSize);
-
-	// Verify the requested address space is not outside of the region
-	length += requested - aligned;
-	if((aligned < base) || ((aligned + length) > (base + m_length))) throw Exception(E_BOUNDS);	
-
-	// Use VirtualUnlock() to unlock the page(s) from physical memory
-	if(!VirtualUnlock(reinterpret_cast<void*>(aligned), length)) throw Win32Exception();
-
-	return reinterpret_cast<void*>(aligned);
+	
+	// Region has been successfully reserved using the provided parameters
+	return std::make_unique<MemoryRegion>(process, (address) ? address : regionbase, length, meminfo);
 }
 
 //-----------------------------------------------------------------------------

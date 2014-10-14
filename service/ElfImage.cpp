@@ -161,6 +161,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	Metadata						metadata;		// Metadata to return about the loaded image
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
 	std::unique_ptr<MemoryRegion>	region;			// Allocated virtual memory region
+	MEMORY_BASIC_INFORMATION		regioninfo;		// Allocated region metadata
 
 	// Acquire a copy of the ELF header from the binary file and validate it
 	size_t read = InProcessRead(reader, 0, &elfheader, sizeof(typename elf::elfheader_t));
@@ -275,16 +276,20 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 
 	// COMPLETION
 
+	// Detach the allocated memory region from the class object and acquire the underlying region data
+	region->Detach(&regioninfo);
+
 	// Base address of the image is the original minimum virtual address, adjusted for load delta
 	metadata.BaseAddress = reinterpret_cast<void*>(minvaddr + vaddrdelta);
 
-	// The initial program break is the address just beyond the region allocated for the image
-	metadata.ProgramBreak = reinterpret_cast<void*>(uintptr_t(region->Reservation.BaseAddress) + region->Reservation.Length);
+	// The initial program break is the address just beyond the region allocated for the image,
+	// aligned upward to the allocation granularity of the system
+	metadata.ProgramBreak = reinterpret_cast<void*>(align::up(uintptr_t(regioninfo.AllocationBase) + regioninfo.RegionSize, 
+		MemoryRegion::AllocationGranularity));
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	metadata.EntryPoint = (elfheader.e_entry) ? reinterpret_cast<void*>(elfheader.e_entry + vaddrdelta) : nullptr;
 
-	region->Detach();		// Successful; detach the region from auto release
 	return metadata;		// Return the metadata about the loaded binary image
 }
 

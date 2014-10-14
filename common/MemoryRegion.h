@@ -25,8 +25,6 @@
 #pragma once
 
 #include <memory>
-#include "align.h"
-#include "Exception.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -35,12 +33,8 @@
 //-----------------------------------------------------------------------------
 // MemoryRegion
 //
-// Wrapper class to contain a memory region allocated with VirtualAlloc(Ex) so
-// that an automatic destructor can be provided to release it
-//
-// TODO: Not sure why I added all that alignment crap in the bulk of the member
-// functions, it doesn't really need to be there?  Need to test everything, and
-// if they still work just remove it all.  These functions aren't that hard to call?!?!
+// Manages a region of virtual memory that is automatically released during
+// instance destruction
 
 class MemoryRegion
 {
@@ -62,28 +56,23 @@ public:
 	// Commit
 	//
 	// Commits page(s) within the region
-	void* Commit(void* address, size_t length, uint32_t protect);
+	void Commit(void* address, size_t length, uint32_t protect);
 
 	// Decommit
 	//
 	// Decommits page(s) within the region
-	void* Decommit(void* address, size_t length);
+	void Decommit(void* address, size_t length);
 
 	// Detach
 	//
 	// Detaches the memory region from the class instance
 	void* Detach(void) { return Detach(nullptr); }
-	void* Detach(size_t* length);
-
-	// Lock
-	//
-	// Locks page(s) within the region into physical memory
-	void* Lock(void* address, size_t length);
+	void* Detach(PMEMORY_BASIC_INFORMATION meminfo);
 
 	// Protect
 	//
 	// Applies protection flags to page(s) within the region
-	void* Protect(void* address, size_t length, uint32_t protect);
+	uint32_t Protect(void* address, size_t length, uint32_t protect);
 
 	// Reserve (static)
 	//
@@ -113,11 +102,6 @@ public:
 	static std::unique_ptr<MemoryRegion> Reserve(HANDLE process, size_t length, void* address, uint32_t flags)
 		{ return Reserve(process, length, address, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
-	// Unlock
-	//
-	// Unlocks page(s) within the region so that they can be swapped out
-	void* Unlock(void* address, size_t length);
-
 	//-------------------------------------------------------------------------
 	// Fields
 
@@ -146,12 +130,6 @@ public:
 	__declspec(property(get=getPointer)) void* Pointer;
 	void* getPointer(void) const { return m_base; }
 
-	// Reservation
-	//
-	// Gets a reference to the contained ReservationInfo class
-	__declspec(property(get=getReservation)) const ReservationInfo& Reservation;
-	const ReservationInfo& getReservation(void) const { return m_reservation; }
-
 private:
 
 	MemoryRegion(const MemoryRegion&)=delete;
@@ -159,45 +137,8 @@ private:
 
 	// Instance Constructor
 	//
-	MemoryRegion(HANDLE process, void* base, size_t length, MEMORY_BASIC_INFORMATION&& meminfo) : m_process(process), m_base(base), m_length(length), m_reservation(std::move(meminfo)) {}
-	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION>(HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION&&);
-
-	// ReservationInfo
-	//
-	// Stores the underlying allocation information for the memory region
-	class ReservationInfo
-	{
-	public:
-
-		ReservationInfo(MEMORY_BASIC_INFORMATION&& meminfo) : m_base(meminfo.AllocationBase), 
-			m_length(align::up(meminfo.RegionSize, MemoryRegion::AllocationGranularity)) {}
-		~ReservationInfo()=default;
-
-		//---------------------------------------------------------------------
-		// Properties
-
-		// BaseAddress
-		//
-		// Gets the base address of the memory reservation
-		__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-		const void* getBaseAddress(void) const { return m_base; }
-
-		// Length
-		//
-		// Gets the lenght of the memory reservation
-		__declspec(property(get=getLength)) size_t Length;
-		size_t getLength(void) const { return m_length; }
-
-	private:
-
-		ReservationInfo(const ReservationInfo&)=delete;
-		ReservationInfo& operator=(const ReservationInfo&)=delete;
-
-		//---------------------------------------------------------------------
-		// Member Variables
-		const void*		m_base;				// Reservation base address
-		size_t			m_length;			// Reservation length
-	};
+	MemoryRegion(HANDLE process, void* base, size_t length, MEMORY_BASIC_INFORMATION& meminfo) : m_process(process), m_base(base), m_length(length), m_meminfo(meminfo) {}
+	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION&>(HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION&);
 
 	// SystemInfo
 	//
@@ -218,11 +159,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	void*					m_base;			// Base pointer for the memory region
-	size_t					m_length;		// Length of the memory region
-	HANDLE					m_process;		// Process to operate against
-	const ReservationInfo	m_reservation;	// Reservation information
-	static SystemInfo		s_sysinfo;		// System information class
+	void*						m_base;			// Base pointer for the memory region
+	size_t						m_length;		// Length of the memory region
+	HANDLE						m_process;		// Process to operate against
+	MEMORY_BASIC_INFORMATION	m_meminfo;		// Actual allocation information
+	static SystemInfo			s_sysinfo;		// System information class
 };
 
 //-----------------------------------------------------------------------------
