@@ -27,7 +27,7 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			Elf=3:FACILITY_ELF
-			HostProcess=5:FACILITY_HOSTPROCESS
+			Process=5:FACILITY_PROCESS
 			Service=6:FACILITY_SERVICE
 			)
 
@@ -1212,23 +1212,23 @@ Unable to write ELF argument data to the allocated virtual memory region.
 .
 
 ;//----------------------------------------------------------------------------
-;// HostProcess
+;// Process
 ;//
-;// Messages specific to the ELF binary hosting process
+;// Messages specific to hosted process management
 
 MessageId=1
 Severity=Error
-Facility=HostProcess
-SymbolicName=E_HOSTUNRESPONSIVE
+Facility=Process
+SymbolicName=E_PROCESSINVALIDX86HOST
 Language=English
-The host process %1 did not trigger the event indicating successful initialization and will be terminated
+The configured host application for 32-bit i386 processes is not a 32-bit application.
 .
 
 MessageId=2
 Severity=Error
-SymbolicName=E_CANNOTSERIALIZEHANDLE
+SymbolicName=E_PROCESSINVALIDX64HOST
 Language=English
-The kernel handle required to synchronize with the host process cannot be serialized into a 32-bit integer value
+The configured host application for 64-bit x86_64 processes is not a 64-bit application.
 .
 
 ;//----------------------------------------------------------------------------

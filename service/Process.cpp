@@ -55,7 +55,7 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE pro
 
 	// 64-bit system; verify that the process is running under WOW64
 	if(!IsWow64Process(process, &result)) throw Win32Exception();
-	if(!result) throw Exception(E_FAIL);	// <--- todo: Exception
+	if(!result) throw Exception(E_PROCESSINVALIDX86HOST);
 }
 
 //-----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 
 	// 64-bit system; verify that the process is not running under WOW64
 	if(!IsWow64Process(process, &result)) throw Win32Exception();
-	if(result) throw Exception(E_FAIL);		// <-- todo: exception
+	if(result) throw Exception(E_PROCESSINVALIDX64HOST);
 }
 #endif
 

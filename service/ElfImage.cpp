@@ -39,8 +39,8 @@
 
 inline size_t InProcessRead(const FileSystem::HandlePtr& handle, size_t offset, void* destination, size_t count)
 {
-	// Set the file pointer to the specified position and read the data
-	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_FAIL); // <-- todo: Exception
+	// Set the file pointer to the specified position and read the data; assume truncation on error reading
+	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
 	return handle->Read(destination, count);
 }
 
@@ -70,8 +70,8 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
 	HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);
 
-	// Seek the file handle to the specified offset value
-	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_FAIL);		// <--- todo: exception
+	// Seek the file handle to the specified offset value, if unable to assume that it's truncated
+	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
 
 	while(count) {
 
