@@ -353,7 +353,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="ElfClass.h" />
     <ClInclude Include="FileDescriptor.h" />
     <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="HandleStreamReader.h" />
     <ClInclude Include="Host.h" />
     <ClInclude Include="MountOptions.h" />
     <ClInclude Include="NullCharacterDevice.h" />
@@ -619,7 +618,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="FileDescriptor.cpp" />
     <ClCompile Include="FilePermission.cpp" />
-    <ClCompile Include="HandleStreamReader.cpp" />
     <ClCompile Include="Host.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />

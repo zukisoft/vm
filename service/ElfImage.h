@@ -30,7 +30,6 @@
 #include "FileSystem.h"
 #include "HeapBuffer.h"
 #include "MemoryRegion.h"
-#include "StreamReader.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -56,11 +55,7 @@ public:
 	//
 	// Loads an ELF image into memory from a StreamReader instance
 	template <ElfClass _class>
-	static std::unique_ptr<ElfImage> Load(StreamReader& reader, HANDLE process = INVALID_HANDLE_VALUE);
-
-	template <ElfClass _class>
-	static std::unique_ptr<ElfImage> Load(StreamReader&& reader, HANDLE process = INVALID_HANDLE_VALUE)
-		{ return Load<_class>(std::forward<StreamReader&>(reader), process); }
+	static std::unique_ptr<ElfImage> Load(const FileSystem::HandlePtr& handle, HANDLE process = INVALID_HANDLE_VALUE);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -144,7 +139,7 @@ private:
 	//
 	// Loads an ELF binary image into virtual memory
 	template <ElfClass _class>
-	static Metadata LoadBinary(StreamReader& reader, HANDLE process);
+	static Metadata LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process);
 
 	// ValidateHeader
 	//

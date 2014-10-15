@@ -124,6 +124,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 	// Check for UTF-16 interpreter script
 	else if((read >= sizeof(UTF16_SCRIPT_MAGIC)) && (memcmp(&magics.UTF16Script, &UTF16_SCRIPT_MAGIC, sizeof(UTF16_SCRIPT_MAGIC)) == 0)) {
 
+		// TODO
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
@@ -131,6 +132,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 	// Check for UTF-8 interpreter script
 	else if((read >= sizeof(UTF8_SCRIPT_MAGIC)) && (memcmp(&magics.UTF8Script, &UTF8_SCRIPT_MAGIC, sizeof(UTF8_SCRIPT_MAGIC)) == 0)) {
 
+		// TODO
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
@@ -138,6 +140,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 	// Check for ANSI interpreter script
 	else if((read >= sizeof(ANSI_SCRIPT_MAGIC)) && (memcmp(&magics.AnsiScript, &ANSI_SCRIPT_MAGIC, sizeof(ANSI_SCRIPT_MAGIC)) == 0)) {
 
+		// TODO
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
@@ -183,12 +186,12 @@ static std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		Random::Generate(random, 16);
 
 		// Attempt to load the binary image into the process, then check for an interpreter
-		executable = ElfImage::Load<_class>(HandleStreamReader(handle), host->ProcessHandle);
+		executable = ElfImage::Load<_class>(handle, host->ProcessHandle);
 		if(executable->Interpreter) {
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
 			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(std::to_tstring(executable->Interpreter).c_str());
-			interpreter = ElfImage::Load<_class>(HandleStreamReader(interphandle), host->ProcessHandle);
+			interpreter = ElfImage::Load<_class>(interphandle, host->ProcessHandle);
 		}
 
 		// Construct the ELF arguments stack image for the hosted process

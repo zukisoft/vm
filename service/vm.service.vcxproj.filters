@@ -299,9 +299,6 @@
     <ClInclude Include="VmServiceParameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HandleStreamReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\signal.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
@@ -527,9 +524,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FileDescriptor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HandleStreamReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Host.cpp">

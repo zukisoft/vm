@@ -31,7 +31,6 @@
 #include "ElfClass.h"
 #include "ElfImage.h"
 #include "Exception.h"
-#include "HandleStreamReader.h"
 #include "HeapBuffer.h"
 #include "Host.h"
 #include "LinuxException.h"

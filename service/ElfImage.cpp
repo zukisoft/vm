@@ -28,20 +28,20 @@
 //-----------------------------------------------------------------------------
 // ::InProcessRead
 //
-// Reads data from a StreamReader instance directly into a memory buffer
+// Reads data from a Handle instance directly into a memory buffer
 //
 // Arguments:
 //
-//	reader		- StreamReader instance
+//	handle		- FileSystem object handle instance
 //	offset		- Offset from the beginning of the stream to read from
 //	destination	- Destination buffer
 //	count		- Number of bytes to be read
 
-inline size_t InProcessRead(StreamReader& reader, size_t offset, void* destination, size_t count)
+inline size_t InProcessRead(const FileSystem::HandlePtr& handle, size_t offset, void* destination, size_t count)
 {
-	// Seek the stream forward as necessary and just read the requested count
-	if(reader.Position != offset) reader.Seek(offset);
-	return reader.Read(destination, count);
+	// Set the file pointer to the specified position and read the data
+	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_FAIL); // <-- todo: Exception
+	return handle->Read(destination, count);
 }
 
 //-----------------------------------------------------------------------------
@@ -52,16 +52,16 @@ inline size_t InProcessRead(StreamReader& reader, size_t offset, void* destinati
 //
 // Arguments:
 //
-//	reader		- StreamReader instance
+//	handle		- FileSystem object handle instance
 //	process		- Destination process handle, or INVALID_HANDLE_VALUE
 //	offset		- Offset from the beginning of the stream to read from
 //	destination	- Destination buffer
 //	count		- Number of bytes to be read
 
-inline size_t OutOfProcessRead(StreamReader& reader, HANDLE process, size_t offset, void* destination, size_t count)
+inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE process, size_t offset, void* destination, size_t count)
 {
 	// If the process handle is not valid, this is actually an in-process read
-	if(process == INVALID_HANDLE_VALUE) return InProcessRead(reader, offset, destination, count);
+	if(process == INVALID_HANDLE_VALUE) return InProcessRead(handle, offset, destination, count);
 
 	uintptr_t			dest = uintptr_t(destination);			// Easier pointer math as uintptr_t
 	size_t				total = 0;								// Total bytes written
@@ -70,13 +70,13 @@ inline size_t OutOfProcessRead(StreamReader& reader, HANDLE process, size_t offs
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
 	HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);
 
-	// If necessary seek the reader to the specifed offset
-	if(reader.Position != offset) reader.Seek(offset);
+	// Seek the file handle to the specified offset value
+	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_FAIL);		// <--- todo: exception
 
 	while(count) {
 
 		// Read the next chunk of memory into the heap buffer and write it into the target process
-		size_t read = reader.Read(buffer, min(count, buffer.Size));
+		size_t read = handle->Read(buffer, min(count, buffer.Size));
 		if(!WriteProcessMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written)) throw Win32Exception();
 
 		total += written;				// Increment total bytes written
@@ -118,12 +118,12 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 //
 // Arguments:
 //
-//	reader	- StreamReader instance positioned at the the start of the image data
+//	handle		- FileSystem object handle instance for the binary image
 
-template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(StreamReader& reader, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
-	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86>(reader, process));
+	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86>(handle, process));
 }
 
 //-----------------------------------------------------------------------------
@@ -133,13 +133,13 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(StreamReader
 //
 // Arguments:
 //
-//	reader	- StreamReader instance positioned at the the start of the image data
+//	handle		- FileSystem object handle instance for the binary image
 
 #ifdef _M_X64
-template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(StreamReader& reader, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
-	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86_64>(reader, process));
+	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86_64>(handle, process));
 }
 #endif
 
@@ -150,11 +150,11 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(StreamRea
 //
 // Arguments:
 //
-//	reader				- StreamReader instance for the binary image data
-//	process				- Handle to the process in which to load the image
+//	handle		- FileSystem object handle instance for the binary image
+//	process		- Handle to the process in which to load the image
 
 template <ElfClass _class>
-ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
+ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	using elf = elf_traits<_class>;
 
@@ -164,13 +164,13 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 	MEMORY_BASIC_INFORMATION		regioninfo;		// Allocated region metadata
 
 	// Acquire a copy of the ELF header from the binary file and validate it
-	size_t read = InProcessRead(reader, 0, &elfheader, sizeof(typename elf::elfheader_t));
+	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
 	if(read != sizeof(typename elf::elfheader_t)) throw Exception(E_ELFTRUNCATEDHEADER);
 	ValidateHeader<_class>(&elfheader);
 
 	// Read all of the program headers from the binary image file into a heap buffer
 	HeapBuffer<typename elf::progheader_t> progheaders(elfheader.e_phnum);
-	read = InProcessRead(reader, elfheader.e_phoff, &progheaders, progheaders.Size);
+	read = InProcessRead(handle, elfheader.e_phoff, &progheaders, progheaders.Size);
 	if(read != progheaders.Size) throw Exception(E_ELFIMAGETRUNCATED);
 
 	// PROGRAM HEADERS PASS ONE - GET MEMORY FOOTPRINT AND CHECK INVARIANTS
@@ -237,7 +237,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 			if(progheader.p_filesz) {
 
 				// Read the data from the input stream into the target process address space at segbase
-				try { read = OutOfProcessRead(reader, process, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
+				try { read = OutOfProcessRead(handle, process, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
 				catch(Exception& ex) { throw Exception(E_ELFWRITESEGMENT, ex); }
 
 				if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
@@ -255,7 +255,7 @@ ElfImage::Metadata ElfImage::LoadBinary(StreamReader& reader, HANDLE process)
 
 			// Allocate a heap buffer to temporarily store the interpreter string
 			HeapBuffer<char_t> interpreter(progheader.p_filesz);
-			read = InProcessRead(reader, progheader.p_offset, &interpreter, interpreter.Size);
+			read = InProcessRead(handle, progheader.p_offset, &interpreter, interpreter.Size);
 			if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 
 			// Ensure that the string is NULL terminated and convert it into an std::tstring
