@@ -105,7 +105,9 @@ struct __declspec(novtable) FileSystem
 	// Constant indicating the first dynamic node index that should be used
 	static const uapi::ino_t NODE_INDEX_FIRSTDYNAMIC = 4;
 
+	// MAXIMUM_PATH_SYMLINKS
 	//
+	// The maximum number of symbolic links that can exist in a path
 	static const int MAXIMUM_PATH_SYMLINKS = 40;
 
 	// Alias
@@ -152,10 +154,10 @@ struct __declspec(novtable) FileSystem
 		// Creates a FileSystem::Handle instance for this node
 		virtual HandlePtr Open(int flags) = 0;
 
-		// Open
+		// OpenExec
 		//
-		// Creates a FileSystem::Handle instance for this node, specifically
-		// for use as a process creation handle
+		// Creates a FileSystem::Handle instance for this node, specifically for use
+		// by the virtual machine as part of process creation
 		virtual HandlePtr OpenExec(int flags) = 0;
 
 		// Resolve

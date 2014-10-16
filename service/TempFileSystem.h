@@ -89,8 +89,8 @@ private:
 
 	// TempFileSystem::MountPoint
 	//
-	// State and metadata about the mounted file system, all file system
-	// objects will maintain a shared reference to this object
+	// State and metadata about the mounted file system, all file system objects
+	// will maintain a shared reference to this object
 	class MountPoint
 	{
 	public:

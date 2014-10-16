@@ -273,7 +273,7 @@ void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
 	FileSystem::NodePtr node = found->second->Node;
 	if(node->Type == FileSystem::NodeType::Directory) throw LinuxException(LINUX_EISDIR);
 	
-	// todo: Remove from the collection, node will die of on it's own
+	// todo: Remove from the collection, node will die off on it's own
 }
 
 // DirectoryNode::ResolvePath
@@ -621,17 +621,12 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 	// Trim off any leading slash characters to convert an absolute path into a relative one
 	std::tstring relative(std::ltrim(m_target, _T('/')));
 
-	//
-	// TODO: this change was wrong, the flaw is when the symlink points to a node you should
-	// open the symlink like I had it, but redirect to the target at that point, go into
-	// GitHub and get the code that followed this comment back
-	//
-
-	// Follow the symbolic link
+	// Follow the symbolic link to acquire the target Node instance
 	auto followed = node->Resolve(root, current->Parent, relative.c_str(), flags, symlinks);
 
-	// Complete the path resolution from the followed alias
-	return followed->Node->Resolve(root, followed, path, flags, symlinks);
+	// Construct an Alias to bridge between this symbolic link's parent and the target node
+	auto bridge = Alias::Construct(current->Name, current->Parent, followed->Node);
+	return bridge->Node->Resolve(root, bridge, path, flags, symlinks);
 }
 
 //-----------------------------------------------------------------------------
