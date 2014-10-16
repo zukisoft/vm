@@ -25,7 +25,6 @@
 #pragma once
 
 #include <atomic>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <stack>
@@ -54,20 +53,13 @@ public:
 	// Destructor
 	virtual ~TempFileSystem()=default;
 
-	//-------------------------------------------------------------------------
-	// Member Functions
-
 	// Mount
 	//
 	// Mounts the file system
 	static FileSystemPtr Mount(const uapi::char_t*, uint32_t flags, void* data);
 
-	//-------------------------------------------------------------------------
 	// FileSystem Implementation
-
-	// getRoot
 	//
-	// Accesses the root alias for the file system
 	virtual FileSystem::AliasPtr getRoot(void) { return m_root; }
 
 private:
@@ -87,6 +79,7 @@ private:
 	TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Alias>& alias);
 	friend class std::_Ref_count_obj<TempFileSystem>;
 
+	//-------------------------------------------------------------------------
 	// TempFileSystem::MountPoint
 	//
 	// State and metadata about the mounted file system, all file system objects
@@ -95,21 +88,13 @@ private:
 	{
 	public:
 
-		// Constructor / Destructor
-		//
 		MountPoint(uint32_t flags, const void* data);
 		~MountPoint()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
 
 		// AllocateIndex
 		//
 		// Allocates a new Node index; just wraps around if necessary
 		uint64_t AllocateIndex(void) { return m_nextindex++; }
-
-		//---------------------------------------------------------------------
-		// Properties
 
 		// Options
 		//
@@ -122,9 +107,8 @@ private:
 		MountPoint(const MountPoint&)=delete;
 		MountPoint& operator=(const MountPoint&)=delete;
 
-		//---------------------------------------------------------------------
 		// Member Variables
-
+		//
 		MountOptions				m_options;			// Mounting options
 		std::atomic<uint64_t>		m_nextindex;		// Next inode index
 	};
@@ -180,6 +164,7 @@ private:
 
 		virtual ~NodeBase()=default;
 
+		// todo: put comments back
 		uint64_t	getIndex(void) { return m_index; }
 		NodeType	getType(void) { return m_type; }
 
@@ -202,7 +187,8 @@ private:
 		NodeBase& operator=(const NodeBase&)=delete;
 	};
 
-	// PathHandle
+	//-------------------------------------------------------------------------
+	// TempFileSystem::PathHandle
 	//
 	// Specializes FileSystem::Handle for an O_PATH-based handle.  Most operations will fail with
 	// EBADF, O_PATH handles can only be used with operations that act on the Handle itself and
@@ -237,7 +223,8 @@ private:
 		FilePermission					m_permission;	// Object permissions
 	};
 
-	// DirectoryNode
+	//-------------------------------------------------------------------------
+	// TempFileSystem::DirectoryNode
 	//
 	// Specializes NodeBase for a Directory file system object
 	class DirectoryNode : public NodeBase, public FileSystem::Directory, public std::enable_shared_from_this<DirectoryNode>
@@ -323,7 +310,8 @@ private:
 		AliasMap				m_children;			// Collection of child aliases
 	};
 
-	// FileNode
+	//-------------------------------------------------------------------------
+	// TempFileSystem::FileNode
 	//
 	// Specializes NodeBase for a File file system object
 	class FileNode : public NodeBase, public FileSystem::Node, public std::enable_shared_from_this<FileNode>
@@ -331,9 +319,6 @@ private:
 	public:
 
 		virtual ~FileNode()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
 
 		// Construct
 		//
@@ -398,7 +383,8 @@ private:
 		std::vector<uint8_t>				m_data;		// Underlying file data
 	};
 
-	// SymbolicLinkNode
+	//-------------------------------------------------------------------------
+	// TempFileSystem::SymbolicLinkNode
 	//
 	// Specializes NodeBase for a Symbolic Link file system object
 	class SymbolicLinkNode : public NodeBase, public FileSystem::SymbolicLink, public std::enable_shared_from_this<SymbolicLinkNode>

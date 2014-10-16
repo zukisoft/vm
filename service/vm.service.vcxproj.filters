@@ -335,6 +335,9 @@
     <ClInclude Include="..\common\uapi.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="HostFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -540,6 +543,9 @@
     </ClCompile>
     <ClCompile Include="VmProcessManager.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HostFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
