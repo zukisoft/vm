@@ -32,13 +32,13 @@
 //
 //	path		- Pointer to the path to be iterated
 
-PathIterator::PathIterator(const tchar_t* path) : m_path((path) ? _tcslen(path) + 1 : 1, 0)
+PathIterator::PathIterator(const uapi::char_t* path) : m_path((path) ? strlen(path) + 1 : 1, 0)
 {
 	// Skip path any leading slashes in the original path, not concerned with them
-	while((path) && (*path == _T('/'))) ++path;
+	while((path) && (*path == '/')) ++path;
 
 	// Copy the string data from the original pointer into the vector<>
-	if(path) memcpy(m_path.data(), path, m_path.size() * sizeof(tchar_t));
+	if(path) memcpy(m_path.data(), path, m_path.size() * sizeof(uapi::char_t));
 
 	m_consumed = &m_path[m_path.size() - 1];		// Nothing consumed yet
 

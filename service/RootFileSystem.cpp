@@ -45,7 +45,7 @@ FileSystem::NodePtr RootFileSystem::getNode(void)
 //
 //	source		- Unused for root file system
 
-FileSystemPtr RootFileSystem::Mount(const tchar_t* source)
+FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source)
 {
 	UNREFERENCED_PARAMETER(source);
 
@@ -100,7 +100,7 @@ void RootFileSystem::Unmount(void)
 //	flags		- Resolution flags (O_NOFOLLOW, O_DIRECTORY, etc)
 //	symlinks	- Number of followed symbolic links for O_LOOP processing
 
-FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, const tchar_t* path, int, int*)
+FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int, int*)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 

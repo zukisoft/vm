@@ -96,7 +96,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<VirtualMachine> vm, con
 	if(!path) throw LinuxException(LINUX_EFAULT);
 
 	// Attempt to open an execute handle for the specified path
-	FileSystem::HandlePtr handle = vm->FileSystem->OpenExec(std::to_tstring(path).c_str());
+	FileSystem::HandlePtr handle = vm->FileSystem->OpenExec(path);
 
 	// Read in just enough from the head of the file to look for magic numbers
 	MagicNumbers magics;
@@ -190,7 +190,7 @@ static std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMac
 		if(executable->Interpreter) {
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
-			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(std::to_tstring(executable->Interpreter).c_str());
+			FileSystem::HandlePtr interphandle = vm->FileSystem->OpenExec(executable->Interpreter);
 			interpreter = ElfImage::Load<_class>(interphandle, host->ProcessHandle);
 		}
 

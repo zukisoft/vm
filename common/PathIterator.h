@@ -25,7 +25,7 @@
 #pragma once
 
 #include <vector>
-#include "generic_text.h"
+#include <linux/types.h>
 
 #pragma warning(push, 4)				
 
@@ -40,7 +40,7 @@ public:
 
 	// Constructor / Destructor
 	//
-	PathIterator(const tchar_t* path);
+	PathIterator(const uapi::char_t* path);
 	~PathIterator()=default;
 
 	// operator bool
@@ -64,20 +64,20 @@ public:
 	// Consumed
 	//
 	// Returns a pointer to the consumed path components
-	__declspec(property(get=getConsumed)) const tchar_t* Consumed;
-	const tchar_t* getConsumed(void) const { return m_consumed; }
+	__declspec(property(get=getConsumed)) const uapi::char_t* Consumed;
+	const uapi::char_t* getConsumed(void) const { return m_consumed; }
 
 	// Current
 	//
 	// Returns a pointer to the current component in the path
-	__declspec(property(get=getCurrent)) const tchar_t* Current;
-	const tchar_t* getCurrent(void) const { return m_current; }
+	__declspec(property(get=getCurrent)) const uapi::char_t* Current;
+	const uapi::char_t* getCurrent(void) const { return m_current; }
 
 	// Remaining
 	//
 	// Returns a pointer to the remaining path components
-	__declspec(property(get=getRemaining)) const tchar_t* Remaining;
-	const tchar_t* getRemaining(void) const { return m_remaining; }
+	__declspec(property(get=getRemaining)) const uapi::char_t* Remaining;
+	const uapi::char_t* getRemaining(void) const { return m_remaining; }
 
 private:
 
@@ -87,10 +87,10 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::vector<tchar_t>	m_path;				// Path string vector
-	tchar_t*				m_consumed;			// Pointer to the consumed data
-	tchar_t*				m_current;			// Pointer to the current component
-	tchar_t*				m_remaining;		// Pointer to the remaining data
+	std::vector<uapi::char_t>	m_path;				// Path string vector
+	uapi::char_t*				m_consumed;			// Pointer to the consumed data
+	uapi::char_t*				m_current;			// Pointer to the current component
+	uapi::char_t*				m_remaining;		// Pointer to the remaining data
 };
 
 //-----------------------------------------------------------------------------

@@ -73,7 +73,7 @@ struct __declspec(novtable) FileSystem
 	struct SymbolicLink;
 	using SymbolicLinkPtr = std::shared_ptr<SymbolicLink>;
 
-	// need typedef for Mount(const tchar_t* device, uint32_t flags, const void* data)
+	// need typedef for Mount(const uapi::char_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
 
 	// NodeType
@@ -110,9 +110,10 @@ struct __declspec(novtable) FileSystem
 	// The maximum number of symbolic links that can exist in a path
 	static const int MAXIMUM_PATH_SYMLINKS = 40;
 
-	// Alias
+	//-------------------------------------------------------------------------
+	// FileSystem::Alias
 	//
-	// todo: document when done
+	// Alias implements a file system object name that points to an underlying node
 	struct __declspec(novtable) Alias
 	{
 		// Mount
@@ -128,18 +129,19 @@ struct __declspec(novtable) FileSystem
 		// Name
 		//
 		// Gets the name associated with this alias
-		__declspec(property(get=getName)) const tchar_t* Name;
-		virtual const tchar_t* getName(void) = 0;
+		__declspec(property(get=getName)) const uapi::char_t* Name;
+		virtual const uapi::char_t* getName(void) = 0;
 
 		// Node
 		//
-		// Gets the node instance that this alias references
+		// Gets the node instance to which this alias references
 		__declspec(property(get=getNode)) NodePtr Node;
 		virtual NodePtr getNode(void) = 0;
 
 		// Parent
 		//
-		// Gets the parent Alias instance for this alias
+		// Gets the parent Alias instance for this alias, may be nullptr
+		// if the parent has been released/removed or otherwise doesn't exist
 		__declspec(property(get=getParent)) AliasPtr Parent;
 		virtual AliasPtr getParent(void) = 0;
 	};
@@ -164,7 +166,7 @@ struct __declspec(novtable) FileSystem
 		//
 		// Resolves a relative path from this node to an Alias instance
 		// TODO: too many arguments, create a state object.  Resolve() is recursive, don't blow up the stack
-		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks) = 0;		
+		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;		
 
 		// Index
 		//
@@ -187,12 +189,12 @@ struct __declspec(novtable) FileSystem
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const AliasPtr& parent, const tchar_t* name) = 0;
+		virtual void CreateDirectory(const AliasPtr& parent, const uapi::char_t* name) = 0;
 
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual HandlePtr CreateFile(const AliasPtr& parent, const tchar_t* name, int flags) = 0;
+		virtual HandlePtr CreateFile(const AliasPtr& parent, const uapi::char_t* name, int flags) = 0;
 
 		// CreateNode
 		//
@@ -202,17 +204,17 @@ struct __declspec(novtable) FileSystem
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const AliasPtr& parent, const tchar_t* name, const tchar_t* target) = 0;
+		virtual void CreateSymbolicLink(const AliasPtr& parent, const uapi::char_t* name, const uapi::char_t* target) = 0;
 
 		// RemoveDirectory
 		//
 		// Removes a directory child from the node
-		//virtual void RemoveDirectory(const tchar_t* name) = 0;
+		//virtual void RemoveDirectory(const uapi::char_t* name) = 0;
 
 		// RemoveNode
 		//
 		// Removes a non-directory child from the node
-		//virtual void RemoveNode(const tchar_t* name) = 0;
+		//virtual void RemoveNode(const uapi::char_t* name) = 0;
 	};
 
 	// SymbolicLink
@@ -223,7 +225,7 @@ struct __declspec(novtable) FileSystem
 		// ReadTarget
 		//
 		// Reads the target of the symbolic link
-		virtual uapi::size_t ReadTarget(tchar_t* buffer, size_t count) = 0; 
+		virtual uapi::size_t ReadTarget(uapi::char_t* buffer, size_t count) = 0; 
 	};
 
 	// Handle

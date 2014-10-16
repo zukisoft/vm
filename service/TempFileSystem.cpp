@@ -50,14 +50,14 @@ TempFileSystem::TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, co
 //	flags		- Standard mounting flags and attributes
 //	data		- Additional file-system specific mounting options
 
-FileSystemPtr TempFileSystem::Mount(const tchar_t*, uint32_t flags, void* data)
+FileSystemPtr TempFileSystem::Mount(const uapi::char_t*, uint32_t flags, void* data)
 {
 	// Create the shared MountPoint instance to be passed to all file system objects
 	std::shared_ptr<MountPoint> mountpoint = std::make_shared<MountPoint>(flags, data);
 
 	// Construct the TempFileSystem instance, providing an alias attached to a
 	// new DirectoryNode instance that serves as the root node
-	return std::make_shared<TempFileSystem>(mountpoint, Alias::Construct(_T(""), DirectoryNode::Construct(mountpoint)));
+	return std::make_shared<TempFileSystem>(mountpoint, Alias::Construct("", DirectoryNode::Construct(mountpoint)));
 }
 
 //
@@ -73,7 +73,7 @@ FileSystemPtr TempFileSystem::Mount(const tchar_t*, uint32_t flags, void* data)
 //	parent		- Parent alias instance, or nullptr if this is a root node
 //	node		- Node to assign to this Alias instance
 
-TempFileSystem::Alias::Alias(const tchar_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node) 
+TempFileSystem::Alias::Alias(const uapi::char_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node) 
 	: m_name(name), m_parent(parent)
 {
 	_ASSERTE(name);
@@ -94,8 +94,7 @@ TempFileSystem::Alias::Alias(const tchar_t* name, const FileSystem::AliasPtr& pa
 //	name		- Name to assign to this Alias instance
 //	node		- Initial Node instance to be assigned to this Alias
 
-std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tchar_t* name, 
-	const FileSystem::NodePtr& node)
+std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const uapi::char_t* name, const FileSystem::NodePtr& node)
 {
 	// This version of Construct should only be called when constructing a root 
 	// alias for the file system, invoke the other version with a nullptr parent
@@ -113,7 +112,7 @@ std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tc
 //	parent		- Parent alias for this Alias instance, or nullptr if this is root
 //	node		- Initial Node instance to be assigned to this Alias
 
-std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const tchar_t* name, 
+std::shared_ptr<TempFileSystem::Alias> TempFileSystem::Alias::Construct(const uapi::char_t* name, 
 	const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node)
 {
 	// Construct a new shared Alias instance and return it to the caller
@@ -194,7 +193,7 @@ std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Co
 
 // DirectoryNode::CreateDirectory
 //
-void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name)
+void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
@@ -209,7 +208,7 @@ void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& 
 
 // DirectoryNode::CreateFile
 //
-FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags)
+FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
@@ -228,7 +227,7 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem
 
 // DirectoryNode::CreateSymbolicLink
 //
-void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target)
+void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPtr& parent, const uapi::char_t* name, const uapi::char_t* target)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
@@ -260,7 +259,7 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(int flags)
 
 // DirectoryNode::RemoveNode
 //
-void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
+void TempFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
 {
 	// Write permission is required to remove a node from a directory
 	m_permission.Demand(FilePermission::Access::Write);
@@ -278,7 +277,7 @@ void TempFileSystem::DirectoryNode::RemoveNode(const tchar_t* name)
 
 // DirectoryNode::ResolvePath
 //
-FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks)
+FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
@@ -290,11 +289,11 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root
 
 	// Move past any "." components in the path before checking if the end of the
 	// traversal was reached; which indicates that this is the target node
-	while(_tcscmp(iterator.Current, _T(".")) == 0) ++iterator;
+	while(strcmp(iterator.Current, ".") == 0) ++iterator;
 	if(!iterator) return current;
 
 	// The ".." component indicates that the parent alias' node needs to resolve the remainder
-	if(_tcscmp(iterator.Current, _T("..")) == 0) 
+	if(strcmp(iterator.Current, "..") == 0) 
 		return current->Parent->Node->Resolve(root, current->Parent, iterator.Remaining, flags, symlinks);
 
 	// Attempt to locate the next component in the child collection
@@ -401,7 +400,7 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(int flags)
 
 // FileNode::Resolve
 //
-FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const AliasPtr& current, const tchar_t* path, int flags, int*)
+FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
@@ -555,7 +554,7 @@ TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint
 // SymbolicLinkNode::Construct (static)
 //
 std::shared_ptr<TempFileSystem::SymbolicLinkNode> 
-TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target)
+TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& mountpoint, const uapi::char_t* target)
 {
 	// Target string cannot be null or empty 
 	if(target == nullptr) throw LinuxException(LINUX_EFAULT);
@@ -587,20 +586,20 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
 
 // SymbolicLinkNode::ReadTarget
 //
-uapi::size_t TempFileSystem::SymbolicLinkNode::ReadTarget(tchar_t* buffer, size_t count)
+uapi::size_t TempFileSystem::SymbolicLinkNode::ReadTarget(uapi::char_t* buffer, size_t count)
 {
 	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
 
 	// Copy the minimum of the target length or the output buffer size
 	count = min(m_target.size(), count);
-	memcpy(buffer, m_target.data(), count * sizeof(tchar_t));
+	memcpy(buffer, m_target.data(), count * sizeof(uapi::char_t));
 	
 	return count;
 }
 
 // SymbolicLinkNode::ResolvePath
 //
-FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks)
+FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks)
 {
 	if((path == nullptr) || (symlinks == nullptr)) throw LinuxException(LINUX_EFAULT);
 
@@ -616,10 +615,10 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 	if(++(*symlinks) > FileSystem::MAXIMUM_PATH_SYMLINKS) throw LinuxException(LINUX_ELOOP);
 
 	// Copy and check the first character of the target string to determine absolute v. relative
-	auto node = (m_target.size() && (m_target[0] == _T('/'))) ? root->Node : current->Parent->Node;
+	auto node = (m_target.size() && (m_target[0] == '/')) ? root->Node : current->Parent->Node;
 
 	// Trim off any leading slash characters to convert an absolute path into a relative one
-	std::tstring relative(std::ltrim(m_target, _T('/')));
+	std::string relative(std::ltrim(m_target, '/'));
 
 	// Follow the symbolic link to acquire the target Node instance
 	auto followed = node->Resolve(root, current->Parent, relative.c_str(), flags, symlinks);

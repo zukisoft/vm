@@ -60,7 +60,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const tchar_t*, uint32_t flags, void* data);
+	static FileSystemPtr Mount(const uapi::char_t*, uint32_t flags, void* data);
 
 	//-------------------------------------------------------------------------
 	// FileSystem Implementation
@@ -129,53 +129,28 @@ private:
 		std::atomic<uint64_t>		m_nextindex;		// Next inode index
 	};
 
+	//-------------------------------------------------------------------------
 	// TempFileSystem::Alias
 	//
-	// Specialization of FileSystem::Alias for a temp file system instance
 	class Alias : public FileSystem::Alias
 	{
 	public:
 
-		// Constructor
-		//
 		virtual ~Alias()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
 
 		// Construct (static)
 		//
 		// Constructs a new Alias instance
-		static std::shared_ptr<Alias> Construct(const tchar_t* name, const FileSystem::NodePtr& node);
-		static std::shared_ptr<Alias> Construct(const tchar_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node);
+		static std::shared_ptr<Alias> Construct(const uapi::char_t* name, const FileSystem::NodePtr& node);
+		static std::shared_ptr<Alias> Construct(const uapi::char_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node);
 
-		//---------------------------------------------------------------------
 		// FileSystem::Alias Implementation
-
-		// Mount
 		//
-		// Mounts/binds a foreign node to this alias, obscuring the previous node
-		virtual void Mount(const FileSystem::NodePtr& node);
-
-		// Unmount
-		//
-		// Unmounts/unbinds a node from this alias, revealing the previously bound node
-		virtual void Unmount(void);
-
-		// Name
-		//
-		// Gets the name associated with this alias
-		virtual const tchar_t* getName(void) { return m_name.c_str(); }
-
-		// Node
-		//
-		// Gets the node instance that this alias references
-		virtual FileSystem::NodePtr getNode(void);
-
-		// Parent
-		//
-		// Gets the parent Alias for this alias instance
-		virtual FileSystem::AliasPtr getParent(void);
+		virtual void					Mount(const FileSystem::NodePtr& node);
+		virtual void					Unmount(void);
+		virtual const uapi::char_t*		getName(void) { return m_name.c_str(); }
+		virtual FileSystem::NodePtr		getNode(void);
+		virtual FileSystem::AliasPtr	getParent(void);
 
 	private:
 
@@ -184,38 +159,29 @@ private:
 
 		// Instance Constructor
 		//
-		Alias(const tchar_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node);
+		Alias(const uapi::char_t* name, const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node);
 		friend class std::_Ref_count_obj<Alias>;
 
-		//---------------------------------------------------------------------
 		// Member Variables
-		
-		std::mutex							m_lock;		// Synchronization object
-		std::tstring						m_name;		// Alias name
-		std::stack<FileSystem::NodePtr>		m_mounted;	// Stack of mounted nodes
-		std::weak_ptr<FileSystem::Alias>	m_parent;	// Parent alias instance
+		//		
+		std::mutex							m_lock;			// Synchronization object
+		std::string							m_name;			// Alias name
+		std::stack<FileSystem::NodePtr>		m_mounted;		// Stack of mounted nodes
+		std::weak_ptr<FileSystem::Alias>	m_parent;		// Parent alias instance
 	};
 
+	//-------------------------------------------------------------------------
 	// TempFileSystem::NodeBase
 	//
-	// Provides the base (FileSystem::Node) implementation for all node classes
+	// Provides the base FileSystem::Node implementation for all node types
 	class __declspec(novtable) NodeBase
 	{
 	public:
 
-		// Destructor
-		//
 		virtual ~NodeBase()=default;
 
-		// getIndex
-		//
-		// todo
-		uint64_t getIndex(void) { return m_index; }
-
-		// getType
-		//
-		// todo
-		NodeType getType(void) { return m_type; }
+		uint64_t	getIndex(void) { return m_index; }
+		NodeType	getType(void) { return m_type; }
 
 	protected:
 
@@ -223,9 +189,8 @@ private:
 		//
 		NodeBase(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type);
 
-		//---------------------------------------------------------------------
 		// Protected Member Variables
-
+		//
 		const uint64_t					m_index;		// Node index number
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
 		FilePermission					m_permission;	// Node permission
@@ -290,16 +255,16 @@ private:
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::HandlePtr	OpenExec(int)	{ throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL)); }
-		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void)	{ return NodeBase::getType(); }
 
 		// FileSystem::Directory Implementation
 		//
-		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const tchar_t* name);
-		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const tchar_t* name, int flags);
-		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr& parent, const tchar_t* name, const tchar_t* target);
-		virtual void					RemoveNode(const tchar_t* name);
+		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name);
+		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags);
+		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr& parent, const uapi::char_t* name, const uapi::char_t* target);
+		virtual void					RemoveNode(const uapi::char_t* name);
 
 	private:
 
@@ -350,7 +315,7 @@ private:
 		// AliasSet
 		//
 		// Collection of child Alias instances
-		using AliasMap = Concurrency::concurrent_unordered_map<std::tstring, FileSystem::AliasPtr>;
+		using AliasMap = Concurrency::concurrent_unordered_map<std::string, FileSystem::AliasPtr>;
 
 		//---------------------------------------------------------------------
 		// Member Variables
@@ -379,7 +344,7 @@ private:
 		//		
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::HandlePtr	OpenExec(int flags);
-		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
@@ -445,19 +410,19 @@ private:
 		// Construct
 		//
 		// Constructs a new SymbolicLinkNode instance
-		static std::shared_ptr<SymbolicLinkNode> Construct(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target);
+		static std::shared_ptr<SymbolicLinkNode> Construct(const std::shared_ptr<MountPoint>& mountpoint, const uapi::char_t* target);
 
 		// FileSystem::Node Implementation
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::HandlePtr	OpenExec(int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
 
 		// FileSystem::SymbolicLink Implementation
 		//
-		virtual uapi::size_t			ReadTarget(tchar_t* buffer, size_t count);
+		virtual uapi::size_t			ReadTarget(uapi::char_t* buffer, size_t count);
 
 	private:
 
@@ -466,7 +431,7 @@ private:
 
 		// Instance Constructor
 		//
-		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* target) : 
+		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const uapi::char_t* target) : 
 			NodeBase(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(std::trim(target)) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
 
@@ -505,7 +470,7 @@ private:
 		//---------------------------------------------------------------------
 		// Member Variables
 
-		std::tstring			m_target;			// Symbolic link target
+		std::string			m_target;			// Symbolic link target
 	};
 
 	//---------------------------------------------------------------------

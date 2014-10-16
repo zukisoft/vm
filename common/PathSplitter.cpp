@@ -32,18 +32,18 @@
 //
 //	path		- Pointer to the path to be parsed
 
-PathSplitter::PathSplitter(const tchar_t* path) : m_path((path) ? _tcslen(path) + 1 : 1, 0)
+PathSplitter::PathSplitter(const uapi::char_t* path) : m_path((path) ? strlen(path) + 1 : 1, 0)
 {
 	// Copy the string data from the original pointer into the vector<>
-	if(path) memcpy(m_path.data(), path, m_path.size() * sizeof(tchar_t));
+	if(path) memcpy(m_path.data(), path, m_path.size() * sizeof(uapi::char_t));
 
 	// Determine if the path is absolute by checking for a leading slash character
-	m_absolute = (m_path[0] == _T('/'));
+	m_absolute = (m_path[0] == '/');
 
 	// Work backwards from the end of the string to find the last slash and
 	// change it into the null terminator for the branch portion
-	tchar_t* end = m_path.data() + (m_path.size() - 1);
-	while((end >= m_path.data()) && (*end != _T('/'))) --end;
+	uapi::char_t* end = m_path.data() + (m_path.size() - 1);
+	while((end >= m_path.data()) && (*end != '/')) --end;
 	if(end >= m_path.data()) *end = 0;
 
 	// The leaf string starts one character beyond the calculated end pointer
@@ -55,7 +55,7 @@ PathSplitter::PathSplitter(const tchar_t* path) : m_path((path) ? _tcslen(path) 
 
 	// Move beyond any leading slash characters in the branch path to make it relative,
 	// the caller can check the .Absolute property to determine if it was present
-	while(*m_branch == _T('/')) ++m_branch;
+	while(*m_branch == '/') ++m_branch;
 }
 
 //-----------------------------------------------------------------------------

@@ -52,7 +52,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const tchar_t* source);
+	static FileSystemPtr Mount(const uapi::char_t* source);
 
 private:
 
@@ -72,7 +72,7 @@ private:
 	//
 	virtual void					Mount(const FileSystem::NodePtr& node);
 	virtual void					Unmount(void);	
-	virtual const tchar_t*			getName(void) { return _T(""); }
+	virtual const uapi::char_t*		getName(void) { return ""; }
 	virtual FileSystem::NodePtr		getNode(void);
 	virtual FileSystem::AliasPtr	getParent(void) { return shared_from_this(); }
 
@@ -80,16 +80,16 @@ private:
 	//
 	virtual FileSystem::HandlePtr	Open(int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::HandlePtr	OpenExec(int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const tchar_t* path, int flags, int* symlinks);
+	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 	virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
 	virtual NodeType				getType(void) { return NodeType::Directory; }
 
 	// FileSystem::Directory Implementation
 	//
-	virtual void					CreateDirectory(const FileSystem::AliasPtr&, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const tchar_t*, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const tchar_t*, const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); } 
-	virtual void					RemoveNode(const tchar_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void					CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const uapi::char_t*, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+	virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); } 
+	virtual void					RemoveNode(const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 		
 	//-------------------------------------------------------------------------
 	// Member Variables

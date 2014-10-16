@@ -260,7 +260,7 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 
 			// Ensure that the string is NULL terminated and convert it into an std::tstring
 			if(interpreter[interpreter.Count - 1] != 0) throw Exception(E_ELFINVALIDINTERPRETER);
-			metadata.Interpreter = std::to_tstring(static_cast<char_t*>(interpreter));
+			metadata.Interpreter = interpreter;
 		}
 	}
 

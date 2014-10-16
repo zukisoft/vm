@@ -65,7 +65,7 @@ std::unique_ptr<VmFileSystem> VmFileSystem::Create(const FileSystemPtr& rootfs)
 //	path		- Path to the directory to be created
 //	(todo: mode and flags)
 
-void VmFileSystem::CreateDirectory(const tchar_t* path)
+void VmFileSystem::CreateDirectory(const uapi::char_t* path)
 {
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
 
@@ -82,7 +82,7 @@ void VmFileSystem::CreateDirectory(const tchar_t* path)
 	directory->CreateDirectory(branch, splitter.Leaf);
 }
 
-VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, uapi::mode_t mode)
+VmFileSystem::Handle VmFileSystem::CreateFile(const uapi::char_t* path, int flags, uapi::mode_t mode)
 {
 	(mode);		// TODO
 
@@ -114,7 +114,7 @@ VmFileSystem::Handle VmFileSystem::CreateFile(const tchar_t* path, int flags, ua
 //	path		- Path to the directory to be created
 //	target		- Symbolic link target
 
-void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target)
+void VmFileSystem::CreateSymbolicLink(const uapi::char_t* path, const uapi::char_t* target)
 {
 	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOENT);
 	if((target == nullptr) || (*target == 0)) throw LinuxException(LINUX_ENOENT);
@@ -146,7 +146,7 @@ void VmFileSystem::CreateSymbolicLink(const tchar_t* path, const tchar_t* target
 //	data		- File-system specific mounting options/data
 
 #include "TempFileSystem.h"	// todo: remove me
-void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data)
+void VmFileSystem::Mount(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data)
 {
 	(source);
 	(filesystem); // <--- ENODEV if filesystem is bad/unknown
@@ -177,7 +177,7 @@ void VmFileSystem::Mount(const tchar_t* source, const tchar_t* target, const tch
 //	flags		- Flags indicating how the object should be opened
 //	mode		- Mode bitmask to use if a new object is created
 
-VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags, uapi::mode_t mode)
+VmFileSystem::Handle VmFileSystem::Open(const uapi::char_t* path, int flags, uapi::mode_t mode)
 {
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
 	if(*path == 0) throw LinuxException(LINUX_ENOENT);
@@ -213,7 +213,7 @@ VmFileSystem::Handle VmFileSystem::Open(const tchar_t* path, int flags, uapi::mo
 	else return ResolvePath(path)->Node->Open(flags);
 }
 
-VmFileSystem::Handle VmFileSystem::OpenExec(const tchar_t* path)
+VmFileSystem::Handle VmFileSystem::OpenExec(const uapi::char_t* path)
 {
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
 	if(*path == 0) throw LinuxException(LINUX_ENOENT);
@@ -231,7 +231,7 @@ VmFileSystem::Handle VmFileSystem::OpenExec(const tchar_t* path)
 //
 //	absolute	- Absolute path to the alias to resolve
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const uapi::char_t* absolute)
 {
 	if(absolute == nullptr) throw LinuxException(LINUX_ENOENT);
 
@@ -250,14 +250,14 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const tchar_t* absolute)
 //	base		- Base alias instance to use for resolution
 //	relative	- Relative path to resolve
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative)
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative)
 {
 	_ASSERTE(base);
 	int symlinks = 0;
 	return base->Node->Resolve(m_rootfs->Root, base, relative, 0, &symlinks);		// <--- todo flags
 }
 
-bool VmFileSystem::TryResolvePath(const tchar_t* absolute, FileSystem::AliasPtr& result)
+bool VmFileSystem::TryResolvePath(const uapi::char_t* absolute, FileSystem::AliasPtr& result)
 {
 	// TODO: this could be done more efficiently
 	// a performance problem
@@ -267,7 +267,7 @@ bool VmFileSystem::TryResolvePath(const tchar_t* absolute, FileSystem::AliasPtr&
 	return true;
 }
 
-bool VmFileSystem::TryResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, FileSystem::AliasPtr& result)
+bool VmFileSystem::TryResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative, FileSystem::AliasPtr& result)
 {
 	// TODO: this could be done more efficiently
 	try { result = ResolvePath(base, relative); }
@@ -286,7 +286,7 @@ bool VmFileSystem::TryResolvePath(const FileSystem::AliasPtr& base, const tchar_
 //	target		- Target alias where file system is mounted
 //	flags		- Flags to control unmounting operation
 
-void VmFileSystem::Unmount(const tchar_t* target, uint32_t flags)
+void VmFileSystem::Unmount(const uapi::char_t* target, uint32_t flags)
 {
 	UNREFERENCED_PARAMETER(target);
 	UNREFERENCED_PARAMETER(flags);

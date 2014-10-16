@@ -68,32 +68,32 @@ public:
 	static std::unique_ptr<VmFileSystem> Create(const FileSystemPtr& rootfs);
 
 	// mkdir
-	void CreateDirectory(const tchar_t* path);
+	void CreateDirectory(const uapi::char_t* path);
 
 	// CreateFile
 	//
 	//
-	Handle CreateFile(const tchar_t* path, int flags, uapi::mode_t mode);
+	Handle CreateFile(const uapi::char_t* path, int flags, uapi::mode_t mode);
 
 	// symlink
-	void CreateSymbolicLink(const tchar_t* path, const tchar_t* target);
+	void CreateSymbolicLink(const uapi::char_t* path, const uapi::char_t* target);
 
 	// open
 	//
-	Handle Open(const tchar_t* path, int flags, uapi::mode_t mode);
+	Handle Open(const uapi::char_t* path, int flags, uapi::mode_t mode);
 
 	// execve?
 	//
-	Handle OpenExec(const tchar_t* path);
+	Handle OpenExec(const uapi::char_t* path);
 
 	// mount
-	void Mount(const tchar_t* source, const tchar_t* target, const tchar_t* filesystem, uint32_t flags, void* data);
+	void Mount(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data);
 
 	// fsync
 	//void 
 
 	// umount
-	void Unmount(const tchar_t* target, uint32_t flags);
+	void Unmount(const uapi::char_t* target, uint32_t flags);
 
 private:
 
@@ -111,11 +111,11 @@ private:
 	// ResolvePath
 	//
 	// Resolves an alias instance based on a path
-	FileSystem::AliasPtr ResolvePath(const tchar_t* absolute);
-	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative);
+	FileSystem::AliasPtr ResolvePath(const uapi::char_t* absolute);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative);
 
-	bool TryResolvePath(const tchar_t* absolute, FileSystem::AliasPtr& result);
-	bool TryResolvePath(const FileSystem::AliasPtr& base, const tchar_t* relative, FileSystem::AliasPtr& result);
+	bool TryResolvePath(const uapi::char_t* absolute, FileSystem::AliasPtr& result);
+	bool TryResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative, FileSystem::AliasPtr& result);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

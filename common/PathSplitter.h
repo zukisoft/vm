@@ -25,7 +25,7 @@
 #pragma once
 
 #include <vector>
-#include "generic_text.h"
+#include <linux/types.h>
 
 #pragma warning(push, 4)				
 
@@ -40,7 +40,7 @@ public:
 
 	// Constructor / Destructor
 	//
-	PathSplitter(const tchar_t* path);
+	PathSplitter(const uapi::char_t* path);
 	~PathSplitter()=default;
 
 	// operator bool
@@ -60,14 +60,14 @@ public:
 	// Branch
 	//
 	// Returns a pointer to the branch of the path
-	__declspec(property(get=getBranch)) const tchar_t* Branch;
-	const tchar_t* getBranch(void) const { return m_branch; }
+	__declspec(property(get=getBranch)) const uapi::char_t* Branch;
+	const uapi::char_t* getBranch(void) const { return m_branch; }
 
 	// Leaf
 	//
 	// Returns a pointer to the leaf of the path
-	__declspec(property(get=getLeaf)) const tchar_t* Leaf;
-	const tchar_t* getLeaf(void) const { return m_leaf; }
+	__declspec(property(get=getLeaf)) const uapi::char_t* Leaf;
+	const uapi::char_t* getLeaf(void) const { return m_leaf; }
 
 	// Relative
 	//
@@ -83,10 +83,10 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::vector<tchar_t>		m_path;				// Path string vector
+	std::vector<uapi::char_t>	m_path;				// Path string vector
 	bool						m_absolute;			// Flag if path was absolute
-	tchar_t*					m_branch;			// Pointer to the branch
-	tchar_t*					m_leaf;				// Pointer to the leaf
+	uapi::char_t*				m_branch;			// Pointer to the branch
+	uapi::char_t*				m_leaf;				// Pointer to the leaf
 };
 
 //-----------------------------------------------------------------------------

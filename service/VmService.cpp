@@ -42,7 +42,7 @@ void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 	CpioArchive::EnumerateFiles(CompressedStreamReader::FromFile(archive), [&](const CpioFile& file) -> void {
 
 		// Convert the path string from ANSI/UTF8 to generic text for the FileSystem API
-		std::tstring path = std::to_tstring(file.Path);
+		std::string path = std::to_string(file.Path);
 
 		// Depending on the type of node being enumerated, construct the appropriate object
 		switch(file.Mode & LINUX_S_IFMT) {
@@ -70,7 +70,7 @@ void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 			{
 				std::vector<char> buffer(file.Data.Length + 1);
 				file.Data.Read(buffer.data(), buffer.size());
-				std::tstring target = std::to_tstring(buffer.data());
+				std::string target = std::to_string(buffer.data());
 				m_vfs->CreateSymbolicLinkW(path.c_str(), target.c_str());
 			}
 				break;
@@ -140,7 +140,7 @@ void VmService::OnStart(int, LPTSTR*)
 
 		// clearly this is temporary code
 		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
-		m_vfs->Mount(nullptr, L"/", L"tmpfs", 0, nullptr);
+		m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???
 

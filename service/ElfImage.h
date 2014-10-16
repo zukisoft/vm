@@ -75,8 +75,8 @@ public:
 	// Interpreter
 	//
 	// Indicates the path to the program interpreter, if one is present
-	__declspec(property(get=getInterpreter)) const tchar_t* Interpreter;
-	const tchar_t* getInterpreter(void) const { return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str(); }
+	__declspec(property(get=getInterpreter)) const uapi::char_t* Interpreter;
+	const uapi::char_t* getInterpreter(void) const { return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str(); }
 
 	// ProgramBreak
 	//
@@ -124,7 +124,7 @@ private:
 		void*					ProgramHeaders = nullptr;
 		size_t					NumProgramHeaders = 0;
 		void*					EntryPoint = nullptr;
-		std::tstring			Interpreter;
+		std::string				Interpreter;
 	};
 
 	//-------------------------------------------------------------------------
