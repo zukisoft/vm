@@ -27,6 +27,8 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
+#include "HostFileSystem.h"
+
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
@@ -53,6 +55,11 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
+
+	FileSystemPtr mounted = HostFileSystem::Mount("d:\\Linux Stuff", 0, nullptr);
+	FileSystem::AliasPtr resolved = mounted->Root->Node->Resolve(mounted->Root, mounted->Root, "android\\system\\bin", 0, nullptr);
+
+	return 0;
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);

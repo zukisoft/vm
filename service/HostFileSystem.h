@@ -26,12 +26,18 @@
 
 #include <memory>
 #include <vector>
+#include <PathCch.h>
+#include <Shlwapi.h>
 #include <linux/errno.h>
 #include "Exception.h"
 #include "FileSystem.h"
+#include "HeapBuffer.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Win32Exception.h"
+
+#pragma comment(lib, "pathcch.lib")
+#pragma comment(lib, "shlwapi.lib")
 
 #pragma warning(push, 4)
 
@@ -140,16 +146,51 @@ private:
 	//-------------------------------------------------------------------------
 	// HostFileSystem::DirectoryNode
 	//
-	class DirectoryNode
+	class DirectoryNode : public FileSystem::Directory
 	{
 	public:
 
-		virtual ~DirectoryNode()=default;
+		virtual ~DirectoryNode();
+
+		// FromHandle
+		//
+		// Constructs a new DirectoryNode instance from an existing handle
+		static std::shared_ptr<DirectoryNode> FromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+
+		// FromPath
+		//
+		// Constructs a new DirectoryNode instance from a host file system path
+		static std::shared_ptr<DirectoryNode> FromPath(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path);
+
+		// FileSystem::Node Implementation
+		//
+		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int flags, int*);
+		virtual uint64_t				getIndex(void);
+		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::Directory; }
+
+		// FileSystem::Directory Implementation
+		//
+		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name);
+		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags);
+		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual void					RemoveNode(const uapi::char_t* name);
 
 	private:
 
 		DirectoryNode(const DirectoryNode&)=delete;
 		DirectoryNode& operator=(const DirectoryNode&)=delete;
+
+		// Instance Constructor
+		//
+		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+		friend class std::_Ref_count_obj<DirectoryNode>;
+
+		// Member Variables
+		//
+		std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
+		HANDLE							m_handle;			// Query-only object handle
+		std::vector<tchar_t>			m_hostpath;			// Host operating system path
 
 		// DirectoryNode::Handle
 		//

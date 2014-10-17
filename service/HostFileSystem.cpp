@@ -85,11 +85,13 @@ FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
 	// Attempt to create the MountPoint instance for this file system against the opened handle
+	// (MountPoint will take ownership of the handle at this point)
 	try { mountpoint = std::make_shared<MountPoint>(handle, flags, data); }
 	catch(...) { CloseHandle(handle); throw; }
 
-	// Construct the HostFileSystem instance , providing an alias attached to the mountpoint node
-	return std::make_shared<HostFileSystem>(mountpoint, Alias::Construct("", nullptr /* TODO */));
+	// Construct the HostFileSystem instance, providing an alias attached to the target directory
+	auto rootnode = DirectoryNode::FromPath(mountpoint, mountpoint->HostPath);
+	return std::make_shared<HostFileSystem>(mountpoint, Alias::Construct("", rootnode));
 }
 
 //-----------------------------------------------------------------------------
@@ -113,8 +115,7 @@ std::shared_ptr<HostFileSystem::Alias> HostFileSystem::Alias::Construct(const ua
 	_ASSERTE(name);
 	_ASSERTE(node);
 
-	// Every Alias must have a name and a reference to a node object
-	if((!name) || (*name == 0) || (!node)) throw LinuxException(LINUX_EINVAL);
+	if((!name) || (!node)) throw LinuxException(LINUX_EINVAL);
 
 	// Construct a new shared Alias instance and return it to the caller
 	return std::make_shared<Alias>(name, parent, node);
@@ -137,6 +138,178 @@ FileSystem::AliasPtr HostFileSystem::Alias::getParent(void)
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::DIRECTORYNODE IMPLEMENTATION
 //-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode Constructor
+//
+// Arguments:
+//
+//	mountpoint		- Mounted file system metadata and options
+//	handle			- Query-only handle to the underlying directory object
+
+HostFileSystem::DirectoryNode::DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle) : m_mountpoint(mountpoint), m_handle(handle) 
+{
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
+
+	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
+	// providing NULL for the output, this will include the count for the NULL terminator
+	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(pathlen == 0) throw MapHostException();
+
+	// Retrieve the canonicalized path to the directory object based on the handle
+	m_hostpath.resize(pathlen);
+	pathlen = GetFinalPathNameByHandle(handle, m_hostpath.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(pathlen == 0) throw MapHostException();
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode Destructor
+
+HostFileSystem::DirectoryNode::~DirectoryNode()
+{
+	// Close the underlying operating system handle
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+}
+
+void HostFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name)
+{
+	(parent);
+	(name);
+	throw Exception(E_NOTIMPL);
+}
+
+FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags)
+{
+	(parent);
+	(name);
+	(flags);
+	throw Exception(E_NOTIMPL);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::FromHandle (static)
+//
+// Creates a new DirectoryNode instance from a host file system object handle
+//
+// Arguments:
+//
+//	mountpoint		- Mounted file system MountPoint instance
+//	handle			- Handle to the host file system object
+
+std::shared_ptr<HostFileSystem::DirectoryNode> 
+HostFileSystem::DirectoryNode::FromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle)
+{
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
+
+	// When a handle is provided, just invoke the constructor
+	return std::make_shared<DirectoryNode>(mountpoint, handle);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::FromPath (static)
+//
+// Creates a new DirectoryNode instance from a host file system path
+//
+// Arguments:
+//
+//	mountpoint		- Mounted file system MountPoint instance
+//	path			- Path to the directory object on the host
+
+std::shared_ptr<HostFileSystem::DirectoryNode> 
+HostFileSystem::DirectoryNode::FromPath(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path)
+{
+	if((path == nullptr) || (*path == 0)) throw LinuxException(LINUX_ENOTDIR);
+
+	// The node type must be known in order to verify this is a directory object
+	DWORD attributes = GetFileAttributes(path);
+	if(attributes == INVALID_FILE_ATTRIBUTES) throw LinuxException(LINUX_ENOTDIR);
+	if((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) throw LinuxException(LINUX_ENOTDIR);
+
+	// Attempt to create a query-only handle for the underlying host file system object
+	HANDLE handle = ::CreateFile(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 
+		FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
+
+	// Invoke the version of this method that accepts the query handle rather than the path.
+	// DirectoryNode takes ownership of the handle, so close it on a construction exception
+	try { return FromHandle(mountpoint, handle); }
+	catch(...) { CloseHandle(handle); throw; }
+}
+
+FileSystem::HandlePtr HostFileSystem::DirectoryNode::Open(int flags)
+{
+	(flags);
+	throw Exception(E_NOTIMPL);
+}
+
+void HostFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
+{
+	(name);
+	throw Exception(E_NOTIMPL);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Resolve
+//
+// Resolves an Alias instance for a path relative to this node
+//
+// Arguments:
+//
+//	root			- Unused; root lookups never happen
+//	current			- Unused; path is processed by the host operating system
+//	path			- 
+//	flags			- 
+//	symlinks		- Unused; symlinks are processed by the host operating system
+
+FileSystem::AliasPtr HostFileSystem::DirectoryNode::Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int flags, int*)
+{
+	tchar_t*					hostpath = nullptr;				// Completed path to the file system object
+	FileSystem::AliasPtr		resolved;						// Alias instance resolved from the host path
+
+	(flags); // TODO - WORK IN PROGRESS
+
+	std::tstring pathstr = std::to_tstring(path);				// Convert relative path from ANSI/UTF-8
+
+	// Combine the provided path with the stored path to complete the path to the target node
+	HRESULT hresult = PathAllocCombine(m_hostpath.data(), pathstr.c_str(), PATHCCH_ALLOW_LONG_PATHS, &hostpath);
+	if(FAILED(hresult)) throw Exception(hresult);			// <--- todo linux exception
+
+	// Extract the file name from the path and convert it to ANSI/UTF-8 for the alias instance
+	std::string aliasname = std::to_string(PathFindFileName(hostpath));
+
+	// Retrieve the basic attributes for the node to determine if it's a file or a directory
+	DWORD attributes = GetFileAttributes(hostpath);
+	if(attributes == INVALID_FILE_ATTRIBUTES) { LocalFree(hostpath); throw LinuxException(LINUX_ENOENT); }
+
+	try {
+
+		// Generate either a directory or file alias based on what the underlying object type happens to be
+		if((attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) 
+			resolved = Alias::Construct(aliasname.c_str(), DirectoryNode::FromPath(m_mountpoint, hostpath));
+		else resolved = Alias::Construct(aliasname.c_str(), nullptr);		// <--- todo filenode::FromPath
+
+		LocalFree(hostpath);									// Release allocated string data
+		return resolved;										// Return the resolved Alias instance
+	}
+	
+	catch(...) { LocalFree(hostpath); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::getIndex
+//
+// Gets the file index for this node from the operating system
+
+uint64_t HostFileSystem::DirectoryNode::getIndex(void)
+{
+	BY_HANDLE_FILE_INFORMATION		fileinfo;		// File information
+
+	// Query information about the object from the handle and return the file index
+	if(!GetFileInformationByHandle(m_handle, &fileinfo)) throw MapHostException();
+	return (static_cast<uint64_t>(fileinfo.nFileIndexHigh) << 32) | fileinfo.nFileIndexLow;
+}
 
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::DIRECTORYNODE::HANDLE IMPLEMENTATION
@@ -169,6 +342,9 @@ FileSystem::AliasPtr HostFileSystem::Alias::getParent(void)
 
 HostFileSystem::MountPoint::MountPoint(HANDLE handle, uint32_t flags, const void* data) : m_handle(handle), m_options(flags, data)
 {
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
+
 	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
 	// providing NULL for the output, this will include the count for the NULL terminator
 	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);

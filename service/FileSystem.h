@@ -156,12 +156,6 @@ struct __declspec(novtable) FileSystem
 		// Creates a FileSystem::Handle instance for this node
 		virtual HandlePtr Open(int flags) = 0;
 
-		// OpenExec
-		//
-		// Creates a FileSystem::Handle instance for this node, specifically for use
-		// by the virtual machine as part of process creation
-		virtual HandlePtr OpenExec(int flags) = 0;
-
 		// Resolve
 		//
 		// Resolves a relative path from this node to an Alias instance
@@ -215,6 +209,18 @@ struct __declspec(novtable) FileSystem
 		//
 		// Removes a non-directory child from the node
 		//virtual void RemoveNode(const uapi::char_t* name) = 0;
+	};
+
+	// File
+	//
+	// Specialization of Node for File objects
+	struct __declspec(novtable) File : public Node
+	{
+		// OpenExec
+		//
+		// Creates a FileSystem::Handle instance for this node, specifically for use
+		// by the virtual machine as part of process creation
+		virtual HandlePtr OpenExec(int flags) = 0;
 	};
 
 	// SymbolicLink

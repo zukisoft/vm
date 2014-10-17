@@ -219,7 +219,10 @@ VmFileSystem::Handle VmFileSystem::OpenExec(const uapi::char_t* path)
 	if(*path == 0) throw LinuxException(LINUX_ENOENT);
 
 	// todo: Remove flags from OpenExec?  Nothing can be specified by the user
-	return ResolvePath(path)->Node->OpenExec(0);
+	auto node = std::dynamic_pointer_cast<FileSystem::File>(ResolvePath(path)->Node);
+	if(!node) throw LinuxException(LINUX_ENOENT);		// <-- todo: Exception
+
+	return node->OpenExec(0);
 }
 
 //-----------------------------------------------------------------------------
