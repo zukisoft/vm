@@ -25,7 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include <PathCch.h>
 #include <Shlwapi.h>
 #include <linux/errno.h>
@@ -190,7 +189,7 @@ private:
 		//
 		std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
 		HANDLE							m_handle;			// Query-only object handle
-		std::vector<tchar_t>			m_hostpath;			// Host operating system path
+		HeapBuffer<tchar_t>				m_hostpath;			// Host operating system path
 
 		// DirectoryNode::Handle
 		//
@@ -257,6 +256,8 @@ private:
 	{
 	public:
 
+		// Constructor / Destructor
+		//
 		MountPoint(HANDLE handle, uint32_t flags, const void* data);
 		~MountPoint();
 
@@ -264,7 +265,7 @@ private:
 		//
 		// Gets the host file system path that was mounted
 		__declspec(property(get=getHostPath)) const tchar_t* HostPath;
-		const tchar_t* getHostPath(void) const { return m_hostpath.data(); }
+		const tchar_t* getHostPath(void) { return m_hostpath; }
 
 		// Options
 		//
@@ -281,7 +282,7 @@ private:
 		//
 		HANDLE					m_handle;			// Mounted directory handle
 		MountOptions			m_options;			// Standard mounting options
-		std::vector<tchar_t> 	m_hostpath;			// The mounted host path
+		HeapBuffer<tchar_t>		m_hostpath;			// The mounted host path
 	};
 
 	//-------------------------------------------------------------------------

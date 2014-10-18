@@ -54,6 +54,33 @@ static LinuxException MapHostException(DWORD code = GetLastError())
 }
 
 //-----------------------------------------------------------------------------
+// HandleToPath (local)
+//
+// Gets the canonicalized path for a Windows file system handle
+//
+// Arguments:
+//
+//	handle		- Windows file system handle to get the path for
+
+static HeapBuffer<tchar_t> HandleToPath(HANDLE handle)
+{
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
+
+	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
+	// providing NULL for the output, this will include the count for the NULL terminator
+	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(pathlen == 0) throw MapHostException();
+
+	// Retrieve the canonicalized path to the directory object based on the handle
+	HeapBuffer<tchar_t> hostpath(pathlen);
+	pathlen = GetFinalPathNameByHandle(handle, &hostpath, pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	if(pathlen == 0) throw MapHostException();
+
+	return hostpath;
+}
+
+//-----------------------------------------------------------------------------
 // HOSTFILESYSTEM IMPLEMENTATION
 //-----------------------------------------------------------------------------
 
@@ -147,21 +174,8 @@ FileSystem::AliasPtr HostFileSystem::Alias::getParent(void)
 //	mountpoint		- Mounted file system metadata and options
 //	handle			- Query-only handle to the underlying directory object
 
-HostFileSystem::DirectoryNode::DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle) : m_mountpoint(mountpoint), m_handle(handle) 
-{
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
-
-	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
-	// providing NULL for the output, this will include the count for the NULL terminator
-	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-	if(pathlen == 0) throw MapHostException();
-
-	// Retrieve the canonicalized path to the directory object based on the handle
-	m_hostpath.resize(pathlen);
-	pathlen = GetFinalPathNameByHandle(handle, m_hostpath.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-	if(pathlen == 0) throw MapHostException();
-}
+HostFileSystem::DirectoryNode::DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle) : 
+	m_mountpoint(mountpoint), m_handle(handle), m_hostpath(HandleToPath(handle)) {}
 
 //-----------------------------------------------------------------------------
 // HostFileSystem::DirectoryNode Destructor
@@ -259,8 +273,8 @@ void HostFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
 //
 //	root			- Unused; root lookups never happen
 //	current			- Unused; path is processed by the host operating system
-//	path			- 
-//	flags			- 
+//	path			- Relative path from this node to be resolved
+//	flags			- Path resolution flags
 //	symlinks		- Unused; symlinks are processed by the host operating system
 
 FileSystem::AliasPtr HostFileSystem::DirectoryNode::Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int flags, int*)
@@ -273,7 +287,7 @@ FileSystem::AliasPtr HostFileSystem::DirectoryNode::Resolve(const AliasPtr&, con
 	std::tstring pathstr = std::to_tstring(path);				// Convert relative path from ANSI/UTF-8
 
 	// Combine the provided path with the stored path to complete the path to the target node
-	HRESULT hresult = PathAllocCombine(m_hostpath.data(), pathstr.c_str(), PATHCCH_ALLOW_LONG_PATHS, &hostpath);
+	HRESULT hresult = PathAllocCombine(m_hostpath, pathstr.c_str(), PATHCCH_ALLOW_LONG_PATHS, &hostpath);
 	if(FAILED(hresult)) throw Exception(hresult);			// <--- todo linux exception
 
 	// Extract the file name from the path and convert it to ANSI/UTF-8 for the alias instance
@@ -340,21 +354,8 @@ uint64_t HostFileSystem::DirectoryNode::getIndex(void)
 //	flags		- Standard mounting flags
 //	data		- Optional custom mounting flags and data
 
-HostFileSystem::MountPoint::MountPoint(HANDLE handle, uint32_t flags, const void* data) : m_handle(handle), m_options(flags, data)
-{
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
-
-	// Determine the amount of space that needs to be allocated for the canonicalized path name string; when 
-	// providing NULL for the output, this will include the count for the NULL terminator
-	uint32_t pathlen = GetFinalPathNameByHandle(handle, nullptr, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-	if(pathlen == 0) throw MapHostException();
-
-	// Retrieve the canonicalized path to the directory object based on the handle
-	m_hostpath.resize(pathlen);
-	pathlen = GetFinalPathNameByHandle(handle, m_hostpath.data(), pathlen, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-	if(pathlen == 0) throw MapHostException();
-}
+HostFileSystem::MountPoint::MountPoint(HANDLE handle, uint32_t flags, const void* data) : 
+	m_handle(handle), m_options(flags, data), m_hostpath(HandleToPath(handle)) {}
 
 //-----------------------------------------------------------------------------
 // HostFileSystem::MountPoint Destructor

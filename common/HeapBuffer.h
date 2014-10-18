@@ -31,7 +31,7 @@
 //-----------------------------------------------------------------------------
 // HeapBuffer
 //
-// Trivial non-resizable heap buffer class
+// Implements a fixed-length heap buffer; supports copy and move construction
 
 template <typename _type>
 class HeapBuffer
@@ -48,6 +48,14 @@ public:
 		// Allocate the heap buffer with operator new[]
 		m_buffer = new _type[elements]; 
 		if(!m_buffer) throw Exception(E_OUTOFMEMORY); 
+	}
+
+	// Move Constructor
+	//
+	HeapBuffer(HeapBuffer&& rhs) : m_count(rhs.m_count), m_buffer(rhs.m_buffer)
+	{
+		rhs.m_count = 0;
+		rhs.m_buffer = nullptr;
 	}
 
 	// Destructor
