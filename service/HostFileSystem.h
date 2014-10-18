@@ -164,15 +164,15 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
-		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int flags, int*);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
 		virtual uint64_t				getIndex(void);
-		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::Directory; }
+		virtual FileSystem::NodeType	getType(void);
 
 		// FileSystem::Directory Implementation
 		//
 		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name);
 		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags);
-		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
+		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*);
 		virtual void					RemoveNode(const uapi::char_t* name);
 
 	private:
@@ -209,19 +209,51 @@ private:
 	//-------------------------------------------------------------------------
 	// HostFileSystem::FileNode
 	//
-	class FileNode
+	class FileNode : public FileSystem::File
 	{
 	public:
 
-		virtual ~FileNode()=default;
+		virtual ~FileNode();
+
+		// FromHandle
+		//
+		// Constructs a new DirectoryNode instance from an existing handle
+		static std::shared_ptr<FileNode> FromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+
+		// FromPath
+		//
+		// Constructs a new DirectoryNode instance from a host file system path
+		static std::shared_ptr<FileNode> FromPath(const std::shared_ptr<MountPoint>& mountpoint, const tchar_t* path);
+
+		// FileSystem::Node Implementation
+		//
+		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
+		virtual uint64_t				getIndex(void);
+		virtual FileSystem::NodeType	getType(void);
+
+		// FileSystem::File Implementation
+		//
+		virtual HandlePtr				OpenExec(int flags);
 
 	private:
 
 		FileNode(const FileNode&)=delete;
 		FileNode& operator=(const FileNode&)=delete;
 
+		// Instance Constructor
+		//
+		FileNode(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+		friend class std::_Ref_count_obj<FileNode>;
+
+		// Member Variables
+		//
+		std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
+		HANDLE							m_handle;			// Query-only object handle
+
 		// FileNode::Handle
 		//
+		// Standard I/O handle opened against a FileNode instance
 		class Handle
 		{
 		public:
@@ -236,16 +268,35 @@ private:
 
 		// FileNode::ExecHandle
 		//
-		class ExecHandle
+		// Specialized execute-only handle opened against a FileNode instance
+		class ExecHandle : public FileSystem::Handle
 		{
 		public:
 
-			virtual ~ExecHandle()=default;
+			virtual ~ExecHandle();
+
+			// FileSystem::Handle Implementation
+			//
+			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
+			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void*, uapi::size_t);
 
 		private:
 
 			ExecHandle(const ExecHandle&)=delete;
 			ExecHandle& operator=(const ExecHandle&)=delete;
+
+			// Instance Constructor
+			//
+			ExecHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
+			friend class std::_Ref_count_obj<ExecHandle>;
+
+			// Member Variables
+			//
+			std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
+			HANDLE							m_handle;			// Read/execute object handle
 		};
 	};
 
