@@ -32,6 +32,33 @@ static_assert(FILE_CURRENT == LINUX_SEEK_CUR,	"HostFileSystem: FILE_CURRENT must
 static_assert(FILE_END == LINUX_SEEK_END,		"HostFileSystem: FILE_END must be the same value as LINUX_SEEK_END");
 
 //-----------------------------------------------------------------------------
+// FlagsToAccess (local)
+//
+// Converts linux fnctl flags to Windows access mode flags for CreateFile
+//
+// Arguments:
+//
+//	flags		- Linux fnctl flags to be converted
+
+static DWORD FlagsToAccess(int flags)
+{
+	switch(flags & LINUX_O_ACCMODE) {
+
+		// O_RDONLY --> FILE_GENERIC_READ
+		case LINUX_O_RDONLY: return FILE_GENERIC_READ;
+
+		// O_WRONLY --> FILE_GENERIC_WRITE
+		case LINUX_O_WRONLY: return FILE_GENERIC_WRITE;
+
+		// O_RDWR --> FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+		case LINUX_O_RDWR: return FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	}
+
+	// Possible exception if both O_WRONLY (1) and O_RDWR (2) are set
+	throw LinuxException(LINUX_EINVAL);
+}
+
+//-----------------------------------------------------------------------------
 // MapHostException (local)
 //
 // Converts a Win32 error code into a representative LinuxException instance
@@ -126,6 +153,8 @@ FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 {
 	std::shared_ptr<MountPoint>			mountpoint;			// MountPoint instance
 
+	if(!source) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
 	std::tstring hostpath = std::to_tstring(source);		// Convert source from ANSI/UTF-8
 
 	// Determine the type of node that the path represents; must be a directory for mounting
@@ -166,10 +195,7 @@ FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 std::shared_ptr<HostFileSystem::Alias> HostFileSystem::Alias::Construct(const uapi::char_t* name, 
 	const FileSystem::AliasPtr& parent, const FileSystem::NodePtr& node)
 {
-	_ASSERTE(name);
-	_ASSERTE(node);
-
-	if((!name) || (!node)) throw LinuxException(LINUX_EINVAL);
+	if((!name) || (!node)) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
 
 	// Construct a new shared Alias instance and return it to the caller
 	return std::make_shared<Alias>(name, parent, node);
@@ -249,10 +275,6 @@ void HostFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 
 std::shared_ptr<HostFileSystem::DirectoryNode> HostFileSystem::DirectoryNode::FromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle)
 {
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
-
-	// When a handle is provided, just invoke the constructor
 	return std::make_shared<DirectoryNode>(mountpoint, handle);
 }
 
@@ -412,10 +434,6 @@ HostFileSystem::FileNode::~FileNode()
 
 std::shared_ptr<HostFileSystem::FileNode> HostFileSystem::FileNode::FromHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle)
 {
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_ENOENT);
-
-	// When a handle is provided, just invoke the constructor
 	return std::make_shared<FileNode>(mountpoint, handle);
 }
 
@@ -448,16 +466,71 @@ std::shared_ptr<HostFileSystem::FileNode> HostFileSystem::FileNode::FromPath(con
 	catch(...) { CloseHandle(handle); throw; }
 }
 
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::Open
+//
+// Creates a FileSystem::Handle instance from this node
+//
+// Arguments:
+//
+//	flags		- File operation flags and arributes
+
 FileSystem::HandlePtr HostFileSystem::FileNode::Open(int flags)
 {
-	(flags);
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	// O_DIRECTORY verifies that the target node is a directory, which this is not
+	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
+
+	// HostFileSystem does not support unnamed temporary files via O_TMPFILE
+	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
+
+	// If the file system was mounted as read-only, write access cannot be granted
+	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
+
+	// Generate the attributes for the open operation based on the provided flags
+	DWORD attributes = FILE_FLAG_POSIX_SEMANTICS;
+	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
+	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
+
+	// Use the contained query-only handle to reopen the file with the requested attributes
+	HANDLE handle = ReOpenFile(m_handle, FlagsToAccess(flags), FILE_SHARE_READ | FILE_SHARE_WRITE, attributes);
+	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
+
+	try {
+
+		// By using ReOpenFile() rather than CreateFile() to generate the handle, there is no opportunity
+		// to specify TRUNCATE_EXISTING in the disposition flags, it must be done after the fact
+		if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) { if(!SetEndOfFile(handle)) throw MapHostException(); }
+
+		// Generate a new Handle instance around the new object handle and the original flags
+		// todo: need PathHandle class
+		//if(flags & LINUX_O_PATH) return PathHandle::FromHandle(m_mountpoint, handle, flags);
+		/*else */ return std::make_shared<Handle>(handle, flags);
+	}
+	
+	catch(...) { CloseHandle(handle); throw; }
 }
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::OpenExec
+//
+// Creates an execute-only FileSystem::Handle instance for this node
+//
+// Arguments:
+//
+//	flags		- Unused; File operation flags and attributes
 
 FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(int flags)
 {
-	(flags);
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+	// If the file system was mounted with noexec, this file cannot be executed
+	if(m_mountpoint->Options.NoExecute) throw LinuxException(LINUX_EACCES);
+
+	// Re-open the underlying handle with EXECUTE and READ access and only allow shared reads
+	HANDLE handle = ReOpenFile(m_handle, FILE_GENERIC_EXECUTE | FILE_GENERIC_READ, FILE_SHARE_READ, FILE_FLAG_POSIX_SEMANTICS);
+	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
+
+	// Construct and return an ExecHandle instance; it takes ownership of the handle
+	try { return std::make_shared<ExecHandle>(handle, flags); }
+	catch(...) { CloseHandle(handle); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -510,58 +583,113 @@ FileSystem::NodeType HostFileSystem::FileNode::getType(void)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::FileNode::ExecHandle Constructor
+// HostFileSystem::FileNode::ExecHandle::Sync
+//
+// Synchronizes all metadata and data associated with the file to storage
 //
 // Arguments:
 //
-//	mountpoint		- Mounted file system metadata and options
-//	handle			- Handle to the underlying file object
+//	NONE
 
-HostFileSystem::FileNode::ExecHandle::ExecHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle) : m_mountpoint(mountpoint)
+void HostFileSystem::FileNode::ExecHandle::Sync(void)
 {
-	_ASSERTE(handle != INVALID_HANDLE_VALUE);
-	
-	// TODO: CALL DUPLICATE HANDLE TO GENERATE THE NEW HANDLE
-	m_handle = INVALID_HANDLE_VALUE;
+	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
 }
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::FileNode::ExecHandle Destructor
+// HostFileSystem::FileNode::ExecHandle::SyncData
+//
+// Synchronizes all data associated with the file to storage, not metadata
+//
+// Arguments:
+//
+//	NONE
 
-HostFileSystem::FileNode::ExecHandle::~ExecHandle()
+void HostFileSystem::FileNode::ExecHandle::SyncData(void)
+{
+	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::ExecHandle::Write
+//
+// Synchronously writes data from a buffer to the underlying node
+//
+// Arguments:
+//
+//	buffer			- Unused, input buffer from which to write the data
+//	count			- Unused, number of bytes to write from the input buffer
+
+uapi::size_t HostFileSystem::FileNode::ExecHandle::Write(const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HOSTFILESYSTEM::FILENODE::HANDLE IMPLEMENTATION
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::Handle Constructor
+//
+// Arguments:
+//
+//	handle			- Handle to the host operating system object
+//	flags			- Open operation flags and attributes
+
+HostFileSystem::FileNode::Handle::Handle(HANDLE handle, int flags) : m_handle(handle), m_flags(flags)
+{
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF, Exception(E_HANDLE));
+
+	// O_DIRECT operations require a specific alignment when reading/writing to
+	// the file, get that information from the operating system
+	if(flags & LINUX_O_DIRECT) {
+
+		FILE_STORAGE_INFO storageinfo;
+		if(!GetFileInformationByHandleEx(handle, FileStorageInfo, &storageinfo, sizeof(storageinfo))) throw MapHostException();
+		m_alignment = storageinfo.FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::Handle Destructor
+
+HostFileSystem::FileNode::Handle::~Handle()
 {
 	// Close the underlying operating system handle
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 }
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::FileNode::ExecHandle::Read
+// HostFileSystem::FileNode::Handle::Read
 //
-// Reads data from the current file pointer into an output buffer
+// Synchronously reads data from the underlying node into a buffer
 //
 // Arguments:
 //
 //	buffer		- Pointer to the output buffer
 //	count		- Number of bytes to read from the file, also minimum size of buffer
 
-uapi::size_t HostFileSystem::FileNode::ExecHandle::Read(void* buffer, uapi::size_t count)
+uapi::size_t HostFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t count)
 {
-	DWORD				read;			// Bytes read from the file
-
-	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF, Exception(E_HANDLE));
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
 
 	// ReadFile() can only read up to MAXDWORD bytes from the underlying file
 	if(count >= MAXDWORD) throw LinuxException(LINUX_EINVAL, Exception(E_BOUNDS));
 
+	// If the handle was opened with O_DIRECT, the buffer, count and current offset must be aligned
+	if(m_flags & LINUX_O_DIRECT) VerifyDirectAlignment(buffer, count);
+
 	// Attempt to read the specified number of bytes from the file into the buffer
+	DWORD read;
 	if(!ReadFile(m_handle, buffer, static_cast<DWORD>(count), &read, nullptr)) throw MapHostException();
 
 	return static_cast<uapi::size_t>(read);
 }
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::FileNode::ExecHandle::Seek
+// HostFileSystem::FileNode::Handle::Seek
 //
 // Sets the file pointer for this handle
 //
@@ -570,11 +698,9 @@ uapi::size_t HostFileSystem::FileNode::ExecHandle::Read(void* buffer, uapi::size
 //	offset		- Offset into the file to set the pointer, based on whence
 //	whence		- Starting position within the file to apply offset
 
-uapi::loff_t HostFileSystem::FileNode::ExecHandle::Seek(uapi::loff_t offset, int whence)
+uapi::loff_t HostFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whence)
 {
 	LARGE_INTEGER			position;			// Distance to be moved
-
-	if(m_handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF, Exception(E_HANDLE));
 
 	// This is a simple operation on the host, provided the values for whence mean the same
 	// thing, which is checked as an invariant at the top of this file
@@ -584,27 +710,92 @@ uapi::loff_t HostFileSystem::FileNode::ExecHandle::Seek(uapi::loff_t offset, int
 	return position.QuadPart;
 }
 
-void HostFileSystem::FileNode::ExecHandle::Sync(void)
-{
-	// Execute-only handles do not support synchronization
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
-}
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::Handle::Sync
+//
+// Synchronizes all metadata and data associated with the file to storage
+//
+// Arguments:
+//
+//	NONE
 
-void HostFileSystem::FileNode::ExecHandle::SyncData(void)
+void HostFileSystem::FileNode::Handle::Sync(void)
 {
-	// Execute-only handles do not support synchronization
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
-}
-
-uapi::size_t HostFileSystem::FileNode::ExecHandle::Write(const void*, uapi::size_t)
-{
-	// Execute-only handles do not support write
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
+	// The closest equivalent for this operation is FlushFileBuffers()
+	if(!FlushFileBuffers(m_handle)) throw MapHostException();
 }
 
 //-----------------------------------------------------------------------------
-// HOSTFILESYSTEM::FILENODE::HANDLE IMPLEMENTATION
+// HostFileSystem::FileNode::Handle::SyncData
+//
+// Synchronizes all data associated with the file to storage, not metadata
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::FileNode::Handle::SyncData(void)
+{
+	// The closest equivalent for this operation is FlushFileBuffers()
+	if(!FlushFileBuffers(m_handle)) throw MapHostException();
+}
+
 //-----------------------------------------------------------------------------
+//  HostFileSystem::FileNode::Handle::VerifyDirectAlignment (protected)
+//
+// Used with O_DIRECT, this validates that the memory buffer pointer as well as
+// the handle file pointer have the proper alignment
+//
+// Arguments:
+//
+//	buffer		- Pointer to the input/output buffer
+//	count		- Size of the input/output buffer, in bytes
+
+void  HostFileSystem::FileNode::Handle::VerifyDirectAlignment(const void* buffer, uapi::size_t count)
+{
+	LARGE_INTEGER pointer = { 0, 0 };
+
+	if(!buffer) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// Retrieve the current file pointer offset so that it can be validated with the other criteria
+	if(!SetFilePointerEx(m_handle, pointer, &pointer, FILE_CURRENT)) throw MapHostException();
+
+	// The memory buffer, the current file offset and the number of bytes to operate on must all be
+	// a multiple of the host file system's alignment requirement
+	if((uintptr_t(buffer) % m_alignment) || (pointer.QuadPart % m_alignment) || (count % m_alignment)) 
+		throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_OFFSET_ALIGNMENT_VIOLATION));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::Handle::Write
+//
+// Synchronously writes data from a buffer to the underlying node
+//
+// Arguments:
+//
+//	buffer			- Unused, input buffer from which to write the data
+//	count			- Unused, number of bytes to write from the input buffer
+
+uapi::size_t HostFileSystem::FileNode::Handle::Write(const void* buffer, uapi::size_t count)
+{
+	DWORD				written;			// Bytes written to the file
+
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// WriteFile() can only write up to MAXDWORD bytes to the underlying file
+	if(count >= MAXDWORD) throw LinuxException(LINUX_EINVAL, Exception(E_BOUNDS));
+
+	// There is no way to make O_APPEND atomic with HostFileSystem, just set it and hope for the best
+	if((m_flags & LINUX_O_APPEND) && (SetFilePointer(m_handle, 0, 0, FILE_END) == INVALID_SET_FILE_POINTER)) throw MapHostException();
+
+	// If the handle was opened with O_DIRECT, the buffer, count and current offset must be aligned
+	if(m_flags & LINUX_O_DIRECT) VerifyDirectAlignment(buffer, count);
+
+	// Attempt to write the specified number of bytes from the buffer to the file
+	if(!WriteFile(m_handle, buffer, static_cast<DWORD>(count), &written, nullptr)) throw MapHostException();
+
+	return static_cast<uapi::size_t>(written);
+}
 
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::MOUNTPOINT IMPLEMENTATION

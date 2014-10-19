@@ -57,7 +57,10 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_set_se_translator(StructuredException::SeTranslator);
 
 	FileSystemPtr mounted = HostFileSystem::Mount("d:\\Linux Stuff", 0, nullptr);
-	FileSystem::AliasPtr resolved = mounted->Root->Node->Resolve(mounted->Root, mounted->Root, "android\\system\\bin", 0, nullptr);
+	FileSystem::AliasPtr resolved = mounted->Root->Node->Resolve(mounted->Root, mounted->Root, "android\\system\\bin\\bionicapp", 0, nullptr);
+	
+	auto file = std::dynamic_pointer_cast<FileSystem::File>(resolved->Node);
+	auto handle = file->OpenExec(0);
 
 	return 0;
 

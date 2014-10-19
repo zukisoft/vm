@@ -254,11 +254,38 @@ private:
 		// FileNode::Handle
 		//
 		// Standard I/O handle opened against a FileNode instance
-		class Handle
+		class Handle : public FileSystem::Handle
 		{
 		public:
 
-			virtual ~Handle()=default;
+			Handle(HANDLE handle, int flags);
+			virtual ~Handle();
+
+			// FromHandle
+			//
+			// Creates an ExecHandle instance from an existing operating system handle
+			static std::shared_ptr<Handle> FromHandle(HANDLE handle, int flags);
+
+			// FileSystem::Handle Implementation
+			//
+			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
+			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
+
+		protected:
+
+			// VerifyDirectAlignment
+			//
+			// Verifies that an O_DIRECT handle read/write operation is valid
+			void VerifyDirectAlignment(const void* buffer, uapi::size_t count);
+
+			// Protected Member Variables
+			//
+			HANDLE				m_handle;						// Read/execute object handle
+			int					m_flags;						// Open flags from construction
+			uint32_t			m_alignment = sizeof(uint8_t);	// O_DIRECT file alignment
 
 		private:
 
@@ -268,17 +295,21 @@ private:
 
 		// FileNode::ExecHandle
 		//
-		// Specialized execute-only handle opened against a FileNode instance
-		class ExecHandle : public FileSystem::Handle
+		// Specialization of Handle for an execute-only handle instance
+		class ExecHandle : public Handle
 		{
 		public:
 
-			virtual ~ExecHandle();
+			ExecHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
+			virtual ~ExecHandle()=default;
 
-			// FileSystem::Handle Implementation
+			// FromHandle
 			//
-			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
-			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
+			// Creates an ExecHandle instance from an existing operating system handle
+			static std::shared_ptr<ExecHandle> FromHandle(HANDLE handle, int flags);
+
+			// Handle Overrides
+			//
 			virtual void			Sync(void);
 			virtual void			SyncData(void);
 			virtual uapi::size_t	Write(const void*, uapi::size_t);
@@ -287,16 +318,6 @@ private:
 
 			ExecHandle(const ExecHandle&)=delete;
 			ExecHandle& operator=(const ExecHandle&)=delete;
-
-			// Instance Constructor
-			//
-			ExecHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle);
-			friend class std::_Ref_count_obj<ExecHandle>;
-
-			// Member Variables
-			//
-			std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
-			HANDLE							m_handle;			// Read/execute object handle
 		};
 	};
 
