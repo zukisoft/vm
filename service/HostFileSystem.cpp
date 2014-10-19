@@ -308,10 +308,31 @@ std::shared_ptr<HostFileSystem::DirectoryNode> HostFileSystem::DirectoryNode::Fr
 	catch(...) { CloseHandle(handle); throw; }
 }
 
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Open
+//
+// Creates a FileSystem::Handle instance from this node
+//
+// Arguments:
+//
+//	flags		- File operation flags and arributes
+
 FileSystem::HandlePtr HostFileSystem::DirectoryNode::Open(int flags)
 {
-	(flags);
-	throw Exception(E_NOTIMPL);
+	// Directory node handles must be opened in read-only mode
+	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
+
+	// Use the contained query-only handle to reopen the directory with read-only attributes
+	HANDLE handle = ReOpenFile(m_handle, FILE_GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS);
+	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
+
+	try {
+
+		// Generate a new Handle instance around the new object handle and the original flags
+		return (flags & LINUX_O_PATH) ? std::make_shared<PathHandle>(handle, flags) : std::make_shared<Handle>(handle, flags);
+	}
+	
+	catch(...) { CloseHandle(handle); throw; }
 }
 
 void HostFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
@@ -395,6 +416,179 @@ FileSystem::NodeType HostFileSystem::DirectoryNode::getType(void)
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::DIRECTORYNODE::HANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle Constructor
+//
+// Arguments:
+//
+//	handle			- Handle to the host operating system object
+//	flags			- Open operation flags and attributes
+
+HostFileSystem::DirectoryNode::Handle::Handle(HANDLE handle, int flags) : m_handle(handle), m_flags(flags)
+{
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF, Exception(E_HANDLE));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle Destructor
+
+HostFileSystem::DirectoryNode::Handle::~Handle()
+{
+	// Close the underlying operating system handle
+	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle::Read
+//
+// Synchronously reads data from the underlying node into a buffer
+//
+// Arguments:
+//
+//	buffer		- Pointer to the output buffer
+//	count		- Number of bytes to read from the file, also minimum size of buffer
+
+uapi::size_t HostFileSystem::DirectoryNode::Handle::Read(void*, uapi::size_t )
+{
+	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle::Seek
+//
+// Sets the file pointer for this handle
+//
+// Arguments:
+//
+//	offset		- Offset into the file to set the pointer, based on whence
+//	whence		- Starting position within the file to apply offset
+
+uapi::loff_t HostFileSystem::DirectoryNode::Handle::Seek(uapi::loff_t, int)
+{
+	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle::Sync
+//
+// Synchronizes all metadata and data associated with the file to storage
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::DirectoryNode::Handle::Sync(void)
+{
+	// TODO
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle::SyncData
+//
+// Synchronizes all data associated with the file to storage, not metadata
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::DirectoryNode::Handle::SyncData(void)
+{
+	// TODO
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Handle::Write
+//
+// Synchronously writes data from a buffer to the underlying node
+//
+// Arguments:
+//
+//	buffer			- Unused, input buffer from which to write the data
+//	count			- Unused, number of bytes to write from the input buffer
+
+uapi::size_t HostFileSystem::DirectoryNode::Handle::Write(const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HOSTFILESYSTEM::DIRETORYNODE::PATHHANDLE IMPLEMENTATION
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::PathHandle::Read
+//
+// Synchronously reads data from the underlying node into a buffer
+//
+// Arguments:
+//
+//	buffer		- Pointer to the output buffer
+//	count		- Number of bytes to read from the file, also minimum size of buffer
+
+uapi::size_t HostFileSystem::DirectoryNode::PathHandle::Read(void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::PathHandle::Seek
+//
+// Sets the file pointer for this handle
+//
+// Arguments:
+//
+//	offset		- Offset into the file to set the pointer, based on whence
+//	whence		- Starting position within the file to apply offset
+
+uapi::loff_t HostFileSystem::DirectoryNode::PathHandle::Seek(uapi::loff_t, int)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::PathHandle::Sync
+//
+// Synchronizes all metadata and data associated with the file to storage
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::DirectoryNode::PathHandle::Sync(void)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::PathHandle::SyncData
+//
+// Synchronizes all data associated with the file to storage, not metadata
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::DirectoryNode::PathHandle::SyncData(void)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::PathHandle::Write
+//
+// Synchronously writes data from a buffer to the underlying node
+//
+// Arguments:
+//
+//	buffer			- Unused, input buffer from which to write the data
+//	count			- Unused, number of bytes to write from the input buffer
+
+uapi::size_t HostFileSystem::DirectoryNode::PathHandle::Write(const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
 
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::FILENODE IMPLEMENTATION
@@ -502,9 +696,7 @@ FileSystem::HandlePtr HostFileSystem::FileNode::Open(int flags)
 		if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) { if(!SetEndOfFile(handle)) throw MapHostException(); }
 
 		// Generate a new Handle instance around the new object handle and the original flags
-		// todo: need PathHandle class
-		//if(flags & LINUX_O_PATH) return PathHandle::FromHandle(m_mountpoint, handle, flags);
-		/*else */ return std::make_shared<Handle>(handle, flags);
+		return (flags & LINUX_O_PATH) ? std::make_shared<PathHandle>(handle, flags) : std::make_shared<Handle>(handle, flags);
 	}
 	
 	catch(...) { CloseHandle(handle); throw; }
@@ -525,7 +717,7 @@ FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(int flags)
 	if(m_mountpoint->Options.NoExecute) throw LinuxException(LINUX_EACCES);
 
 	// Re-open the underlying handle with EXECUTE and READ access and only allow shared reads
-	HANDLE handle = ReOpenFile(m_handle, FILE_GENERIC_EXECUTE | FILE_GENERIC_READ, FILE_SHARE_READ, FILE_FLAG_POSIX_SEMANTICS);
+	HANDLE handle = ReOpenFile(m_handle, FILE_GENERIC_EXECUTE | FILE_GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_POSIX_SEMANTICS);
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
 	// Construct and return an ExecHandle instance; it takes ownership of the handle
@@ -798,6 +990,83 @@ uapi::size_t HostFileSystem::FileNode::Handle::Write(const void* buffer, uapi::s
 }
 
 //-----------------------------------------------------------------------------
+// HOSTFILESYSTEM::FILENODE::PATHHANDLE IMPLEMENTATION
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::PathHandle::Read
+//
+// Synchronously reads data from the underlying node into a buffer
+//
+// Arguments:
+//
+//	buffer		- Pointer to the output buffer
+//	count		- Number of bytes to read from the file, also minimum size of buffer
+
+uapi::size_t HostFileSystem::FileNode::PathHandle::Read(void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::PathHandle::Seek
+//
+// Sets the file pointer for this handle
+//
+// Arguments:
+//
+//	offset		- Offset into the file to set the pointer, based on whence
+//	whence		- Starting position within the file to apply offset
+
+uapi::loff_t HostFileSystem::FileNode::PathHandle::Seek(uapi::loff_t, int)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::PathHandle::Sync
+//
+// Synchronizes all metadata and data associated with the file to storage
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::FileNode::PathHandle::Sync(void)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::PathHandle::SyncData
+//
+// Synchronizes all data associated with the file to storage, not metadata
+//
+// Arguments:
+//
+//	NONE
+
+void HostFileSystem::FileNode::PathHandle::SyncData(void)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::PathHandle::Write
+//
+// Synchronously writes data from a buffer to the underlying node
+//
+// Arguments:
+//
+//	buffer			- Unused, input buffer from which to write the data
+//	count			- Unused, number of bytes to write from the input buffer
+
+uapi::size_t HostFileSystem::FileNode::PathHandle::Write(const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::MOUNTPOINT IMPLEMENTATION
 //-----------------------------------------------------------------------------
 
@@ -824,10 +1093,6 @@ HostFileSystem::MountPoint::~MountPoint()
 	// Close the operating system handle that references the mount point
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
 }
-
-//-----------------------------------------------------------------------------
-// HOSTFILESYSTEM::PATHHANDLE IMPLEMENTATION
-//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 

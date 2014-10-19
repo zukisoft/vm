@@ -193,16 +193,57 @@ private:
 
 		// DirectoryNode::Handle
 		//
-		class Handle
+		// Standard I/O handle opened against a DirectoryNode instance
+		class Handle : public FileSystem::Handle
 		{
 		public:
 
-			virtual ~Handle()=default;
+			Handle(HANDLE handle, int flags);
+			virtual ~Handle();
+
+			// FileSystem::Handle Implementation
+			//
+			virtual uapi::size_t	Read(void*, uapi::size_t);
+			virtual uapi::loff_t	Seek(uapi::loff_t, int);
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void*, uapi::size_t);
+
+		protected:
+
+			// Protected Member Variables
+			//
+			HANDLE				m_handle;						// Read/execute object handle
+			int					m_flags;						// Open flags from construction
 
 		private:
 
 			Handle(const Handle&)=delete;
 			Handle& operator=(const Handle&)=delete;
+		};
+
+		// DirectoryNode::PathHandle
+		//
+		// Specialization of DirectoryNode::Handle for a path-only (O_PATH) handle instance
+		class PathHandle : public Handle
+		{
+		public:
+
+			PathHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
+			virtual ~PathHandle()=default;
+
+			// Handle Overrides
+			//
+			virtual uapi::size_t	Read(void*, uapi::size_t);
+			virtual uapi::loff_t	Seek(uapi::loff_t, int);
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void*, uapi::size_t);
+
+		private:
+
+			PathHandle(const PathHandle&)=delete;
+			PathHandle& operator=(const PathHandle&)=delete;
 		};
 	};
 
@@ -261,11 +302,6 @@ private:
 			Handle(HANDLE handle, int flags);
 			virtual ~Handle();
 
-			// FromHandle
-			//
-			// Creates an ExecHandle instance from an existing operating system handle
-			static std::shared_ptr<Handle> FromHandle(HANDLE handle, int flags);
-
 			// FileSystem::Handle Implementation
 			//
 			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
@@ -295,18 +331,13 @@ private:
 
 		// FileNode::ExecHandle
 		//
-		// Specialization of Handle for an execute-only handle instance
+		// Specialization of FileNode::Handle for an execute-only handle instance
 		class ExecHandle : public Handle
 		{
 		public:
 
 			ExecHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
 			virtual ~ExecHandle()=default;
-
-			// FromHandle
-			//
-			// Creates an ExecHandle instance from an existing operating system handle
-			static std::shared_ptr<ExecHandle> FromHandle(HANDLE handle, int flags);
 
 			// Handle Overrides
 			//
@@ -318,6 +349,30 @@ private:
 
 			ExecHandle(const ExecHandle&)=delete;
 			ExecHandle& operator=(const ExecHandle&)=delete;
+		};
+
+		// FileNode::PathHandle
+		//
+		// Specialization of FileNode::Handle for a path-only (O_PATH) handle instance
+		class PathHandle : public Handle
+		{
+		public:
+
+			PathHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
+			virtual ~PathHandle()=default;
+
+			// Handle Overrides
+			//
+			virtual uapi::size_t	Read(void*, uapi::size_t);
+			virtual uapi::loff_t	Seek(uapi::loff_t, int);
+			virtual void			Sync(void);
+			virtual void			SyncData(void);
+			virtual uapi::size_t	Write(const void*, uapi::size_t);
+
+		private:
+
+			PathHandle(const PathHandle&)=delete;
+			PathHandle& operator=(const PathHandle&)=delete;
 		};
 	};
 
@@ -355,21 +410,6 @@ private:
 		HANDLE					m_handle;			// Mounted directory handle
 		MountOptions			m_options;			// Standard mounting options
 		HeapBuffer<tchar_t>		m_hostpath;			// The mounted host path
-	};
-
-	//-------------------------------------------------------------------------
-	// HostFileSystem::PathHandle
-	//
-	class PathHandle
-	{
-	public:
-
-		virtual ~PathHandle()=default;
-
-	private:
-
-		PathHandle(const PathHandle&)=delete;
-		PathHandle& operator=(const PathHandle&)=delete;
 	};
 };
 
