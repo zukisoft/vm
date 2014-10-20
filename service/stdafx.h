@@ -71,6 +71,19 @@ struct zero_init : public _type
 	zero_init() { memset(this, 0, sizeof(_type)); }
 };
 
+#include <functional>
+class onunwind
+{
+public:
+
+	onunwind(std::function<void(void)> onunwind) : m_onunwind(onunwind) {}
+	~onunwind() { m_onunwind(); }
+
+private:
+
+	std::function<void(void)> m_onunwind;
+};
+
 //-----------------------------------------------------------------------------
 
 #endif	// __STDAFX_H_

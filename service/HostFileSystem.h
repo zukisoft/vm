@@ -55,10 +55,10 @@
 //
 //	HostFileSystem::Alias					- File system object name
 //	HostFileSystem::DirectoryNode			- Directory object
-//	HostFileSystem::DirectoryNode::Handle	- Directory object handle
+//	HostFileSystem::DirectoryHandle			- Directory object handle
 //	HostFileSystem::FileNode				- File object
-//	HostFileSystem::FileNode::ExecHandle	- Execute-only file object handle
-//	HostFileSystem::FileNode::Handle		- Standard file object handle
+//	HostFileSystem::ExecuteHandle			- Execute-only file object handle
+//	HostFileSystem::FileHandle				- Standard file object handle
 //	HostFileSystem::MountPoint				- Mount point state and metadata
 //	HostFileSystem::PathHandle				- Path-only object handle
 //
@@ -170,8 +170,8 @@ private:
 
 		// FileSystem::Directory Implementation
 		//
-		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name);
-		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags);
+		virtual void					CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t* name);
+		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const uapi::char_t* name, int flags);
 		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*);
 		virtual void					RemoveNode(const uapi::char_t* name);
 
@@ -190,61 +190,6 @@ private:
 		std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
 		HANDLE							m_handle;			// Query-only object handle
 		HeapBuffer<tchar_t>				m_hostpath;			// Host operating system path
-
-		// DirectoryNode::Handle
-		//
-		// Standard I/O handle opened against a DirectoryNode instance
-		class Handle : public FileSystem::Handle
-		{
-		public:
-
-			Handle(HANDLE handle, int flags);
-			virtual ~Handle();
-
-			// FileSystem::Handle Implementation
-			//
-			virtual uapi::size_t	Read(void*, uapi::size_t);
-			virtual uapi::loff_t	Seek(uapi::loff_t, int);
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
-			virtual uapi::size_t	Write(const void*, uapi::size_t);
-
-		protected:
-
-			// Protected Member Variables
-			//
-			HANDLE				m_handle;						// Read/execute object handle
-			int					m_flags;						// Open flags from construction
-
-		private:
-
-			Handle(const Handle&)=delete;
-			Handle& operator=(const Handle&)=delete;
-		};
-
-		// DirectoryNode::PathHandle
-		//
-		// Specialization of DirectoryNode::Handle for a path-only (O_PATH) handle instance
-		class PathHandle : public Handle
-		{
-		public:
-
-			PathHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
-			virtual ~PathHandle()=default;
-
-			// Handle Overrides
-			//
-			virtual uapi::size_t	Read(void*, uapi::size_t);
-			virtual uapi::loff_t	Seek(uapi::loff_t, int);
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
-			virtual uapi::size_t	Write(const void*, uapi::size_t);
-
-		private:
-
-			PathHandle(const PathHandle&)=delete;
-			PathHandle& operator=(const PathHandle&)=delete;
-		};
 	};
 
 	//-------------------------------------------------------------------------
@@ -291,89 +236,137 @@ private:
 		//
 		std::shared_ptr<MountPoint>		m_mountpoint;		// Mounted file system metadata
 		HANDLE							m_handle;			// Query-only object handle
+	};
 
-		// FileNode::Handle
+	//-------------------------------------------------------------------------
+	// HostFileSystem::BaseHandle
+	//
+	class __declspec(novtable) BaseHandle
+	{
+	public:
+
+		virtual ~BaseHandle();
+
+	protected:
+
+		// Instance Constructor
 		//
-		// Standard I/O handle opened against a FileNode instance
-		class Handle : public FileSystem::Handle
-		{
-		public:
+		BaseHandle(HANDLE handle, int flags);
 
-			Handle(HANDLE handle, int flags);
-			virtual ~Handle();
-
-			// FileSystem::Handle Implementation
-			//
-			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
-			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
-			virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
-
-		protected:
-
-			// VerifyDirectAlignment
-			//
-			// Verifies that an O_DIRECT handle read/write operation is valid
-			void VerifyDirectAlignment(const void* buffer, uapi::size_t count);
-
-			// Protected Member Variables
-			//
-			HANDLE				m_handle;						// Read/execute object handle
-			int					m_flags;						// Open flags from construction
-			uint32_t			m_alignment = sizeof(uint8_t);	// O_DIRECT file alignment
-
-		private:
-
-			Handle(const Handle&)=delete;
-			Handle& operator=(const Handle&)=delete;
-		};
-
-		// FileNode::ExecHandle
+		// Protected Member Variables
 		//
-		// Specialization of FileNode::Handle for an execute-only handle instance
-		class ExecHandle : public Handle
-		{
-		public:
+		HANDLE				m_handle;						// Read/execute object handle
+		int					m_flags;						// Open flags from construction
 
-			ExecHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
-			virtual ~ExecHandle()=default;
+	private:
 
-			// Handle Overrides
-			//
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
-			virtual uapi::size_t	Write(const void*, uapi::size_t);
+		BaseHandle(const BaseHandle&)=delete;
+		BaseHandle& operator=(const BaseHandle&)=delete;
+	};
 
-		private:
+	//-------------------------------------------------------------------------
+	// HostFileSystem::DirectoryHandle
+	//
+	class DirectoryHandle : public BaseHandle, public FileSystem::Handle
+	{
+	public:
 
-			ExecHandle(const ExecHandle&)=delete;
-			ExecHandle& operator=(const ExecHandle&)=delete;
-		};
+		DirectoryHandle(HANDLE handle, int flags) : BaseHandle(handle, flags) {}
+		virtual ~DirectoryHandle()=default;
 
-		// FileNode::PathHandle
+		// FileSystem::Handle implementation
 		//
-		// Specialization of FileNode::Handle for a path-only (O_PATH) handle instance
-		class PathHandle : public Handle
-		{
-		public:
+		virtual uapi::size_t	Read(void*, uapi::size_t);
+		virtual uapi::loff_t	Seek(uapi::loff_t, int);
+		virtual void			Sync(void);
+		virtual void			SyncData(void);
+		virtual uapi::size_t	Write(const void*, uapi::size_t);
 
-			PathHandle(HANDLE handle, int flags) : Handle(handle, flags) {}
-			virtual ~PathHandle()=default;
+	private:
 
-			// Handle Overrides
-			//
-			virtual uapi::size_t	Read(void*, uapi::size_t);
-			virtual uapi::loff_t	Seek(uapi::loff_t, int);
-			virtual void			Sync(void);
-			virtual void			SyncData(void);
-			virtual uapi::size_t	Write(const void*, uapi::size_t);
+		DirectoryHandle(const DirectoryHandle&)=delete;
+		DirectoryHandle& operator=(const DirectoryHandle&)=delete;
+	};
 
-		private:
+	//-------------------------------------------------------------------------
+	// HostFileSystem::ExecuteHandle
+	//
+	class ExecuteHandle : public BaseHandle, public FileSystem::Handle
+	{
+	public:
 
-			PathHandle(const PathHandle&)=delete;
-			PathHandle& operator=(const PathHandle&)=delete;
-		};
+		ExecuteHandle(HANDLE handle, int flags) : BaseHandle(handle, flags) {}
+		virtual ~ExecuteHandle()=default;
+
+		// FileSystem::Handle Implementation
+		//
+		virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
+		virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
+		virtual void			Sync(void);
+		virtual void			SyncData(void);
+		virtual uapi::size_t	Write(const void*, uapi::size_t);
+
+	private:
+
+		ExecuteHandle(const ExecuteHandle&)=delete;
+		ExecuteHandle& operator=(const ExecuteHandle&)=delete;
+	};
+
+	//-------------------------------------------------------------------------
+	// HostFileSystem::FileHandle
+	//
+	class FileHandle : public BaseHandle, public FileSystem::Handle
+	{
+	public:
+
+		FileHandle(HANDLE handle, int flags);
+		virtual ~FileHandle()=default;
+
+		// FileSystem::Handle Implementation
+		//
+		virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
+		virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
+		virtual void			Sync(void);
+		virtual void			SyncData(void);
+		virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
+
+	private:
+
+		FileHandle(const FileHandle&)=delete;
+		FileHandle& operator=(const FileHandle&)=delete;
+
+		// VerifyDirectAlignment
+		//
+		// Verifies that an O_DIRECT handle read/write operation is valid
+		void VerifyDirectAlignment(const void* buffer, uapi::size_t count);
+
+		// Member Variables
+		//
+		uint32_t	m_alignment = sizeof(uint8_t);	// O_DIRECT file alignment
+	};
+
+	//-------------------------------------------------------------------------
+	// HostFileSystem::PathHandle
+	//
+	class PathHandle : public BaseHandle, public FileSystem::Handle
+	{
+	public:
+
+		PathHandle(HANDLE handle, int flags) : BaseHandle(handle, flags) {}
+		virtual ~PathHandle()=default;
+
+		// FileSystem::Handle implementation
+		//
+		virtual uapi::size_t	Read(void*, uapi::size_t);
+		virtual uapi::loff_t	Seek(uapi::loff_t, int);
+		virtual void			Sync(void);
+		virtual void			SyncData(void);
+		virtual uapi::size_t	Write(const void*, uapi::size_t);
+
+	private:
+
+		PathHandle(const PathHandle&)=delete;
+		PathHandle& operator=(const PathHandle&)=delete;
 	};
 
 	//-------------------------------------------------------------------------
