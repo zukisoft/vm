@@ -27,8 +27,6 @@
 #include "StructuredException.h"
 #include "VmService.h"
 
-#include "HostFileSystem.h"
-
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
@@ -49,20 +47,12 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	int nDbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);	// Get current flags
 	nDbgFlags |= _CRTDBG_LEAK_CHECK_DF;						// Enable leak-check
-	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
+	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags/
 
 #endif	// _DEBUG
 
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
-
-	FileSystemPtr mounted = HostFileSystem::Mount("d:\\Linux Stuff", 0, nullptr);
-	FileSystem::AliasPtr resolved = mounted->Root->Node->Resolve(mounted->Root, mounted->Root, "android\\system\\bin\\bionicapp", 0, nullptr);
-	
-	auto file = std::dynamic_pointer_cast<FileSystem::File>(resolved->Node);
-	auto handle = file->OpenExec(0);
-
-	return 0;
 
 	// Convert the provided command line into a CommandLine instance
 	CommandLine commandline(cmdline);
@@ -95,7 +85,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		harness.SetParameter(_T("process.host.32bit"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
 		harness.SetParameter(_T("process.host.64bit"), _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
 		harness.SetParameter(_T("process.host.timeout"), 10000);
-		harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
+		//harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
+		harness.SetParameter(_T("vm.initpath"), _T("/init"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()

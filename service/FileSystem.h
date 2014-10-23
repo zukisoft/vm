@@ -32,6 +32,8 @@
 #pragma warning(push, 4)
 
 // todo: document
+//
+// todo: consider making everything in here lowercase filesystem_ptr vs FileSystemPtr, for example?
 
 struct FileSystem;
 using FileSystemPtr = std::shared_ptr<FileSystem>;
@@ -75,6 +77,7 @@ struct __declspec(novtable) FileSystem
 
 	// need typedef for Mount(const uapi::char_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
+	using mount_func = std::function<FileSystemPtr(const uapi::char_t* device, uint32_t flags, const void* data)>;
 
 	// NodeType
 	//

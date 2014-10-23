@@ -970,7 +970,7 @@ FileSystem::HandlePtr HostFileSystem::FileNode::Open(int flags)
 	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
 
 	// HostFileSystem does not support unnamed temporary files via O_TMPFILE
-	// TODO: why is there here, this is Open(), not Create()
+	// TODO: why is this here, this is Open(), not Create()
 	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
 
 	// If the file system was mounted as read-only, write access cannot be granted

@@ -140,7 +140,8 @@ void VmService::OnStart(int, LPTSTR*)
 
 		// clearly this is temporary code
 		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
-		m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
+		//m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
+		m_vfs->Mount("d:\\Linux Stuff\\generic_x86\\root", "/", "hostfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???
 
@@ -148,13 +149,13 @@ void VmService::OnStart(int, LPTSTR*)
 		// INITRAMFS
 		//
 
-		// Check that the initramfs archive file exists
-		std::tstring initramfs = m_settings->InitialRamFileSystem;
-		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
+//		// Check that the initramfs archive file exists
+//		std::tstring initramfs = m_settings->InitialRamFileSystem;
+//		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
 
-		// Attempt to extract the contents of the initramfs into the tempfs
-		try { LoadInitialFileSystem(initramfs.c_str()); }
-		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
+//		// Attempt to extract the contents of the initramfs into the tempfs
+//		try { LoadInitialFileSystem(initramfs.c_str()); }
+//		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
 
 		//
 		// RPC INTERFACES
