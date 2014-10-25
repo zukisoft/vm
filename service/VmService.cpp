@@ -141,7 +141,7 @@ void VmService::OnStart(int, LPTSTR*)
 		// clearly this is temporary code
 		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
 		//m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
-		m_vfs->Mount("d:\\Linux Stuff\\generic_x86\\root", "/", "hostfs", 0, nullptr);
+		m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???
 

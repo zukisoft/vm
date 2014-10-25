@@ -50,8 +50,7 @@ static SYSTEM_INFO s_sysinfo = []() -> SYSTEM_INFO {
 // Sets the process program break, which is extra space reserved by a process
 // to implement a heap.  Specify nullptr to get the current break address.  This
 // function is not capable of returning an error code on Linux, to indicate that
-// the operation could not be completed, return the previously set break address,
-// the interpretation of which has been left as a runtime library detail
+// the operation could not be completed, return the previously set break address
 //
 // Arguments:
 //

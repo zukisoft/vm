@@ -239,6 +239,14 @@ SystemCalls32_v1_0_epv_t syscalls32_epv32 = {
 		//return state->instance->blah(state->process, fd);
 		return -1; 
 	},
+
+	// 258: sys32_set_tid_address
+	[](sys32_context_t context, sys32_addr_t tidptr) -> sys32_long_t
+	{
+		// BIG OL' TODO HERE
+		(context); (tidptr);
+		return 1;
+	},
 };
 
 //---------------------------------------------------------------------------
