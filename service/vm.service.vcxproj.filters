@@ -338,6 +338,9 @@
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
+    <ClInclude Include="VirtualMachine2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -546,6 +549,9 @@
     </ClCompile>
     <ClCompile Include="HostFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualMachine2.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
