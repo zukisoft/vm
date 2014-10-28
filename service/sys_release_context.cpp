@@ -21,36 +21,52 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
-//
-// RPC context handle
-extern sys32_context_t g_rpccontext;
-
-//
-// SAMPLE FUNCTION
-//
-
 //-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
+// sys32_release_context
 //
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
+// Releases a context handle previously allocated with sys32_allocate_context
 //
-int sys000_template(PCONTEXT context)
-{
-	_ASSERTE(context->Eax == 122);			// Verify system call number
+// Arguments:
+//
+//	context			- [in/out] contains the handle to release and will be set to null
 
-	/*return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));*/
-	return -1;
+HRESULT sys32_release_context(sys32_context_exclusive_t* context)
+{
+	if((context == nullptr) || (*context == nullptr)) return E_POINTER;
+
+	// Cast the context handle back into a Context handle and destroy it
+	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(*context));
+
+	*context = nullptr;					// Reset context handle to null
+	return S_OK;						// Context has been released
 }
 
+#ifdef _M_X64
 //-----------------------------------------------------------------------------
+// sys64_release_context
+//
+// Releases a context handle previously allocated with sys64_allocate_context
+//
+// Arguments:
+//
+//	context			- [in/out] contains the handle to release and will be set to null
+
+HRESULT sys64_release_context(sys64_context_exclusive_t* context)
+{
+	if((context == nullptr) || (*context == nullptr)) return E_POINTER;
+
+	// Cast the context handle back into a Context handle and destroy it
+	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(*context));
+
+	*context = nullptr;					// Reset context handle to null
+	return S_OK;						// Context has been released
+}
+#endif	// _M_X64
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)

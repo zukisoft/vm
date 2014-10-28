@@ -26,22 +26,18 @@
 
 #include <map>
 #include "resource.h"
-#include "syscalls.h"
 #include "CompressedStreamReader.h"
 #include "CpioArchive.h"
 #include "Exception.h"
 #include "File.h"
 #include "FileSystem.h"
-#include "SystemCalls.h"
+#include "RpcInterface.h"
+#include "VirtualMachine.h"
 #include "VmFileSystem.h"
 #include "VmProcessManager.h"
-#include "VmSettings.h"
 #include "VmSystemLog.h"
 
 #include "RootFileSystem.h"
-
-#include "VirtualMachine.h"
-#include "VmServiceParameters.h"
 
 #pragma warning(push, 4)
 
@@ -50,8 +46,11 @@
 //
 // TODO: oh so many words need to go here
 
-class VmService : public Service<VmService>, private SystemCalls, public VmServiceParameters,
-	public VirtualMachine, public std::enable_shared_from_this<VmService>
+// Needs to inherit from enable_shared_from_this<VmService> to trigger the 
+// use of std::shared_ptr<> in servicelib.  Shared pointer currently needs to
+// be used to implement VirtualMachine
+
+class VmService : public Service<VmService>, public VirtualMachine,	public std::enable_shared_from_this<VmService>
 {
 public:
 
@@ -59,33 +58,35 @@ public:
 
 	// VirtualMachine Implementation
 	//
-	virtual std::unique_ptr<VmFileSystem>&	getFileSystem(void)	{ _ASSERTE(m_vfs);		return m_vfs; }
-	virtual const tchar_t* getListener32Binding(void)			{ return m_bindstr32.c_str(); }
-	virtual const tchar_t* getListener64Binding(void)			{ return m_bindstr64.c_str(); }
-	virtual std::unique_ptr<VmSettings>&	getSettings(void)	{ _ASSERTE(m_settings);	return m_settings; }
-	virtual std::unique_ptr<VmSystemLog>&	getSystemLog(void)	{ _ASSERTE(m_syslog);	return m_syslog; }
-	// need process manager next!
+
+	virtual std::shared_ptr<Process>	FindProcessByHostID(uint32_t hostpid);
+	virtual FileSystem::HandlePtr	OpenExecutable(const uapi::char_t* path);
+
+	virtual const uapi::char_t*		getDomainName(void);
+	virtual void					putDomainName(const uapi::char_t* value);
+	virtual const uapi::char_t*		getHardwareIdentifier(void);
+	virtual const uapi::char_t*		getHostName(void);
+	virtual void					putHostName(const uapi::char_t* value);
+	virtual const uapi::char_t*		getOperatingSystemRelease(void);
+	virtual const uapi::char_t*		getOperatingSystemType(void);
+	virtual const uapi::char_t*		getVersion(void);
 
 private:
 
 	VmService(const VmService &rhs)=delete;
 	VmService& operator=(const VmService &rhs)=delete;
 
+	// TEST - HACK JOB TO SOLVE THE PROBLEM FOR NOW
+	virtual std::shared_ptr<VirtualMachine> ToSharedPointer(void)
+	{
+		return shared_from_this();
+	}
+
 	// Service<> Control Handler Map
 	//
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
-		CONTROL_HANDLER_ENTRY(128, OnUserControl128)
-		CONTROL_HANDLER_ENTRY(129, OnUserControl129)
 	END_CONTROL_HANDLER_MAP()
-
-	// Detached Service<> PARAMETER_MAP
-	// (expecting to add direct support for this to servicelib)
-	virtual void IterateParameters(std::function<void(const svctl::tstring& name, svctl::parameter_base& param)> func)
-	{
-		// Delegate to the shared VmServiceParameters class
-		return VmServiceParameters::IterateParameters(func);
-	}
 
 	// LoadInitialFileSystem
 	//
@@ -102,42 +103,16 @@ private:
 	// Invoked when the service is stopped
 	void OnStop(void);
 
-	// 32-bit host test
-	void OnUserControl128(void)
-	{
-		// test process
-		//std::shared_ptr<Process> proc = Process::Create(shared_from_this(), "/sbin/init", nullptr, nullptr);
-		//proc->Terminate(0);
-
-		// need a mapping for host PID -> virtual PID
-		// need a VirtualMachine function to acquire a process from the PID for the RPC call
-		// process should probably be shared_ptr<> not unique_ptr<>
-	}
-
-	// 64-bit host test
-	void OnUserControl129(void)
-	{
-		//std::tstring binpath = m_hostprocess64;
-		//std::unique_ptr<Host> h = Host::Create(binpath.c_str(), m_bindstr64.c_str(), m_hostprocesstimeout);
-	}
-
 	//-------------------------------------------------------------------------
 	// SystemCalls Implementation
 
 	// FindClientProcess
 	//
 	// Locates a Process instance associated with a hosted client PID
-	virtual std::shared_ptr<Process> FindClientProcess(uint32_t clientpid);
-
-	virtual uapi::long_t newuname(const ProcessPtr& process, uapi::new_utsname* buf);
-
+	////virtual std::shared_ptr<Process> FindClientProcess(uint32_t clientpid);
 
 	std::shared_ptr<Process> m_initprocess;
 	std::unique_ptr<VmProcessManager> m_procmgr;
-
-	// hosts
-	std::tstring m_bindstr32;
-	std::tstring m_bindstr64;				// won't be initialized on x86
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -145,8 +120,35 @@ private:
 	// Virtual Machine Subsystems
 	//
 	std::unique_ptr<VmFileSystem>	m_vfs;
-	std::unique_ptr<VmSettings>		m_settings;
 	std::unique_ptr<VmSystemLog>	m_syslog;
+
+	//
+	// PARAMETERS PULLED BACK IN FROM VMSERICEPARAMETERS CLASS
+	// NEEDS CLEANUP
+	//
+
+	BEGIN_PARAMETER_MAP(VmService)
+		// process
+		PARAMETER_ENTRY(_T("process.host.32bit"),	process_host_32bit);	// String
+		PARAMETER_ENTRY(_T("process.host.64bit"),	process_host_64bit);	// String
+		PARAMETER_ENTRY(_T("process.host.timeout"), process_host_timeout);	// DWord
+		PARAMETER_ENTRY(_T("systemlog.length"),		systemlog_length);		// DWord
+		PARAMETER_ENTRY(_T("vm.initpath"),			vm_initpath);			// String
+		PARAMETER_ENTRY(_T("vm.initramfs"),			vm_initramfs);			// String
+	END_PARAMETER_MAP()
+
+	// process
+	StringParameter			process_host_32bit;
+	StringParameter			process_host_64bit;
+	DWordParameter			process_host_timeout { 10000 };
+
+	// systemlog
+	DWordParameter			systemlog_length { 512 KiB };
+
+	// virtualmachine
+	StringParameter			vm_initpath { _T("/sbin/init") };
+	StringParameter			vm_initramfs;
+
 };
 
 //---------------------------------------------------------------------------

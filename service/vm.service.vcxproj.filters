@@ -69,9 +69,6 @@
     <Filter Include="Header Files\File Systems">
       <UniqueIdentifier>{904732a2-c9b8-4969-b93a-83d5ebb5163d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\System Calls">
-      <UniqueIdentifier>{7813127d-e6b1-4b3c-8869-be5edc4b6a8a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Elf">
       <UniqueIdentifier>{c4bb8625-8a77-45af-94c5-fc57c0663cf9}</UniqueIdentifier>
     </Filter>
@@ -251,12 +248,6 @@
     <ClInclude Include="VmProcessManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SystemCalls.h">
-      <Filter>Header Files\System Calls</Filter>
-    </ClInclude>
-    <ClInclude Include="syscalls.h">
-      <Filter>Header Files\System Calls</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\RpcInterface.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -289,15 +280,6 @@
     </ClInclude>
     <ClInclude Include="..\common\HeapBuffer.h">
       <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="VirtualMachine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VmSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VmServiceParameters.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\linux\signal.h">
       <Filter>Header Files\Common\linux</Filter>
@@ -338,7 +320,10 @@
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualMachine2.h">
+    <ClInclude Include="VirtualMachine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemCall.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -496,18 +481,6 @@
     <ClCompile Include="FilePermission.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SystemCalls.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="syscalls32_epv64.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="syscalls32_epv32.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="syscalls64_epv64.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Console.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -550,8 +523,35 @@
     <ClCompile Include="HostFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
     </ClCompile>
-    <ClCompile Include="VirtualMachine2.cpp">
+    <ClCompile Include="VirtualMachine.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_set_tid_address.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_readlink.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemCall.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_newuname.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_uname.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_olduname.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_acquire_context.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_release_context.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_rundown_context.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

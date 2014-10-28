@@ -20,41 +20,45 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include "RpcInterface.h"
+#include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// syscall32_listener
-// syscall64_listener
-//
-// Type declaration for RpcInterface<> template that maps the typeid and entry point vector
-#ifndef _M_X64
-
-// 32-bit listener
-#include <syscalls32.h>
-extern SystemCalls32_v1_0_epv_t syscalls32_epv32;
-using syscall32_listener = RpcInterface<&SystemCalls32_v1_0_s_ifspec, &EPVID_SYSTEMCALLS32, &syscalls32_epv32>;
-
-#else
-
-// 32-bit listener
-#include <syscalls32.h>
-extern SystemCalls32_v1_0_epv_t syscalls32_epv64;
-using syscall32_listener = RpcInterface<&SystemCalls32_v1_0_s_ifspec, &EPVID_SYSTEMCALLS32, &syscalls32_epv64>;
-
-// 64-bit listener
-#include <syscalls64.h>
-extern SystemCalls64_v1_0_epv_t syscalls64_epv64;
-using syscall64_listener = RpcInterface<&SystemCalls64_v1_0_s_ifspec, &EPVID_SYSTEMCALLS64, &syscalls64_epv64>;
-
-#endif
-
 //-----------------------------------------------------------------------------
+// sys_uname (local)
+//
+// Gets information about the current virtual kernel
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	buf			- Pointer to the output data structure
+
+static __int3264 sys_uname(const SystemCall::Context* context, uapi::old_utsname* buf)
+{
+	_ASSERTE(context);
+	if(buf == nullptr) return -LINUX_EFAULT;
+
+	auto vm = context->VirtualMachine;
+
+	// Copy the string data directly from the VirtualMachine instance into the output buffer
+ 	strncpy_s(buf->sysname,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemType,	_TRUNCATE);
+	strncpy_s(buf->nodename,	LINUX__NEW_UTS_LEN + 1, vm->HostName,				_TRUNCATE);
+	strncpy_s(buf->release,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemRelease,	_TRUNCATE);
+	strncpy_s(buf->version,		LINUX__NEW_UTS_LEN + 1, vm->Version,				_TRUNCATE);
+	strncpy_s(buf->machine,		LINUX__NEW_UTS_LEN + 1, vm->HardwareIdentifier,		_TRUNCATE);
+
+	return 0;
+}
+
+// sys32_uname
+//
+sys32_long_t sys32_uname(sys32_context_t context, uapi::old_utsname* buf)
+{
+	return static_cast<sys32_long_t>(sys_uname(reinterpret_cast<SystemCall::Context*>(context), buf));
+}
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __SYSCALLS_H_

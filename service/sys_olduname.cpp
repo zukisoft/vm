@@ -21,36 +21,44 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
-//
-// RPC context handle
-extern sys32_context_t g_rpccontext;
-
-//
-// SAMPLE FUNCTION
-//
-
 //-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
+// sys_olduname (local)
 //
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
+// Gets information about the current virtual kernel
 //
-int sys000_template(PCONTEXT context)
-{
-	_ASSERTE(context->Eax == 122);			// Verify system call number
+// Arguments:
+//
+//	context		- SystemCall context object
+//	buf			- Pointer to the output data structure
 
-	/*return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));*/
-	return -1;
+static __int3264 sys_olduname(const SystemCall::Context* context, uapi::oldold_utsname* buf)
+{
+	_ASSERTE(context);
+	if(buf == nullptr) return -LINUX_EFAULT;
+
+	auto vm = context->VirtualMachine;
+
+	// Copy the string data directly from the VirtualMachine instance into the output buffer
+ 	strncpy_s(buf->sysname,		LINUX__OLD_UTS_LEN + 1, vm->OperatingSystemType,	_TRUNCATE);
+	strncpy_s(buf->nodename,	LINUX__OLD_UTS_LEN + 1, vm->HostName,				_TRUNCATE);
+	strncpy_s(buf->release,		LINUX__OLD_UTS_LEN + 1, vm->OperatingSystemRelease,	_TRUNCATE);
+	strncpy_s(buf->version,		LINUX__OLD_UTS_LEN + 1, vm->Version,				_TRUNCATE);
+	strncpy_s(buf->machine,		LINUX__OLD_UTS_LEN + 1, vm->HardwareIdentifier,		_TRUNCATE);
+
+	return 0;
 }
 
-//-----------------------------------------------------------------------------
+// sys32_olduname
+//
+sys32_long_t sys32_olduname(sys32_context_t context, uapi::oldold_utsname* buf)
+{
+	return static_cast<sys32_long_t>(sys_olduname(reinterpret_cast<SystemCall::Context*>(context), buf));
+}
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)

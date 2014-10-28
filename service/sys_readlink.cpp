@@ -21,36 +21,42 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
+// sys_readlink
 //
-// RPC context handle
-extern sys32_context_t g_rpccontext;
-
-//
-// SAMPLE FUNCTION
-//
-
-//-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
-//
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
-//
-int sys000_template(PCONTEXT context)
+// words
+__int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, void* buf, size_t bufsiz)
 {
-	_ASSERTE(context->Eax == 122);			// Verify system call number
+	_ASSERTE(context);
+	(pathname);
+	(buf);
+	(bufsiz);
 
-	/*return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));*/
-	return -1;
+	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+
+	catch(std::exception& ex) { return SystemCall::TranslateException(ex); }
+	catch(...) { return -1; } // TODO!!!!! context->VirtualMachine->UnhandledSystemCallException("sys_uname"); }
 }
 
-//-----------------------------------------------------------------------------
+// sys32_readlink
+//
+sys32_long_t sys32_readlink(sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz)
+{
+	return static_cast<sys32_long_t>(sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, bufsiz));
+}
+
+#ifdef _M_X64
+// sys64_readlink
+//
+sys64_long_t sys64_readlink(sys64_context_t context, const sys64_char_t* pathname, sys64_char_t* buf, sys64_sizeis_t bufsiz)
+{
+	return sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, static_cast<size_t>(bufsiz));
+}
+#endif
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)

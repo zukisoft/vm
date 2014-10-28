@@ -26,7 +26,6 @@
 
 #include "Exception.h"
 #include "MemoryRegion.h"
-#include "VmSettings.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4200)		// zero-sized array in struct/union
@@ -82,7 +81,8 @@ class VmSystemLog
 public:
 
 	// Constructor / Destructor
-	VmSystemLog(const std::unique_ptr<VmSettings>& settings);
+	//
+	VmSystemLog(size_t size);
 	~VmSystemLog()=default;
 
 	//-------------------------------------------------------------------------

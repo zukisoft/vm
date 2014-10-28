@@ -21,67 +21,47 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCalls.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// SystemCalls::s_objects
-//
-// Static collection of active SystemCall instances
-SystemCalls::object_map_t SystemCalls::s_objects;
-
-// SystemCalls::s_lock
-//
-// Synchronization object for concurrent access to the collection
-SystemCalls::rwlock_t SystemCalls::s_lock;
-
 //-----------------------------------------------------------------------------
-// SystemCalls Constructor (protected)
+// sys32_context_exclusive_t_rundown
+//
+// Releases a context handle allocated by a client process but was not released
+// prior to the process terminating
 //
 // Arguments:
 //
-//	NONE
+//	context			- [in] RPC context handle to be rundown
 
-SystemCalls::SystemCalls()
+void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t context)
 {
-	// Generate unique identifiers that can be passed into the RPC runtime
-	UuidCreate(&m_objectid32);
-	UuidCreate(&m_objectid64);
+	if(context == nullptr) return;
 
-	// Repeatedly try to insert the new objects, regenerating the UUID as necessary
-	write_lock writer(s_lock);
-	while(!s_objects.insert(std::make_pair(m_objectid32, this)).second) UuidCreate(&m_objectid32);
-	while(!s_objects.insert(std::make_pair(m_objectid64, this)).second) UuidCreate(&m_objectid64);
+	// Cast the context handle back into a Context handle and destroy it
+	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(context));
 }
 
+#ifdef _M_X64
 //-----------------------------------------------------------------------------
-// SystemCalls Destructor
-
-SystemCalls::~SystemCalls()
-{
-	write_lock writer(s_lock);
-	s_objects.erase(m_objectid32);
-	s_objects.erase(m_objectid64);
-}
-
-//-----------------------------------------------------------------------------
-// SystemCalls::FromObjectID (static)
+// sys64_context_exclusive_t_rundown
 //
-// Retrieves a SystemCalls instance from the static collection
+// Releases a context handle allocated by a client process but was not released
+// prior to the process terminating
 //
 // Arguments:
 //
-//	objectid		- ObjectID to be mapped back to SystemCalls*
+//	context			- [in] RPC context handle to be rundown
 
-SystemCalls* SystemCalls::FromObjectID(const uuid_t& objectid)
+void __RPC_USER sys64_context_exclusive_t_rundown(sys64_context_exclusive_t context)
 {
-	read_lock reader(s_lock);
+	if(context == nullptr) return;
 
-	// Attempt to locate the objectid in the collection and return null
-	// if it doesn't map to an active SystemCalls instance
-	auto iterator = s_objects.find(objectid);
-	return (iterator == s_objects.end()) ? nullptr : iterator->second;
+	// Cast the context handle back into a Context handle and destroy it
+	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(context));
 }
+#endif	// _M_X64
 
 //---------------------------------------------------------------------------
 

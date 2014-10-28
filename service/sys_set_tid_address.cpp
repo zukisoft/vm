@@ -21,36 +21,40 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
+// sys_set_tid_address
 //
-// RPC context handle
-extern sys32_context_t g_rpccontext;
-
-//
-// SAMPLE FUNCTION
-//
-
-//-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
-//
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
-//
-int sys000_template(PCONTEXT context)
+// words
+__int3264 sys_set_tid_address(const SystemCall::Context* context, void* address)
 {
-	_ASSERTE(context->Eax == 122);			// Verify system call number
+	_ASSERTE(context);
+	(address);
 
-	/*return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));*/
-	return -1;
+	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+
+	catch(std::exception& ex) { return SystemCall::TranslateException(ex); }
+	catch(...) { return -1; } // TODO!!!!! context->VirtualMachine->UnhandledSystemCallException("sys_uname"); }
 }
 
-//-----------------------------------------------------------------------------
+// sys32_set_tid_address
+//
+sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t address)
+{
+	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address)));
+}
+
+#ifdef _M_X64
+// sys64_set_tid_address
+//
+sys64_long_t sys64_set_tid_address(sys64_context_t context, sys64_addr_t address)
+{
+	return sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address));
+}
+#endif
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)

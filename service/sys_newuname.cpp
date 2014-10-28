@@ -1,0 +1,74 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2014 Michael G. Brehm
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//-----------------------------------------------------------------------------
+
+#include "stdafx.h"
+#include "SystemCall.h"
+
+#pragma warning(push, 4)
+
+//-----------------------------------------------------------------------------
+// sys_newuname (local)
+//
+// Gets information about the current virtual kernel
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	buf			- Pointer to the output data structure
+
+static __int3264 sys_newuname(const SystemCall::Context* context, uapi::new_utsname* buf)
+{
+	_ASSERTE(context);
+	if(buf == nullptr) return -LINUX_EFAULT;
+
+	auto vm = context->VirtualMachine;
+
+	// Copy the string data directly from the VirtualMachine instance into the output buffer
+ 	strncpy_s(buf->sysname,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemType,	_TRUNCATE);
+	strncpy_s(buf->nodename,	LINUX__NEW_UTS_LEN + 1, vm->HostName,				_TRUNCATE);
+	strncpy_s(buf->release,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemRelease,	_TRUNCATE);
+	strncpy_s(buf->version,		LINUX__NEW_UTS_LEN + 1, vm->Version,				_TRUNCATE);
+	strncpy_s(buf->machine,		LINUX__NEW_UTS_LEN + 1, vm->HardwareIdentifier,		_TRUNCATE);
+	strncpy_s(buf->domainname,	LINUX__NEW_UTS_LEN + 1, vm->DomainName,				_TRUNCATE);
+
+	return 0;
+}
+
+// sys32_newuname
+//
+sys32_long_t sys32_newuname(sys32_context_t context, uapi::new_utsname* buf)
+{
+	return static_cast<sys32_long_t>(sys_newuname(reinterpret_cast<SystemCall::Context*>(context), buf));
+}
+
+#ifdef _M_X64
+// sys64_newuname
+//
+sys64_long_t sys64_newuname(sys64_context_t context, uapi::new_utsname* buf)
+{
+	return sys_newuname(reinterpret_cast<SystemCall::Context*>(context), buf);
+}
+#endif
+
+//---------------------------------------------------------------------------
+
+#pragma warning(pop)

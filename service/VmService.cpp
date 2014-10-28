@@ -25,14 +25,24 @@
 
 #pragma warning(push, 4)
 
-std::shared_ptr<Process> VmService::FindClientProcess(uint32_t clientpid)
+// 32-bit listener
+#include <syscalls32.h>
+using syscall32_listener = RpcInterface<&SystemCalls32_v1_0_s_ifspec>;
+
+#ifdef _M_X64
+// 64-bit listener
+#include <syscalls64.h>
+using syscall64_listener = RpcInterface<&SystemCalls64_v1_0_s_ifspec>;
+#endif
+
+std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 {
 	// dummy for testing
-	(clientpid);
+	(hostpid);
 	return m_initprocess;
 }
 
-
+// THIS SHOULD BE IN THE VFS (VMFILESYSTEM), NOT HERE IN THE SERVICE
 void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 {
 	// Attempt to open the specified file read-only with sequential scan optimization
@@ -118,15 +128,12 @@ void VmService::OnStart(int, LPTSTR*)
 
 	try {
 
-		// Create the settings subsystem instance first
-		m_settings = std::make_unique<VmSettings>(shared_from_this());
-
 		//
 		// SYSTEM LOG
 		//
 
 		// Create the system log instance and seed the time bias to now
-		m_syslog = std::make_unique<VmSystemLog>(m_settings);
+		m_syslog = std::make_unique<VmSystemLog>(static_cast<uint32_t>(systemlog_length));
 		m_syslog->TimestampBias = qpcbias.QuadPart;
 
 		// TODO: Put a real log here with the zero-time bias and the size of the
@@ -158,6 +165,15 @@ void VmService::OnStart(int, LPTSTR*)
 //		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
 
 		//
+		// PROCESS MANAGER
+		//
+		m_procmgr = std::make_unique<VmProcessManager>();
+		m_procmgr->HostPath32 = static_cast<std::tstring>(process_host_32bit).c_str();
+#ifdef _M_X64
+		m_procmgr->HostPath64 = static_cast<std::tstring>(process_host_64bit).c_str();
+#endif
+
+		//
 		// RPC INTERFACES
 		//
 
@@ -169,21 +185,21 @@ void VmService::OnStart(int, LPTSTR*)
 		// since the service really doesn't care that it has 2 RPC interfaces, they
 		// both just come back to this single service instance via the entry point vectors
 		syscall32_listener::Register(RPC_IF_AUTOLISTEN);
-		syscall32_listener::AddObject(this->ObjectID32); 
-		m_bindstr32 = syscall32_listener::GetBindingString(this->ObjectID32);
+		syscall32_listener::AddObject(this->InstanceID);
+		m_procmgr->HostArguments32 = syscall32_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
 		OutputDebugString(L"BINDSTR32: ");
-		OutputDebugString(m_bindstr32.c_str());
+		OutputDebugString(m_procmgr->HostArguments32);
 		OutputDebugString(L"\r\n");
 
 #ifdef _M_X64
 		// x64 builds also register the 64-bit system calls interface
 		syscall64_listener::Register(RPC_IF_AUTOLISTEN);
-		syscall64_listener::AddObject(this->ObjectID64);
-		m_bindstr64 = syscall64_listener::GetBindingString(this->ObjectID64);
+		syscall64_listener::AddObject(this->InstanceID);
+		m_procmgr->HostArguments64 = syscall64_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
 		OutputDebugString(L"BINDSTR64: ");
-		OutputDebugString(m_bindstr64.c_str());
+		OutputDebugString(m_procmgr->HostArguments64);
 		OutputDebugString(L"\r\n");
 #endif
 	} 
@@ -193,16 +209,14 @@ void VmService::OnStart(int, LPTSTR*)
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
 
 	//
-	// INITIALIZE PROCESS MANAGER
-	//
-
-	//
 	// LAUNCH INIT
 	//
-	std::string initpath = std::to_string(m_settings->InitPath);
+	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { "First Argument", "Second Argument", nullptr };
-	m_initprocess = Process::Create(shared_from_this(), initpath.c_str(), args, nullptr);
-	//proc->Terminate(0);
+	//why is shared_from_this() null here
+	//auto test = VirtualMachine::shared_from_this();
+	m_initprocess = m_procmgr->CreateProcess(shared_from_this(), initpath.c_str(), args, nullptr);
+	////proc->Terminate(0);
 	m_initprocess->Resume();
 
 	// seems to work to here, can use this to create the new in-proc ELF loader
@@ -233,54 +247,100 @@ void VmService::OnStop(void)
 
 #ifdef _M_X64
 	// Remove the 64-bit system calls RPC interface
-	syscall64_listener::RemoveObject(this->ObjectID64);
+	syscall64_listener::RemoveObject(this->InstanceID);
 	syscall64_listener::Unregister(true);
 #endif
 
 	// Remove the 32-bit system calls RPC interface
-	syscall32_listener::RemoveObject(this->ObjectID32);
+	syscall32_listener::RemoveObject(this->InstanceID);
 	syscall32_listener::Unregister(true);
 
 	// Shut down and destroy all of the virtual machine subsystems
 	// (they hold shared_ptr<>s to this service class and will prevent
 	// the destructor from being called -- clearly need to reevaluate this)
 
+	m_procmgr.reset();
 	m_vfs.reset();
 	m_syslog.reset();
-	m_settings.reset();
 }
 
+////
+//// API
+////
+//// DO I WANT TO BREAK THESE OUT INTO SEPARATE .CPP FILES, ONE FOR EACH?  SOME WILL
+//// GET EXTRAORDINARILY COMPLICATED TO IMPLEMENT
+////
+//__int3264 VmService::newuname(const ProcessPtr& process, uapi::new_utsname* buf)
+//{
+//	uapi::char_t	nodename[MAX_COMPUTERNAME_LENGTH + 1];
+//	DWORD			cch = MAX_COMPUTERNAME_LENGTH + 1;
 //
-// API
+//	UNREFERENCED_PARAMETER(process);
 //
-// DO I WANT TO BREAK THESE OUT INTO SEPARATE .CPP FILES, ONE FOR EACH?  SOME WILL
-// GET EXTRAORDINARILY COMPLICATED TO IMPLEMENT
+//	if(buf == nullptr) throw LinuxException(LINUX_EFAULT);
 //
-__int3264 VmService::newuname(const ProcessPtr& process, uapi::new_utsname* buf)
+//	// Get the NetBIOS computer name to act as the node name, just null it out on erro
+//	if(!GetComputerNameA(nodename, &cch)) nodename[0] = '\0';
+//
+//	// TODO: These are generally just placeholders, not even sure that "i686" is correct
+//	strncpy_s(buf->sysname, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator", _TRUNCATE);
+//	strncpy_s(buf->nodename, LINUX__NEW_UTS_LEN + 1, nodename, _TRUNCATE);
+//	strncpy_s(buf->release, LINUX__NEW_UTS_LEN + 1, "3.0.0-0-todo", _TRUNCATE);
+//	strncpy_s(buf->version, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator Version", _TRUNCATE);
+//#ifdef _M_X64
+//	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "x86_64", _TRUNCATE);
+//#else
+//	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "i686", _TRUNCATE);
+//#endif
+//	strncpy_s(buf->domainname, LINUX__NEW_UTS_LEN + 1, "TODO: DOMAINNAME", _TRUNCATE);
+//
+//	return 0;
+//}
+
+FileSystem::HandlePtr VmService::OpenExecutable(const uapi::char_t* path)
 {
-	uapi::char_t	nodename[MAX_COMPUTERNAME_LENGTH + 1];
-	DWORD			cch = MAX_COMPUTERNAME_LENGTH + 1;
+	_ASSERTE(m_vfs);
+	return m_vfs->OpenExec(path);
+}
 
-	UNREFERENCED_PARAMETER(process);
+const uapi::char_t* VmService::getDomainName(void)
+{
+	return "DOMAIN NAME";
+}
 
-	if(buf == nullptr) throw LinuxException(LINUX_EFAULT);
+void VmService::putDomainName(const uapi::char_t* value)
+{
+	(value);
+}
 
-	// Get the NetBIOS computer name to act as the node name, just null it out on erro
-	if(!GetComputerNameA(nodename, &cch)) nodename[0] = '\0';
+const uapi::char_t*	VmService::getHardwareIdentifier(void)
+{
+	return "HARDWARE IDENTIFIER";
+}
 
-	// TODO: These are generally just placeholders, not even sure that "i686" is correct
-	strncpy_s(buf->sysname, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator", _TRUNCATE);
-	strncpy_s(buf->nodename, LINUX__NEW_UTS_LEN + 1, nodename, _TRUNCATE);
-	strncpy_s(buf->release, LINUX__NEW_UTS_LEN + 1, "3.0.0-0-todo", _TRUNCATE);
-	strncpy_s(buf->version, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator Version", _TRUNCATE);
-#ifdef _M_X64
-	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "x86_64", _TRUNCATE);
-#else
-	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "i686", _TRUNCATE);
-#endif
-	strncpy_s(buf->domainname, LINUX__NEW_UTS_LEN + 1, "TODO: DOMAINNAME", _TRUNCATE);
+const uapi::char_t* VmService::getHostName(void)
+{
+	return "HOST NAME";
+}
 
-	return 0;
+void VmService::putHostName(const uapi::char_t* value)
+{
+	(value);
+}
+
+const uapi::char_t* VmService::getOperatingSystemRelease(void)
+{
+	return "OS RELEASE";
+}
+
+const uapi::char_t* VmService::getOperatingSystemType(void)
+{
+	return "OS TYPE";
+}
+
+const uapi::char_t* VmService::getVersion(void)
+{
+	return "VERSION";
 }
 
 //---------------------------------------------------------------------------

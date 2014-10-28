@@ -40,12 +40,6 @@
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
-// ProcessPtr
-//
-// alias for a shared_ptr<Process> instance
-class Process;
-using ProcessPtr = std::shared_ptr<Process>;
-
 //-----------------------------------------------------------------------------
 // Process
 //
@@ -66,9 +60,10 @@ public:
 
 	// Create (static)
 	//
-	// Creates a new process instance
-	static std::shared_ptr<Process> Create(std::shared_ptr<VirtualMachine> vm, const uapi::char_t* path,
-		const uapi::char_t** arguments, const uapi::char_t** environment);
+	// Creates a new process instance via an external Windows host binary
+	template <ElfClass _class>
+	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
+		const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
 	// Resume
 	//
@@ -135,18 +130,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
-	// MagicNumbers
-	//
-	// Union that defines the magic numbers for supported binary formats
-	typedef union {
-
-		uint8_t	AnsiScript[3];				// 0x23, 0x21, 0x20
-		uint8_t	UTF8Script[6];				// 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20
-		uint8_t	UTF16Script[8];				// 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00
-		uint8_t	ElfBinary[LINUX_EI_NIDENT];	// "\177ELF"
-	
-	} MagicNumbers;
-
 	// StartupInfo
 	//
 	// Information generated when the host process was created that is
@@ -175,13 +158,6 @@ private:
 	// Verifies that the created host process type matches what is expected
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
-
-	// Create (static)
-	//
-	// Creates a new process instance via an external Windows host binary
-	template <ElfClass _class>
-	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
-		const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

@@ -21,19 +21,19 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "VirtualMachine2.h"
+#include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 
 // VirtualMachine::s_objects
 //
 // Static collection of active VirtualMachine instances
-VirtualMachine2::instance_map_t VirtualMachine2::s_instances;
+VirtualMachine::instance_map_t VirtualMachine::s_instances;
 
 // VirtualMachine::s_lock
 //
 // Synchronization object for concurrent access to the collection
-VirtualMachine2::rwlock_t VirtualMachine2::s_lock;
+VirtualMachine::rwlock_t VirtualMachine::s_lock;
 
 //-----------------------------------------------------------------------------
 // VirtualMachine::FindVirtualMachine (static)
@@ -44,28 +44,26 @@ VirtualMachine2::rwlock_t VirtualMachine2::s_lock;
 //
 //	instanceid		- UUID to be mapped back to a VirtualMachine instance
 
-std::shared_ptr<VirtualMachine2> VirtualMachine2::FindVirtualMachine(const uuid_t& instanceid)
+std::shared_ptr<VirtualMachine> VirtualMachine::FindVirtualMachine(const uuid_t& instanceid)
 {
 	read_lock reader(s_lock);
 
-	// Attempt to locate the instanceid in the collection
+	// Attempt to locate the instanceid in the collection and ask it to generate an
+	// std::shared_ptr<VirtualMachine> from itself; understood this is a hack job
 	auto iterator = s_instances.find(instanceid);
-	return (iterator == s_instances.end()) ? nullptr : iterator->second->shared_from_this();
+	return (iterator == s_instances.end()) ? nullptr : iterator->second->ToSharedPointer();
 }
 
 //-----------------------------------------------------------------------------
-// VirtualMachine::RegisterInstance (static, protected)
-//
-// Registers a VirtualMachine instance to allow FindInstance() to locate it
+// VirtualMachine Constructor (protected)
 //
 // Arguments:
 //
-//	vm			- shared_ptr<> for the VirtualMachine instance to register
-//	instanceid	- UUID that uniquely identifies the instance for FindInstance()
+//	NONE
 
-VirtualMachine2::VirtualMachine2()
+VirtualMachine::VirtualMachine()
 {
-	UuidCreate(&m_instanceid);			// Generate a unique identifier
+	UuidCreate(&m_instanceid);			// Generate a new unique identifier
 
 	// Repeatedly try to insert the new instance, regenerating the UUID as necessary
 	write_lock writer(s_lock);
@@ -73,20 +71,13 @@ VirtualMachine2::VirtualMachine2()
 }
 
 //-----------------------------------------------------------------------------
-// VirtualMachine::UnregisterInstance (static, protected)
-//
-// Unregisters a VirtualMachine instance such that FindInstance() cannot see it.
-//
-// Arguments:
-//
-//	instanceid	- UUID that uniquely identifies the VirtualMachine instance
+// VirtualMachine Destructor
 
-VirtualMachine2::~VirtualMachine2()
+VirtualMachine::~VirtualMachine()
 {
 	write_lock writer(s_lock);
 	s_instances.erase(m_instanceid);
 }
-
 
 //---------------------------------------------------------------------------
 

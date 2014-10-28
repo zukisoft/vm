@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 import "wtypes.idl";
+import "uapi.idl";
 
 // Integral Data Types
 //
@@ -41,6 +42,7 @@ typedef sys64_ulong_t					sys64_addr_t;
 typedef sys64_uint_t					sys64_mode_t;
 typedef sys64_ulong_t					sys64_size_t;
 typedef sys64_long_t					sys64_ssize_t;
+typedef sys64_uint_t					sys64_sizeis_t;		// Special for 64-bit RPC calls
 
 // EPVID_SYSTEMCALLS64 {94F810E2-56FE-4FAB-A0A6-2F631C807036}
 //
@@ -57,6 +59,11 @@ typedef struct _sys64_startup_info {
 	//
 	// Address to jump into to begin execution
 	sys64_addr_t	entry_point;
+
+	// program_break
+	//
+	// Address of the initial program break
+	sys64_addr_t	program_break;
 
 	// stack_image
 	//
@@ -103,11 +110,14 @@ interface SystemCalls64
 	// sys_xxxxx
 	//
 	// Linux kernel system calls
+	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
+	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
+	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);
+
 ///* x */	sys64_long_t	sys64_read([in] sys64_int_t fd, [out, ref, size_is(count)] sys64_uchar_t* buf, [in] sys64_size_t count);
 ///* x */	sys64_long_t	sys64_write([in] sys64_int_t fd, [in, ref, size_is(count)] const sys64_uchar_t* buf, [in] sys64_size_t count);
 ///* x */	sys64_long_t	sys64_open([in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
-/* x */	sys64_long_t	sys64_close([in] sys64_context_t context, [in] sys64_int_t fd);
+///* x */	sys64_long_t	sys64_close([in] sys64_context_t context, [in] sys64_int_t fd);
 ///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
-///* x */	sys64_long_t	sys64_readlink([in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_size_t bufsiz);
 ///* x */	sys64_long_t	sys64_openat([in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 }

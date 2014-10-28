@@ -121,7 +121,7 @@
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>false</GenerateStublessProxies>
       <ValidateAllParameters>false</ValidateAllParameters>
-      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
+      <AdditionalOptions>/Os</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -166,7 +166,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>false</GenerateStublessProxies>
       <ValidateAllParameters>false</ValidateAllParameters>
-      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
+      <AdditionalOptions>/Os</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -215,7 +215,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>false</GenerateStublessProxies>
       <ValidateAllParameters>false</ValidateAllParameters>
-      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
+      <AdditionalOptions>/Os</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -264,7 +264,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <GenerateTypeLibrary>false</GenerateTypeLibrary>
       <GenerateStublessProxies>false</GenerateStublessProxies>
       <ValidateAllParameters>false</ValidateAllParameters>
-      <AdditionalOptions>/Os /no_default_epv</AdditionalOptions>
+      <AdditionalOptions>/Os</AdditionalOptions>
       <ClientStubFile>%(Filename)_c.c</ClientStubFile>
       <ServerStubFile>%(Filename)_s.c</ServerStubFile>
       <ApplicationConfigurationMode>true</ApplicationConfigurationMode>
@@ -359,23 +359,19 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
-    <ClInclude Include="syscalls.h" />
-    <ClInclude Include="SystemCalls.h" />
+    <ClInclude Include="SystemCall.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="VirtualMachine.h" />
     <ClInclude Include="VmFileSystem.h" />
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="VmProcessManager.h" />
     <ClInclude Include="VmService.h" />
-    <ClInclude Include="VmServiceParameters.h" />
-    <ClInclude Include="VmSettings.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
-    <ClInclude Include="VirtualMachine2.h" />
+    <ClInclude Include="VirtualMachine.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\bzip2\blocksort.c">
@@ -625,19 +621,15 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="Process.cpp" />
-    <ClCompile Include="syscalls32_epv32.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="syscalls32_epv64.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="syscalls64_epv64.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="SystemCalls.cpp" />
+    <ClCompile Include="SystemCall.cpp" />
+    <ClCompile Include="sys_acquire_context.cpp" />
+    <ClCompile Include="sys_olduname.cpp" />
+    <ClCompile Include="sys_release_context.cpp" />
+    <ClCompile Include="sys_rundown_context.cpp" />
+    <ClCompile Include="sys_uname.cpp" />
+    <ClCompile Include="sys_readlink.cpp" />
+    <ClCompile Include="sys_set_tid_address.cpp" />
+    <ClCompile Include="sys_newuname.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -646,7 +638,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="VirtualMachine2.cpp" />
+    <ClCompile Include="VirtualMachine.cpp" />
     <ClCompile Include="VmFileSystem.cpp" />
     <ClCompile Include="VmProcessManager.cpp" />
     <ClCompile Include="VmService.cpp" />

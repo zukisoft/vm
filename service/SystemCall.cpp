@@ -21,36 +21,11 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
-//
-// RPC context handle
-extern sys32_context_t g_rpccontext;
-
-//
-// SAMPLE FUNCTION
-//
-
 //-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
-//
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
-//
-int sys000_template(PCONTEXT context)
-{
-	_ASSERTE(context->Eax == 122);			// Verify system call number
-
-	/*return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));*/
-	return -1;
-}
-
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
