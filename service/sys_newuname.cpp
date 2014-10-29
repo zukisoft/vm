@@ -40,15 +40,20 @@ static __int3264 sys_newuname(const SystemCall::Context* context, uapi::new_utsn
 	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
 
-	auto vm = context->VirtualMachine;
+	try {
+	
+		auto vm = context->VirtualMachine;
 
-	// Copy the string data directly from the VirtualMachine instance into the output buffer
- 	strncpy_s(buf->sysname,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemType,	_TRUNCATE);
-	strncpy_s(buf->nodename,	LINUX__NEW_UTS_LEN + 1, vm->HostName,				_TRUNCATE);
-	strncpy_s(buf->release,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemRelease,	_TRUNCATE);
-	strncpy_s(buf->version,		LINUX__NEW_UTS_LEN + 1, vm->Version,				_TRUNCATE);
-	strncpy_s(buf->machine,		LINUX__NEW_UTS_LEN + 1, vm->HardwareIdentifier,		_TRUNCATE);
-	strncpy_s(buf->domainname,	LINUX__NEW_UTS_LEN + 1, vm->DomainName,				_TRUNCATE);
+		// Copy the string data directly from the VirtualMachine instance into the output buffer
+ 		strncpy_s(buf->sysname,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemType,	_TRUNCATE);
+		strncpy_s(buf->nodename,	LINUX__NEW_UTS_LEN + 1, vm->HostName,				_TRUNCATE);
+		strncpy_s(buf->release,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemRelease,	_TRUNCATE);
+		strncpy_s(buf->version,		LINUX__NEW_UTS_LEN + 1, vm->Version,				_TRUNCATE);
+		strncpy_s(buf->machine,		LINUX__NEW_UTS_LEN + 1, vm->HardwareIdentifier,		_TRUNCATE);
+		strncpy_s(buf->domainname,	LINUX__NEW_UTS_LEN + 1, vm->DomainName,				_TRUNCATE);
+	}
+
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
 	return 0;
 }

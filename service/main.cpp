@@ -74,19 +74,19 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 		// todo: make sure -initramfs: switch and value exists
 		ServiceHarness<VmService> harness;
-#ifdef _M_X64
-		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
-#else
+//#ifdef _M_X64
+//		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
+//#else
 		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x86.cpio.gz"));
-#endif
+//#endif
 
 		// test parameters
 		harness.SetParameter(_T("systemlog.length"), 1 MiB);
 		harness.SetParameter(_T("process.host.32bit"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
 		harness.SetParameter(_T("process.host.64bit"), _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
 		harness.SetParameter(_T("process.host.timeout"), 10000);
-		//harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
-		harness.SetParameter(_T("vm.initpath"), _T("/init"));
+		harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
+		//harness.SetParameter(_T("vm.initpath"), _T("/init"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()

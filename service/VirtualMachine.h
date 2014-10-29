@@ -82,6 +82,8 @@ public:
 	// Opens a file system object for execute-only access
 	virtual std::shared_ptr<FileSystem::Handle> OpenExecutable(const uapi::char_t* path) = 0;
 
+	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode) = 0;
+
 	//-------------------------------------------------------------------------
 	// Properties
 

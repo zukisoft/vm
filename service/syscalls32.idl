@@ -109,17 +109,20 @@ interface SystemCalls32
 	// sys32_xxxxx
 	//
 	// Linux kernel system calls
-//	/* 045 */ sys32_long_t	sys32_brk([in] sys32_context_t context, [in] sys32_addr_t addr);
+	/* 005 */ sys32_long_t	sys32_open([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 	/* 059 */ sys32_long_t	sys32_olduname([in] sys32_context_t context, [out, ref] linux_oldold_utsname* buf);
+	/* 074 */ sys32_long_t	sys32_sethostname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 085 */ sys32_long_t	sys32_readlink([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [out, ref, size_is(bufsiz)] sys32_char_t* buf, [in] sys32_size_t bufsiz);
 	/* 109 */ sys32_long_t	sys32_uname([in] sys32_context_t context, [out, ref] linux_old_utsname* buf);
+	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
+	/* 258 */ sys32_long_t	sys32_set_tid_address([in] sys32_context_t context, [in] sys32_addr_t tidptr);
+
 ///* 003 */	sys32_long_t	sys32_read([in] sys32_int_t fd, [out, ref, size_is(count)] sys32_uchar_t* buf, [in] sys32_size_t count);
 ///* 004 */	sys32_long_t	sys32_write([in] sys32_int_t fd, [in, ref, size_is(count)] const sys32_uchar_t* buf, [in] sys32_size_t count);
-///* 005 */	sys32_long_t	sys32_open([in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 ///* 006 */	sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
 ///* 008 */	sys32_long_t	sys32_creat([in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
+///* 045 */ sys32_long_t	sys32_brk([in] sys32_context_t context, [in] sys32_addr_t addr);
 ///* 085 */	sys32_long_t	sys32_readlink([in, string] const sys32_char_t* pathname, [out, ref, size_is(bufsiz)] sys32_char_t* buf, [in] sys32_size_t bufsiz);
-	/* 258 */ sys32_long_t	sys32_set_tid_address([in] sys32_context_t context, [in] sys32_addr_t tidptr);
 ///* 295 */	sys32_long_t	sys32_openat([in] sys32_int_t fd, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 }

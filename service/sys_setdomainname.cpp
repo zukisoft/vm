@@ -25,33 +25,42 @@
 
 #pragma warning(push, 4)
 
-// sys_readlink
+//-----------------------------------------------------------------------------
+// sys_setdomainname (local)
 //
-// words
-__int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, void* buf, size_t bufsiz)
+// Changes the domain name reported by the virtual machine
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	name		- New domain name string to be assigned
+//	len			- Length of the name string, does not include null terminator
+
+static __int3264 sys_setdomainname(const SystemCall::Context* context, uapi::char_t* name, size_t len)
 {
 	_ASSERTE(context);
-	(pathname);
-	(buf);
-	(bufsiz);
+	if(name == nullptr) return -LINUX_EFAULT;
+	if(len == 0) return -LINUX_EINVAL;
 
-	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+	try { context->VirtualMachine->DomainName = std::string(name, len).c_str(); }
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+
+	return 0;
 }
 
-// sys32_readlink
+// sys32_setdomainname
 //
-sys32_long_t sys32_readlink(sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz)
+sys32_long_t sys32_setdomainname(sys32_context_t context, sys32_char_t* name, sys32_size_t len)
 {
-	return static_cast<sys32_long_t>(sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, bufsiz));
+	return static_cast<sys32_long_t>(sys_setdomainname(reinterpret_cast<SystemCall::Context*>(context), name, len));
 }
 
 #ifdef _M_X64
-// sys64_readlink
+// sys64_setdomainname
 //
-sys64_long_t sys64_readlink(sys64_context_t context, const sys64_char_t* pathname, sys64_char_t* buf, sys64_sizeis_t bufsiz)
+sys64_long_t sys64_setdomainname(sys64_context_t context, sys64_char_t* name, sys64_sizeis_t len)
 {
-	return sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, static_cast<size_t>(bufsiz));
+	return sys_setdomainname(reinterpret_cast<SystemCall::Context*>(context), name, len);
 }
 #endif
 

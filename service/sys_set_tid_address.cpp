@@ -34,9 +34,7 @@ __int3264 sys_set_tid_address(const SystemCall::Context* context, void* address)
 	(address);
 
 	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
-
-	catch(std::exception& ex) { return SystemCall::TranslateException(ex); }
-	catch(...) { return -1; } // TODO!!!!! context->VirtualMachine->UnhandledSystemCallException("sys_uname"); }
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
 // sys32_set_tid_address

@@ -115,10 +115,21 @@ public:
 	// TranslateException (static)
 	//
 	// Converts an exception into a return value for a system call
-	static __int3264 TranslateException(const std::exception& ex)
+	static __int3264 TranslateException(std::exception_ptr ex)
 	{
-		(ex);
-		return -LINUX_ENOSYS;
+		try { std::rethrow_exception(ex); }
+		catch(LinuxException& ex) {
+			OutputDebugString(L"LINUX EXCEPTION!\r\n");
+			return ex.Code;
+		}
+		catch(Exception& ex) {
+
+			int x = (int)ex.Code;
+			return -x;
+		}
+		catch(...) { return -LINUX_ENOSYS; }
+
+		return -1;			// <--- should be impossible to reach, shuts up the compiler
 	}
 
 private:

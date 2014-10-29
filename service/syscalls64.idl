@@ -110,8 +110,11 @@ interface SystemCalls64
 	// sys_xxxxx
 	//
 	// Linux kernel system calls
+	/* 002 */ sys64_long_t	sys64_open([in] sys32_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
+	/* 170 */ sys64_long_t	sys64_sethostname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
+	/* 171 */ sys64_long_t	sys64_setdomainname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);
 
 ///* x */	sys64_long_t	sys64_read([in] sys64_int_t fd, [out, ref, size_is(count)] sys64_uchar_t* buf, [in] sys64_size_t count);

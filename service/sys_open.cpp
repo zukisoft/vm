@@ -25,33 +25,46 @@
 
 #pragma warning(push, 4)
 
-// sys_readlink
+//-----------------------------------------------------------------------------
+// sys_open (local)
 //
-// words
-__int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, void* buf, size_t bufsiz)
+// Opens, and possibly creates, a file on the virtual file system
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	pathname	- Path to the file on the virtual file system
+//	flags		- File open/creation flags
+//	mode		- Mode mask to assign to the file if created
+
+static __int3264 sys_open(const SystemCall::Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
 	_ASSERTE(context);
-	(pathname);
-	(buf);
-	(bufsiz);
+	if(pathname == nullptr) return -LINUX_EFAULT;
 
-	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+	try { 
+		
+		auto handle = context->VirtualMachine->OpenFile(pathname, flags, mode);
+		// TODO
+		return -LINUX_ENOENT;
+	}
+
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
-// sys32_readlink
+// sys32_open
 //
-sys32_long_t sys32_readlink(sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz)
+sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, sys32_int_t flags, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, bufsiz));
+	return static_cast<sys32_long_t>(sys_open(reinterpret_cast<SystemCall::Context*>(context), pathname, flags, mode));
 }
 
 #ifdef _M_X64
-// sys64_readlink
+// sys64_open
 //
-sys64_long_t sys64_readlink(sys64_context_t context, const sys64_char_t* pathname, sys64_char_t* buf, sys64_sizeis_t bufsiz)
+sys64_long_t sys64_open(sys64_context_t context, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
 {
-	return sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, static_cast<size_t>(bufsiz));
+	return sys_open(reinterpret_cast<SystemCall::Context*>(context), pathname, flags, mode);
 }
 #endif
 

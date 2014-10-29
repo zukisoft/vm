@@ -157,8 +157,8 @@ void VmFileSystem::Mount(const uapi::char_t* source, const uapi::char_t* target,
 	if(alias->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
 	/// TESTING
-	//FileSystemPtr hfs = TempFileSystem::Mount(source, flags, data);
-	FileSystemPtr hfs = HostFileSystem::Mount(source, flags, data);
+	FileSystemPtr hfs = TempFileSystem::Mount(source, flags, data);
+	//FileSystemPtr hfs = HostFileSystem::Mount(source, flags, data);
 
 	// Overmount the target alias with the new file system's root node
 	alias->Mount(hfs->Root->Node);

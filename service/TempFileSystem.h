@@ -166,20 +166,18 @@ private:
 
 		// todo: put comments back
 		uint64_t	getIndex(void) { return m_index; }
-		NodeType	getType(void) { return m_type; }
 
 	protected:
 
 		// Instance Constructor
 		//
-		NodeBase(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type);
+		NodeBase(const std::shared_ptr<MountPoint>& mountpoint);
 
 		// Protected Member Variables
 		//
 		const uint64_t					m_index;		// Node index number
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
 		FilePermission					m_permission;	// Node permission
-		const FileSystem::NodeType		m_type;			// Node type flag
 
 	private:
 
@@ -243,7 +241,7 @@ private:
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
-		virtual FileSystem::NodeType	getType(void)	{ return NodeBase::getType(); }
+		virtual FileSystem::NodeType	getType(void)	{ return FileSystem::NodeType::Directory; }
 
 		// FileSystem::Directory Implementation
 		//
@@ -259,7 +257,7 @@ private:
 
 		// Instance Constructor
 		//
-		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint, FileSystem::NodeType::Directory) {}
+		DirectoryNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint) {}
 		friend class std::_Ref_count_obj<DirectoryNode>;
 
 		// DirectoryNode::Handle
@@ -313,7 +311,7 @@ private:
 	// TempFileSystem::FileNode
 	//
 	// Specializes NodeBase for a File file system object
-	class FileNode : public NodeBase, public FileSystem::Node, public std::enable_shared_from_this<FileNode>
+	class FileNode : public NodeBase, public FileSystem::File, public std::enable_shared_from_this<FileNode>
 	{
 	public:
 
@@ -325,12 +323,15 @@ private:
 		static std::shared_ptr<FileNode> Construct(const std::shared_ptr<MountPoint>& mountpoint);
 
 		// FileSystem::Node Implementation
-		//		
+		//
 		virtual FileSystem::HandlePtr	Open(int flags);
-		virtual FileSystem::HandlePtr	OpenExec(int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
-		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
+		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::File; }
+
+		// FileSystem::File Implementation
+		//		
+		virtual FileSystem::HandlePtr	OpenExec(int flags);
 
 	private:
 
@@ -339,7 +340,7 @@ private:
 
 		// Instance Constructor
 		//
-		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint, FileSystem::NodeType::File) {}
+		FileNode(const std::shared_ptr<MountPoint>& mountpoint) : NodeBase(mountpoint) {}
 		friend class std::_Ref_count_obj<FileNode>;
 
 		// FileNode::Handle
@@ -400,10 +401,9 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual FileSystem::HandlePtr	Open(int flags);
-		virtual FileSystem::HandlePtr	OpenExec(int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
-		virtual FileSystem::NodeType	getType(void) { return NodeBase::getType(); }
+		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::SymbolicLink; }
 
 		// FileSystem::SymbolicLink Implementation
 		//
@@ -417,7 +417,7 @@ private:
 		// Instance Constructor
 		//
 		SymbolicLinkNode(const std::shared_ptr<MountPoint>& mountpoint, const uapi::char_t* target) : 
-			NodeBase(mountpoint, FileSystem::NodeType::SymbolicLink), m_target(std::trim(target)) {}
+			NodeBase(mountpoint), m_target(std::trim(target)) {}
 		friend class std::_Ref_count_obj<SymbolicLinkNode>;
 
 		// SymbolicLinkNode::Handle

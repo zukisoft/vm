@@ -539,10 +539,9 @@ TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data) :
 // Arguments:
 //
 //	mountpoint	- Reference to the parent filesystem's MountPoint instance
-//	type		- Type of the Node being constructed
 
-TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint, FileSystem::NodeType type) : 
-	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_type(type), m_permission(0)
+TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint) : 
+	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_permission(0)
 {
 	_ASSERTE(mountpoint);
 }

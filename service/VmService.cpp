@@ -147,8 +147,8 @@ void VmService::OnStart(int, LPTSTR*)
 
 		// clearly this is temporary code
 		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
-		//m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
-		m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
+		m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
+		//m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???
 
@@ -156,13 +156,13 @@ void VmService::OnStart(int, LPTSTR*)
 		// INITRAMFS
 		//
 
-//		// Check that the initramfs archive file exists
-//		std::tstring initramfs = m_settings->InitialRamFileSystem;
-//		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
+		// Check that the initramfs archive file exists
+		std::tstring initramfs = vm_initramfs;
+		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
 
-//		// Attempt to extract the contents of the initramfs into the tempfs
-//		try { LoadInitialFileSystem(initramfs.c_str()); }
-//		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
+		// Attempt to extract the contents of the initramfs into the tempfs
+		try { LoadInitialFileSystem(initramfs.c_str()); }
+		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
 
 		//
 		// PROCESS MANAGER
@@ -191,6 +191,10 @@ void VmService::OnStart(int, LPTSTR*)
 		OutputDebugString(L"BINDSTR32: ");
 		OutputDebugString(m_procmgr->HostArguments32);
 		OutputDebugString(L"\r\n");
+
+		// THESE ARE EXACTLY THE SAME, WHY DO I HAVE TWO OF THEM
+		// collapse ProcessManager->HostArguments32 and 64 into just one property, the binding
+		// string is identical, it's the interface that differs, which is controlled by the stubs
 
 #ifdef _M_X64
 		// x64 builds also register the 64-bit system calls interface
@@ -301,6 +305,12 @@ FileSystem::HandlePtr VmService::OpenExecutable(const uapi::char_t* path)
 {
 	_ASSERTE(m_vfs);
 	return m_vfs->OpenExec(path);
+}
+
+FileSystem::HandlePtr VmService::OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+{
+	_ASSERTE(m_vfs);
+	return m_vfs->Open(pathname, flags, mode);
 }
 
 const uapi::char_t* VmService::getDomainName(void)

@@ -112,7 +112,7 @@ syscall_t g_syscalls[512] = {
 /* 002 */	sys_noentry,
 /* 003 */	sys_noentry,
 /* 004 */	sys_noentry,
-/* 005 */	sys_noentry,
+/* 005 */	REMOTE_SYSCALL_3(sys32_open, const sys32_char_t*, sys32_int_t, sys32_mode_t),
 /* 006 */	sys_noentry,
 /* 007 */	sys_noentry,
 /* 008 */	sys_noentry,
@@ -181,7 +181,7 @@ syscall_t g_syscalls[512] = {
 /* 071 */	sys_noentry,
 /* 072 */	sys_noentry,
 /* 073 */	sys_noentry,
-/* 074 */	sys_noentry,
+/* 074 */	REMOTE_SYSCALL_2(sys32_sethostname, sys32_char_t*, sys32_size_t),
 /* 075 */	sys_noentry,
 /* 076 */	sys_noentry,
 /* 077 */	sys_noentry,
@@ -228,7 +228,7 @@ syscall_t g_syscalls[512] = {
 /* 118 */	sys_noentry,
 /* 119 */	sys_noentry,
 /* 120 */	sys_noentry,
-/* 121 */	sys_noentry,
+/* 121 */	REMOTE_SYSCALL_2(sys32_setdomainname, sys32_char_t*, sys32_size_t),
 /* 122 */	REMOTE_SYSCALL_1(sys32_newuname, uapi::new_utsname*),
 /* 123 */	sys_noentry,
 /* 124 */	sys_noentry,
@@ -619,7 +619,6 @@ syscall_t g_syscalls[512] = {
 /* 509 */	sys_noentry,
 /* 510 */	sys_noentry,
 /* 511 */	sys_noentry
-
 };
 
 //-----------------------------------------------------------------------------
