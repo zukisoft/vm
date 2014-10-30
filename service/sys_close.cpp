@@ -26,40 +26,39 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_open (local)
+// sys_close (local)
 //
-// Opens, and possibly creates, a file on the virtual file system
+// Closes a file descriptor
 //
 // Arguments:
 //
 //	context		- SystemCall context object
-//	pathname	- Path to the file on the virtual file system
-//	flags		- File open/creation flags
-//	mode		- Mode mask to assign to the file if created
+//	fd			- File descriptor to be closed
 
-static __int3264 sys_open(const SystemCall::Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+static __int3264 sys_close(const SystemCall::Context* context, int fd)
 {
 	_ASSERTE(context);
-	if(pathname == nullptr) return -LINUX_EFAULT;
 
 	// Attempt to open the specified file system object and associate it with the current process
-	try { return context->Process->AddHandle(context->VirtualMachine->OpenFile(pathname, flags, mode)); }
+	try { context->Process->RemoveHandle(fd); }
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+
+	return 0;
 }
 
-// sys32_open
+// sys32_close
 //
-sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, sys32_int_t flags, sys32_mode_t mode)
+sys32_long_t sys32_close(sys32_context_t context, sys32_int_t fd)
 {
-	return static_cast<sys32_long_t>(sys_open(reinterpret_cast<SystemCall::Context*>(context), pathname, flags, mode));
+	return static_cast<sys32_long_t>(sys_close(reinterpret_cast<SystemCall::Context*>(context), fd));
 }
 
 #ifdef _M_X64
-// sys64_open
+// sys64_close
 //
-sys64_long_t sys64_open(sys64_context_t context, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
+sys64_long_t sys64_close(sys64_context_t context, sys64_int_t fd)
 {
-	return sys_open(reinterpret_cast<SystemCall::Context*>(context), pathname, flags, mode);
+	return sys_close(reinterpret_cast<SystemCall::Context*>(context), fd);
 }
 #endif
 

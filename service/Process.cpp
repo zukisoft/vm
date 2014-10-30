@@ -45,6 +45,58 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 #endif
 
 //-----------------------------------------------------------------------------
+// Process::AddHandle
+//
+// Adds a file system handle to the process
+//
+// Arguments:
+//
+//	handle		- Handle instance to be added to the process
+
+int Process::AddHandle(const FileSystem::HandlePtr& handle)
+{
+	// Allocate a new index (file descriptor) for the handle and insert it
+	int index = m_indexpool.Allocate();
+	if(m_handles.insert(std::make_pair(index, handle)).second) return index;
+
+	// Insertion failed, release the index back to the pool and throw
+	m_indexpool.Release(index);
+	throw LinuxException(LINUX_EBADFD);
+}
+
+//-----------------------------------------------------------------------------
+// Process::GetHandle
+//
+// Accesses a file system handle referenced by the process
+//
+// Arguments:
+//
+//	index		- Index (file descriptor) of the target handle
+
+FileSystem::HandlePtr Process::GetHandle(int index)
+{
+	try { return m_handles.at(index); }
+	catch(...) { throw LinuxException(LINUX_EBADFD); }
+}
+
+//-----------------------------------------------------------------------------
+// Process::RemoveHandle
+//
+// Removes a file system handle from the process
+//
+// Arguments:
+//
+//	index		- Index (file descriptor) of the target handle
+
+void Process::RemoveHandle(int index)
+{
+	// unsafe_erase *should* be OK to use here since values are shared_ptrs,
+	// but if problems start to happen, this is a good place to look at
+	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADFD);
+	m_indexpool.Release(index);
+}
+
+//-----------------------------------------------------------------------------
 // Process::CheckHostProcessClass<x86> (static, private)
 //
 // Verifies that the created host process is 32-bit

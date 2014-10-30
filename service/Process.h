@@ -25,6 +25,7 @@
 #pragma once
 
 #include <array>
+#include <concurrent_unordered_map.h>
 #include <memory>
 #include <linux/elf.h>
 #include "ElfArguments.h"
@@ -33,6 +34,7 @@
 #include "Exception.h"
 #include "HeapBuffer.h"
 #include "Host.h"
+#include "IndexPool.h"
 #include "LinuxException.h"
 #include "Random.h"
 #include "VirtualMachine.h"
@@ -58,12 +60,27 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// AddHandle
+	//
+	// Adds a file system handle to the process
+	int AddHandle(const FileSystem::HandlePtr& handle);
+
 	// Create (static)
 	//
 	// Creates a new process instance via an external Windows host binary
 	template <ElfClass _class>
 	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
 		const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
+
+	// GetHandle
+	//
+	// Accesses a file system handle referenced by the process
+	FileSystem::HandlePtr GetHandle(int index);
+
+	// RemoveHandle
+	//
+	// Removes a file system handle from the process
+	void RemoveHandle(int index);
 
 	// Resume
 	//
@@ -130,6 +147,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
+	// MIN_HANDLE_INDEX
+	//
+	// Minimum allowable file system handle index (file descriptor)
+	static const int MIN_HANDLE_INDEX = 3;
+
 	// StartupInfo
 	//
 	// Information generated when the host process was created that is
@@ -150,6 +172,11 @@ private:
 		SystemInfo() { GetNativeSystemInfo(static_cast<SYSTEM_INFO*>(this)); }
 	};
 
+	// handle_map_t
+	//
+	// Collection of file system handles, keyed on the index (file descriptor)
+	using handle_map_t = Concurrency::concurrent_unordered_map<int, FileSystem::HandlePtr>;
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -164,6 +191,10 @@ private:
 
 	std::unique_ptr<Host>	m_host;				// Hosted windows process
 	const StartupInfo		m_startinfo;		// Hosted process start information
+
+	handle_map_t			m_handles;			// Process file system handles
+	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
+
 	static SystemInfo		s_sysinfo;			// System information
 };
 

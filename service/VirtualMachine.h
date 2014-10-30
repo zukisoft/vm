@@ -63,7 +63,9 @@ public:
 	//
 	~VirtualMachine();
 
-	// move me?
+	// Properties Enumeration
+	//
+	// Defines all of the virtual machine properties accessible via GetProperty/SetProperty
 	enum class Properties
 	{
 		DomainName					= 0,
