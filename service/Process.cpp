@@ -61,7 +61,7 @@ int Process::AddHandle(const FileSystem::HandlePtr& handle)
 
 	// Insertion failed, release the index back to the pool and throw
 	m_indexpool.Release(index);
-	throw LinuxException(LINUX_EBADFD);
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ int Process::AddHandle(const FileSystem::HandlePtr& handle)
 FileSystem::HandlePtr Process::GetHandle(int index)
 {
 	try { return m_handles.at(index); }
-	catch(...) { throw LinuxException(LINUX_EBADFD); }
+	catch(...) { throw LinuxException(LINUX_EBADF); }
 }
 
 //-----------------------------------------------------------------------------
@@ -92,7 +92,7 @@ void Process::RemoveHandle(int index)
 {
 	// unsafe_erase *should* be OK to use here since values are shared_ptrs,
 	// but if problems start to happen, this is a good place to look at
-	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADFD);
+	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADF);
 	m_indexpool.Release(index);
 }
 
