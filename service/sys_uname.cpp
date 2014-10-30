@@ -45,11 +45,11 @@ static __int3264 sys_uname(const SystemCall::Context* context, uapi::old_utsname
 		auto vm = context->VirtualMachine;
 
 		// Copy the string data directly from the VirtualMachine instance into the output buffer
- 		strncpy_s(buf->sysname,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemType,	_TRUNCATE);
-		strncpy_s(buf->nodename,	LINUX__NEW_UTS_LEN + 1, vm->HostName,				_TRUNCATE);
-		strncpy_s(buf->release,		LINUX__NEW_UTS_LEN + 1, vm->OperatingSystemRelease,	_TRUNCATE);
-		strncpy_s(buf->version,		LINUX__NEW_UTS_LEN + 1, vm->Version,				_TRUNCATE);
-		strncpy_s(buf->machine,		LINUX__NEW_UTS_LEN + 1, vm->HardwareIdentifier,		_TRUNCATE);
+		vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,		LINUX__NEW_UTS_LEN + 1);
+		vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,		LINUX__NEW_UTS_LEN + 1);
+		vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,		LINUX__NEW_UTS_LEN + 1);
+		vm->GetProperty(VirtualMachine::Properties::OperatingSystemVersion, buf->version,		LINUX__NEW_UTS_LEN + 1);
+		vm->GetProperty(VirtualMachine::Properties::HardwareIdentifier,		buf->machine,		LINUX__NEW_UTS_LEN + 1);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

@@ -63,14 +63,11 @@ public:
 	virtual std::shared_ptr<FileSystem::Handle>	OpenExecutable(const uapi::char_t* path);
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode);
 
-	virtual const uapi::char_t*		getDomainName(void);
-	virtual void					putDomainName(const uapi::char_t* value);
-	virtual const uapi::char_t*		getHardwareIdentifier(void);
-	virtual const uapi::char_t*		getHostName(void);
-	virtual void					putHostName(const uapi::char_t* value);
-	virtual const uapi::char_t*		getOperatingSystemRelease(void);
-	virtual const uapi::char_t*		getOperatingSystemType(void);
-	virtual const uapi::char_t*		getVersion(void);
+	virtual std::string		GetProperty(VirtualMachine::Properties id);
+	virtual size_t			GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length);
+	virtual void			SetProperty(VirtualMachine::Properties id, std::string value);
+	virtual void			SetProperty(VirtualMachine::Properties id, const uapi::char_t* value);
+	virtual void			SetProperty(VirtualMachine::Properties id, const uapi::char_t* value, size_t length);
 
 private:
 
@@ -115,8 +112,15 @@ private:
 	std::shared_ptr<Process> m_initprocess;
 	std::unique_ptr<VmProcessManager> m_procmgr;
 
+	// property_map_t
+	//
+	// Typedef for a concurrent map<> of property strings
+	using property_map_t = Concurrency::concurrent_unordered_map<VirtualMachine::Properties, std::string>;
+
 	//-------------------------------------------------------------------------
 	// Member Variables
+
+	property_map_t			m_properties;		// Collection of vm properties
 
 	// Virtual Machine Subsystems
 	//

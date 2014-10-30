@@ -63,6 +63,17 @@ public:
 	//
 	~VirtualMachine();
 
+	// move me?
+	enum class Properties
+	{
+		DomainName					= 0,
+		HardwareIdentifier,
+		HostName,
+		OperatingSystemRelease,
+		OperatingSystemType,
+		OperatingSystemVersion,
+	};
+
 	//-------------------------------------------------------------------------
 	// Member Functions
 
@@ -84,52 +95,43 @@ public:
 
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode) = 0;
 
+	//
+	// PROPERTY MANAGEMENT
+	//
+
+	// GetProperty (std::string)
+	//
+	// Retrieves a property as a std::string instance
+	virtual std::string GetProperty(VirtualMachine::Properties id) = 0;
+
+	// GetProperty (char_t*)
+	//
+	// Retrieves a property by writing it into a character buffer
+	virtual size_t GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length) = 0;
+
+	// SetProperty (std::string)
+	//
+	// Sets the value of a property from an std::string
+	virtual void SetProperty(VirtualMachine::Properties id, std::string value) = 0;
+
+	// SetProperty (char_t*)
+	//
+	// Sets the value of a property from a null-terminated character buffer
+	virtual void SetProperty(VirtualMachine::Properties id, const uapi::char_t* value) = 0;
+
+	// SetProperty (char_t*)
+	//
+	// Sets the value of a property from a fixed-length character buffer
+	virtual void SetProperty(VirtualMachine::Properties id, const uapi::char_t* value, size_t length) = 0;
+
 	//-------------------------------------------------------------------------
 	// Properties
-
-	// DomainName
-	//
-	// Gets/sets the current domain name for the virtual machine
-	__declspec(property(get=getDomainName, put=putDomainName)) const uapi::char_t* DomainName;
-	virtual const uapi::char_t* getDomainName(void) = 0;
-	virtual void putDomainName(const uapi::char_t* value) = 0;
-
-	// HarwareIdentifier
-	//
-	// Gets the virtual machine machine identifier, for example "x86_64"
-	__declspec(property(get=getHardwareIdentifier)) const uapi::char_t* HardwareIdentifier;
-	virtual const uapi::char_t* getHardwareIdentifier(void) = 0;
-
-	// HostName
-	//
-	// Gets/sets the current host name for the virtual machine
-	__declspec(property(get=getHostName, put=putHostName)) const uapi::char_t* HostName;
-	virtual const uapi::char_t* getHostName(void) = 0;
-	virtual void putHostName(const uapi::char_t* value) = 0;
 
 	// InstanceID
 	//
 	// Gets the unique identifier for this virtual machine instance
 	__declspec(property(get=getInstanceID)) const uuid_t& InstanceID;
 	const uuid_t& getInstanceID(void) const { return m_instanceid; }
-
-	// OperatingSystemRelease
-	//
-	// Gets the operating system release, for example "3.13.0.37"
-	__declspec(property(get=getOperatingSystemRelease)) const uapi::char_t* OperatingSystemRelease;
-	virtual const uapi::char_t* getOperatingSystemRelease(void) = 0;
-
-	// OperatingSystemType
-	//
-	// Gets the operating system type, for example "Linux"
-	__declspec(property(get=getOperatingSystemType)) const uapi::char_t* OperatingSystemType;
-	virtual const uapi::char_t* getOperatingSystemType(void) = 0;
-
-	// Version
-	//
-	// Gets the virtual machine version, for the most part this is a free-form string
-	__declspec(property(get=getVersion)) const uapi::char_t* Version;
-	virtual const uapi::char_t* getVersion(void) = 0;
 
 protected:
 

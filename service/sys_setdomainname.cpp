@@ -42,7 +42,7 @@ static __int3264 sys_setdomainname(const SystemCall::Context* context, uapi::cha
 	if(name == nullptr) return -LINUX_EFAULT;
 	if(len == 0) return -LINUX_EINVAL;
 
-	try { context->VirtualMachine->DomainName = std::string(name, len).c_str(); }
+	try { context->VirtualMachine->SetProperty(VirtualMachine::Properties::DomainName, name, len); }
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
 	return 0;

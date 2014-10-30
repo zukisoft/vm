@@ -42,6 +42,85 @@ std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 	return m_initprocess;
 }
 
+//-----------------------------------------------------------------------------
+// VmService::GetProperty
+//
+// Retrieves a property as an std::string instance
+//
+// Arguments:
+//
+//	id			- Property identifier
+
+std::string VmService::GetProperty(VirtualMachine::Properties id)
+{
+	return std::string(m_properties[id]);
+}
+
+//-----------------------------------------------------------------------------
+// VmService::GetProperty
+//
+// Retrieves a property into a character buffer
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Destination buffer to receive the value
+//	length		- Length of the destination buffer
+
+size_t VmService::GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length)
+{
+	std::string found = m_properties[id];
+
+	strncpy_s(value, length, found.c_str(), _TRUNCATE);
+	return strlen(value) + 1;
+}
+
+//-----------------------------------------------------------------------------
+// VmService::SetProperty
+//
+// Sets the value of a property via an std::string instance
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Value to set/replace the existing value
+
+void VmService::SetProperty(VirtualMachine::Properties id, std::string value)
+{
+	m_properties[id] = value;
+}
+
+//-----------------------------------------------------------------------------
+// VmService::SetProperty
+//
+// Sets the value of a property via a null-terminated character buffer
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Value to set/replace the existing value
+
+void VmService::SetProperty(VirtualMachine::Properties id, const uapi::char_t* value)
+{
+	m_properties[id] = std::move(std::string(value));
+}
+
+//-----------------------------------------------------------------------------
+// VmService::SetProperty
+//
+// Sets the value of a property via an std::string instance
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Value to set/replace the existing value
+//	length		- Length of the value character buffer, in bytes/chars
+
+void VmService::SetProperty(VirtualMachine::Properties id, const uapi::char_t* value, size_t length)
+{
+	m_properties[id] = std::move(std::string(value, length));
+}
+
 // THIS SHOULD BE IN THE VFS (VMFILESYSTEM), NOT HERE IN THE SERVICE
 void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 {
@@ -127,6 +206,20 @@ void VmService::OnStart(int, LPTSTR*)
 	QueryPerformanceCounter(&qpcbias);
 
 	try {
+
+		//
+		// PROPERTIES
+		//
+		SetProperty(Properties::DomainName, "DOMAIN NAME");
+#ifndef _M_X64
+		SetProperty(Properties::HardwareIdentifier, "i686");
+#else
+		SetProperty(Properties::HardwareIdentifier, "x86_64");
+#endif
+		SetProperty(Properties::HostName, "HOST NAME");
+		SetProperty(Properties::OperatingSystemRelease, "3.0.0.0-todo");
+		SetProperty(Properties::OperatingSystemType, "Linux");
+		SetProperty(Properties::OperatingSystemVersion, "OS VERSION");
 
 		//
 		// SYSTEM LOG
@@ -263,43 +356,11 @@ void VmService::OnStop(void)
 	// (they hold shared_ptr<>s to this service class and will prevent
 	// the destructor from being called -- clearly need to reevaluate this)
 
-	m_procmgr.reset();
-	m_vfs.reset();
-	m_syslog.reset();
+	//m_procmgr.reset();
+	//m_propmgr.reset();
+	//m_vfs.reset();
+	//m_syslog.reset();
 }
-
-////
-//// API
-////
-//// DO I WANT TO BREAK THESE OUT INTO SEPARATE .CPP FILES, ONE FOR EACH?  SOME WILL
-//// GET EXTRAORDINARILY COMPLICATED TO IMPLEMENT
-////
-//__int3264 VmService::newuname(const ProcessPtr& process, uapi::new_utsname* buf)
-//{
-//	uapi::char_t	nodename[MAX_COMPUTERNAME_LENGTH + 1];
-//	DWORD			cch = MAX_COMPUTERNAME_LENGTH + 1;
-//
-//	UNREFERENCED_PARAMETER(process);
-//
-//	if(buf == nullptr) throw LinuxException(LINUX_EFAULT);
-//
-//	// Get the NetBIOS computer name to act as the node name, just null it out on erro
-//	if(!GetComputerNameA(nodename, &cch)) nodename[0] = '\0';
-//
-//	// TODO: These are generally just placeholders, not even sure that "i686" is correct
-//	strncpy_s(buf->sysname, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator", _TRUNCATE);
-//	strncpy_s(buf->nodename, LINUX__NEW_UTS_LEN + 1, nodename, _TRUNCATE);
-//	strncpy_s(buf->release, LINUX__NEW_UTS_LEN + 1, "3.0.0-0-todo", _TRUNCATE);
-//	strncpy_s(buf->version, LINUX__NEW_UTS_LEN + 1, "TODO: Linux Emulator Version", _TRUNCATE);
-//#ifdef _M_X64
-//	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "x86_64", _TRUNCATE);
-//#else
-//	strncpy_s(buf->machine, LINUX__NEW_UTS_LEN + 1, "i686", _TRUNCATE);
-//#endif
-//	strncpy_s(buf->domainname, LINUX__NEW_UTS_LEN + 1, "TODO: DOMAINNAME", _TRUNCATE);
-//
-//	return 0;
-//}
 
 FileSystem::HandlePtr VmService::OpenExecutable(const uapi::char_t* path)
 {
@@ -311,46 +372,6 @@ FileSystem::HandlePtr VmService::OpenFile(const uapi::char_t* pathname, int flag
 {
 	_ASSERTE(m_vfs);
 	return m_vfs->Open(pathname, flags, mode);
-}
-
-const uapi::char_t* VmService::getDomainName(void)
-{
-	return "DOMAIN NAME";
-}
-
-void VmService::putDomainName(const uapi::char_t* value)
-{
-	(value);
-}
-
-const uapi::char_t*	VmService::getHardwareIdentifier(void)
-{
-	return "HARDWARE IDENTIFIER";
-}
-
-const uapi::char_t* VmService::getHostName(void)
-{
-	return "HOST NAME";
-}
-
-void VmService::putHostName(const uapi::char_t* value)
-{
-	(value);
-}
-
-const uapi::char_t* VmService::getOperatingSystemRelease(void)
-{
-	return "OS RELEASE";
-}
-
-const uapi::char_t* VmService::getOperatingSystemType(void)
-{
-	return "OS TYPE";
-}
-
-const uapi::char_t* VmService::getVersion(void)
-{
-	return "VERSION";
 }
 
 //---------------------------------------------------------------------------
