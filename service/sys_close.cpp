@@ -39,8 +39,12 @@ static __int3264 sys_close(const SystemCall::Context* context, int fd)
 {
 	_ASSERTE(context);
 
-	// Attempt to open the specified file system object and associate it with the current process
-	try { context->Process->RemoveHandle(fd); }
+	try { 
+		
+		SystemCall::Impersonation impersonation;
+		context->Process->RemoveHandle(fd);
+	}
+
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
 	return 0;

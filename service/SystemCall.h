@@ -26,6 +26,7 @@
 
 #include "Process.h"
 #include "VirtualMachine.h"
+#include "Win32Exception.h"
 
 #include <syscalls32.h>
 #ifdef _M_X64
@@ -131,6 +132,33 @@ public:
 
 		return -1;			// <--- should be impossible to reach, shuts up the compiler
 	}
+
+	// Impersonation
+	//
+	// Class used to automate the calls to RpcImpersonateClient/RpcRevertToSelf, an
+	// instance of this should be present in every server-side system call to ensure
+	// that the virtual machine is accessed under the calling process' identity:
+	class Impersonation
+	{
+	public:
+
+		// Constructor
+		//
+		Impersonation()
+		{
+			RPC_STATUS result = RpcImpersonateClient(nullptr);
+			if(result != RPC_S_OK) throw Win32Exception(result);
+		}
+
+		// Destructor
+		//
+		~Impersonation() { RpcRevertToSelf(); }
+
+	private:
+
+		Impersonation(const Impersonation&)=delete;
+		Impersonation& operator=(const Impersonation&)=delete;
+	};
 
 private:
 

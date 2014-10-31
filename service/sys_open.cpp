@@ -42,8 +42,12 @@ static __int3264 sys_open(const SystemCall::Context* context, const uapi::char_t
 	_ASSERTE(context);
 	if(pathname == nullptr) return -LINUX_EFAULT;
 
-	// Attempt to open the specified file system object and associate it with the current process
-	try { return context->Process->AddHandle(context->VirtualMachine->OpenFile(pathname, flags, mode)); }
+	try { 
+		
+		SystemCall::Impersonation impersonation;
+		return context->Process->AddHandle(context->VirtualMachine->OpenFile(pathname, flags, mode)); 
+	}
+
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 

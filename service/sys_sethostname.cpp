@@ -42,7 +42,12 @@ static __int3264 sys_sethostname(const SystemCall::Context* context, uapi::char_
 	if(name == nullptr) return -LINUX_EFAULT;
 	if(len == 0) return -LINUX_EINVAL;
 
-	try { context->VirtualMachine->SetProperty(VirtualMachine::Properties::HostName, name, len); }
+	try { 
+		
+		SystemCall::Impersonation impersonation;
+		context->VirtualMachine->SetProperty(VirtualMachine::Properties::HostName, name, len); 
+	}
+	
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
 	return 0;

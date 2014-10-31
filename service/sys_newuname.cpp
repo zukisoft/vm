@@ -42,9 +42,9 @@ static __int3264 sys_newuname(const SystemCall::Context* context, uapi::new_utsn
 
 	try {
 	
+		SystemCall::Impersonation impersonation;
 		auto vm = context->VirtualMachine;
 
-		// Copy the string data directly from the VirtualMachine instance into the output buffer
 		vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,		LINUX__NEW_UTS_LEN + 1);
 		vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,		LINUX__NEW_UTS_LEN + 1);
 		vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,		LINUX__NEW_UTS_LEN + 1);

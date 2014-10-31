@@ -35,7 +35,8 @@ __int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* p
 	(buf);
 	(bufsiz);
 
-	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+	try { 		SystemCall::Impersonation impersonation;
+		return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 

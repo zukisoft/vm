@@ -532,9 +532,6 @@
     <ClCompile Include="sys_readlink.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="SystemCall.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sys_newuname.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>

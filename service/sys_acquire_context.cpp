@@ -39,6 +39,7 @@
 HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
+	SystemCall::Context*		handle = nullptr;	// System call context handle
 	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
 	RPC_STATUS					rpcresult;			// Result from RPC function call
 
@@ -56,10 +57,12 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
 	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
 
-	// Allocate and initialize a Context object to be passed back as the RPC context
-	SystemCall::Context* handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
-
 	try {
+
+		SystemCall::Impersonation impersonation;		// Impersonate the client now
+
+		// Allocate and initialize a Context object to be passed back as the RPC context
+		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
 		// TODO: CHECK THESE POINTERS FOR OVERFLOW - THIS IS 32BIT INTERFACE
 		startinfo->entry_point = reinterpret_cast<sys32_addr_t>(handle->Process->EntryPoint);
@@ -90,6 +93,7 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 HRESULT sys64_acquire_context(handle_t rpchandle, sys64_startup_info* startinfo, sys64_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
+	SystemCall::Context*		handle = nullptr;	// System call context handle
 	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
 	RPC_STATUS					rpcresult;			// Result from RPC function call
 
@@ -107,10 +111,12 @@ HRESULT sys64_acquire_context(handle_t rpchandle, sys64_startup_info* startinfo,
 	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
 	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
 
-	// Allocate and initialize a Context object to be passed back as the RPC context
-	SystemCall::Context* handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
-
 	try {
+
+		SystemCall::Impersonation impersonation;		// Impersonate the client now
+
+		// Allocate and initialize a Context object to be passed back as the RPC context
+		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
 		startinfo->entry_point = reinterpret_cast<sys64_addr_t>(handle->Process->EntryPoint);
 		startinfo->program_break = reinterpret_cast<sys64_addr_t>(handle->Process->ProgramBreak);

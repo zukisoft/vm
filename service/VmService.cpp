@@ -277,7 +277,7 @@ void VmService::OnStart(int, LPTSTR*)
 		// This may work better as a general single registrar in syscalls/SystemCalls
 		// since the service really doesn't care that it has 2 RPC interfaces, they
 		// both just come back to this single service instance via the entry point vectors
-		syscall32_listener::Register(RPC_IF_AUTOLISTEN);
+		syscall32_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 		syscall32_listener::AddObject(this->InstanceID);
 		m_procmgr->HostArguments32 = syscall32_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
@@ -291,7 +291,7 @@ void VmService::OnStart(int, LPTSTR*)
 
 #ifdef _M_X64
 		// x64 builds also register the 64-bit system calls interface
-		syscall64_listener::Register(RPC_IF_AUTOLISTEN);
+		syscall64_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 		syscall64_listener::AddObject(this->InstanceID);
 		m_procmgr->HostArguments64 = syscall64_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)

@@ -33,7 +33,7 @@ __int3264 sys_set_tid_address(const SystemCall::Context* context, void* address)
 	_ASSERTE(context);
 	(address);
 
-	try { return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+	try { 		SystemCall::Impersonation impersonation; return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 

@@ -41,8 +41,12 @@ static __int3264 sys_write(const SystemCall::Context* context, int fd, const voi
 {
 	_ASSERTE(context);
 
-	// Attempt to read data from the specified file system object
-	try { return context->Process->GetHandle(fd)->Write(buf, count); }
+	try { 
+		
+		SystemCall::Impersonation impersonation;
+		return context->Process->GetHandle(fd)->Write(buf, count); 
+	}
+
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
