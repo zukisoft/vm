@@ -58,7 +58,6 @@ public:
 
 	// VirtualMachine Implementation
 	//
-
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 	virtual std::shared_ptr<FileSystem::Handle>	OpenExecutable(const uapi::char_t* path);
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode);
@@ -75,6 +74,7 @@ private:
 	VmService& operator=(const VmService &rhs)=delete;
 
 	// TEST - HACK JOB TO SOLVE THE PROBLEM FOR NOW
+	// GET RID OF THIS
 	virtual std::shared_ptr<VirtualMachine> ToSharedPointer(void)
 	{
 		return shared_from_this();
@@ -89,6 +89,7 @@ private:
 	// LoadInitialFileSystem
 	//
 	// Loads the initial file system from an initramfs CPIO archive
+	// THIS MOVES TO THE VFS; WHY IS IT HERE
 	void LoadInitialFileSystem(const tchar_t* archivefile);
 
 	// OnStart (Service)
@@ -102,15 +103,7 @@ private:
 	void OnStop(void);
 
 	//-------------------------------------------------------------------------
-	// SystemCalls Implementation
-
-	// FindClientProcess
-	//
-	// Locates a Process instance associated with a hosted client PID
-	////virtual std::shared_ptr<Process> FindClientProcess(uint32_t clientpid);
-
-	std::shared_ptr<Process> m_initprocess;
-	std::unique_ptr<VmProcessManager> m_procmgr;
+	// Private Type Declarations
 
 	// property_map_t
 	//
@@ -120,12 +113,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	property_map_t			m_properties;		// Collection of vm properties
-
-	// Virtual Machine Subsystems
-	//
-	std::unique_ptr<VmFileSystem>	m_vfs;
-	std::unique_ptr<VmSystemLog>	m_syslog;
+	property_map_t						m_properties;	// Collection of vm properties
+	std::shared_ptr<Process>			m_initprocess;	// initial process object
+	std::unique_ptr<VmProcessManager>	m_procmgr;		// Process Manager
+	std::unique_ptr<VmSystemLog>		m_syslog;		// System Log
+	std::unique_ptr<VmFileSystem>		m_vfs;			// Virtual File System
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERICEPARAMETERS CLASS
