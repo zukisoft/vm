@@ -269,9 +269,6 @@
     <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="FileDescriptor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\elf.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
@@ -500,9 +497,6 @@
       <Filter>Generated Files</Filter>
     </ClCompile>
     <ClCompile Include="Process.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FileDescriptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Host.cpp">
