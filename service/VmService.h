@@ -37,7 +37,12 @@
 #include "VmProcessManager.h"
 #include "VmSystemLog.h"
 
+// File systems
+//
+#include "HostFileSystem.h"
+#include "ProcFileSystem.h"
 #include "RootFileSystem.h"
+#include "TempFileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -49,6 +54,9 @@
 // Needs to inherit from enable_shared_from_this<VmService> to trigger the 
 // use of std::shared_ptr<> in servicelib.  Shared pointer currently needs to
 // be used to implement VirtualMachine
+//
+// Should this derive from FileSystem to be procfs
+// Should this implement the process manager or keep it separate
 
 class VmService : public Service<VmService>, public VirtualMachine,	public std::enable_shared_from_this<VmService>
 {
@@ -92,6 +100,8 @@ private:
 	// THIS MOVES TO THE VFS; WHY IS IT HERE
 	void LoadInitialFileSystem(const tchar_t* archivefile);
 
+	FileSystemPtr MountProcFileSystem(const char_t* name, uint32_t flags, const void* data);
+
 	// OnStart (Service)
 	//
 	// Invoked when the service is started
@@ -118,6 +128,7 @@ private:
 	std::unique_ptr<VmProcessManager>	m_procmgr;		// Process Manager
 	std::unique_ptr<VmSystemLog>		m_syslog;		// System Log
 	std::unique_ptr<VmFileSystem>		m_vfs;			// Virtual File System
+	std::shared_ptr<FileSystem>			m_procfs;		// PROCFS file system instance
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERICEPARAMETERS CLASS

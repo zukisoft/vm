@@ -38,6 +38,26 @@ VmFileSystem::VmFileSystem(const FileSystemPtr& rootfs) : m_rootfs(rootfs)
 }
 
 //-----------------------------------------------------------------------------
+// VmFileSystem::AddFileSystem
+//
+// Adds a file system to the collection of available file systems
+//
+// Arguments:
+//
+//	name		- Name of the file system (e.g., "procfs")
+//	mountfunc	- File system mount function
+
+void VmFileSystem::AddFileSystem(const char_t* name, FileSystem::mount_func mountfunc)
+{
+	std::lock_guard<std::mutex> critsec(m_fslock);
+
+	// Attempt to construct and insert a new entry for the file system
+	auto result = m_availfs.insert(std::make_pair(name, mountfunc));
+	if(!result.second) throw Win32Exception(ERROR_ALREADY_EXISTS);
+
+}
+
+//-----------------------------------------------------------------------------
 // VmFileSystem::Create (static)
 //
 // Creates a new file system using the provided mount as the absolute root

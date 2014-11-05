@@ -358,6 +358,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="NullCharacterDevice.h" />
     <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
+    <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="SystemCall.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
@@ -619,6 +620,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="sys_acquire_context.cpp" />
     <ClCompile Include="sys_close.cpp" />
     <ClCompile Include="sys_olduname.cpp" />

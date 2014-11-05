@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ROOTFILESYSTEM_H_
-#define __ROOTFILESYSTEM_H_
+#ifndef __PROCFILESYSTEM_H_
+#define __PROCFILESYSTEM_H_
 #pragma once
 
 #include <memory>
@@ -34,36 +34,32 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem
+// ProcFileSystem
 //
-// RootFileSystem implements a file system that contains one and only one node
-// that does not support creation of any child objects.  The intent behind this
-// file system is to provide a default master root that would be overmounted by
-// another file system when the virtual machine is starting up if no other
-// more robust default file system is available
+// todo: words
 
-class RootFileSystem : public FileSystem, public FileSystem::Directory, public FileSystem::Alias,
-	public std::enable_shared_from_this<RootFileSystem>
+class ProcFileSystem : public FileSystem, public FileSystem::Directory, public FileSystem::Alias,
+	public std::enable_shared_from_this<ProcFileSystem>
 {
 public:
 
 	// Destructor
-	virtual ~RootFileSystem()=default;
+	virtual ~ProcFileSystem()=default;
 
-	// Mount
+	// Create
 	//
-	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data);
+	// Creates an instance of the file system
+	static FileSystemPtr Create(void);
 
 private:
 
-	RootFileSystem(const RootFileSystem&)=delete;
-	RootFileSystem& operator=(const RootFileSystem&)=delete;
+	ProcFileSystem(const ProcFileSystem&)=delete;
+	ProcFileSystem& operator=(const ProcFileSystem&)=delete;
 
 	// Constructor
 	//
-	RootFileSystem()=default;
-	friend class std::_Ref_count_obj<RootFileSystem>;
+	ProcFileSystem()=default;
+	friend class std::_Ref_count_obj<ProcFileSystem>;
 
 	// FileSystem Implementation
 	//
@@ -101,4 +97,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __ROOTFILESYSTEM_H_
+#endif	// __PROCFILESYSTEM_H_

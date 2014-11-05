@@ -42,6 +42,27 @@ std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 	return m_initprocess;
 }
 
+FileSystemPtr VmService::MountProcFileSystem(const char_t* name, uint32_t flags, const void* data)
+{
+	(name);
+	(flags);
+	(data);
+
+	_ASSERTE(m_procfs);
+
+	//
+	// todo: can different mount options be used for different mounts of procfs?
+	// typically there is only going to be one of these
+	//
+	// ANSWER: YES (need to deal with that - can use an std::bind() instance
+	// of Mount() that references the underlying singleton?
+	//
+
+	// PROCFS is a singleton file system within a virtual machine instance, 
+	// always return a reference to the existing instance
+	return m_procfs;
+}
+
 //-----------------------------------------------------------------------------
 // VmService::GetProperty
 //
@@ -199,6 +220,8 @@ void VmService::LoadInitialFileSystem(const tchar_t* archivefile)
 
 void VmService::OnStart(int, LPTSTR*)
 {
+	using namespace std::placeholders;
+
 	LARGE_INTEGER				qpcbias;			// QueryPerformanceCounter bias
 
 	// The system log needs to know what value acts as zero for the timestamps,
@@ -238,9 +261,19 @@ void VmService::OnStart(int, LPTSTR*)
 		// VIRTUAL FILE SYSTEM
 		//
 
+		m_procfs = ProcFileSystem::Create();
+
 		// clearly this is temporary code
-		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr));
+		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr, 0, nullptr));
+
+		m_vfs->AddFileSystem("hostfs", HostFileSystem::Mount);
+		m_vfs->AddFileSystem("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2, _3));
+		//m_vfs->AddFileSystem("rootfs", RootFileSystem::Mount);
+		m_vfs->AddFileSystem("tmpfs", TempFileSystem::Mount);
+
 		m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
+		m_vfs->CreateDirectory("/proc");
+		m_vfs->Mount(nullptr, "/proc", "procfs", 0, nullptr);
 		//m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???

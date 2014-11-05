@@ -50,7 +50,7 @@ TempFileSystem::TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, co
 //	flags		- Standard mounting flags and attributes
 //	data		- Additional file-system specific mounting options
 
-FileSystemPtr TempFileSystem::Mount(const uapi::char_t*, uint32_t flags, void* data)
+FileSystemPtr TempFileSystem::Mount(const uapi::char_t*, uint32_t flags, const void* data)
 {
 	// Create the shared MountPoint instance to be passed to all file system objects
 	std::shared_ptr<MountPoint> mountpoint = std::make_shared<MountPoint>(flags, data);

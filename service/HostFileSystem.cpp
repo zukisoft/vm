@@ -192,7 +192,7 @@ static HeapBuffer<tchar_t> HandleToPath(HANDLE handle)
 //	flags		- Standard mounting flags and attributes
 //	data		- Additional file-system specific mounting options
 
-FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, void* data)
+FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, const void* data)
 {
 	std::shared_ptr<MountPoint>			mountpoint;			// MountPoint instance
 

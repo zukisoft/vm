@@ -323,6 +323,9 @@
     <ClInclude Include="SystemCall.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ProcFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -561,6 +564,9 @@
     </ClCompile>
     <ClCompile Include="sys_write.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

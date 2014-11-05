@@ -24,7 +24,9 @@
 #define __VMFILESYSTEM_H_
 #pragma once
 
+#include <map>
 #include <memory>
+#include <mutex>
 #include <type_traits>
 #include <concurrent_unordered_map.h>
 #include <linux/fcntl.h>
@@ -33,8 +35,9 @@
 #include "LinuxException.h"
 #include "FileSystem.h"
 #include "PathSplitter.h"
+#include "Win32Exception.h"
 
-// remove me
+// todo: remove me?
 #include <PathCch.h>
 
 #pragma warning(push, 4)
@@ -61,6 +64,11 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Member Functions
+
+	// AddFileSystem
+	//
+	// Adds a file system to the collection of available file systems
+	void AddFileSystem(const char_t* name, FileSystem::mount_func mount_func);
 
 	// Create (static)
 	//
@@ -120,6 +128,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
+	// fs_map_t
+	//
+	// Typedef for a map<> of available file systems
+	using fs_map_t = std::map<std::string, FileSystem::mount_func>;
+
 	// mount_map_t
 	//
 	// Typedef for a concurrent map<> of mounted file systems and the alias they are mounted in
@@ -127,6 +140,9 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Member Variables
+
+	std::mutex					m_fslock;		// File system critical section
+	fs_map_t					m_availfs;		// Available file systems
 
 	FileSystemPtr				m_rootfs;		// Root file system
 	mount_map_t					m_mounts;		// Collection of mounted file systems

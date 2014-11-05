@@ -21,44 +21,38 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "RootFileSystem.h"
+#include "ProcFileSystem.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::getNode (private)
+// ProcFileSystem::getNode (private)
 //
 // Accesses the topmost node referenced by this alias
 
-FileSystem::NodePtr RootFileSystem::getNode(void) 
+FileSystem::NodePtr ProcFileSystem::getNode(void) 
 { 
 	std::lock_guard<std::mutex> critsec(m_lock);
 	return m_mounted.empty() ? shared_from_this() : m_mounted.top();
 }
 	
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount (static)
+// ProcFileSystem::Create (static)
 //
-// Mounts the root file system
+// Creates an instance of the file system
 //
 // Arguments:
 //
-//	source		- Unused for root file system
-//	flags		- Mounting flags
-//	data		- Filesystem-specific mounting data
+//	NONE
 
-FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source, uint32_t flags, const void* data)
+FileSystemPtr ProcFileSystem::Create(void)
 {
-	UNREFERENCED_PARAMETER(source);
-	UNREFERENCED_PARAMETER(flags);
-	UNREFERENCED_PARAMETER(data);
-
 	// Mounting the root file system is as simple as creating an instance of it
-	return std::make_shared<RootFileSystem>();
+	return std::make_shared<ProcFileSystem>();
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount (private)
+// ProcFileSystem::Mount (private)
 //
 // Mounts/binds a foreign node to this alias, obscuring the previous node
 //
@@ -66,7 +60,7 @@ FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 //
 //	node		- Foreign node to be mounted on this alias
 
-void RootFileSystem::Mount(const FileSystem::NodePtr& node)
+void ProcFileSystem::Mount(const FileSystem::NodePtr& node)
 {
 	_ASSERTE(node);
 
@@ -76,7 +70,7 @@ void RootFileSystem::Mount(const FileSystem::NodePtr& node)
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Unmount (private)
+// ProcFileSystem::Unmount (private)
 //
 // Unmounts/unbinds a node from this alias, revealing the previously bound node
 //
@@ -84,7 +78,7 @@ void RootFileSystem::Mount(const FileSystem::NodePtr& node)
 //
 //	NONE
 
-void RootFileSystem::Unmount(void)
+void ProcFileSystem::Unmount(void)
 {
 	// Pop the topmost node instance from the stack, if one even exists
 	std::lock_guard<std::mutex> critsec(m_lock);
@@ -92,7 +86,7 @@ void RootFileSystem::Unmount(void)
 }
 	
 //-----------------------------------------------------------------------------
-// RootFileSystem::Resolve
+// ProcFileSystem::Resolve
 //
 // Resolves a FileSystem::Alias from a relative object path
 //
@@ -104,7 +98,7 @@ void RootFileSystem::Unmount(void)
 //	flags		- Resolution flags (O_NOFOLLOW, O_DIRECTORY, etc)
 //	symlinks	- Number of followed symbolic links for O_LOOP processing
 
-FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int, int*)
+FileSystem::AliasPtr ProcFileSystem::Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int, int*)
 {
 	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
 
