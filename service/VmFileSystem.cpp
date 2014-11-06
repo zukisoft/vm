@@ -54,7 +54,6 @@ void VmFileSystem::AddFileSystem(const char_t* name, FileSystem::mount_func moun
 	// Attempt to construct and insert a new entry for the file system
 	auto result = m_availfs.insert(std::make_pair(name, mountfunc));
 	if(!result.second) throw Win32Exception(ERROR_ALREADY_EXISTS);
-
 }
 
 //-----------------------------------------------------------------------------
@@ -165,27 +164,27 @@ void VmFileSystem::CreateSymbolicLink(const uapi::char_t* path, const uapi::char
 //	flags		- Mounting flags
 //	data		- File-system specific mounting options/data
 
-#include "TempFileSystem.h"	// todo: remove me
-#include "HostFileSystem.h" // todo: remove me
 void VmFileSystem::Mount(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data)
 {
-	(source);
-	(filesystem); // <--- ENODEV if filesystem is bad/unknown
+	std::lock_guard<std::mutex> critsec(m_fslock);
+
+	// Attempt to locate the filesystem by name in the collection
+	auto result = m_availfs.find(filesystem);
+	if(result == m_availfs.end()) throw LinuxException(LINUX_ENODEV);
+
+	// Create the file system by passing the arguments into it's mount function
+	auto mounted = result->second(source, flags, data);
 
 	// Resolve the target alias and check that it's referencing a directory object
 	FileSystem::AliasPtr alias = ResolvePath(target);
 	if(alias->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
-	/// TESTING
-	FileSystemPtr hfs = TempFileSystem::Mount(source, flags, data);
-	//FileSystemPtr hfs = HostFileSystem::Mount(source, flags, data);
-
 	// Overmount the target alias with the new file system's root node
-	alias->Mount(hfs->Root->Node);
+	alias->Mount(mounted->Root->Node);
 
 	// File system was successfully mounted, insert it into the member collection.
 	// This will keep both the alias and the file system alive
-	m_mounts.insert(std::make_pair(alias, hfs));
+	m_mounts.insert(std::make_pair(alias, mounted));
 }
 
 //-----------------------------------------------------------------------------

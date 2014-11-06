@@ -272,11 +272,12 @@ void VmService::OnStart(int, LPTSTR*)
 		m_vfs->AddFileSystem("tmpfs", TempFileSystem::Mount);
 
 		m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
-		m_vfs->CreateDirectory("/proc");
-		m_vfs->Mount(nullptr, "/proc", "procfs", 0, nullptr);
-		//m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
+		///m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???
+		//m_vfs->CreateDirectory("/proc");
+		//m_vfs->Mount(nullptr, "/proc", "procfs", 0, nullptr);
+
 
 		//
 		// INITRAMFS
