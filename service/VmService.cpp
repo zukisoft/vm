@@ -343,7 +343,7 @@ void VmService::OnStart(int, LPTSTR*)
 	// LAUNCH INIT
 	//
 	std::string initpath = std::to_string(vm_initpath);
-	const uapi::char_t* args[] = { "First Argument", "Second Argument", nullptr };
+	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	//why is shared_from_this() null here
 	//auto test = VirtualMachine::shared_from_this();
 	m_initprocess = m_procmgr->CreateProcess(shared_from_this(), initpath.c_str(), args, nullptr);

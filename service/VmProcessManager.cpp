@@ -28,9 +28,9 @@
 // XXXX_MAGIC
 //
 // Arrays that define the supported binary magic numbers
-static uint8_t ANSI_SCRIPT_MAGIC[]		= { 0x23, 0x21, 0x20 };
-static uint8_t UTF8_SCRIPT_MAGIC[]		= { 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20 };
-static uint8_t UTF16_SCRIPT_MAGIC[]		= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00 };
+static uint8_t ANSI_SCRIPT_MAGIC[]	= { 0x23, 0x21 };							// "#!"
+static uint8_t UTF8_SCRIPT_MAGIC[]	= { 0xEF, 0xBB, 0xBF, 0x23, 0x21 };			// "#!"
+static uint8_t UTF16_SCRIPT_MAGIC[]	= { 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00 };	// "#!"
 
 //-----------------------------------------------------------------------------
 // VmProcessManager::CreateProcess
@@ -53,6 +53,8 @@ std::shared_ptr<Process> VmProcessManager::CreateProcess(const std::shared_ptr<V
 	FileSystem::HandlePtr handle = vm->OpenExecutable(path);
 
 	// Read in just enough from the head of the file to look for magic numbers
+	uint8_t magic[LINUX_EI_NIDENT];
+
 	MagicNumbers magics;
 	size_t read = handle->Read(&magics, sizeof(MagicNumbers));
 	handle->Seek(0, LINUX_SEEK_SET);
@@ -75,10 +77,13 @@ std::shared_ptr<Process> VmProcessManager::CreateProcess(const std::shared_ptr<V
 		}
 	}
 
+	// TODO: Linux doesn't support UTF-16 or UTF-8 encoding; these can go. If the file is UTF-8 that's fine as long as it
+	// doesn't have the encoding prefix bytes
+
 	// Check for UTF-16 interpreter script
 	else if((read >= sizeof(UTF16_SCRIPT_MAGIC)) && (memcmp(&magics.UTF16Script, &UTF16_SCRIPT_MAGIC, sizeof(UTF16_SCRIPT_MAGIC)) == 0)) {
 
-		// TODO
+		// TODO : need to use locale
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
@@ -86,7 +91,7 @@ std::shared_ptr<Process> VmProcessManager::CreateProcess(const std::shared_ptr<V
 	// Check for UTF-8 interpreter script
 	else if((read >= sizeof(UTF8_SCRIPT_MAGIC)) && (memcmp(&magics.UTF8Script, &UTF8_SCRIPT_MAGIC, sizeof(UTF8_SCRIPT_MAGIC)) == 0)) {
 
-		// TODO
+		// TODO : need to use locale
 		// parse binary and command line, recursively call back into Create()
 		throw Exception(E_NOTIMPL);
 	}
@@ -94,9 +99,39 @@ std::shared_ptr<Process> VmProcessManager::CreateProcess(const std::shared_ptr<V
 	// Check for ANSI interpreter script
 	else if((read >= sizeof(ANSI_SCRIPT_MAGIC)) && (memcmp(&magics.AnsiScript, &ANSI_SCRIPT_MAGIC, sizeof(ANSI_SCRIPT_MAGIC)) == 0)) {
 
-		// TODO
-		// parse binary and command line, recursively call back into Create()
-		throw Exception(E_NOTIMPL);
+		char_t *begin, *end;					// String tokenizing pointers
+
+		// Reset the file pointer back to the immediately after the magic numbers
+		handle->Seek(sizeof(ANSI_SCRIPT_MAGIC), LINUX_SEEK_SET);
+
+		// Read up to the allocated buffer worth of data from the file
+		HeapBuffer<uapi::char_t> buffer(MAX_PATH);
+		char_t *eof = &buffer + handle->Read(&buffer, buffer.Size);
+
+		// Find the interperter string, if not present the script is invalid
+		for(begin = &buffer; (begin < eof) && (*begin) && (*begin != '\n') && (isspace(*begin)); begin++);
+		for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!isspace(*end)); end++);
+		if(begin == end) throw LinuxException(LINUX_ENOEXEC);
+		std::string interpreter(begin, end);
+
+		// Find the optional argument string
+		for(begin = end; (begin < eof) && (*begin) && (*begin != '\n') && (isspace(*begin)); begin++);
+		for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!isspace(*end)); end++);
+		std::string argument(begin, end);
+
+		// Create a new argument array to pass back in, using the parsed interpreter and argument
+		std::vector<const char_t*> newarguments;
+		newarguments.push_back(interpreter.c_str());
+		if(argument.length()) newarguments.push_back(argument.c_str());
+		newarguments.push_back(path);
+
+		// Append the original argv[1] .. argv[n] to the new argument array
+		if(arguments && (*arguments)) arguments++;
+		while((arguments) && (*arguments)) { newarguments.push_back(*arguments); arguments++; }
+		newarguments.push_back(nullptr);
+
+		// Recursively call CreateProcess with the new path and arguments
+		return CreateProcess(vm, interpreter.c_str(), newarguments.data(), environment);
 	}
 
 	// No other formats are currently recognized as valid executable binaries

@@ -85,8 +85,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		harness.SetParameter(_T("process.host.32bit"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
 		harness.SetParameter(_T("process.host.64bit"), _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
 		harness.SetParameter(_T("process.host.timeout"), 10000);
-		harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
-		//harness.SetParameter(_T("vm.initpath"), _T("/init"));
+		//harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
+		harness.SetParameter(_T("vm.initpath"), _T("/init"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()
