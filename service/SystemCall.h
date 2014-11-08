@@ -120,8 +120,7 @@ public:
 	{
 		try { std::rethrow_exception(ex); }
 		catch(LinuxException& ex) {
-			OutputDebugString(L"LINUX EXCEPTION!\r\n");
-			return ex.Code;
+			return -ex.Code;
 		}
 		catch(Exception& ex) {
 
