@@ -170,6 +170,9 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 	try {
 
+		// The ELF loader requires the file handle to be at position zero
+		handle->Seek(0, LINUX_SEEK_SET);
+
 		// Generate the AT_RANDOM data to be associated with this process
 		Random::Generate(random, 16);
 

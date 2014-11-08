@@ -92,24 +92,6 @@ private:
 	VmProcessManager& operator=(const VmProcessManager&)=delete;
 
 	//-------------------------------------------------------------------------
-	// Private Member Functions
-
-	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	// MagicNumbers
-	//
-	// Union that defines the magic numbers for supported binary formats
-	typedef union {
-
-		uint8_t	AnsiScript[3];				// 0x23, 0x21, 0x20
-		uint8_t	UTF8Script[6];				// 0xEF, 0xBB, 0xBF, 0x23, 0x21, 0x20
-		uint8_t	UTF16Script[8];				// 0xFF, 0xFE, 0x23, 0x00, 0x21, 0x00, 0x20, 0x00
-		uint8_t	ElfBinary[LINUX_EI_NIDENT];	// "\177ELF"
-	
-	} MagicNumbers;
-
-	//-------------------------------------------------------------------------
 	// Member Variables
 
 	std::tstring			m_hostpath32;			// 32-bit host process path
