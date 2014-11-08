@@ -97,6 +97,15 @@ public:
 	// mount
 	void Mount(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data);
 
+	// ResolvePath
+	//
+	// Resolves an alias instance based on a path
+	FileSystem::AliasPtr ResolvePath(const uapi::char_t* absolute);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative);
+
+	bool TryResolvePath(const uapi::char_t* absolute, FileSystem::AliasPtr& result);
+	bool TryResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative, FileSystem::AliasPtr& result);
+
 	// fsync
 	//void 
 
@@ -116,14 +125,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// ResolvePath
-	//
-	// Resolves an alias instance based on a path
-	FileSystem::AliasPtr ResolvePath(const uapi::char_t* absolute);
-	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative);
-
-	bool TryResolvePath(const uapi::char_t* absolute, FileSystem::AliasPtr& result);
-	bool TryResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative, FileSystem::AliasPtr& result);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

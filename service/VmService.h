@@ -56,8 +56,10 @@
 // use of std::shared_ptr<> in servicelib.  Shared pointer currently needs to
 // be used to implement VirtualMachine
 //
-// Should this derive from FileSystem to be procfs
-// Should this implement the process manager or keep it separate
+// Should rename this to "Vm" or "VmInstance", VmService is accurate but is
+// not really representative anymore since this is becoming the one-stop shop
+// for the entire VirtualMachine interface implementation.  VmFileSystem still
+// exists for now, but will likely be collapsed into this like the others
 
 class VmService : public Service<VmService>, public VirtualMachine,	public std::enable_shared_from_this<VmService>
 {
@@ -70,6 +72,7 @@ public:
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 	virtual std::shared_ptr<FileSystem::Handle>	OpenExecutable(const uapi::char_t* path);
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode);
+	virtual size_t								ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length);
 
 	virtual std::string		GetProperty(VirtualMachine::Properties id);
 	virtual size_t			GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length);

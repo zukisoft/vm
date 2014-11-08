@@ -97,6 +97,8 @@ public:
 
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode) = 0;
 
+	virtual size_t ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length) = 0;
+
 	//
 	// PROPERTY MANAGEMENT
 	//

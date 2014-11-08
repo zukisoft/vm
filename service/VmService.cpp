@@ -426,9 +426,11 @@ void VmService::OnStart(int, LPTSTR*)
 	//
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
+	// TODO: NEED INITIAL ENVIRONMENT
 	m_initprocess = CreateProcess(initpath.c_str(), args, nullptr);
 	m_initprocess->Resume();
 
+	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?
 	// TODO: MONITOR INIT PROCESS
 
 	// need to maintain a reference to the Process object since
@@ -461,15 +463,6 @@ void VmService::OnStop(void)
 	// Remove the 32-bit system calls RPC interface
 	syscall32_listener::RemoveObject(this->InstanceID);
 	syscall32_listener::Unregister(true);
-
-	// Shut down and destroy all of the virtual machine subsystems
-	// (they hold shared_ptr<>s to this service class and will prevent
-	// the destructor from being called -- clearly need to reevaluate this)
-
-	//m_procmgr.reset();
-	//m_propmgr.reset();
-	//m_vfs.reset();
-	//m_syslog.reset();
 }
 
 FileSystem::HandlePtr VmService::OpenExecutable(const uapi::char_t* path)
@@ -482,6 +475,19 @@ FileSystem::HandlePtr VmService::OpenFile(const uapi::char_t* pathname, int flag
 {
 	_ASSERTE(m_vfs);
 	return m_vfs->Open(pathname, flags, mode);
+}
+
+size_t VmService::ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length)
+{
+	_ASSERTE(m_vfs);
+
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(length == 0) throw LinuxException(LINUX_ENOENT);
+
+	auto node = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(m_vfs->ResolvePath(path)->Node);
+	if(!node) throw LinuxException(LINUX_ENOENT);
+
+	return node->ReadTarget(buffer, length);
 }
 
 //---------------------------------------------------------------------------

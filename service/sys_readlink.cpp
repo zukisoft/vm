@@ -27,16 +27,18 @@
 
 // sys_readlink
 //
-// words
-__int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, void* buf, size_t bufsiz)
+// Reads the value of a symbolic link
+__int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, uapi::char_t* buf, size_t bufsiz)
 {
 	_ASSERTE(context);
-	(pathname);
-	(buf);
-	(bufsiz);
+	if(buf == nullptr) return -LINUX_EFAULT;
 
-	try { 		SystemCall::Impersonation impersonation;
-		return -1; /*context->VirtualMachine->DOUNAME(context->Process, buf);*/ }
+	try { 		
+		
+		SystemCall::Impersonation impersonation;
+		return context->VirtualMachine->ReadSymbolicLink(pathname, buf, bufsiz);
+	}
+
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
