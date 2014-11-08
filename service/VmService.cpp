@@ -35,6 +35,97 @@ using syscall32_listener = RpcInterface<&SystemCalls32_v1_0_s_ifspec>;
 using syscall64_listener = RpcInterface<&SystemCalls64_v1_0_s_ifspec>;
 #endif
 
+// INTERPRETER_SCRIPT_MAGIC
+//
+// Magic number present at the head of an interpreter script
+static uint8_t INTERPRETER_SCRIPT_MAGIC[] = { 0x23, 0x21 };		// "#!"
+
+//-----------------------------------------------------------------------------
+// VmService::CreateProcess (private)
+//
+// Creates a new Process instance from a file system binary
+//
+// Arguments:
+//
+//	path			- Path to the file system object to execute as a process
+//	arguments		- Pointer to an array of command line argument strings
+//	environment		- Pointer to the process environment variables
+
+std::shared_ptr<Process> VmService::CreateProcess(const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment)
+{
+	if(!path) throw LinuxException(LINUX_EFAULT);
+
+	// Attempt to open an execute handle for the specified path
+	FileSystem::HandlePtr handle = OpenExecutable(path);
+
+	// Read in enough data from the head of the file to determine the type
+	uint8_t magic[LINUX_EI_NIDENT];
+	size_t read = handle->Read(magic, LINUX_EI_NIDENT);
+
+	// ELF BINARY
+	//
+	if((read >= LINUX_EI_NIDENT) && (memcmp(magic, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
+
+		switch(magic[LINUX_EI_CLASS]) {
+
+			// ELFCLASS32: Create a 32-bit host process for the binary
+			// TODO: clean up the arguments, I hate c_str(). need to work on svctl::parameter
+			case LINUX_ELFCLASS32: 
+				return Process::Create<ElfClass::x86>(shared_from_this(), handle, arguments, environment, ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str());
+#ifdef _M_X64
+			// ELFCLASS64: Create a 64-bit host process for the binary
+			case LINUX_ELFCLASS64: 
+				return Process::Create<ElfClass::x86_64>(shared_from_this(), handle, arguments, environment, ((svctl::tstring)process_host_64bit).c_str(), m_hostarguments64.c_str());
+#endif
+			// Any other ELFCLASS -> ENOEXEC	
+			default: throw LinuxException(LINUX_ENOEXEC);
+		}
+	}
+
+	// INTERPRETER SCRIPT
+	//
+	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC, sizeof(INTERPRETER_SCRIPT_MAGIC)) == 0)) {
+
+		char_t *begin, *end;					// String tokenizing pointers
+
+		// Move the file pointer back to the position immediately after the magic number
+		handle->Seek(sizeof(INTERPRETER_SCRIPT_MAGIC), LINUX_SEEK_SET);
+
+		// Read up to the allocated buffer's worth of data from the file
+		HeapBuffer<uapi::char_t> buffer(MAX_PATH);
+		char_t *eof = &buffer + handle->Read(&buffer, buffer.Size);
+
+		// Find the interperter string, if not present the script is invalid
+		for(begin = &buffer; (begin < eof) && (*begin) && (*begin != '\n') && (isspace(*begin)); begin++);
+		for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!isspace(*end)); end++);
+		if(begin == end) throw LinuxException(LINUX_ENOEXEC);
+		std::string interpreter(begin, end);
+
+		// Find the optional argument string
+		for(begin = end; (begin < eof) && (*begin) && (*begin != '\n') && (isspace(*begin)); begin++);
+		for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!isspace(*end)); end++);
+		std::string argument(begin, end);
+
+		// Create a new argument array to pass back in, using the parsed interpreter and argument
+		std::vector<const char_t*> newarguments;
+		newarguments.push_back(interpreter.c_str());
+		if(argument.length()) newarguments.push_back(argument.c_str());
+		newarguments.push_back(path);
+
+		// Append the original argv[1] .. argv[n] pointers to the new argument array
+		if(arguments && (*arguments)) arguments++;
+		while((arguments) && (*arguments)) { newarguments.push_back(*arguments); arguments++; }
+		newarguments.push_back(nullptr);
+
+		// Recursively call back into CreateProcess with the interpreter path and arguments
+		return CreateProcess(interpreter.c_str(), newarguments.data(), environment);
+	}
+
+	// UNSUPPORTED BINARY FORMAT
+	//
+	throw LinuxException(LINUX_ENOEXEC);
+}
+
 std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 {
 	// dummy for testing
@@ -292,15 +383,6 @@ void VmService::OnStart(int, LPTSTR*)
 		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
 
 		//
-		// PROCESS MANAGER
-		//
-		m_procmgr = std::make_unique<VmProcessManager>();
-		m_procmgr->HostPath32 = static_cast<std::tstring>(process_host_32bit).c_str();
-#ifdef _M_X64
-		m_procmgr->HostPath64 = static_cast<std::tstring>(process_host_64bit).c_str();
-#endif
-
-		//
 		// RPC INTERFACES
 		//
 
@@ -313,10 +395,10 @@ void VmService::OnStart(int, LPTSTR*)
 		// both just come back to this single service instance via the entry point vectors
 		syscall32_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 		syscall32_listener::AddObject(this->InstanceID);
-		m_procmgr->HostArguments32 = syscall32_listener::GetBindingString(this->InstanceID).c_str();
+		m_hostarguments32 = syscall32_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
 		OutputDebugString(L"BINDSTR32: ");
-		OutputDebugString(m_procmgr->HostArguments32);
+		OutputDebugString(m_hostarguments32.c_str());
 		OutputDebugString(L"\r\n");
 
 		// THESE ARE EXACTLY THE SAME, WHY DO I HAVE TWO OF THEM
@@ -327,10 +409,10 @@ void VmService::OnStart(int, LPTSTR*)
 		// x64 builds also register the 64-bit system calls interface
 		syscall64_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 		syscall64_listener::AddObject(this->InstanceID);
-		m_procmgr->HostArguments64 = syscall64_listener::GetBindingString(this->InstanceID).c_str();
+		m_hostarguments64 = syscall64_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
 		OutputDebugString(L"BINDSTR64: ");
-		OutputDebugString(m_procmgr->HostArguments64);
+		OutputDebugString(m_hostarguments64.c_str());
 		OutputDebugString(L"\r\n");
 #endif
 	} 
@@ -346,7 +428,7 @@ void VmService::OnStart(int, LPTSTR*)
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	//why is shared_from_this() null here
 	//auto test = VirtualMachine::shared_from_this();
-	m_initprocess = m_procmgr->CreateProcess(shared_from_this(), initpath.c_str(), args, nullptr);
+	m_initprocess = CreateProcess(initpath.c_str(), args, nullptr);
 	////proc->Terminate(0);
 	m_initprocess->Resume();
 

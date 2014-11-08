@@ -367,7 +367,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VmFileSystem.h" />
     <ClInclude Include="FilePermission.h" />
-    <ClInclude Include="VmProcessManager.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="VmSystemLog.h" />
     <ClInclude Include="ZeroCharacterDevice.h" />
@@ -645,7 +644,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClCompile>
     <ClCompile Include="VirtualMachine.cpp" />
     <ClCompile Include="VmFileSystem.cpp" />
-    <ClCompile Include="VmProcessManager.cpp" />
     <ClCompile Include="VmService.cpp" />
     <ClCompile Include="VmSystemLog.cpp" />
   </ItemGroup>

@@ -25,16 +25,17 @@
 #pragma once
 
 #include <map>
+#include <linux/elf.h>
 #include "resource.h"
 #include "CompressedStreamReader.h"
 #include "CpioArchive.h"
 #include "Exception.h"
 #include "File.h"
 #include "FileSystem.h"
+#include "Process.h"
 #include "RpcInterface.h"
 #include "VirtualMachine.h"
 #include "VmFileSystem.h"
-#include "VmProcessManager.h"
 #include "VmSystemLog.h"
 
 // File systems
@@ -94,6 +95,11 @@ private:
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
 	END_CONTROL_HANDLER_MAP()
 
+	// CreateProcess
+	//
+	// Creates a new hosted process instance from a file system binary
+	std::shared_ptr<Process> CreateProcess(const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
+
 	// LoadInitialFileSystem
 	//
 	// Loads the initial file system from an initramfs CPIO archive
@@ -125,10 +131,12 @@ private:
 
 	property_map_t						m_properties;	// Collection of vm properties
 	std::shared_ptr<Process>			m_initprocess;	// initial process object
-	std::unique_ptr<VmProcessManager>	m_procmgr;		// Process Manager
 	std::unique_ptr<VmSystemLog>		m_syslog;		// System Log
 	std::unique_ptr<VmFileSystem>		m_vfs;			// Virtual File System
 	std::shared_ptr<FileSystem>			m_procfs;		// PROCFS file system instance
+
+	std::tstring m_hostarguments32;
+	std::tstring m_hostarguments64;
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERICEPARAMETERS CLASS
