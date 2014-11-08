@@ -200,9 +200,6 @@
     <ClInclude Include="..\common\CommandLine.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="VmSystemLog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NullCharacterDevice.h">
       <Filter>Header Files\Character Devices</Filter>
     </ClInclude>
@@ -322,6 +319,9 @@
     </ClInclude>
     <ClInclude Include="ProcFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemLog.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -451,9 +451,6 @@
     <ClCompile Include="..\common\CommandLine.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="VmSystemLog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\Win32Exception.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -561,6 +558,9 @@
     </ClCompile>
     <ClCompile Include="ProcFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemLog.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

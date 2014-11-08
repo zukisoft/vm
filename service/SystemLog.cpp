@@ -21,18 +21,18 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "VmSystemLog.h"
+#include "SystemLog.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// VmSystemLog Constructor
+// SystemLog Constructor
 //
 // Arguments:
 //
 //	size		- Size of the system log ring buffer
 
-VmSystemLog::VmSystemLog(size_t size)
+SystemLog::SystemLog(size_t size)
 {
 	// Minimum log size is the page size, maximum is constant MAX_BUFFER
 	if(size < MemoryRegion::PageSize) size = MemoryRegion::PageSize;
@@ -54,7 +54,7 @@ VmSystemLog::VmSystemLog(size_t size)
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::IncrementTailPointer (private)
+// SystemLog::IncrementTailPointer (private)
 //
 // Increments a tail pointer to point at the next system log entry
 //
@@ -62,7 +62,7 @@ VmSystemLog::VmSystemLog(size_t size)
 //
 //	tailptr		- Tail pointer to be incremented
 
-bool VmSystemLog::IncrementTailPointer(uintptr_t& tailptr)
+bool SystemLog::IncrementTailPointer(uintptr_t& tailptr)
 {
 	// If the tail is in the same position as the head, the buffer is empty
 	if(tailptr == m_head) return false;
@@ -81,7 +81,7 @@ bool VmSystemLog::IncrementTailPointer(uintptr_t& tailptr)
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::Peek
+// SystemLog::Peek
 //
 // Reads entries from the system log without removing them
 //
@@ -91,7 +91,7 @@ bool VmSystemLog::IncrementTailPointer(uintptr_t& tailptr)
 //	buffer		- Output buffer
 //	len			- Output buffer size, in bytes
 
-size_t VmSystemLog::Peek(VmSystemLogFormat format, void* buffer, size_t length)
+size_t SystemLog::Peek(SystemLogFormat format, void* buffer, size_t length)
 {
 	// Peek is non-destructive, clone the member tail pointer
 	uintptr_t tailptr = m_tail;
@@ -99,7 +99,7 @@ size_t VmSystemLog::Peek(VmSystemLogFormat format, void* buffer, size_t length)
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::Pop
+// SystemLog::Pop
 //
 // Reads entries from the system log and removes them
 //
@@ -109,14 +109,14 @@ size_t VmSystemLog::Peek(VmSystemLogFormat format, void* buffer, size_t length)
 //	buffer		- Output buffer
 //	length		- Output buffer size, in bytes
 
-size_t VmSystemLog::Pop(VmSystemLogFormat format, void* buffer, size_t length)
+size_t SystemLog::Pop(SystemLogFormat format, void* buffer, size_t length)
 {
 	// Pop clears the entries as they are read, use member tail pointer
 	return Print(format, reinterpret_cast<char*>(buffer), length, m_tail);
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::Print (private)
+// SystemLog::Print (private)
 //
 // Prints from the tail of the system log, or counts spac required
 //
@@ -127,7 +127,7 @@ size_t VmSystemLog::Pop(VmSystemLogFormat format, void* buffer, size_t length)
 //	length		- Length of the destination buffer
 //	tailptr		- Buffer tail pointer to use for iteration
 
-size_t VmSystemLog::Print(VmSystemLogFormat format, char* buffer, size_t length, uintptr_t& tailptr)
+size_t SystemLog::Print(SystemLogFormat format, char* buffer, size_t length, uintptr_t& tailptr)
 {
 	if(buffer == nullptr) length = MAXSIZE_T;			// Count only
 	size_t written = 0;									// Bytes written
@@ -137,7 +137,7 @@ size_t VmSystemLog::Print(VmSystemLogFormat format, char* buffer, size_t length,
 
 		// Write as much as possible into the output buffer; if the entry has been
 		// truncated, discard all characters after the previous entry and break;
-		size_t out = (format == VmSystemLogFormat::Device) ? 
+		size_t out = (format == SystemLogFormat::Device) ? 
 			PrintDeviceFormat(reinterpret_cast<LogEntry*>(tailptr), buffer, length) :
 			PrintStandardFormat(reinterpret_cast<LogEntry*>(tailptr), buffer, length);
 		if(out == _TRUNCATE) { if(buffer) *buffer = 0; break; }
@@ -153,7 +153,7 @@ size_t VmSystemLog::Print(VmSystemLogFormat format, char* buffer, size_t length,
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::PrintDeviceFormat (private)
+// SystemLog::PrintDeviceFormat (private)
 //
 // Prints the log entry in the /dev/kmsg character device format
 //
@@ -163,7 +163,7 @@ size_t VmSystemLog::Print(VmSystemLogFormat format, char* buffer, size_t length,
 //	buffer		- Current pointer into the output buffer or NULL
 //	length		- Space remaining in the output buffer
 
-size_t VmSystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_t length)
+size_t SystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_t length)
 {
 	//
 	// TODO: THIS IS JUST STANDARD FORMAT -- IMPLEMENT IT
@@ -187,7 +187,7 @@ size_t VmSystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::PrintStandardFormat (private)
+// SystemLog::PrintStandardFormat (private)
 //
 // Prints the log entry in the standard KMSG format
 //
@@ -197,7 +197,7 @@ size_t VmSystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_
 //	buffer		- Current pointer into the output buffer or NULL
 //	length		- Space remaining in the output buffer
 
-size_t VmSystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, size_t length)
+size_t SystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, size_t length)
 {
 	// Check that there is at least one byte of buffer left to write into
 	if(length == 0) return 0;
@@ -217,7 +217,7 @@ size_t VmSystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, siz
 }
 
 //-----------------------------------------------------------------------------
-// VmSystemLog::Push
+// SystemLog::Push
 //
 // Pushes a new log entry into the buffer
 //
@@ -227,7 +227,7 @@ size_t VmSystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, siz
 //	facility	- Log entry facility code
 //	message		- Message to be pushed
 
-void VmSystemLog::Push(VmSystemLogLevel level, VmSystemLogFacility facility, const char_t* message)
+void SystemLog::Push(SystemLogLevel level, SystemLogFacility facility, const char_t* message)
 {
 	// The maximum message length is UINT16_MAX (64KiB)
 	size_t messagelength = min(strlen(message) * sizeof(char_t), UINT16_MAX);

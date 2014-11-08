@@ -340,7 +340,7 @@ void VmService::OnStart(int, LPTSTR*)
 		//
 
 		// Create the system log instance and seed the time bias to now
-		m_syslog = std::make_unique<VmSystemLog>(static_cast<uint32_t>(systemlog_length));
+		m_syslog = std::make_unique<SystemLog>(static_cast<uint32_t>(systemlog_length));
 		m_syslog->TimestampBias = qpcbias.QuadPart;
 
 		// TODO: Put a real log here with the zero-time bias and the size of the
@@ -401,7 +401,7 @@ void VmService::OnStart(int, LPTSTR*)
 		OutputDebugString(m_hostarguments32.c_str());
 		OutputDebugString(L"\r\n");
 
-		// THESE ARE EXACTLY THE SAME, WHY DO I HAVE TWO OF THEM
+		// THE BINDING STRINGS ARE EXACTLY THE SAME, WHY DO I HAVE TWO OF THEM
 		// collapse ProcessManager->HostArguments32 and 64 into just one property, the binding
 		// string is identical, it's the interface that differs, which is controlled by the stubs
 
@@ -426,14 +426,11 @@ void VmService::OnStart(int, LPTSTR*)
 	//
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
-	//why is shared_from_this() null here
-	//auto test = VirtualMachine::shared_from_this();
 	m_initprocess = CreateProcess(initpath.c_str(), args, nullptr);
-	////proc->Terminate(0);
 	m_initprocess->Resume();
 
-	// seems to work to here, can use this to create the new in-proc ELF loader
-	
+	// TODO: MONITOR INIT PROCESS
+
 	// need to maintain a reference to the Process object since
 	// this will need a watcher thread to panic if init stops before service stops
 	// other processes will be caught by RPC context rundown

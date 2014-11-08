@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __VMSYSTEMLOG_H_
-#define __VMSYSTEMLOG_H_
+#ifndef __SYSTEMLOG_H_
+#define __SYSTEMLOG_H_
 #pragma once
 
 #include "Exception.h"
@@ -30,10 +30,10 @@
 #pragma warning(push, 4)
 #pragma warning(disable:4200)		// zero-sized array in struct/union
 
-// VmSystemLogFacility
+// SystemLogFacility
 //
 // Strongly typed enumeration defining the facility of a log entry
-enum class VmSystemLogFacility : uint8_t
+enum class SystemLogFacility : uint8_t
 {
 	Kernel			= 0,			// Kernel-generated log entry
 	User			= 1,			// User-generated log entry
@@ -41,19 +41,19 @@ enum class VmSystemLogFacility : uint8_t
 	// TODO: there are many more of these
 };
 
-// VmSystemLogFormat
+// SystemLogFormat
 //
 // Strongly typed enumeration defining the print format for the system log
-enum class VmSystemLogFormat
+enum class SystemLogFormat
 {
 	Standard		= 0,			// Standard kmsg format
 	Device			= 1,			// Linux /dev/mksg device format
 };
 
-// VmSystemLogLevel
+// SystemLogLevel
 //
 // Strongly typed enumeration defining the level of a log entry
-enum class VmSystemLogLevel : uint8_t
+enum class SystemLogLevel : uint8_t
 {
 	Emergency		= 0,			// System is unusable
 	Alert			= 1,			// Action must be taken immediately
@@ -66,7 +66,7 @@ enum class VmSystemLogLevel : uint8_t
 };
 
 //-----------------------------------------------------------------------------
-// VmSystemLog
+// SystemLog
 //
 // Provides the system log functionality for a virtual machine, similar to the
 // linux kernel ring buffer
@@ -76,14 +76,14 @@ enum class VmSystemLogLevel : uint8_t
 // in the future -- the performance of this class is important, but not if I'm
 // never going to finish this project!
 
-class VmSystemLog
+class SystemLog
 {
 public:
 
 	// Constructor / Destructor
 	//
-	VmSystemLog(size_t size);
-	~VmSystemLog()=default;
+	SystemLog(size_t size);
+	~SystemLog()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -91,22 +91,22 @@ public:
 	// Peek
 	//
 	// Reads entries from the system log, does not clear them
-	size_t Peek(void* buffer, size_t length) { return Peek(VmSystemLogFormat::Standard, buffer, length); }
-	size_t Peek(VmSystemLogFormat format, void* buffer, size_t length);
+	size_t Peek(void* buffer, size_t length) { return Peek(SystemLogFormat::Standard, buffer, length); }
+	size_t Peek(SystemLogFormat format, void* buffer, size_t length);
 
 	// Pop
 	//
 	// Reads entries from the system log and removes them
-	size_t Pop(void* buffer, size_t length) { return Pop(VmSystemLogFormat::Standard, buffer, length); }
-	size_t Pop(VmSystemLogFormat format, void* buffer, size_t length);
+	size_t Pop(void* buffer, size_t length) { return Pop(SystemLogFormat::Standard, buffer, length); }
+	size_t Pop(SystemLogFormat format, void* buffer, size_t length);
 
 	// Push
 	// 
 	// Writes an entry into the system log
 	// TODO: needs better overloads for facility, level, should accept varargs, and so on
-	void Push(const char_t* message) { return Push(VmSystemLogLevel::Error, VmSystemLogFacility::Kernel, message); }
-	void Push(VmSystemLogLevel level, const char_t* message) { return Push(level, VmSystemLogFacility::Kernel, message); }
-	void Push(VmSystemLogLevel level, VmSystemLogFacility facility, const char_t* message);
+	void Push(const char_t* message) { return Push(SystemLogLevel::Error, SystemLogFacility::Kernel, message); }
+	void Push(SystemLogLevel level, const char_t* message) { return Push(level, SystemLogFacility::Kernel, message); }
+	void Push(SystemLogLevel level, SystemLogFacility facility, const char_t* message);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -135,8 +135,8 @@ public:
 
 private:
 
-	VmSystemLog(const VmSystemLog&)=delete;
-	VmSystemLog& operator=(const VmSystemLog&)=delete;
+	SystemLog(const SystemLog&)=delete;
+	SystemLog& operator=(const SystemLog&)=delete;
 
 	// MAX_BUFFER
 	//
@@ -170,7 +170,7 @@ private:
 	// Print
 	//
 	// Prints data from the log into an output buffer using a specified tail pointer
-	size_t Print(VmSystemLogFormat format, char* buffer, size_t length, uintptr_t& tailptr);
+	size_t Print(SystemLogFormat format, char* buffer, size_t length, uintptr_t& tailptr);
 
 	// PrintDeviceFormat
 	//
@@ -198,4 +198,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __VMSYSTEMLOG_H_
+#endif	// __SYSTEMLOG_H_

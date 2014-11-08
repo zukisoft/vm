@@ -34,9 +34,9 @@
 #include "FileSystem.h"
 #include "Process.h"
 #include "RpcInterface.h"
+#include "SystemLog.h"
 #include "VirtualMachine.h"
 #include "VmFileSystem.h"
-#include "VmSystemLog.h"
 
 // File systems
 //
@@ -131,7 +131,7 @@ private:
 
 	property_map_t						m_properties;	// Collection of vm properties
 	std::shared_ptr<Process>			m_initprocess;	// initial process object
-	std::unique_ptr<VmSystemLog>		m_syslog;		// System Log
+	std::unique_ptr<SystemLog>			m_syslog;		// System Log
 	std::unique_ptr<VmFileSystem>		m_vfs;			// Virtual File System
 	std::shared_ptr<FileSystem>			m_procfs;		// PROCFS file system instance
 
@@ -139,7 +139,7 @@ private:
 	std::tstring m_hostarguments64;
 
 	//
-	// PARAMETERS PULLED BACK IN FROM VMSERICEPARAMETERS CLASS
+	// PARAMETERS PULLED BACK IN FROM VMSERVICEPARAMETERS CLASS
 	// NEEDS CLEANUP
 	//
 
