@@ -34,14 +34,13 @@ __int3264 sys_access(const SystemCall::Context* context, const uapi::char_t* pat
 
 	try { 		
 		
-		(pathname);
-		(mode);
-
 		SystemCall::Impersonation impersonation;
-		return -LINUX_ENOENT; /// TODO!  return context->VirtualMachine->ReadSymbolicLink(pathname, buf, bufsiz);
+		context->VirtualMachine->CheckPermissions(pathname, mode);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+
+	return 0;
 }
 
 // sys32_access

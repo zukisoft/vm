@@ -35,6 +35,25 @@ FileSystem::NodePtr RootFileSystem::getNode(void)
 	std::lock_guard<std::mutex> critsec(m_lock);
 	return m_mounted.empty() ? shared_from_this() : m_mounted.top();
 }
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Demand
+//
+// Demands read/write/execute permissions for the file system node
+//
+// Arguments:
+//
+//	mode		- MAY_READ, MAY_WRITE, MAY_EXECUTE special mode values
+
+void RootFileSystem::Demand(uapi::mode_t mode)
+{
+	// A mode mask of zero is F_OK, and only determines that the node exists
+	if((mode & LINUX_MAY_ACCESS) == 0) return;
+
+	// RootFileSystem implements only a directory with no files or subdirectories,
+	// allow all users EXECUTE only access regardless of who they are
+	if((mode & LINUX_MAY_ACCESS) != LINUX_MAY_EXEC) throw LinuxException(LINUX_EACCES);
+}
 	
 //-----------------------------------------------------------------------------
 // RootFileSystem::Mount (static)

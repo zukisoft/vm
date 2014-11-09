@@ -412,6 +412,26 @@ void HostFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 }
 
 //-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::Demand
+//
+// Demands read/write/execute permissions for the directory node
+//
+// Arguments:
+//
+//	mode			- Special MAY_READ, MAY_WRITE, MAY_EXECUTE flags
+
+void HostFileSystem::DirectoryNode::Demand(uapi::mode_t mode)
+{
+	// A mode mask of zero is F_OK, and only determines that the node exists
+	if((mode & LINUX_MAY_ACCESS) == 0) return;
+
+	// Check MAY_WRITE against a read-only file system, this produces EROFS rather than EACCES
+	if((mode & LINUX_MAY_WRITE) && (m_mountpoint->Options.ReadOnly)) throw LinuxException(LINUX_EROFS);
+
+	// TODO: NEED TO USE ACCESSCHECK() API AGAINST A SECURITY DESCRIPTOR
+}
+
+//-----------------------------------------------------------------------------
 // HostFileSystem::DirectoryNode::FromHandle (static)
 //
 // Creates a new DirectoryNode instance from a host file system object handle
@@ -909,6 +929,28 @@ HostFileSystem::FileNode::~FileNode()
 {
 	// Close the underlying operating system handle
 	if(m_handle != INVALID_HANDLE_VALUE) CloseHandle(m_handle);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileNode::Demand
+//
+// Demands read/write/execute permissions for the file node
+//
+// Arguments:
+//
+//	mode			- Special MAY_READ, MAY_WRITE, MAY_EXECUTE flags
+
+void HostFileSystem::FileNode::Demand(uapi::mode_t mode)
+{
+	// A mode mask of zero is F_OK, and only determines that the node exists
+	if((mode & LINUX_MAY_ACCESS) == 0) return;
+
+	// Check MAY_WRITE against a read-only file system, this produces EROFS rather than EACCES
+	if((mode & LINUX_MAY_WRITE) && (m_mountpoint->Options.ReadOnly)) throw LinuxException(LINUX_EROFS);
+
+	// --> ?? GetSecurityInfo(m_handle, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, nullptr, nullptr, *secdesc);
+	// TODO: NEED TO USE ACCESSCHECK() API AGAINST A SECURITY DESCRIPTOR
+	// GetFileSecurity then accesscheck() here
 }
 
 //-----------------------------------------------------------------------------

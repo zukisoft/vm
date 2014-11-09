@@ -69,6 +69,7 @@ public:
 
 	// VirtualMachine Implementation
 	//
+	virtual void								CheckPermissions(const uapi::char_t* path, uapi::mode_t mode);
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 	virtual std::shared_ptr<FileSystem::Handle>	OpenExecutable(const uapi::char_t* path);
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode);

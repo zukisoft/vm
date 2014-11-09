@@ -79,6 +79,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// CheckPermissions
+	//
+	// Checks the permissions of a file system object
+	virtual void CheckPermissions(const uapi::char_t* path, uapi::mode_t mode) = 0;
+
 	// FindProcessByHostID	// <--- TODO: Rename/repurpose to allow a wait for the host to register?
 	//
 	// Locates a Process instance by the host process' PID, necessary for the system
@@ -97,6 +102,9 @@ public:
 
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode) = 0;
 
+	// ReadSymbolicLink
+	//
+	// Reads the value contained in a symbolic link file system object
 	virtual size_t ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length) = 0;
 
 	//

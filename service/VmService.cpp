@@ -40,6 +40,18 @@ using syscall64_listener = RpcInterface<&SystemCalls64_v1_0_s_ifspec>;
 // Magic number present at the head of an interpreter script
 static uint8_t INTERPRETER_SCRIPT_MAGIC[] = { 0x23, 0x21 };		// "#!"
 
+void VmService::CheckPermissions(const uapi::char_t* path, uapi::mode_t mode)
+{
+	_ASSERTE(m_vfs);
+
+	// Locate the node within the virtual file system, throw ENOENT if not found
+	auto node = m_vfs->ResolvePath(path)->Node;
+	if(!node) throw LinuxException(LINUX_ENOENT);
+
+	// Node was located, demand the requested permissions from it
+	node->Demand(mode);
+}
+
 //-----------------------------------------------------------------------------
 // VmService::CreateProcess (private)
 //

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include <AclAPI.h>
 #include <PathCch.h>
 #include <Shlwapi.h>
 #include <linux/errno.h>
@@ -163,6 +164,7 @@ private:
 
 		// FileSystem::Node Implementation
 		//
+		virtual void					Demand(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
 		virtual uint64_t				getIndex(void);
@@ -213,6 +215,7 @@ private:
 
 		// FileSystem::Node Implementation
 		//
+		virtual void					Demand(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
 		virtual uint64_t				getIndex(void);
