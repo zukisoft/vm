@@ -197,7 +197,7 @@ syscall_t g_syscalls[512] = {
 /* 087 */	sys_noentry,
 /* 088 */	sys_noentry,
 /* 089 */	sys_noentry,
-/* 090 */	REMOTE_SYSCALL_6(sys32_old_mmap, sys32_addr_t, sys32_size_t, sys32_int_t, sys32_int_t, sys32_int_t, sys32_off_t),
+/* 090 */	REMOTE_SYSCALL_6(sys32_mmap, sys32_addr_t, sys32_size_t, sys32_int_t, sys32_int_t, sys32_int_t, sys32_off_t),
 /* 091 */	REMOTE_SYSCALL_2(sys32_munmap, sys32_addr_t, sys32_size_t),
 /* 092 */	sys_noentry,
 /* 093 */	sys_noentry,

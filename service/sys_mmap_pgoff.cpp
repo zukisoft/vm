@@ -27,8 +27,8 @@
 
 // sys_mmap_pgoff
 //
-// Maps files or devices into memory
-__int3264 sys_mmap_pgoff(const SystemCall::Context* context, void* address, uapi::size_t length, int protection, int flags, int fd, uapi::off_t pgoffset)
+// Maps files or devices into process address space
+__int3264 sys_mmap_pgoff(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset)
 {
 	_ASSERTE(context);
 	(address);

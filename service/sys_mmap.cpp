@@ -21,42 +21,41 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "MemoryRegion.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// sys_old_mmap
+// sys_mmap_pgoff.cpp
+__int3264 sys_mmap_pgoff(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset);
+
+// sys_mmap
 //
-// Maps files or devices into memory
-__int3264 sys_old_mmap(const SystemCall::Context* context, void* address, uapi::size_t length, int protection, int flags, int fd, uapi::off_t offset)
+// Maps files or devices into process address space
+__int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t offset)
 {
-	_ASSERTE(context);
-	(address);
-	(length);
-	(protection);
-	(flags);
-	(fd);
-	(offset);
+	// Compatibility function; the offset must be a multiple of the system page size
+	if(offset & (MemoryRegion::PageSize - 1)) return -LINUX_EINVAL;
 
-	try { 		
-		
-		SystemCall::Impersonation impersonation; 
-		///context->Process->TidAddress = address;
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
-
-	///return context->Process->ProcessId;
-	return -1;
+	// Use sys_mmap_pgoff (mmap2) to execute the system call with the offset in pages rather than bytes
+	return sys_mmap_pgoff(context, address, length, protection, flags, fd, offset / MemoryRegion::PageSize);
 }
 
-// sys32_old_mmap
+// sys32_mmap
 //
-sys32_long_t sys32_old_mmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot, sys32_int_t flags, sys32_int_t fd, sys32_off_t offset)
+sys32_long_t sys32_mmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot, sys32_int_t flags, sys32_int_t fd, sys32_off_t offset)
 {
-	//return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address)));
-	return -1;
+	return static_cast<sys32_long_t>(sys_mmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, offset));
 }
+
+#ifdef _M_X64
+// sys64_mmap
+//
+sys64_long_t sys64_mmap(sys64_context_t context, sys64_addr_t address, sys64_size_t length, sys64_int_t prot, sys64_int_t flags, sys64_int_t fd, sys64_off_t offset)
+{
+	return sys_mmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, offset);
+}
+#endif
 
 //---------------------------------------------------------------------------
 

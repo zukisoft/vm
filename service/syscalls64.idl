@@ -116,8 +116,8 @@ interface SystemCalls64
 	/* 001 */ sys64_long_t	sys64_write([in] sys64_context_t context, [in] sys64_int_t fd, [in, ref, size_is(count)] const sys64_uchar_t* buf, [in] sys64_sizeis_t count);
 	/* 002 */ sys64_long_t	sys64_open([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 	/* 003 */ sys64_long_t	sys64_close([in] sys64_context_t context, [in] sys64_int_t fd);
-	///* 009 */ sys32_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys32_off_t offset);
-	///* 011 */ sys32_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
+	/* 009 */ sys64_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys64_off_t offset);
+	/* 011 */ sys64_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);

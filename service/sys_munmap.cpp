@@ -27,7 +27,7 @@
 
 // sys_munmap
 //
-// Unmaps files or devices from memory
+// Unmaps files or devices from process address space
 __int3264 sys_munmap(const SystemCall::Context* context, void* address, uapi::size_t length)
 {
 	_ASSERTE(context);
@@ -58,9 +58,10 @@ sys32_long_t sys32_munmap(sys32_context_t context, sys32_addr_t address, sys32_s
 //
 sys64_long_t sys64_munmap(sys64_context_t context, sys64_addr_t address, sys64_size_t length)
 {
-	return sys_munmap(reinterpret_cast<SystemCall::Context*>(context), address, length);
+	return sys_munmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length);
 }
 #endif
+
 //---------------------------------------------------------------------------
 
 #pragma warning(pop)
