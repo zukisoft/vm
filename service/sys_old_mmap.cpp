@@ -25,39 +25,38 @@
 
 #pragma warning(push, 4)
 
-// sys_set_tid_address
+// sys_old_mmap
 //
-// words
-__int3264 sys_set_tid_address(const SystemCall::Context* context, void* address)
+// Maps files or devices into memory
+__int3264 sys_old_mmap(const SystemCall::Context* context, void* address, uapi::size_t length, int protection, int flags, int fd, uapi::off_t offset)
 {
 	_ASSERTE(context);
+	(address);
+	(length);
+	(protection);
+	(flags);
+	(fd);
+	(offset);
 
 	try { 		
 		
 		SystemCall::Impersonation impersonation; 
-		context->Process->TidAddress = address;
+		///context->Process->TidAddress = address;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
-	return context->Process->ProcessId;
+	///return context->Process->ProcessId;
+	return -1;
 }
 
-// sys32_set_tid_address
+// sys32_old_mmap
 //
-sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t address)
+sys32_long_t sys32_old_mmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot, sys32_int_t flags, sys32_int_t fd, sys32_off_t offset)
 {
-	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address)));
+	//return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address)));
+	return -1;
 }
-
-#ifdef _M_X64
-// sys64_set_tid_address
-//
-sys64_long_t sys64_set_tid_address(sys64_context_t context, sys64_addr_t address)
-{
-	return sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address));
-}
-#endif
 
 //---------------------------------------------------------------------------
 

@@ -40,6 +40,8 @@ typedef unsigned __int64				sys32_ulonglong_t;
 //
 typedef sys32_ulong_t					sys32_addr_t;
 typedef sys32_uint_t					sys32_mode_t;
+typedef sys32_long_t					sys32_off_t;
+typedef sys32_longlong_t				sys32_loff_t;
 typedef sys32_ulong_t					sys32_size_t;
 typedef sys32_long_t					sys32_ssize_t;
 
@@ -117,9 +119,12 @@ interface SystemCalls32
 	/* 059 */ sys32_long_t	sys32_olduname([in] sys32_context_t context, [out, ref] linux_oldold_utsname* buf);
 	/* 074 */ sys32_long_t	sys32_sethostname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 085 */ sys32_long_t	sys32_readlink([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [out, ref, size_is(bufsiz)] sys32_char_t* buf, [in] sys32_size_t bufsiz);
+	/* 090 */ sys32_long_t	sys32_old_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t offset);
+	/* 091 */ sys32_long_t	sys32_munmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length);
 	/* 109 */ sys32_long_t	sys32_uname([in] sys32_context_t context, [out, ref] linux_old_utsname* buf);
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
+	/* 192 */ sys32_long_t	sys32_mmap_pgoff([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t pgoffset);
 	/* 258 */ sys32_long_t	sys32_set_tid_address([in] sys32_context_t context, [in] sys32_addr_t tidptr);
 
 ///* 008 */	sys32_long_t	sys32_creat([in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);

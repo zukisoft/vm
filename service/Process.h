@@ -112,6 +112,12 @@ public:
 	__declspec(property(get=getHostProcessId)) DWORD HostProcessId;
 	DWORD getHostProcessId(void) const { return m_host->ProcessId; }
 
+	// ProcessId
+	//
+	// Gets the virtual machine process identifier
+	__declspec(property(get=getProcessId)) int ProcessId;
+	int getProcessId(void) const { return m_processid; }
+
 	// ProgramBreak
 	//
 	// Gets the initial program break for the process
@@ -129,6 +135,14 @@ public:
 	// Gets the length of the stack image in the hosted process
 	__declspec(property(get=getStackImageLength)) size_t StackImageLength;
 	size_t getStackImageLength(void) const { return m_startinfo.StackImageLength; }
+
+	// TidAddress
+	//
+	// TODO: This is used for set_tid_address; needs to have a futex associated with 
+	// it as well, stubbing this out so that sys_set_tid_address can be implemented
+	__declspec(property(get=getTidAddress, put=putTidAddress)) void* TidAddress;
+	void* getTidAddress(void) const { return m_tidaddress; }
+	void putTidAddress(void* value) { m_tidaddress = value; }
 
 private:
 
@@ -194,6 +208,9 @@ private:
 
 	handle_map_t			m_handles;			// Process file system handles
 	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
+
+	int						m_processid = 1;
+	void*					m_tidaddress = nullptr;
 
 	static SystemInfo		s_sysinfo;			// System information
 };

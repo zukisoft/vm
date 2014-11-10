@@ -374,8 +374,8 @@ void VmService::OnStart(int, LPTSTR*)
 		//m_vfs->AddFileSystem("rootfs", RootFileSystem::Mount);
 		m_vfs->AddFileSystem("tmpfs", TempFileSystem::Mount);
 
-		m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
-		///m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
+		//m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
+		m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
 
 		// ??? PROCFS / SYSFS ???
 		//m_vfs->CreateDirectory("/proc");
@@ -386,13 +386,17 @@ void VmService::OnStart(int, LPTSTR*)
 		// INITRAMFS
 		//
 
-		// Check that the initramfs archive file exists
+		// Use the existence of the setting to determine if initramfs feature should be used
 		std::tstring initramfs = vm_initramfs;
-		if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
+		if(initramfs.length()) {
 
-		// Attempt to extract the contents of the initramfs into the tempfs
-		try { LoadInitialFileSystem(initramfs.c_str()); }
-		catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
+			// Ensure that the initramfs file actually exists on the host file system
+			if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
+
+			// Attempt to extract the contents of the initramfs into the current root file system
+			try { LoadInitialFileSystem(initramfs.c_str()); }
+			catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
+		}
 
 		//
 		// RPC INTERFACES
