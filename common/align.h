@@ -114,4 +114,4 @@ namespace align {
 
 #pragma warning(pop)
 
-#endif	// __GENERIC_TEXT_H_
+#endif	// __ALIGN_H_
