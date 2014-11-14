@@ -64,6 +64,113 @@ int Process::AddHandle(const FileSystem::HandlePtr& handle)
 	throw LinuxException(LINUX_EBADF);
 }
 
+void* Process::AllocateRegion(size_t length, int prot, int flags)
+{
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	// Allocations cannot be zero-length
+	if(length == 0) throw LinuxException(LINUX_EINVAL);
+
+	// Reservations are aligned up to prevent unusable holes in the process address space
+	size_t alignment = (flags & LINUX_MAP_HUGETLB) ? GetLargePageMinimum() : MemoryRegion::AllocationGranularity;
+	if(alignment == 0) throw LinuxException(LINUX_EINVAL);
+
+	size_t aligned = align::up(length, alignment);
+
+	// Attempt to reserve the aligned region of memory from the hosted process
+	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, align::up(length, alignment), 
+		MEM_RESERVE | ((flags & LINUX_MAP_HUGETLB) ? MEM_LARGE_PAGES : 0), PAGE_NOACCESS);
+	if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
+
+	// Attempt to commit and assign protection flags to the allocated region
+	if(!VirtualAllocEx(m_host->ProcessHandle, region, length, MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) {
+
+		Win32Exception exception;										// Save the Windows exception
+		VirtualFreeEx(m_host->ProcessHandle, region, 0, MEM_RELEASE);	// Release the reservation
+		throw LinuxException(LINUX_EINVAL, exception);					// Allocation operation failed
+	}
+
+	return region;
+}
+
+void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int flags)
+{
+	MEMORY_BASIC_INFORMATION		meminfo;		// Virtual memory information
+
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	// Fixed allocations cannot start at zero or be zero-length
+	if(address == nullptr) throw LinuxException(LINUX_EINVAL);
+	if(length == 0) throw LinuxException(LINUX_EINVAL);
+
+	// Large pages are not supported with fixed memory mappings
+	if(flags & LINUX_MAP_HUGETLB) throw LinuxException(LINUX_EINVAL);
+
+	// Determine the starting and ending points for the reservation
+	uintptr_t regionbegin = align::down(uintptr_t(address), MemoryRegion::AllocationGranularity);
+	uintptr_t regionend = regionbegin + align::up(length, MemoryRegion::AllocationGranularity);
+
+	// Scan the calculated region to ensure that all required pages are reserved
+	while(regionbegin < regionend) {
+
+		// Query the information about the region beginning at the current address
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// If the region is not reserved (MEM_FREE), attempt to reserve it.  This will fail if the region
+		// is not aligned to the allocation granularity, which indicates a hole in the address space
+		if(meminfo.State == MEM_FREE) {
+
+			if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), min(regionend - regionbegin, meminfo.RegionSize), 
+				MEM_RESERVE, PAGE_NOACCESS)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
+		}
+
+		regionbegin += meminfo.RegionSize;			// Move to the next region
+	}
+
+	// Determine the starting and ending points for the commit; Windows will automatically
+	// adjust these values to align on the proper page size during VirtualAllocEx
+	uintptr_t commitbegin = uintptr_t(address);
+	uintptr_t commitend = commitbegin + length;
+
+	// Scan the requested mapping region and (re)commit all pages to memory
+	while(commitbegin < commitend) {
+
+		// Query the information about the current region to be committed
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		switch(meminfo.State) {
+
+			// MEM_COMMIT -- The region has already been committed; de-commit it to allow it to be reset
+			//
+			case MEM_COMMIT:
+
+				if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), min(commitend - commitbegin, meminfo.RegionSize), 
+					MEM_DECOMMIT)) throw LinuxException(LINUX_EACCES, Win32Exception());
+				// fall through to MEM_RESERVE
+			
+			// MEM_RESERVE -- The region is reserved but has not yet been committed to memory
+			// 
+			case MEM_RESERVE:
+
+				if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), min(commitend - commitbegin, meminfo.RegionSize), 
+					MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) throw LinuxException(LINUX_EINVAL, Win32Exception());
+				break;
+
+			// MEM_FREE -- The region was not properly reserved above or was released by another thread in the process
+			//
+			default: throw LinuxException(LINUX_EACCES);
+		}
+
+		commitbegin += meminfo.RegionSize;
+	}
+
+	return address;
+}
+
 //-----------------------------------------------------------------------------
 // Process::GetHandle
 //
@@ -77,6 +184,59 @@ FileSystem::HandlePtr Process::GetHandle(int index)
 {
 	try { return m_handles.at(index); }
 	catch(...) { throw LinuxException(LINUX_EBADF); }
+}
+
+//-----------------------------------------------------------------------------
+// Process::MapMemory
+//
+// Creates a memory mapping for the process
+//
+// Arguments:
+//
+//	address		- Optional fixed address to use for the mapping
+//	length		- Length of the requested mapping
+//	prot		- Memory protection flags
+//	flags		- Memory mapping flags, must include MAP_PRIVATE
+//	fd			- Optional file descriptor from which to map
+//	offset		- Optional offset into fd from which to map
+
+void* Process::MapMemory(void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset)
+{
+	FileSystem::HandlePtr		handle = nullptr;		// Handle to the file object
+
+	// DON'T SUPPORT:
+	// MAP_LOCKED -- Can't specify a process handle
+	// MAP_32BIT -- Can't specify the address
+	// MAP_DENYWRITE -- Ignored by Linux
+	// MAP_EXECUTABLE -- Ignored by Linux
+	// MAP_FILE -- Ignored
+	// MAP_GROWSDOWN -- Throw an error, can't do this
+	// MAP_NONBLOCK
+	// MAP_NORESERVE
+	// MAP_POPULATE
+	// MAP_STACK
+	// MAP_UNINITIALIZED
+	
+	// DO SUPPORT:
+	// MAP_HUGETLB
+	// 
+
+	// Windows does not support suggested base addresses for memory allocations
+	if((flags & LINUX_MAP_FIXED) == 0) address = nullptr;
+
+	// Non-anonymous mappings require a valid file descriptor to be specified
+	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) throw LinuxException(LINUX_EBADF);
+	if(fd > 0) handle = GetHandle(fd);
+
+	// Attempt to reserve and commit the region of memory using the appropriate helper
+	address = (address == nullptr) ? AllocateRegion(length, prot, flags) : AllocateFixedRegion(address, length, prot, flags);
+
+	if(handle) {
+		// TODO!!
+		(offset);
+	}
+
+	return address;
 }
 
 //-----------------------------------------------------------------------------

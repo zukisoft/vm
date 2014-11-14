@@ -31,23 +31,21 @@
 __int3264 sys_mmap_pgoff(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset)
 {
 	_ASSERTE(context);
-	(address);
-	(length);
-	(protection);
-	(flags);
-	(fd);
-	(pgoffset);
 
 	try { 		
 		
-		SystemCall::Impersonation impersonation; 
-		///context->Process->TidAddress = address;
+		SystemCall::Impersonation impersonation;
+		
+		// Private mappings can be done directly against the process object, shared mappings require creating
+		// or accessing an existing shared memory object in the VirtualMachine
+		if(flags & LINUX_MAP_PRIVATE) 
+			return reinterpret_cast<__int3264>(context->Process->MapMemory(address, length, protection, flags, fd, pgoffset * MemoryRegion::PageSize));
+
+		// TODO: LINUX_MAP_SHARED
+		else throw LinuxException(LINUX_EINVAL);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
-
-	///return context->Process->ProcessId;
-	return -1;
 }
 
 // sys32_mmap_pgoff

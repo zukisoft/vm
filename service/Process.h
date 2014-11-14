@@ -28,6 +28,7 @@
 #include <concurrent_unordered_map.h>
 #include <memory>
 #include <linux/elf.h>
+#include <linux/mman.h>
 #include "ElfArguments.h"
 #include "ElfClass.h"
 #include "ElfImage.h"
@@ -76,6 +77,14 @@ public:
 	//
 	// Accesses a file system handle referenced by the process
 	FileSystem::HandlePtr GetHandle(int index);
+
+	// MapMemory
+	//
+	// Creates a memory mapping for the process
+	void* MapMemory(size_t length, int prot, int flags) { return MapMemory(nullptr, length, prot, flags, -1, 0); }
+	void* MapMemory(void* address, size_t length, int prot, int flags) { return MapMemory(address, length, prot, flags, -1, 0); }
+	void* MapMemory(void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset);
+	// TODO: will need overloads for shared memory when I get there
 
 	// RemoveHandle
 	//
@@ -194,11 +203,26 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
+	// AllocateRegion
+	//
+	// Allocates a memory region in the hosted process
+	void* AllocateRegion(size_t length, int prot, int flags);
+	
+	// AllocateFixedRegion
+	//
+	// Allocates a memory region at a specific address in the hosted process
+	void* AllocateFixedRegion(void* address, size_t length, int prot, int flags);
+
 	// CheckHostProcessClass (static)
 	//
 	// Verifies that the created host process type matches what is expected
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
+
+	// FlagsToProtection
+	//
+	// Converts linux protection flags into VirtualAlloc(Ex) protection flags
+	static DWORD FlagsToProtection(uint32_t flags);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
