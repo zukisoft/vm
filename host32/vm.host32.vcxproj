@@ -113,9 +113,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="sys000_template.cpp" />
     <ClCompile Include="syscalls.cpp" />
     <ClCompile Include="sys_brk.cpp" />
+    <ClCompile Include="sys_mmap.cpp" />
+    <ClCompile Include="sys_mmap_pgoff.cpp" />
     <ClCompile Include="sys_set_thread_area.cpp" />
   </ItemGroup>
   <ItemGroup>

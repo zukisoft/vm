@@ -64,23 +64,30 @@ int Process::AddHandle(const FileSystem::HandlePtr& handle)
 	throw LinuxException(LINUX_EBADF);
 }
 
+//-----------------------------------------------------------------------------
+// Process::AllocateRegion
+//
+// Allocates a region of memory in the hosted process
+//
+// Arguments:
+//
+//	length		- Length of the region to be allocated
+//	prot		- Memory protection flags for the memory region
+//	flags		- Memory allocation behavioral flags
+
 void* Process::AllocateRegion(size_t length, int prot, int flags)
 {
+	UNREFERENCED_PARAMETER(flags);
+
 	_ASSERTE(m_host);
 	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
 
 	// Allocations cannot be zero-length
 	if(length == 0) throw LinuxException(LINUX_EINVAL);
 
-	// Reservations are aligned up to prevent unusable holes in the process address space
-	size_t alignment = (flags & LINUX_MAP_HUGETLB) ? GetLargePageMinimum() : MemoryRegion::AllocationGranularity;
-	if(alignment == 0) throw LinuxException(LINUX_EINVAL);
-
-	size_t aligned = align::up(length, alignment);
-
-	// Attempt to reserve the aligned region of memory from the hosted process
-	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, align::up(length, alignment), 
-		MEM_RESERVE | ((flags & LINUX_MAP_HUGETLB) ? MEM_LARGE_PAGES : 0), PAGE_NOACCESS);
+	// Attempt to reserve the region of memory from the hosted process aligned up to the
+	// system allocation granularity to prevent unusable holes in the address space
+	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, align::up(length, MemoryRegion::AllocationGranularity), MEM_RESERVE, PAGE_NOACCESS);
 	if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 	// Attempt to commit and assign protection flags to the allocated region
@@ -94,9 +101,24 @@ void* Process::AllocateRegion(size_t length, int prot, int flags)
 	return region;
 }
 
+//-----------------------------------------------------------------------------
+// Process::AllocateFixedRegion
+//
+// Allocates a region of memory in the hosted process at a specific address;
+// makes an assumption that the caller knows what they are doing
+//
+// Arguments:
+//
+//	address		- Address at which to allocate the memory region
+//	length		- Length of the region to be allocated
+//	prot		- Memory protection flags for the memory region
+//	flags		- Memory allocation behavioral flags
+
 void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int flags)
 {
 	MEMORY_BASIC_INFORMATION		meminfo;		// Virtual memory information
+
+	UNREFERENCED_PARAMETER(flags);
 
 	_ASSERTE(m_host);
 	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
@@ -104,9 +126,6 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 	// Fixed allocations cannot start at zero or be zero-length
 	if(address == nullptr) throw LinuxException(LINUX_EINVAL);
 	if(length == 0) throw LinuxException(LINUX_EINVAL);
-
-	// Large pages are not supported with fixed memory mappings
-	if(flags & LINUX_MAP_HUGETLB) throw LinuxException(LINUX_EINVAL);
 
 	// Determine the starting and ending points for the reservation
 	uintptr_t regionbegin = align::down(uintptr_t(address), MemoryRegion::AllocationGranularity);
@@ -147,15 +166,13 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 			// MEM_COMMIT -- The region has already been committed; de-commit it to allow it to be reset
 			//
 			case MEM_COMMIT:
-
 				if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), min(commitend - commitbegin, meminfo.RegionSize), 
 					MEM_DECOMMIT)) throw LinuxException(LINUX_EACCES, Win32Exception());
-				// fall through to MEM_RESERVE
+				// fall through
 			
 			// MEM_RESERVE -- The region is reserved but has not yet been committed to memory
 			// 
 			case MEM_RESERVE:
-
 				if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), min(commitend - commitbegin, meminfo.RegionSize), 
 					MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) throw LinuxException(LINUX_EINVAL, Win32Exception());
 				break;
@@ -204,37 +221,50 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 {
 	FileSystem::HandlePtr		handle = nullptr;		// Handle to the file object
 
-	// DON'T SUPPORT:
-	// MAP_LOCKED -- Can't specify a process handle
-	// MAP_32BIT -- Can't specify the address
-	// MAP_DENYWRITE -- Ignored by Linux
-	// MAP_EXECUTABLE -- Ignored by Linux
-	// MAP_FILE -- Ignored
-	// MAP_GROWSDOWN -- Throw an error, can't do this
-	// MAP_NONBLOCK
-	// MAP_NORESERVE
-	// MAP_POPULATE
-	// MAP_STACK
-	// MAP_UNINITIALIZED
-	
-	// DO SUPPORT:
-	// MAP_HUGETLB
-	// 
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle);
 
-	// Windows does not support suggested base addresses for memory allocations
+	// MAP_HUGETLB is not currently supported, but may be possible in the future
+	if(flags & LINUX_MAP_HUGETLB) throw LinuxException(LINUX_EINVAL);
+
+	// MAP_GROWSDOWN is not supported
+	if(flags & LINUX_MAP_GROWSDOWN) throw LinuxException(LINUX_EINVAL);
+
+	// Suggested base addresses are not supported, switch the address to NULL if MAP_FIXED is not set
 	if((flags & LINUX_MAP_FIXED) == 0) address = nullptr;
 
 	// Non-anonymous mappings require a valid file descriptor to be specified
 	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) throw LinuxException(LINUX_EBADF);
-	if(fd > 0) handle = GetHandle(fd);
+	if(fd > 0) handle = GetHandle(fd)->Duplicate(LINUX_O_RDONLY);
 
 	// Attempt to reserve and commit the region of memory using the appropriate helper
 	address = (address == nullptr) ? AllocateRegion(length, prot, flags) : AllocateFixedRegion(address, length, prot, flags);
 
-	if(handle) {
-		// TODO!!
-		(offset);
-	}
+	// If a file handle was specified, copy data from the file into the allocated region,
+	// private mappings need not be concerned with writing this data back to the file
+	if(handle != nullptr) {
+
+		uintptr_t	dest = uintptr_t(address);			// Easier pointer math as uintptr_t
+		size_t		read;								// Bytes read from the source file
+		SIZE_T		written;							// Result from WriteProcessMemory
+
+		HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);	// 64K buffer
+
+		// Seek the file handle to the specified offset
+		if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw LinuxException(LINUX_EINVAL);
+
+		do {
+			
+			// Copy the next chunk of bytes from the source file into the process' memory space
+			read = handle->Read(buffer, min(length, buffer.Size));
+			if(!WriteProcessMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written)) 
+				throw LinuxException(LINUX_EACCES, Win32Exception());
+
+			dest += written;						// Increment destination pointer
+			length -= read;							// Decrement remaining bytes to be copied
+
+		} while((length > 0) && (read > 0));
+	};
 
 	return address;
 }

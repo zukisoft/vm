@@ -98,6 +98,16 @@ private:
 	HostFileSystem(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<Alias>& root) : m_mountpoint(mountpoint), m_root(root) {}
 	friend class std::_Ref_count_obj<HostFileSystem>;
 
+	// DuplicateDirectoryHandle (static)
+	//
+	// Duplicates an existing directory object handle
+	static FileSystem::HandlePtr DuplicateDirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
+
+	// DuplicateFileHandle (static)
+	//
+	// Duplicates an existing file object handle
+	static FileSystem::HandlePtr DuplicateFileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
+
 	// Member Variables
 	//
 	std::shared_ptr<MountPoint>		m_mountpoint;	// Mount metadata/state
@@ -254,12 +264,13 @@ private:
 
 		// Instance Constructor
 		//
-		BaseHandle(HANDLE handle, int flags);
+		BaseHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
 
 		// Protected Member Variables
 		//
-		HANDLE				m_handle;						// Read/execute object handle
-		int					m_flags;						// Open flags from construction
+		std::shared_ptr<MountPoint>	m_mountpoint;			// Mounted file system metadata
+		HANDLE						m_handle;				// Read/execute object handle
+		int							m_flags;				// Open flags from construction
 
 	private:
 
@@ -274,16 +285,18 @@ private:
 	{
 	public:
 
-		DirectoryHandle(HANDLE handle, int flags) : BaseHandle(handle, flags) {}
+		DirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
+			BaseHandle(mountpoint, handle, flags) {}
 		virtual ~DirectoryHandle()=default;
 
 		// FileSystem::Handle implementation
 		//
-		virtual uapi::size_t	Read(void*, uapi::size_t);
-		virtual uapi::loff_t	Seek(uapi::loff_t, int);
-		virtual void			Sync(void);
-		virtual void			SyncData(void);
-		virtual uapi::size_t	Write(const void*, uapi::size_t);
+		virtual FileSystem::HandlePtr	Duplicate(int flags);
+		virtual uapi::size_t			Read(void*, uapi::size_t);
+		virtual uapi::loff_t			Seek(uapi::loff_t, int);
+		virtual void					Sync(void);
+		virtual void					SyncData(void);
+		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
 	private:
 
@@ -298,16 +311,18 @@ private:
 	{
 	public:
 
-		ExecuteHandle(HANDLE handle, int flags) : BaseHandle(handle, flags) {}
+		ExecuteHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
+			BaseHandle(mountpoint, handle, flags) {}
 		virtual ~ExecuteHandle()=default;
 
 		// FileSystem::Handle Implementation
 		//
-		virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
-		virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
-		virtual void			Sync(void);
-		virtual void			SyncData(void);
-		virtual uapi::size_t	Write(const void*, uapi::size_t);
+		virtual FileSystem::HandlePtr	Duplicate(int flags);
+		virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
+		virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
+		virtual void					Sync(void);
+		virtual void					SyncData(void);
+		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
 	private:
 
@@ -322,16 +337,17 @@ private:
 	{
 	public:
 
-		FileHandle(HANDLE handle, int flags);
+		FileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
 		virtual ~FileHandle()=default;
 
 		// FileSystem::Handle Implementation
 		//
-		virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
-		virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
-		virtual void			Sync(void);
-		virtual void			SyncData(void);
-		virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
+		virtual FileSystem::HandlePtr	Duplicate(int flags);
+		virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
+		virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
+		virtual void					Sync(void);
+		virtual void					SyncData(void);
+		virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
 
 	private:
 
@@ -355,16 +371,18 @@ private:
 	{
 	public:
 
-		PathHandle(HANDLE handle, int flags) : BaseHandle(handle, flags) {}
+		PathHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
+			BaseHandle(mountpoint, handle, flags) {}
 		virtual ~PathHandle()=default;
 
 		// FileSystem::Handle implementation
 		//
-		virtual uapi::size_t	Read(void*, uapi::size_t);
-		virtual uapi::loff_t	Seek(uapi::loff_t, int);
-		virtual void			Sync(void);
-		virtual void			SyncData(void);
-		virtual uapi::size_t	Write(const void*, uapi::size_t);
+		virtual FileSystem::HandlePtr	Duplicate(int flags);
+		virtual uapi::size_t			Read(void*, uapi::size_t);
+		virtual uapi::loff_t			Seek(uapi::loff_t, int);
+		virtual void					Sync(void);
+		virtual void					SyncData(void);
+		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
 	private:
 

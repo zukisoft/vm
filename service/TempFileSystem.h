@@ -205,11 +205,12 @@ private:
 
 		// FileSystem::Handle Implementation
 		//
-		virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
-		virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
-		virtual void			Sync(void)							{ throw LinuxException(LINUX_EBADF); }
-		virtual void			SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
-		virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+		virtual FileSystem::HandlePtr	Duplicate(int)						{ throw LinuxException(LINUX_EBADF); }	// <-- TODO: This should be able to work
+		virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
+		virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
+		virtual void					Sync(void)							{ throw LinuxException(LINUX_EBADF); }
+		virtual void					SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
+		virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
 	private:
 
@@ -278,11 +279,12 @@ private:
 
 			// FileSystem::Handle Implementation
 			//
-			virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EISDIR); }
-			virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EISDIR); }
-			virtual void			Sync(void)							{ /* do nothing */ }
-			virtual void			SyncData(void)						{ /* do nothing */ }
-			virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
+			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(flags); }
+			virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EISDIR); }
+			virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EISDIR); }
+			virtual void					Sync(void)							{ /* do nothing */ }
+			virtual void					SyncData(void)						{ /* do nothing */ }
+			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
 
 		private:
 
@@ -362,11 +364,12 @@ private:
 
 			// FileSystem::Handle Implementation
 			//
-			virtual uapi::size_t	Read(void* buffer, uapi::size_t count);
-			virtual uapi::loff_t	Seek(uapi::loff_t offset, int whence);
-			virtual void			Sync(void)				{ /* do nothing */ }
-			virtual void			SyncData(void)			{ /* do nothing */ }
-			virtual uapi::size_t	Write(const void* buffer, uapi::size_t count);
+			virtual FileSystem::HandlePtr	Duplicate(int flags)	{ return m_node->Open(flags); }
+			virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
+			virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
+			virtual void					Sync(void)				{ /* do nothing */ }
+			virtual void					SyncData(void)			{ /* do nothing */ }
+			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
 
 		private:
 
@@ -440,11 +443,12 @@ private:
 
 			// FileSystem::Handle Implementation
 			//
-			virtual uapi::size_t	Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
-			virtual uapi::loff_t	Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
-			virtual void			Sync(void)							{ throw LinuxException(LINUX_EBADF); }
-			virtual void			SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
-			virtual uapi::size_t	Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(flags); }
+			virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
+			virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
+			virtual void					Sync(void)							{ throw LinuxException(LINUX_EBADF); }
+			virtual void					SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
+			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
 		private:
 

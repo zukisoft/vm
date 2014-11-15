@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include <linux\mman.h>
 
 #pragma warning(push, 4)
 
@@ -29,28 +30,26 @@
 // RPC context handle
 extern sys32_context_t g_rpccontext;
 
-//
-// SAMPLE FUNCTION
-//
-
 //-----------------------------------------------------------------------------
-// int uname(struct utsname* buf)
+// sys_mmap_pgoff
 //
-// EBX	- struct utsname*	buf
-// ECX
-// EDX
-// ESI
-// EDI
-// EBP
-//
-int sys000_template(PCONTEXT context)
-{
-	_ASSERTE(context->Eax == 122);			// Verify system call number
+// Wrapper around the remote syscall to handle process-specific details that
+// the service can't handle on its own
 
-	/*return sys32_uname(g_rpccontext, reinterpret_cast<uapi::new_utsname*>(context->Ebx));*/
-	return -1;
+uapi::long_t sys_mmap_pgoff(void* address, uapi::size_t length, int prot, int flags, int fd, uapi::off_t offset)
+{
+	// Invoke the remote system call first to perform the memory mapping operation
+	sys32_long_t result = sys32_mmap_pgoff(g_rpccontext, reinterpret_cast<sys32_addr_t>(address), length, prot, flags, fd, offset);
+	if(result < 0) return result;
+
+	// The MAP_LOCKED flag can't be handled by the service; attempt VirtualLock after the fact
+	if((flags & LINUX_MAP_LOCKED) == LINUX_MAP_LOCKED) VirtualLock(reinterpret_cast<void*>(result), length);
+
+	return result;
 }
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+

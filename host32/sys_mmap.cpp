@@ -20,35 +20,36 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
+#include "stdafx.h"
+#include <linux\mman.h>
 
 #pragma warning(push, 4)
 
-// syscall_t
+// g_rpccontext (main.cpp)
 //
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
+// RPC context handle
+extern sys32_context_t g_rpccontext;
 
-// g_syscalls
+//-----------------------------------------------------------------------------
+// sys_mmap
 //
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
+// Wrapper around the remote syscall to handle process-specific details that
+// the service can't handle on its own
 
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
+uapi::long_t sys_mmap(void* address, uapi::size_t length, int prot, int flags, int fd, uapi::off_t offset)
+{
+	// Invoke the remote system call first to perform the memory mapping operation
+	sys32_long_t result = sys32_mmap(g_rpccontext, reinterpret_cast<sys32_addr_t>(address), length, prot, flags, fd, offset);
+	if(result < 0) return result;
 
-/* 045 */ extern uapi::long_t sys_brk(void*);
-/* 090 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 192 */ extern uapi::long_t sys_mmap_pgoff(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
+	// The MAP_LOCKED flag can't be handled by the service; attempt VirtualLock after the fact
+	if((flags & LINUX_MAP_LOCKED) == LINUX_MAP_LOCKED) VirtualLock(reinterpret_cast<void*>(result), length);
+
+	return result;
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __SYSCALLS_H_
+

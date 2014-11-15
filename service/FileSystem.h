@@ -247,6 +247,11 @@ struct __declspec(novtable) FileSystem
 	// todo: document when done
 	struct __declspec(novtable) Handle
 	{
+		// Duplicate
+		//
+		// Creates a duplicate Handle instance
+		virtual HandlePtr Duplicate(int flags) = 0;
+
 		// Read
 		//
 		// Synchronously reads data from the underlying node into a buffer

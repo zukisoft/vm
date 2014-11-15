@@ -73,6 +73,10 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 	// Seek the file handle to the specified offset value, if unable to assume that it's truncated
 	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
 
+	//
+	// TODO: WON'T THIS FAIL IF READ() RETURNS ZERO BEFORE COUNT HAS BEEN CONSUMED?
+	//
+
 	while(count) {
 
 		// Read the next chunk of memory into the heap buffer and write it into the target process

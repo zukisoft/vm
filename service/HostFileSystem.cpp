@@ -182,6 +182,87 @@ static HeapBuffer<tchar_t> HandleToPath(HANDLE handle)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
+// HostFileSystem::DuplicateDirectoryHandle (static)
+//
+// Duplicates an existing directory handle object
+//
+// Arguments:
+//
+//	mountpoint	- MountPoint instance for the parent file system
+//	handle		- Existing directory object handle
+//	flags		- File operation flags and attributes
+
+FileSystem::HandlePtr HostFileSystem::DuplicateDirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags)
+{
+	_ASSERTE(mountpoint);
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+
+	// Directory node handles must be opened in read-only mode
+	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
+
+	// Use the contained query-only handle to reopen the directory with read-only attributes
+	HANDLE duplicate = ReOpenFile(handle, FILE_GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS);
+	if(duplicate == INVALID_HANDLE_VALUE) throw MapHostException();
+
+	try { 
+
+		// Generate a new Handle instance around the new object handle
+		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(mountpoint, duplicate, flags);
+		else return std::make_shared<DirectoryHandle>(mountpoint, duplicate, flags);
+	}
+	catch(...) { CloseHandle(duplicate); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DuplicateFileHandle (static)
+//
+// Duplicates an existing file handle object
+//
+// Arguments:
+//
+//	mountpoint	- MountPoint instance for the parent file system
+//	handle		- Existing directory object handle
+//	flags		- File operation flags and attributes
+
+FileSystem::HandlePtr HostFileSystem::DuplicateFileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags)
+{
+	_ASSERTE(mountpoint);
+	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+
+	// O_DIRECTORY verifies that the target node is a directory, which this is not
+	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
+
+	// HostFileSystem does not support unnamed temporary files via O_TMPFILE
+	// TODO: why is this here, this is Open(), not Create()
+	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
+
+	// If the file system was mounted as read-only, write access cannot be granted
+	if(mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
+
+	// Generate the attributes for the open operation based on the provided flags
+	DWORD attributes = FILE_FLAG_POSIX_SEMANTICS;
+	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
+	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
+
+	// Use the contained query-only handle to reopen the file with the requested attributes
+	HANDLE duplicate = ReOpenFile(handle, FlagsToAccess(flags), FILE_SHARE_READ | FILE_SHARE_WRITE, attributes);
+	if(duplicate == INVALID_HANDLE_VALUE) throw MapHostException();
+
+	try {
+
+		// By using ReOpenFile() rather than CreateFile() to generate the handle, there is no opportunity
+		// to specify TRUNCATE_EXISTING in the disposition flags, it must be done after the fact
+		if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) { if(!SetEndOfFile(duplicate)) throw MapHostException(); }
+
+		// Generate a new Handle instance around the new object handle and the original flags
+		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(mountpoint, duplicate, flags);
+		else return std::make_shared<FileHandle>(mountpoint, duplicate, flags);
+	}
+	
+	catch(...) { CloseHandle(duplicate); throw; }
+}
+
+//-----------------------------------------------------------------------------
 // HostFileSystem::Mount (static)
 //
 // Mounts the file system on a host system directory object
@@ -267,12 +348,16 @@ FileSystem::AliasPtr HostFileSystem::Alias::getParent(void)
 //
 // Arguments:
 //
+//	mountpoint		- Mounted file system metadata
 //	handle			- Handle to the host operating system object
 //	flags			- Open operation flags and attributes
 
-HostFileSystem::BaseHandle::BaseHandle(HANDLE handle, int flags) : m_handle(handle), m_flags(flags)
+HostFileSystem::BaseHandle::BaseHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
+	m_mountpoint(mountpoint), m_handle(handle), m_flags(flags)
 {
+	_ASSERTE(mountpoint);
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);
+
 	if(handle == INVALID_HANDLE_VALUE) throw LinuxException(LINUX_EBADF, Exception(E_HANDLE));
 }
 
@@ -390,7 +475,7 @@ FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
 	// Create and return a FileHandle for the new object; HostFileSystem doesn't need a parent node
-	try { return std::make_shared<FileHandle>(handle, flags); }
+	try { return std::make_shared<FileHandle>(m_mountpoint, handle, flags); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 
@@ -483,24 +568,12 @@ std::shared_ptr<HostFileSystem::DirectoryNode> HostFileSystem::DirectoryNode::Fr
 //
 // Arguments:
 //
-//	flags		- File operation flags and arributes
+//	flags		- File operation flags and attributes
 
 FileSystem::HandlePtr HostFileSystem::DirectoryNode::Open(int flags)
 {
-	// Directory node handles must be opened in read-only mode
-	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
-
-	// Use the contained query-only handle to reopen the directory with read-only attributes
-	HANDLE handle = ReOpenFile(m_handle, FILE_GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS);
-	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
-
-	// Generate a new Handle instance around the new object handle and the original flags
-	try { 
-
-		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(handle, flags);
-		else return std::make_shared<DirectoryHandle>(handle, flags);
-	}
-	catch(...) { CloseHandle(handle); throw; }
+	// Duplicate the directory handle with the specified flags
+	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_handle, flags);
 }
 
 void HostFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
@@ -580,6 +653,21 @@ FileSystem::NodeType HostFileSystem::DirectoryNode::getType(void)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryHandle::Duplicate
+//
+// Duplicates the Handle object, potentially with new flags
+//
+// Arguments:
+//
+//	flags		- Flags applicable to the new handle
+
+FileSystem::HandlePtr HostFileSystem::DirectoryHandle::Duplicate(int flags)
+{
+	// Duplicate the directory handle with the specified flags
+	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_handle, flags);
+}
+
+//-----------------------------------------------------------------------------
 // HostFileSystem::DirectoryHandle::Read
 //
 // Synchronously reads data from the underlying node into a buffer
@@ -655,6 +743,21 @@ uapi::size_t HostFileSystem::DirectoryHandle::Write(const void*, uapi::size_t)
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::EXECUTEHANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::ExecuteHandle::Duplicate
+//
+// Duplicates the Handle object, potentially with new flags
+//
+// Arguments:
+//
+//	flags		- Flags applicable to the new handle
+
+FileSystem::HandlePtr HostFileSystem::ExecuteHandle::Duplicate(int flags)
+{
+	// Duplicate the file handle with the specified flags
+	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
+}
 
 //-----------------------------------------------------------------------------
 // HostFileSystem::ExecuteHandle::Read
@@ -754,10 +857,12 @@ uapi::size_t HostFileSystem::ExecuteHandle::Write(const void*, uapi::size_t)
 //
 // Arguments:
 //
+//	mountpoint		- Mounted file system metadata
 //	handle			- Handle to the host operating system object
 //	flags			- Open operation flags and attributes
 
-HostFileSystem::FileHandle::FileHandle(HANDLE handle, int flags) : BaseHandle(handle, flags)
+HostFileSystem::FileHandle::FileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
+	BaseHandle(mountpoint, handle, flags)
 {
 	// O_DIRECT operations require a specific alignment when reading/writing to
 	// the file, get that information from the operating system
@@ -767,6 +872,21 @@ HostFileSystem::FileHandle::FileHandle(HANDLE handle, int flags) : BaseHandle(ha
 		if(!GetFileInformationByHandleEx(handle, FileStorageInfo, &storageinfo, sizeof(storageinfo))) throw MapHostException();
 		m_alignment = storageinfo.FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::FileHandle::Duplicate
+//
+// Duplicates the Handle object, potentially with new flags
+//
+// Arguments:
+//
+//	flags		- Flags applicable to the new handle
+
+FileSystem::HandlePtr HostFileSystem::FileHandle::Duplicate(int flags)
+{
+	// Duplicate the file handle with the specified flags
+	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -1004,41 +1124,11 @@ std::shared_ptr<HostFileSystem::FileNode> HostFileSystem::FileNode::FromPath(con
 //
 // Arguments:
 //
-//	flags		- File operation flags and arributes
+//	flags		- File operation flags and attributes
 
 FileSystem::HandlePtr HostFileSystem::FileNode::Open(int flags)
 {
-	// O_DIRECTORY verifies that the target node is a directory, which this is not
-	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
-
-	// HostFileSystem does not support unnamed temporary files via O_TMPFILE
-	// TODO: why is this here, this is Open(), not Create()
-	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
-
-	// If the file system was mounted as read-only, write access cannot be granted
-	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
-
-	// Generate the attributes for the open operation based on the provided flags
-	DWORD attributes = FILE_FLAG_POSIX_SEMANTICS;
-	if(flags & LINUX_O_SYNC) attributes |= FILE_FLAG_WRITE_THROUGH;
-	if(flags & LINUX_O_DIRECT) attributes |= FILE_FLAG_NO_BUFFERING;
-
-	// Use the contained query-only handle to reopen the file with the requested attributes
-	HANDLE handle = ReOpenFile(m_handle, FlagsToAccess(flags), FILE_SHARE_READ | FILE_SHARE_WRITE, attributes);
-	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
-
-	try {
-
-		// By using ReOpenFile() rather than CreateFile() to generate the handle, there is no opportunity
-		// to specify TRUNCATE_EXISTING in the disposition flags, it must be done after the fact
-		if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) { if(!SetEndOfFile(handle)) throw MapHostException(); }
-
-		// Generate a new Handle instance around the new object handle and the original flags
-		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(handle, flags);
-		else return std::make_shared<FileHandle>(handle, flags);
-	}
-	
-	catch(...) { CloseHandle(handle); throw; }
+	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -1060,7 +1150,7 @@ FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(int flags)
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
 	// Construct and return an ExecuteHandle instance; it takes ownership of the handle
-	try { return std::make_shared<ExecuteHandle>(handle, flags); }
+	try { return std::make_shared<ExecuteHandle>(m_mountpoint, handle, flags); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 
@@ -1112,6 +1202,27 @@ FileSystem::NodeType HostFileSystem::FileNode::getType(void)
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::PATHHANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::PathHandle::Duplicate
+//
+// Duplicates the Handle object, potentially with new flags
+//
+// Arguments:
+//
+//	flags		- Flags applicable to the new handle
+
+FileSystem::HandlePtr HostFileSystem::PathHandle::Duplicate(int flags)
+{
+	// PathHandle instances may refer to either a file or a directory node
+	BY_HANDLE_FILE_INFORMATION info;
+	if(!GetFileInformationByHandle(m_handle, &info)) throw MapHostException();
+
+	// Duplicate to either a directory or file handle based on the underlying object type
+	if((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) 
+		return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_handle, flags);
+	else return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
+}
 
 //-----------------------------------------------------------------------------
 // HostFileSystem::PathHandle::Read
