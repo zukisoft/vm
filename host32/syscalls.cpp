@@ -232,7 +232,7 @@ syscall_t g_syscalls[512] = {
 /* 122 */	REMOTE_SYSCALL_1(sys32_newuname, uapi::new_utsname*),
 /* 123 */	sys_noentry,
 /* 124 */	sys_noentry,
-/* 125 */	sys_noentry,
+/* 125 */	REMOTE_SYSCALL_3(sys32_mprotect, sys32_addr_t, uapi::size_t, int),
 /* 126 */	sys_noentry,
 /* 127 */	sys_noentry,
 /* 128 */	sys_noentry,

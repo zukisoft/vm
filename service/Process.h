@@ -86,6 +86,11 @@ public:
 	void* MapMemory(void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset);
 	// TODO: will need overloads for shared memory when I get there
 
+	// ProtectMemory
+	//
+	// Sets memory protection flags for a region
+	void ProtectMemory(void* address, size_t length, int prot);
+
 	// RemoveHandle
 	//
 	// Removes a file system handle from the process

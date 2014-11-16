@@ -188,6 +188,34 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 	return address;
 }
 
+void Process::ProtectMemory(void* address, size_t length, int prot)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
+	DWORD						oldprotection;		// Previously set protection flags
+
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	// Determine the starting and ending points for the operation; Windows will automatically
+	// adjust these values to align on the proper page size during VirtualProtect
+	uintptr_t begin = uintptr_t(address);
+	uintptr_t end = begin + length;
+
+	// Scan the requested memory region and set the protection flags
+	while(begin < end) {
+
+		// Query the information about the current region to be protected
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// Attempt to assign the protection flags for the current region
+		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
+			uapi::LinuxProtToWindowsPageFlags(prot), &oldprotection)) throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		begin += meminfo.RegionSize;		// Move to the next region
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Process::GetHandle
 //
