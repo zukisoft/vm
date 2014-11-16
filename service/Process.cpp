@@ -87,7 +87,8 @@ void* Process::AllocateRegion(size_t length, int prot, int flags)
 
 	// Attempt to reserve the region of memory from the hosted process aligned up to the
 	// system allocation granularity to prevent unusable holes in the address space
-	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, align::up(length, MemoryRegion::AllocationGranularity), MEM_RESERVE, PAGE_NOACCESS);
+	size_t regionlength = align::up(length, MemoryRegion::AllocationGranularity);
+	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, regionlength, MEM_RESERVE, PAGE_NOACCESS);
 	if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
 	// Attempt to commit and assign protection flags to the allocated region
@@ -98,6 +99,8 @@ void* Process::AllocateRegion(size_t length, int prot, int flags)
 		throw LinuxException(LINUX_EINVAL, exception);					// Allocation operation failed
 	}
 
+	// Keep track of the base address and original allocation size for this mapping
+	m_mappings.insert(std::make_pair(region, regionlength));
 	return region;
 }
 
@@ -142,8 +145,12 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 		// is not aligned to the allocation granularity, which indicates a hole in the address space
 		if(meminfo.State == MEM_FREE) {
 
-			if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), min(regionend - regionbegin, meminfo.RegionSize), 
-				MEM_RESERVE, PAGE_NOACCESS)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
+			size_t regionlength = min(regionend - regionbegin, meminfo.RegionSize);
+			if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), regionlength,  MEM_RESERVE, PAGE_NOACCESS)) 
+				throw LinuxException(LINUX_ENOMEM, Win32Exception());
+
+			// Keep track of the reservation base address and original allocation length
+			m_mappings.insert(std::make_pair(reinterpret_cast<void*>(regionbegin), regionlength));
 		}
 
 		regionbegin += meminfo.RegionSize;			// Move to the next region
@@ -186,34 +193,6 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 	}
 
 	return address;
-}
-
-void Process::ProtectMemory(void* address, size_t length, int prot)
-{
-	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
-	DWORD						oldprotection;		// Previously set protection flags
-
-	_ASSERTE(m_host);
-	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
-
-	// Determine the starting and ending points for the operation; Windows will automatically
-	// adjust these values to align on the proper page size during VirtualProtect
-	uintptr_t begin = uintptr_t(address);
-	uintptr_t end = begin + length;
-
-	// Scan the requested memory region and set the protection flags
-	while(begin < end) {
-
-		// Query the information about the current region to be protected
-		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-			throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		// Attempt to assign the protection flags for the current region
-		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
-			uapi::LinuxProtToWindowsPageFlags(prot), &oldprotection)) throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		begin += meminfo.RegionSize;		// Move to the next region
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -298,6 +277,45 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 }
 
 //-----------------------------------------------------------------------------
+// Process::ProtectMemory
+//
+// Assigns protection flags for an allocated region of memory
+//
+// Arguments:
+//
+//	address		- Base address of the region to be protected
+//	length		- Length of the region to be protected
+//	prot		- New protection flags for the memory region 
+
+void Process::ProtectMemory(void* address, size_t length, int prot)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
+	DWORD						oldprotection;		// Previously set protection flags
+
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	// Determine the starting and ending points for the operation; Windows will automatically
+	// adjust these values to align on the proper page size during VirtualProtect
+	uintptr_t begin = uintptr_t(address);
+	uintptr_t end = begin + length;
+
+	// Scan the requested memory region and set the protection flags
+	while(begin < end) {
+
+		// Query the information about the current region to be protected
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// Attempt to assign the protection flags for the current region
+		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
+			uapi::LinuxProtToWindowsPageFlags(prot), &oldprotection)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
+
+		begin += meminfo.RegionSize;		// Move to the next region
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Process::RemoveHandle
 //
 // Removes a file system handle from the process
@@ -312,6 +330,71 @@ void Process::RemoveHandle(int index)
 	// but if problems start to happen, this is a good place to look at
 	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADF);
 	m_indexpool.Release(index);
+}
+
+//-----------------------------------------------------------------------------
+// Process::UnmapMemory
+//
+// Releases a memory region allocated with MapMemory
+//
+// Arguments:
+//
+//	address		- Base address of the region to be released
+//	length		- Length of the region to be released
+
+void Process::UnmapMemory(void* address, size_t length)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
+
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	// Determine the starting and ending points for the operation; Windows will automatically
+	// adjust these values to align on the proper page size during VirtualProtect
+	uintptr_t begin = uintptr_t(address);
+	uintptr_t end = begin + length;
+
+	// Scan the requested memory region and decommit/release the memory as is appropriate
+	while(begin < end) {
+
+		// Query the information about the current region to be released
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// Don't try to decommit pages that aren't already committed, munmap() should not
+		// return an error if the page(s) aren't committed (MEM_FREE or MEM_RESERVE)
+		if(meminfo.State == MEM_COMMIT) {
+
+			//
+			// TODO: Write-back for shared memory maps goes here, need to check if it's
+			// dirty and the region flags indicate a write-back is necessary.  Determining
+			// if it's shared can't be done with MEMORY_BASIC_INFORMATION since the current
+			// intention is to do it all manually via VirtualAllocEx()
+			//
+			
+			if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), MEM_DECOMMIT))
+				throw LinuxException(LINUX_EINVAL, Win32Exception());
+		}
+
+		// If the current base address matches the allocation base address, this region can possibly be released
+		if(meminfo.BaseAddress == meminfo.AllocationBase) {
+
+			// Get updated information about the decommitted region
+			MEMORY_BASIC_INFORMATION freeinfo;
+			if(VirtualQueryEx(m_host->ProcessHandle, meminfo.AllocationBase, &freeinfo, sizeof(MEMORY_BASIC_INFORMATION))) {
+
+				// Find the original length of the allocation, and if the entire region is now decommitted, release it
+				auto it = m_mappings.find(reinterpret_cast<void*>(begin));
+				if((it != m_mappings.end()) && (it->second == freeinfo.RegionSize)) {
+
+					if(!VirtualFreeEx(m_host->ProcessHandle, freeinfo.AllocationBase, 0, MEM_RELEASE)) throw LinuxException(LINUX_EINVAL, Win32Exception());
+					m_mappings.unsafe_erase(it);
+				}
+			}
+		}
+
+		begin += meminfo.RegionSize;		// Move to the next region
+	}
 }
 
 //-----------------------------------------------------------------------------

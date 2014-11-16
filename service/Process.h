@@ -111,6 +111,11 @@ public:
 	// Terminates the process
 	void Terminate(int exitcode) { _ASSERTE(m_host); m_host->Terminate(-exitcode); }
 
+	// UnmapMemory
+	//
+	// Releases a memory mapping from the process
+	void UnmapMemory(void* address, size_t length);
+
 	//-------------------------------------------------------------------------
 	// Properties
 
@@ -205,6 +210,11 @@ private:
 	// Collection of file system handles, keyed on the index (file descriptor)
 	using handle_map_t = Concurrency::concurrent_unordered_map<int, FileSystem::HandlePtr>;
 
+	// memory_map_t
+	//
+	// Collection of memory mappings allocated by MapMemory()
+	using memory_map_t = Concurrency::concurrent_unordered_map<void*, size_t>;
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -224,11 +234,6 @@ private:
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
-	// FlagsToProtection
-	//
-	// Converts linux protection flags into VirtualAlloc(Ex) protection flags
-	static DWORD FlagsToProtection(uint32_t flags);
-
 	//-------------------------------------------------------------------------
 	// Member Variables
 
@@ -236,6 +241,7 @@ private:
 	const StartupInfo		m_startinfo;		// Hosted process start information
 
 	handle_map_t			m_handles;			// Process file system handles
+	memory_map_t			m_mappings;			// Process memory mappings
 	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
 
 	int						m_processid = 1;

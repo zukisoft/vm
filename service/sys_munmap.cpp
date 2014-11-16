@@ -31,19 +31,16 @@
 __int3264 sys_munmap(const SystemCall::Context* context, void* address, uapi::size_t length)
 {
 	_ASSERTE(context);
-	(length);
-	(address);
 
 	try { 		
 		
 		SystemCall::Impersonation impersonation; 
-		///context->Process->TidAddress = address;
+		context->Process->UnmapMemory(address, length);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
-	///return context->Process->ProcessId;
-	return -1;
+	return 0;
 }
 
 // sys32_munmap
