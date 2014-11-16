@@ -383,12 +383,18 @@ void Process::UnmapMemory(void* address, size_t length)
 			MEMORY_BASIC_INFORMATION freeinfo;
 			if(VirtualQueryEx(m_host->ProcessHandle, meminfo.AllocationBase, &freeinfo, sizeof(MEMORY_BASIC_INFORMATION))) {
 
-				// Find the original length of the allocation, and if the entire region is now decommitted, release it
-				auto it = m_mappings.find(reinterpret_cast<void*>(begin));
-				if((it != m_mappings.end()) && (it->second == freeinfo.RegionSize)) {
+				_ASSERTE(freeinfo.State != MEM_COMMIT);				// Should never happen
 
-					if(!VirtualFreeEx(m_host->ProcessHandle, freeinfo.AllocationBase, 0, MEM_RELEASE)) throw LinuxException(LINUX_EINVAL, Win32Exception());
-					m_mappings.unsafe_erase(it);
+				// Don't attempt to release a region that is already MEM_FREE
+				if(freeinfo.State == MEM_RESERVE) {
+
+					// Find the original length of the allocation, and if the entire region is now decommitted, release it
+					auto it = m_mappings.find(reinterpret_cast<void*>(begin));
+					if((it != m_mappings.end()) && (it->second == freeinfo.RegionSize)) {
+
+						if(!VirtualFreeEx(m_host->ProcessHandle, freeinfo.AllocationBase, 0, MEM_RELEASE)) throw LinuxException(LINUX_EINVAL, Win32Exception());
+						m_mappings.unsafe_erase(it);
+					}
 				}
 			}
 		}
