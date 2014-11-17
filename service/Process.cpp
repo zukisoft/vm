@@ -258,7 +258,7 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 		HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);	// 64K buffer
 
 		// Seek the file handle to the specified offset
-		if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw LinuxException(LINUX_EINVAL);
+		if(handle->Seek(offset, LINUX_SEEK_SET) != offset) throw LinuxException(LINUX_EINVAL);
 
 		do {
 			
