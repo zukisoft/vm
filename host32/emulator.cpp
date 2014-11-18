@@ -55,6 +55,9 @@ emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> boo
 
 #ifdef _DEBUG
 	int syscall = static_cast<int>(context->Eax);
+	wchar_t sc[255];
+	wsprintf(sc, L"System call %d\r\n", syscall);
+	OutputDebugString(sc);
 #endif
 
 	// There are only 512 system call slots defined

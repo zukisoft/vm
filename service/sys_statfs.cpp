@@ -39,8 +39,16 @@
 __int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* path, uapi::statfs* buf)
 {
 	_ASSERTE(context);
-	(buf);
 	(path);
+	// TODO: Need to figure out how to get back to the filesystem from any node.  I really don't
+	// want to carry it around with every node, perhaps it can use path resolution (seems easy, 
+	// but keep in mind fstatfs(), which comes with a Handle not a path
+	//
+	// I wasn't fond of carrying an Alias around with every handle either, perhaps there is a
+	// better way, like having the VirtualMachine keep track of everything in a collection and
+	// alleviate the need for the FileSystem implementation to do it (this makes sense, why would
+	// a filesystem have to care about housekeeping for the kernel implementation?)
+	memset(buf, 0, sizeof(uapi::statfs));
 	return -LINUX_ENOSYS;
 	//try { 
 

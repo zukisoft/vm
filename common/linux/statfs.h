@@ -30,7 +30,9 @@
 // include/uapi/asm-generic/statfs.h
 //-----------------------------------------------------------------------------
 
-// size = 64
+#pragma pack(push, 1)
+
+// size = 64 (x86)
 //
 // Used only with 32-bit statfs() and family
 typedef struct {
@@ -89,6 +91,8 @@ typedef struct {
 	int64_t				f_spare[4];
 
 } linux_statfs64;
+
+#pragma pack(pop)
 
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
