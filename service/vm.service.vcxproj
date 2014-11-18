@@ -315,6 +315,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\mman.h" />
     <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
+    <ClInclude Include="..\common\linux\statfs.h" />
     <ClInclude Include="..\common\linux\types.h" />
     <ClInclude Include="..\common\linux\utsname.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
@@ -636,6 +637,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_rundown_context.cpp" />
     <ClCompile Include="sys_setdomainname.cpp" />
     <ClCompile Include="sys_sethostname.cpp" />
+    <ClCompile Include="sys_statfs.cpp" />
+    <ClCompile Include="sys_statfs64.cpp" />
     <ClCompile Include="sys_uname.cpp" />
     <ClCompile Include="sys_readlink.cpp" />
     <ClCompile Include="sys_set_tid_address.cpp" />

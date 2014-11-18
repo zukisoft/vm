@@ -323,6 +323,9 @@
     <ClInclude Include="SystemLog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\statfs.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -581,6 +584,12 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys_openat.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_statfs.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_statfs64.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>

@@ -28,7 +28,7 @@
 // include/uapi/linux/fs.h
 //-----------------------------------------------------------------------------
 
-#define LINUX_AT_FDCWD				-100		/* Special value used to indicate current working directory. */
+#define LINUX_AT_FDCWD				 -100		/* Special value used to indicate current working directory. */
 #define LINUX_AT_SYMLINK_NOFOLLOW	0x100		/* Do not follow symbolic links.  */
 #define LINUX_AT_REMOVEDIR			0x200		/* Remove directory instead of unlinking file.  */
 #define LINUX_AT_SYMLINK_FOLLOW		0x400		/* Follow symbolic links. */
@@ -63,8 +63,6 @@
 #define LINUX_O_SYNC				(LINUX___O_SYNC | LINUX_O_DSYNC)
 #define LINUX_O_PATH				010000000
 #define LINUX___O_TMPFILE			020000000
-
-
 
 //-----------------------------------------------------------------------------
 

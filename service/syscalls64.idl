@@ -123,6 +123,7 @@ interface SystemCalls64
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
+	/* 137 */ sys64_long_t	sys64_statfs([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_statfs64* buf);
 	/* 170 */ sys64_long_t	sys64_sethostname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 171 */ sys64_long_t	sys64_setdomainname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);

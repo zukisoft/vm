@@ -25,6 +25,7 @@
 #pragma once
 
 #include <linux/types.h>
+#include <linux/statfs.h>
 #include <linux/utsname.h>
 
 #endif		// __UAPI_H_
