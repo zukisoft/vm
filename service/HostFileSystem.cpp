@@ -189,10 +189,12 @@ static HeapBuffer<tchar_t> HandleToPath(HANDLE handle)
 // Arguments:
 //
 //	mountpoint	- MountPoint instance for the parent file system
+//	alias		- Alias instance used when original handle was generated
 //	handle		- Existing directory object handle
 //	flags		- File operation flags and attributes
 
-FileSystem::HandlePtr HostFileSystem::DuplicateDirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags)
+FileSystem::HandlePtr HostFileSystem::DuplicateDirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias,
+	HANDLE handle, int flags)
 {
 	_ASSERTE(mountpoint);
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);
@@ -207,8 +209,8 @@ FileSystem::HandlePtr HostFileSystem::DuplicateDirectoryHandle(const std::shared
 	try { 
 
 		// Generate a new Handle instance around the new object handle
-		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(mountpoint, duplicate, flags);
-		else return std::make_shared<DirectoryHandle>(mountpoint, duplicate, flags);
+		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(mountpoint, alias, duplicate, flags);
+		else return std::make_shared<DirectoryHandle>(mountpoint, alias, duplicate, flags);
 	}
 	catch(...) { CloseHandle(duplicate); throw; }
 }
@@ -221,10 +223,12 @@ FileSystem::HandlePtr HostFileSystem::DuplicateDirectoryHandle(const std::shared
 // Arguments:
 //
 //	mountpoint	- MountPoint instance for the parent file system
+//	alias		- Alias instance used when original handle was generated
 //	handle		- Existing directory object handle
 //	flags		- File operation flags and attributes
 
-FileSystem::HandlePtr HostFileSystem::DuplicateFileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags)
+FileSystem::HandlePtr HostFileSystem::DuplicateFileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias,
+	HANDLE handle, int flags)
 {
 	_ASSERTE(mountpoint);
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);
@@ -255,8 +259,8 @@ FileSystem::HandlePtr HostFileSystem::DuplicateFileHandle(const std::shared_ptr<
 		if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) { if(!SetEndOfFile(duplicate)) throw MapHostException(); }
 
 		// Generate a new Handle instance around the new object handle and the original flags
-		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(mountpoint, duplicate, flags);
-		else return std::make_shared<FileHandle>(mountpoint, duplicate, flags);
+		if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(mountpoint, alias, duplicate, flags);
+		else return std::make_shared<FileHandle>(mountpoint, alias, duplicate, flags);
 	}
 	
 	catch(...) { CloseHandle(duplicate); throw; }
@@ -349,11 +353,12 @@ FileSystem::AliasPtr HostFileSystem::Alias::getParent(void)
 // Arguments:
 //
 //	mountpoint		- Mounted file system metadata
+//	alias			- Alias instance used when opening this handle
 //	handle			- Handle to the host operating system object
 //	flags			- Open operation flags and attributes
 
-HostFileSystem::BaseHandle::BaseHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
-	m_mountpoint(mountpoint), m_handle(handle), m_flags(flags)
+HostFileSystem::BaseHandle::BaseHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, 
+	HANDLE handle, int flags) : m_mountpoint(mountpoint), m_alias(alias), m_handle(handle), m_flags(flags)
 {
 	_ASSERTE(mountpoint);
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);
@@ -442,7 +447,7 @@ void HostFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr&,
 //	name		- Name to assign to the new file alias
 //	flags		- File creation flags
 
-FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr&, const uapi::char_t* name, int flags)
+FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags)
 {
 	tchar_t*					hostpath = nullptr;				// Completed path to the file system object
 
@@ -474,9 +479,13 @@ FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem
 	HANDLE handle = ::CreateFile(hostpath, FlagsToAccess(flags), FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CREATE_NEW, attributes, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
-	// Create and return a FileHandle for the new object; HostFileSystem doesn't need a parent node
-	try { return std::make_shared<FileHandle>(m_mountpoint, handle, flags); }
+	// Construct a new FileNode instance to represent the file system object
+	std::shared_ptr<FileNode> node;
+	try { node = FileNode::FromHandle(m_mountpoint, handle); }
 	catch(...) { CloseHandle(handle); throw; }
+
+	// Generate a Handle instance for the new file object
+	return node->Open(Alias::Construct(name, parent, node), flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -568,12 +577,13 @@ std::shared_ptr<HostFileSystem::DirectoryNode> HostFileSystem::DirectoryNode::Fr
 //
 // Arguments:
 //
+//	alias		- Alias used to resolve this node instance
 //	flags		- File operation flags and attributes
 
-FileSystem::HandlePtr HostFileSystem::DirectoryNode::Open(int flags)
+FileSystem::HandlePtr HostFileSystem::DirectoryNode::Open(const AliasPtr& alias, int flags)
 {
 	// Duplicate the directory handle with the specified flags
-	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_handle, flags);
+	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, alias, m_handle, flags);
 }
 
 void HostFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
@@ -664,7 +674,7 @@ FileSystem::NodeType HostFileSystem::DirectoryNode::getType(void)
 FileSystem::HandlePtr HostFileSystem::DirectoryHandle::Duplicate(int flags)
 {
 	// Duplicate the directory handle with the specified flags
-	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_handle, flags);
+	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_alias, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -756,7 +766,7 @@ uapi::size_t HostFileSystem::DirectoryHandle::Write(const void*, uapi::size_t)
 FileSystem::HandlePtr HostFileSystem::ExecuteHandle::Duplicate(int flags)
 {
 	// Duplicate the file handle with the specified flags
-	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
+	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_alias, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -858,11 +868,12 @@ uapi::size_t HostFileSystem::ExecuteHandle::Write(const void*, uapi::size_t)
 // Arguments:
 //
 //	mountpoint		- Mounted file system metadata
+//	alias			- Alias instance used when opening this handle
 //	handle			- Handle to the host operating system object
 //	flags			- Open operation flags and attributes
 
-HostFileSystem::FileHandle::FileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
-	BaseHandle(mountpoint, handle, flags)
+HostFileSystem::FileHandle::FileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, 
+	HANDLE handle, int flags) : BaseHandle(mountpoint, alias, handle, flags)
 {
 	// O_DIRECT operations require a specific alignment when reading/writing to
 	// the file, get that information from the operating system
@@ -886,7 +897,7 @@ HostFileSystem::FileHandle::FileHandle(const std::shared_ptr<MountPoint>& mountp
 FileSystem::HandlePtr HostFileSystem::FileHandle::Duplicate(int flags)
 {
 	// Duplicate the file handle with the specified flags
-	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
+	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_alias, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -1124,11 +1135,12 @@ std::shared_ptr<HostFileSystem::FileNode> HostFileSystem::FileNode::FromPath(con
 //
 // Arguments:
 //
+//	alias		- Alias instance used to resolve this node
 //	flags		- File operation flags and attributes
 
-FileSystem::HandlePtr HostFileSystem::FileNode::Open(int flags)
+FileSystem::HandlePtr HostFileSystem::FileNode::Open(const AliasPtr& alias, int flags)
 {
-	return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
+	return HostFileSystem::DuplicateFileHandle(m_mountpoint, alias, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -1138,9 +1150,10 @@ FileSystem::HandlePtr HostFileSystem::FileNode::Open(int flags)
 //
 // Arguments:
 //
+//	alias		- Aliased used to resolve this node instance
 //	flags		- Unused; File operation flags and attributes
 
-FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(int flags)
+FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(const AliasPtr& alias, int flags)
 {
 	// If the file system was mounted with noexec, this file cannot be executed
 	if(m_mountpoint->Options.NoExecute) throw LinuxException(LINUX_EACCES);
@@ -1150,7 +1163,7 @@ FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(int flags)
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
 	// Construct and return an ExecuteHandle instance; it takes ownership of the handle
-	try { return std::make_shared<ExecuteHandle>(m_mountpoint, handle, flags); }
+	try { return std::make_shared<ExecuteHandle>(m_mountpoint, alias, handle, flags); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 
@@ -1220,8 +1233,8 @@ FileSystem::HandlePtr HostFileSystem::PathHandle::Duplicate(int flags)
 
 	// Duplicate to either a directory or file handle based on the underlying object type
 	if((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) 
-		return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_handle, flags);
-	else return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_handle, flags);
+		return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, m_alias, m_handle, flags);
+	else return HostFileSystem::DuplicateFileHandle(m_mountpoint, m_alias, m_handle, flags);
 }
 
 //-----------------------------------------------------------------------------

@@ -59,11 +59,12 @@ void VmService::CheckPermissions(const uapi::char_t* path, uapi::mode_t mode)
 //
 // Arguments:
 //
+//	workingdir		- Initial working directory for the new process
 //	path			- Path to the file system object to execute as a process
 //	arguments		- Pointer to an array of command line argument strings
 //	environment		- Pointer to the process environment variables
 
-std::shared_ptr<Process> VmService::CreateProcess(const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment)
+std::shared_ptr<Process> VmService::CreateProcess(const FileSystem::AliasPtr& workingdir, const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment)
 {
 	if(!path) throw LinuxException(LINUX_EFAULT);
 
@@ -83,11 +84,11 @@ std::shared_ptr<Process> VmService::CreateProcess(const uapi::char_t* path, cons
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			// TODO: clean up the arguments, I hate c_str(). need to work on svctl::parameter
 			case LINUX_ELFCLASS32: 
-				return Process::Create<ElfClass::x86>(shared_from_this(), handle, arguments, environment, ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str());
+				return Process::Create<ElfClass::x86>(shared_from_this(), workingdir, handle, arguments, environment, ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str());
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
 			case LINUX_ELFCLASS64: 
-				return Process::Create<ElfClass::x86_64>(shared_from_this(), handle, arguments, environment, ((svctl::tstring)process_host_64bit).c_str(), m_hostarguments64.c_str());
+				return Process::Create<ElfClass::x86_64>(shared_from_this(), workingdir, handle, arguments, environment, ((svctl::tstring)process_host_64bit).c_str(), m_hostarguments64.c_str());
 #endif
 			// Any other ELFCLASS -> ENOEXEC	
 			default: throw LinuxException(LINUX_ENOEXEC);
@@ -130,7 +131,7 @@ std::shared_ptr<Process> VmService::CreateProcess(const uapi::char_t* path, cons
 		newarguments.push_back(nullptr);
 
 		// Recursively call back into CreateProcess with the interpreter path and arguments
-		return CreateProcess(interpreter.c_str(), newarguments.data(), environment);
+		return CreateProcess(workingdir, interpreter.c_str(), newarguments.data(), environment);
 	}
 
 	// UNSUPPORTED BINARY FORMAT
@@ -443,7 +444,7 @@ void VmService::OnStart(int, LPTSTR*)
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	// TODO: NEED INITIAL ENVIRONMENT
-	m_initprocess = CreateProcess(initpath.c_str(), args, nullptr);
+	m_initprocess = CreateProcess(m_vfs->Root, initpath.c_str(), args, nullptr);
 	m_initprocess->Resume();
 
 	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?
@@ -491,6 +492,12 @@ FileSystem::HandlePtr VmService::OpenFile(const uapi::char_t* pathname, int flag
 {
 	_ASSERTE(m_vfs);
 	return m_vfs->Open(pathname, flags, mode);
+}
+
+FileSystem::HandlePtr VmService::OpenFile(const FileSystem::AliasPtr& base, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+{
+	_ASSERTE(m_vfs);
+	return m_vfs->Open(base, pathname, flags, mode);
 }
 
 size_t VmService::ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length)

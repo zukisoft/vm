@@ -101,12 +101,14 @@ private:
 	// DuplicateDirectoryHandle (static)
 	//
 	// Duplicates an existing directory object handle
-	static FileSystem::HandlePtr DuplicateDirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
+	static FileSystem::HandlePtr DuplicateDirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, 
+		HANDLE handle, int flags);
 
 	// DuplicateFileHandle (static)
 	//
 	// Duplicates an existing file object handle
-	static FileSystem::HandlePtr DuplicateFileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
+	static FileSystem::HandlePtr DuplicateFileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, 
+		HANDLE handle, int flags);
 
 	// Member Variables
 	//
@@ -175,7 +177,7 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual void					Demand(uapi::mode_t mode);
-		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
 		virtual uint64_t				getIndex(void);
 		virtual FileSystem::NodeType	getType(void);
@@ -226,14 +228,14 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual void					Demand(uapi::mode_t mode);
-		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
 		virtual uint64_t				getIndex(void);
 		virtual FileSystem::NodeType	getType(void);
 
 		// FileSystem::File Implementation
 		//
-		virtual HandlePtr				OpenExec(int flags);
+		virtual HandlePtr				OpenExec(const AliasPtr& alias, int flags);
 
 	private:
 
@@ -264,13 +266,14 @@ private:
 
 		// Instance Constructor
 		//
-		BaseHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
+		BaseHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, HANDLE handle, int flags);
 
 		// Protected Member Variables
 		//
-		std::shared_ptr<MountPoint>	m_mountpoint;			// Mounted file system metadata
-		HANDLE						m_handle;				// Read/execute object handle
-		int							m_flags;				// Open flags from construction
+		std::shared_ptr<MountPoint>	m_mountpoint;		// Mounted file system metadata
+		std::shared_ptr<FileSystem::Alias> m_alias;		// Alias used when opening this handle
+		HANDLE						m_handle;			// Read/execute object handle
+		int							m_flags;			// Open flags from construction
 
 	private:
 
@@ -285,8 +288,8 @@ private:
 	{
 	public:
 
-		DirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
-			BaseHandle(mountpoint, handle, flags) {}
+		DirectoryHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, HANDLE handle, int flags) : 
+			BaseHandle(mountpoint, alias, handle, flags) {}
 		virtual ~DirectoryHandle()=default;
 
 		// FileSystem::Handle implementation
@@ -297,6 +300,8 @@ private:
 		virtual void					Sync(void);
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
+
+		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 	private:
 
@@ -311,8 +316,8 @@ private:
 	{
 	public:
 
-		ExecuteHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
-			BaseHandle(mountpoint, handle, flags) {}
+		ExecuteHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, HANDLE handle, int flags) : 
+			BaseHandle(mountpoint, alias, handle, flags) {}
 		virtual ~ExecuteHandle()=default;
 
 		// FileSystem::Handle Implementation
@@ -323,6 +328,8 @@ private:
 		virtual void					Sync(void);
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
+
+		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 	private:
 
@@ -337,7 +344,7 @@ private:
 	{
 	public:
 
-		FileHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags);
+		FileHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, HANDLE handle, int flags);
 		virtual ~FileHandle()=default;
 
 		// FileSystem::Handle Implementation
@@ -348,6 +355,8 @@ private:
 		virtual void					Sync(void);
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
+
+		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 	private:
 
@@ -371,8 +380,8 @@ private:
 	{
 	public:
 
-		PathHandle(const std::shared_ptr<MountPoint>& mountpoint, HANDLE handle, int flags) : 
-			BaseHandle(mountpoint, handle, flags) {}
+		PathHandle(const std::shared_ptr<MountPoint>& mountpoint, const std::shared_ptr<FileSystem::Alias>& alias, HANDLE handle, int flags) : 
+			BaseHandle(mountpoint, alias, handle, flags) {}
 		virtual ~PathHandle()=default;
 
 		// FileSystem::Handle implementation
@@ -383,6 +392,8 @@ private:
 		virtual void					Sync(void);
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
+
+		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 	private:
 

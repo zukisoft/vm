@@ -199,8 +199,8 @@ private:
 
 		// Constructor / Destructor
 		//
-		PathHandle(const std::shared_ptr<NodeBase>& node, int flags, const FilePermission& permission) 
-			: m_node(node), m_flags(flags), m_permission(permission) {}
+		PathHandle(const std::shared_ptr<NodeBase>& node, const std::shared_ptr<FileSystem::Alias>& alias, int flags, const FilePermission& permission) 
+			: m_node(node), m_alias(alias), m_flags(flags), m_permission(permission) {}
 		~PathHandle()=default;
 
 		// FileSystem::Handle Implementation
@@ -212,6 +212,8 @@ private:
 		virtual void					SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
 		virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
+		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+
 	private:
 
 		PathHandle(const PathHandle&)=delete;
@@ -220,6 +222,7 @@ private:
 		// Member Variables
 		//		
 		int								m_flags;		// File control flags
+		std::shared_ptr<FileSystem::Alias> m_alias;		// Alias instance for this handle
 		std::shared_ptr<NodeBase>		m_node;			// Node reference
 		FilePermission					m_permission;	// Object permissions
 	};
@@ -242,7 +245,7 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual void					Demand(uapi::mode_t mode) { NodeBase::Demand(mode); }
-		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void)	{ return FileSystem::NodeType::Directory; }
@@ -273,18 +276,20 @@ private:
 
 			// Consructor / Destructor
 			//
-			Handle(const std::shared_ptr<DirectoryNode>& node, int flags, const FilePermission& permission) 
-				: m_node(node), m_flags(flags), m_permission(permission) {}
+			Handle(const std::shared_ptr<DirectoryNode>& node, const std::shared_ptr<FileSystem::Alias>& alias, int flags, const FilePermission& permission) 
+				: m_node(node), m_alias(alias), m_flags(flags), m_permission(permission) {}
 			~Handle()=default;
 
 			// FileSystem::Handle Implementation
 			//
-			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(flags); }
+			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EISDIR); }
 			virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EISDIR); }
 			virtual void					Sync(void)							{ /* do nothing */ }
 			virtual void					SyncData(void)						{ /* do nothing */ }
 			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
+
+			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 		private:
 
@@ -294,6 +299,7 @@ private:
 			// Member Variables
 			//
 			int								m_flags;		// File control flags
+			std::shared_ptr<FileSystem::Alias> m_alias;		// Alias instance for this handle
 			std::shared_ptr<DirectoryNode>	m_node;			// Node reference
 			FilePermission					m_permission;	// Directory permissions
 		};
@@ -330,14 +336,14 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual void					Demand(uapi::mode_t mode) { NodeBase::Demand(mode); }
-		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::File; }
 
 		// FileSystem::File Implementation
 		//		
-		virtual FileSystem::HandlePtr	OpenExec(int flags);
+		virtual FileSystem::HandlePtr	OpenExec(const std::shared_ptr<FileSystem::Alias>& alias, int flags);
 
 	private:
 
@@ -358,18 +364,20 @@ private:
 
 			// Constructor / Destructor
 			//
-			Handle(const std::shared_ptr<FileNode>& node, int flags, const FilePermission& permission)
-				: m_flags(flags), m_node(node), m_position(0), m_permission(permission) {}
+			Handle(const std::shared_ptr<FileNode>& node, const std::shared_ptr<FileSystem::Alias>& alias, int flags, const FilePermission& permission)
+				: m_flags(flags), m_alias(alias), m_node(node), m_position(0), m_permission(permission) {}
 			~Handle()=default;
 
 			// FileSystem::Handle Implementation
 			//
-			virtual FileSystem::HandlePtr	Duplicate(int flags)	{ return m_node->Open(flags); }
+			virtual FileSystem::HandlePtr	Duplicate(int flags)	{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
 			virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
 			virtual void					Sync(void)				{ /* do nothing */ }
 			virtual void					SyncData(void)			{ /* do nothing */ }
 			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
+
+			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 		private:
 
@@ -379,6 +387,7 @@ private:
 			// Member Variables
 			//
 			int							m_flags;		// File control flags
+			std::shared_ptr<FileSystem::Alias> m_alias;	// Alias instance used with this handle
 			std::shared_ptr<FileNode>	m_node;			// Node reference
 			FilePermission				m_permission;	// File permissions
 			std::atomic<size_t>			m_position;		// File position
@@ -408,7 +417,7 @@ private:
 		// FileSystem::Node Implementation
 		//
 		virtual void					Demand(uapi::mode_t mode) { NodeBase::Demand(mode); }
-		virtual FileSystem::HandlePtr	Open(int flags);
+		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::SymbolicLink; }
@@ -438,17 +447,20 @@ private:
 
 			// Consructor / Destructor
 			//
-			Handle(const std::shared_ptr<SymbolicLinkNode>& node, int flags) : m_node(node), m_flags(flags) {}
+			Handle(const std::shared_ptr<SymbolicLinkNode>& node, const std::shared_ptr<FileSystem::Alias>& alias, int flags) : 
+				m_node(node), m_alias(alias), m_flags(flags) {}
 			~Handle()=default;
 
 			// FileSystem::Handle Implementation
 			//
-			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(flags); }
+			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
 			virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
 			virtual void					Sync(void)							{ throw LinuxException(LINUX_EBADF); }
 			virtual void					SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
 			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+
+			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
 
 		private:
 
@@ -458,6 +470,7 @@ private:
 			// Member Variables
 			//
 			int									m_flags;	// File control flags
+			std::shared_ptr<FileSystem::Alias>	m_alias;	// Alias instance
 			std::shared_ptr<SymbolicLinkNode>	m_node;		// Node reference
 		};
 

@@ -73,6 +73,7 @@ public:
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 	virtual std::shared_ptr<FileSystem::Handle>	OpenExecutable(const uapi::char_t* path);
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode);
+	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
 	virtual size_t								ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length);
 
 	virtual std::string		GetProperty(VirtualMachine::Properties id);
@@ -102,7 +103,7 @@ private:
 	// CreateProcess
 	//
 	// Creates a new hosted process instance from a file system binary
-	std::shared_ptr<Process> CreateProcess(const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
+	std::shared_ptr<Process> CreateProcess(const FileSystem::AliasPtr& workingdir, const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
 
 	// LoadInitialFileSystem
 	//

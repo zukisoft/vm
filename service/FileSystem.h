@@ -162,7 +162,7 @@ struct __declspec(novtable) FileSystem
 		// Open
 		//
 		// Creates a FileSystem::Handle instance for this node
-		virtual HandlePtr Open(int flags) = 0;
+		virtual HandlePtr Open(const AliasPtr& alias, int flags) = 0;
 
 		// Resolve
 		//
@@ -228,7 +228,7 @@ struct __declspec(novtable) FileSystem
 		//
 		// Creates a FileSystem::Handle instance for this node, specifically for use
 		// by the virtual machine as part of process creation
-		virtual HandlePtr OpenExec(int flags) = 0;
+		virtual HandlePtr OpenExec(const AliasPtr& alias, int flags) = 0;
 	};
 
 	// SymbolicLink
@@ -276,6 +276,12 @@ struct __declspec(novtable) FileSystem
 		//
 		// Synchronously writes data from a buffer to the underlying node
 		virtual uapi::size_t Write(const void* buffer, uapi::size_t count) = 0;
+
+		// Alias
+		//
+		// Gets a reference to the Alias instance used to open this handle
+		__declspec(property(get=getAlias)) AliasPtr Alias;
+		virtual AliasPtr getAlias(void) = 0;
 	};
 
 	//

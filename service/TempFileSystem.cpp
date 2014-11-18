@@ -216,10 +216,11 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem
 	// Construct the new FileNode instance and atomically create an initial handle
 	// prior to adding it to the collection of child nodes
 	auto node = FileNode::Construct(m_mountpoint /*, name */);
-	auto handle = node->Open(flags);
+	auto alias = Alias::Construct(name, parent, node);
+	auto handle = node->Open(alias, flags);
 
 	// Attempt to construct and insert a new Alias instance with the specified name
-	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+	auto result = m_children.insert(std::make_pair(name, alias));
 	if(!result.second) throw LinuxException(LINUX_EEXIST);
 
 	return handle;				// Return Handle instance generated above
@@ -242,7 +243,7 @@ void TempFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 
 // DirectoryNode::Open
 //
-FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(int flags)
+FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(const AliasPtr& alias, int flags)
 {
 	// Directory node handles must be opened in read-only mode
 	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
@@ -253,8 +254,8 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::Open(int flags)
 	permission.Narrow(flags);
 
 	// Construct and return the new Handle instance for this node
-	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), flags, permission);
-	else return std::make_shared<Handle>(shared_from_this(), flags, permission);
+	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), alias, flags, permission);
+	else return std::make_shared<Handle>(shared_from_this(), alias, flags, permission);
 }
 
 // DirectoryNode::RemoveNode
@@ -334,9 +335,10 @@ std::shared_ptr<TempFileSystem::FileNode> TempFileSystem::FileNode::Construct(co
 //
 // Arguments:
 //
+//	alias		- Alias instance used to resolve this node
 //	flags		- Operational flags and attributes
 
-FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
+FileSystem::HandlePtr TempFileSystem::FileNode::Open(const AliasPtr& alias, int flags)
 {
 	// O_DIRECTORY verifies that the target node is a directory, which this is not
 	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
@@ -366,8 +368,8 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
 	}
 
 	// Construct and return the new Handle instance for this node
-	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), flags, permission);
-	else return std::make_shared<Handle>(shared_from_this(), flags, permission);
+	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), alias, flags, permission);
+	else return std::make_shared<Handle>(shared_from_this(), alias, flags, permission);
 }
 
 //-----------------------------------------------------------------------------
@@ -378,9 +380,10 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(int flags)
 //
 // Arguments:
 //
+//	alias		- Alias (name) used when this node was resolved
 //	flags		- Operational flags and attributes
 
-FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(int flags)
+FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(const std::shared_ptr<FileSystem::Alias>& alias, int flags)
 {
 	// TODO: This should really only be called by the Virtual Machine itself, not
 	// sure exactly what flags and attributes to check for yet
@@ -395,7 +398,7 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(int flags)
 	// may want to consider a special handle instance that doesn't demand Read
 	FilePermission permission(LINUX_S_IRUSR | LINUX_S_IRGRP | LINUX_S_IROTH | LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH);
 
-	return std::make_shared<Handle>(shared_from_this(), flags, permission);
+	return std::make_shared<Handle>(shared_from_this(), alias, flags, permission);
 }
 
 // FileNode::Resolve
@@ -586,7 +589,7 @@ TempFileSystem::SymbolicLinkNode::Construct(const std::shared_ptr<MountPoint>& m
 
 // SymbolicLinkNode::Open
 //
-FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
+FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(const AliasPtr& alias, int flags)
 {
 	//
 	// THIS IS WHERE IT NEEDS TO REDIRECT TO THE TARGET AND INVOKE THAT NODE'S OPEN()
@@ -601,7 +604,7 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(int flags)
 	// Construct and return the new Handle instance for this node, note that PathHandle
 	// is never used in conjunction with symbolic links and that there is no need for
 	// a permissions object as symlinks are always read/write/execute for all users
-	return std::make_shared<Handle>(shared_from_this(), flags);
+	return std::make_shared<Handle>(shared_from_this(), alias, flags);
 }
 
 // SymbolicLinkNode::ReadTarget

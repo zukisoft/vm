@@ -126,7 +126,7 @@ interface SystemCalls64
 	/* 170 */ sys64_long_t	sys64_sethostname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 171 */ sys64_long_t	sys64_setdomainname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);
+	/* 257 */ sys64_long_t	sys64_openat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 
 ///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
-///* x */	sys64_long_t	sys64_openat([in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 }

@@ -53,6 +53,10 @@ template<typename size_type> inline size_type& GS(uintptr_t offset)
 //
 emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
 
+#ifdef _DEBUG
+	int syscall = static_cast<int>(context->Eax);
+#endif
+
 	// There are only 512 system call slots defined
 	_ASSERTE(context->Eax < 512);
 	if(context->Eax > 511) { context->Eax = -LINUX_ENOSYS; return true; }
@@ -61,6 +65,15 @@ emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> boo
 	// the return value from the function is stored in EAX on exit
 	syscall_t func = g_syscalls[context->Eax];
 	context->Eax = static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS);
+
+#ifdef _DEBUG
+	if(static_cast<int>(context->Eax) < 0) 
+	{
+		wchar_t temp[255];
+		wsprintf(temp, L"System call %d failed; ec = %d\r\n", syscall, context->Eax);
+		OutputDebugString(temp);
+	}
+#endif
 
 	return true;
 });

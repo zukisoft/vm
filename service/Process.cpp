@@ -34,14 +34,14 @@ Process::SystemInfo Process::s_sysinfo;
 //
 // Explicit Instantiation of template function
 template std::shared_ptr<Process> Process::Create<ElfClass::x86>(const std::shared_ptr<VirtualMachine>&, 
-	const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
+	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 
 #ifdef _M_X64
 // Process::Create<ElfClass::x86_64>
 //
 // Explicit Instantiation of template function
 template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::shared_ptr<VirtualMachine>&, 
-	const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
+	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -452,6 +452,7 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 // Arguments:
 //
 //	vm			- Reference to the VirtualMachine instance
+//	workingdir	- Initial process working directory alias
 //	handle		- Open FileSystem::Handle against the ELF binary to load
 //	argv		- ELF command line arguments from caller
 //	envp		- ELF environment variables from caller
@@ -459,8 +460,8 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 //	hostargs	- Command line arguments to pass to the host
 
 template <ElfClass _class>
-std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::HandlePtr& handle,
-	const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs)
+std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& workingdir,
+	const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs)
 {
 	using elf = elf_traits<_class>;
 
@@ -533,7 +534,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		startinfo.StackImageLength = stackimg.Length;
 
 		// Create the Process object, transferring the host and startup information
-		return std::make_shared<Process>(std::move(host), std::move(startinfo));
+		return std::make_shared<Process>(std::move(host), workingdir, std::move(startinfo));
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

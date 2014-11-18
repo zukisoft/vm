@@ -89,6 +89,7 @@ public:
 	// open
 	//
 	Handle Open(const uapi::char_t* path, int flags, uapi::mode_t mode);
+	Handle Open(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
 
 	// execve?
 	//
@@ -111,6 +112,9 @@ public:
 
 	// umount
 	void Unmount(const uapi::char_t* target, uint32_t flags);
+
+	__declspec(property(get=getRoot)) FileSystem::AliasPtr Root;
+	FileSystem::AliasPtr getRoot(void) { return m_rootfs->Root; }
 
 private:
 
