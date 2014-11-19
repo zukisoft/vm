@@ -103,7 +103,8 @@ private:
 	// CreateProcess
 	//
 	// Creates a new hosted process instance from a file system binary
-	std::shared_ptr<Process> CreateProcess(const FileSystem::AliasPtr& workingdir, const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
+	std::shared_ptr<Process> CreateProcess(const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+		const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
 
 	// LoadInitialFileSystem
 	//

@@ -70,7 +70,7 @@ public:
 	//
 	// Creates a new process instance via an external Windows host binary
 	template <ElfClass _class>
-	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& workingdir,
+	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 		const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
 	// GetHandle
@@ -163,6 +163,13 @@ public:
 	void* getTidAddress(void) const { return m_tidaddress; }
 	void putTidAddress(void* value) { m_tidaddress = value; }
 
+	// RootDirectory
+	//
+	// Gets the alias of the process' root directory
+	__declspec(property(get=getRootDirectory, put=putRootDirectory)) FileSystem::AliasPtr RootDirectory;
+	FileSystem::AliasPtr getRootDirectory(void) { return m_rootdir; }
+	void putRootDirectory(const FileSystem::AliasPtr& value) { m_rootdir = value; }
+
 	// WorkingDirectory
 	//
 	// Gets the alias of the process' current working directory
@@ -181,8 +188,8 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo) : 
-		m_host(std::move(host)), m_workingdir(workingdir), m_startinfo(startinfo) {}
+	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo) : 
+		m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo) {}
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -254,7 +261,9 @@ private:
 
 	int						m_processid = 1;
 	void*					m_tidaddress = nullptr;
-	FileSystem::AliasPtr	m_workingdir;
+
+	FileSystem::AliasPtr	m_rootdir;			// Process root directory
+	FileSystem::AliasPtr	m_workingdir;		// Process working directory
 
 	static SystemInfo		s_sysinfo;			// System information
 };

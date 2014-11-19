@@ -276,7 +276,7 @@ void TempFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
 	// todo: Remove from the collection, node will die off on it's own
 }
 
-// DirectoryNode::ResolvePath
+// DirectoryNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks)
 {
