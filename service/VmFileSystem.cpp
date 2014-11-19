@@ -239,13 +239,13 @@ VmFileSystem::Handle VmFileSystem::Open(const FileSystem::AliasPtr& base, const 
 	}
 }
 
-VmFileSystem::Handle VmFileSystem::OpenExec(const uapi::char_t* path)
+VmFileSystem::Handle VmFileSystem::OpenExec(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path)
 {
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
 	if(*path == 0) throw LinuxException(LINUX_ENOENT);
 
 	// todo: Remove flags from OpenExec?  Nothing can be specified by the user
-	auto alias = ResolvePath(path);
+	auto alias = ResolvePath(base, path);
 	auto node = std::dynamic_pointer_cast<FileSystem::File>(alias->Node);
 	if(!node) throw LinuxException(LINUX_ENOENT);		// <-- todo: Exception
 
@@ -282,12 +282,11 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const uapi::char_t* absolute)
 
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative)
 {
-	// Need to know if absolute or relative, if absolute start at root node otherwise base
-	// If base is null, start at root also
-	//PathSplitter path(relative);
-
-
 	_ASSERTE(base);
+
+	// The path is relative at this point, strip any leading slashes
+	while((relative) && (*relative == '/')) relative++;
+
 	int symlinks = 0;
 	return base->Node->Resolve(m_rootfs->Root, base, relative, 0, &symlinks);		// <--- todo flags
 }

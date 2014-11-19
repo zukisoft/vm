@@ -71,7 +71,7 @@ std::shared_ptr<Process> VmService::CreateProcess(const FileSystem::AliasPtr& ro
 	if(!path) throw LinuxException(LINUX_EFAULT);
 
 	// Attempt to open an execute handle for the specified path
-	FileSystem::HandlePtr handle = OpenExecutable(path);
+	FileSystem::HandlePtr handle = OpenExecutable(workingdir, path);
 
 	// Read in enough data from the head of the file to determine the type
 	uint8_t magic[LINUX_EI_NIDENT];
@@ -486,16 +486,16 @@ void VmService::OnStop(void)
 	syscall32_listener::Unregister(true);
 }
 
-FileSystem::HandlePtr VmService::OpenExecutable(const uapi::char_t* path)
+FileSystem::HandlePtr VmService::OpenExecutable(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path)
 {
 	_ASSERTE(m_vfs);
-	return m_vfs->OpenExec(path);
+	return m_vfs->OpenExec(base, path);
 }
 
-FileSystem::HandlePtr VmService::OpenFile(const FileSystem::AliasPtr& base, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+FileSystem::HandlePtr VmService::OpenFile(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode)
 {
 	_ASSERTE(m_vfs);
-	return m_vfs->Open(base, pathname, flags, mode);
+	return m_vfs->Open(base, path, flags, mode);
 }
 
 size_t VmService::ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length)

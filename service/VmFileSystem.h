@@ -92,7 +92,7 @@ public:
 
 	// execve?
 	//
-	Handle OpenExec(const uapi::char_t* path);
+	Handle OpenExec(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path);
 
 	// mount
 	void Mount(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data);
