@@ -550,7 +550,7 @@ TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint
 }
 
 //-----------------------------------------------------------------------------
-// TempFileSystem::NodeBase::Demand
+// TempFileSystem::NodeBase::DemandPermission
 //
 // Demands read, write and/or execute permissions to the node
 //
@@ -558,7 +558,7 @@ TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint
 //
 //	mode		- Special MAY_READ, MAY_WRITE, MAY_EXECUTE mode flags from caller
 
-void TempFileSystem::NodeBase::Demand(uapi::mode_t mode)
+void TempFileSystem::NodeBase::DemandPermission(uapi::mode_t mode)
 {
 	// A mode mask of zero is F_OK, and only determines that the node exists
 	if((mode & LINUX_MAY_ACCESS) == 0) return;

@@ -154,10 +154,10 @@ struct __declspec(novtable) FileSystem
 	// todo: need permission arguments (mode_t)
 	struct __declspec(novtable) Node
 	{
-		// Demand
+		// DemandPermission
 		//
 		// Demands read/write/execute permissions for the file system object (MAY_READ, MAY_WRITE, MAY_EXECUTE)
-		virtual void Demand(uapi::mode_t mode) = 0;
+		virtual void DemandPermission(uapi::mode_t mode) = 0;
 
 		// Open
 		//

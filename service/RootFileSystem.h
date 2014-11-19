@@ -80,7 +80,7 @@ private:
 
 	// FileSystem::Node Implementation
 	//
-	virtual void					Demand(uapi::mode_t mode);
+	virtual void					DemandPermission(uapi::mode_t mode);
 	virtual FileSystem::HandlePtr	Open(const AliasPtr&, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 	virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }

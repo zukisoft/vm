@@ -49,7 +49,7 @@ void VmService::CheckPermissions(const uapi::char_t* path, uapi::mode_t mode)
 	if(!node) throw LinuxException(LINUX_ENOENT);
 
 	// Node was located, demand the requested permissions from it
-	node->Demand(mode);
+	node->DemandPermission(mode);
 }
 
 //-----------------------------------------------------------------------------

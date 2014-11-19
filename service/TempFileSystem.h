@@ -164,7 +164,7 @@ private:
 
 		virtual ~NodeBase()=default;
 
-		void		Demand(uapi::mode_t mode);
+		void		DemandPermission(uapi::mode_t mode);
 
 		// todo: put comments back
 		uint64_t	getIndex(void) { return m_index; }
@@ -244,7 +244,7 @@ private:
 
 		// FileSystem::Node Implementation
 		//
-		virtual void					Demand(uapi::mode_t mode) { NodeBase::Demand(mode); }
+		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
@@ -335,7 +335,7 @@ private:
 
 		// FileSystem::Node Implementation
 		//
-		virtual void					Demand(uapi::mode_t mode) { NodeBase::Demand(mode); }
+		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
@@ -416,7 +416,7 @@ private:
 
 		// FileSystem::Node Implementation
 		//
-		virtual void					Demand(uapi::mode_t mode) { NodeBase::Demand(mode); }
+		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }

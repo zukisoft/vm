@@ -506,7 +506,7 @@ void HostFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 }
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::DirectoryNode::Demand
+// HostFileSystem::DirectoryNode::DemandPermission
 //
 // Demands read/write/execute permissions for the directory node
 //
@@ -514,7 +514,7 @@ void HostFileSystem::DirectoryNode::CreateSymbolicLink(const FileSystem::AliasPt
 //
 //	mode			- Special MAY_READ, MAY_WRITE, MAY_EXECUTE flags
 
-void HostFileSystem::DirectoryNode::Demand(uapi::mode_t mode)
+void HostFileSystem::DirectoryNode::DemandPermission(uapi::mode_t mode)
 {
 	// A mode mask of zero is F_OK, and only determines that the node exists
 	if((mode & LINUX_MAY_ACCESS) == 0) return;
@@ -1063,7 +1063,7 @@ HostFileSystem::FileNode::~FileNode()
 }
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::FileNode::Demand
+// HostFileSystem::FileNode::DemandPermission
 //
 // Demands read/write/execute permissions for the file node
 //
@@ -1071,7 +1071,7 @@ HostFileSystem::FileNode::~FileNode()
 //
 //	mode			- Special MAY_READ, MAY_WRITE, MAY_EXECUTE flags
 
-void HostFileSystem::FileNode::Demand(uapi::mode_t mode)
+void HostFileSystem::FileNode::DemandPermission(uapi::mode_t mode)
 {
 	// A mode mask of zero is F_OK, and only determines that the node exists
 	if((mode & LINUX_MAY_ACCESS) == 0) return;

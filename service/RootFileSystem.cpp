@@ -37,7 +37,7 @@ FileSystem::NodePtr RootFileSystem::getNode(void)
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Demand
+// RootFileSystem::DemandPermission
 //
 // Demands read/write/execute permissions for the file system node
 //
@@ -45,7 +45,7 @@ FileSystem::NodePtr RootFileSystem::getNode(void)
 //
 //	mode		- MAY_READ, MAY_WRITE, MAY_EXECUTE special mode values
 
-void RootFileSystem::Demand(uapi::mode_t mode)
+void RootFileSystem::DemandPermission(uapi::mode_t mode)
 {
 	// A mode mask of zero is F_OK, and only determines that the node exists
 	if((mode & LINUX_MAY_ACCESS) == 0) return;
