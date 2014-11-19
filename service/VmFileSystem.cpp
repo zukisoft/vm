@@ -261,6 +261,7 @@ VmFileSystem::Handle VmFileSystem::OpenExec(const std::shared_ptr<FileSystem::Al
 //
 //	absolute	- Absolute path to the alias to resolve
 
+// TODO: DEPRECATE ME
 FileSystem::AliasPtr VmFileSystem::ResolvePath(const uapi::char_t* absolute)
 {
 	if(absolute == nullptr) throw LinuxException(LINUX_ENOENT);
@@ -277,18 +278,20 @@ FileSystem::AliasPtr VmFileSystem::ResolvePath(const uapi::char_t* absolute)
 //
 // Arguments:
 //
-//	base		- Base alias instance to use for resolution
-//	relative	- Relative path to resolve
+//	root		- Alias representing the root directory
+//	base		- Alias representing the current directory
+//	path		- Path to resolve
 
-FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative)
+// TODO: ADD ROOT ARGUMENT AND DEPRECATE THE VERSION ABOVE
+FileSystem::AliasPtr VmFileSystem::ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* path)
 {
 	_ASSERTE(base);
 
-	// The path is relative at this point, strip any leading slashes
-	while((relative) && (*relative == '/')) relative++;
+	// The path is always considered relative here, strip leading slash characters
+	while((path) && (*path == '/')) path++;
 
 	int symlinks = 0;
-	return base->Node->Resolve(m_rootfs->Root, base, relative, 0, &symlinks);		// <--- todo flags
+	return base->Node->Resolve(m_rootfs->Root, base, path, 0, &symlinks);		// <--- todo flags
 }
 
 bool VmFileSystem::TryResolvePath(const uapi::char_t* absolute, FileSystem::AliasPtr& result)

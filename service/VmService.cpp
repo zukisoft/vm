@@ -71,7 +71,8 @@ std::shared_ptr<Process> VmService::CreateProcess(const FileSystem::AliasPtr& ro
 	if(!path) throw LinuxException(LINUX_EFAULT);
 
 	// Attempt to open an execute handle for the specified path
-	FileSystem::HandlePtr handle = OpenExecutable(workingdir, path);
+	bool absolute = ((path) && (*path == '/'));
+	FileSystem::HandlePtr handle = OpenExecutable((absolute) ? rootdir : workingdir, path);
 
 	// Read in enough data from the head of the file to determine the type
 	uint8_t magic[LINUX_EI_NIDENT];
