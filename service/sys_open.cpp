@@ -25,8 +25,12 @@
 
 #pragma warning(push, 4)
 
+// sys_openat.cpp
+//
+__int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
+
 //-----------------------------------------------------------------------------
-// sys_open (local)
+// sys_open
 //
 // Opens, and possibly creates, a file on the virtual file system
 //
@@ -37,18 +41,10 @@
 //	flags		- File open/creation flags
 //	mode		- Mode mask to assign to the file if created
 
-static __int3264 sys_open(const SystemCall::Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+__int3264 sys_open(const SystemCall::Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
-	_ASSERTE(context);
-	if(pathname == nullptr) return -LINUX_EFAULT;
-
-	try { 
-		
-		SystemCall::Impersonation impersonation;
-		return context->Process->AddHandle(context->VirtualMachine->OpenFile(pathname, flags, mode)); 
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// sys_open() is equivalent to sys_openat(AT_FDCWD)
+	return sys_openat(context, LINUX_AT_FDCWD, pathname, flags, mode);
 }
 
 // sys32_open

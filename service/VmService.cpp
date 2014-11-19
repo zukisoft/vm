@@ -492,12 +492,6 @@ FileSystem::HandlePtr VmService::OpenExecutable(const uapi::char_t* path)
 	return m_vfs->OpenExec(path);
 }
 
-FileSystem::HandlePtr VmService::OpenFile(const uapi::char_t* pathname, int flags, uapi::mode_t mode)
-{
-	_ASSERTE(m_vfs);
-	return m_vfs->Open(pathname, flags, mode);
-}
-
 FileSystem::HandlePtr VmService::OpenFile(const FileSystem::AliasPtr& base, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
 	_ASSERTE(m_vfs);

@@ -86,9 +86,8 @@ public:
 	// symlink
 	void CreateSymbolicLink(const uapi::char_t* path, const uapi::char_t* target);
 
-	// open
+	// openat
 	//
-	Handle Open(const uapi::char_t* path, int flags, uapi::mode_t mode);
 	Handle Open(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
 
 	// execve?

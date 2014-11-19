@@ -21,12 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "PathSplitter.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_openat (local)
+// sys_openat
 //
 // Opens, and possibly creates, a file with a path relative to an open directory
 //
@@ -38,19 +39,23 @@
 //	flags		- Open operation flags
 //	mode		- Mode flags to assign when creating a new file system object
 
-static __int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+__int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
 	_ASSERTE(context);
 
-	try { 
+	try {
 
 		SystemCall::Impersonation impersonation;
 
-		// Get the Alias instance to use as the base for the path resolution operation
-		auto alias = (fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias;
+		// Determine if an absolute or relative pathname has been provided
+		bool absolute = ((pathname) && (pathname[0] == '/'));
 
-		// Attempt to open the file system object relative to the existing handle's alias
-		return context->Process->AddHandle(context->VirtualMachine->OpenFile(alias, pathname, flags, mode));
+		// Determine the base alias from which to resolve the path
+		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+			((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
+
+		// Attempt to open the file system object relative from the base alias
+		return context->Process->AddHandle(context->VirtualMachine->OpenFile(base, pathname, flags, mode));
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
