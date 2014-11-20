@@ -69,11 +69,17 @@ public:
 
 	// VirtualMachine Implementation
 	//
-	virtual void								CheckPermissions(const uapi::char_t* path, uapi::mode_t mode);
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
-	virtual std::shared_ptr<FileSystem::Handle>	OpenExecutable(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path);
-	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
-	virtual size_t								ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length);
+
+	// updated file system api
+	virtual void								CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
+	virtual void								CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode);
+	virtual std::shared_ptr<FileSystem::Handle> CreateFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
+	virtual void								CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, const uapi::char_t* target);
+	virtual std::shared_ptr<FileSystem::Handle> OpenExecutable(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path);
+	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
+	virtual size_t								ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::char_t* buffer, size_t length);
+	virtual std::shared_ptr<FileSystem::Alias>	ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags);
 
 	virtual std::string		GetProperty(VirtualMachine::Properties id);
 	virtual size_t			GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length);
@@ -108,8 +114,7 @@ private:
 	// LoadInitialFileSystem
 	//
 	// Loads the initial file system from an initramfs CPIO archive
-	// THIS MOVES TO THE VFS; WHY IS IT HERE
-	void LoadInitialFileSystem(const tchar_t* archivefile);
+	void LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& target, const tchar_t* archivefile);
 
 	FileSystemPtr MountProcFileSystem(const char_t* name, uint32_t flags, const void* data);
 

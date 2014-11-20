@@ -31,12 +31,11 @@
 __int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, uapi::char_t* buf, size_t bufsiz)
 {
 	_ASSERTE(context);
-	if(buf == nullptr) return -LINUX_EFAULT;
 
 	try { 		
 		
 		SystemCall::Impersonation impersonation;
-		return context->VirtualMachine->ReadSymbolicLink(pathname, buf, bufsiz);
+		return context->VirtualMachine->ReadSymbolicLink(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, buf, bufsiz);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

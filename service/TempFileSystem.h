@@ -252,8 +252,8 @@ private:
 
 		// FileSystem::Directory Implementation
 		//
-		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name);
-		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags);
+		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode);
+		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags, uapi::mode_t mode);
 		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr& parent, const uapi::char_t* name, const uapi::char_t* target);
 		virtual void					RemoveNode(const uapi::char_t* name);
 
@@ -343,7 +343,7 @@ private:
 
 		// FileSystem::File Implementation
 		//		
-		virtual FileSystem::HandlePtr	OpenExec(const std::shared_ptr<FileSystem::Alias>& alias, int flags);
+		virtual FileSystem::HandlePtr	OpenExec(const std::shared_ptr<FileSystem::Alias>& alias);
 
 	private:
 

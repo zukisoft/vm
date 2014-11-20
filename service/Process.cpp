@@ -491,7 +491,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
 			bool absolute = (*executable->Interpreter == '/');
-			FileSystem::HandlePtr interphandle = vm->OpenExecutable((absolute) ? rootdir : workingdir, executable->Interpreter);
+			FileSystem::HandlePtr interphandle = vm->OpenExecutable(rootdir, (absolute) ? rootdir : workingdir, executable->Interpreter);
 			interpreter = ElfImage::Load<_class>(interphandle, host->ProcessHandle);
 		}
 

@@ -35,7 +35,9 @@ __int3264 sys_access(const SystemCall::Context* context, const uapi::char_t* pat
 	try { 		
 		
 		SystemCall::Impersonation impersonation;
-		context->VirtualMachine->CheckPermissions(pathname, mode);
+
+		// sys_access does not specify any flags; be sure to keep this when it changes to invoke sys_faccessat()
+		context->VirtualMachine->CheckPermissions(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, 0, mode);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

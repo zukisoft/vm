@@ -75,39 +75,8 @@ public:
 	// Creates a new VmFileSystem instance based on a mounted root file system
 	static std::unique_ptr<VmFileSystem> Create(const FileSystemPtr& rootfs);
 
-	// mkdir
-	void CreateDirectory(const uapi::char_t* path);
-
-	// CreateFile
-	//
-	//
-	Handle CreateFile(const uapi::char_t* path, int flags, uapi::mode_t mode);
-
-	// symlink
-	void CreateSymbolicLink(const uapi::char_t* path, const uapi::char_t* target);
-
-	// openat
-	//
-	Handle Open(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
-
-	// execve?
-	//
-	Handle OpenExec(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path);
-
 	// mount
 	void Mount(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data);
-
-	// ResolvePath
-	//
-	// Resolves an alias instance based on a path
-	FileSystem::AliasPtr ResolvePath(const uapi::char_t* absolute);
-	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative);
-
-	bool TryResolvePath(const uapi::char_t* absolute, FileSystem::AliasPtr& result);
-	bool TryResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative, FileSystem::AliasPtr& result);
-
-	// fsync
-	//void 
 
 	// umount
 	void Unmount(const uapi::char_t* target, uint32_t flags);
@@ -128,7 +97,12 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-
+	// ResolvePath
+	//
+	// Resolves an alias instance based on a path
+	FileSystem::AliasPtr ResolvePath(const uapi::char_t* absolute);
+	FileSystem::AliasPtr ResolvePath(const FileSystem::AliasPtr& base, const uapi::char_t* relative);
+	
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 

@@ -193,13 +193,16 @@ std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Co
 
 // DirectoryNode::CreateDirectory
 //
-void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name)
+void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
 	// Construct the new DirectoryNode instance
 	auto node = DirectoryNode::Construct(m_mountpoint);
+
+	// TODO: mode
+	(mode);
 
 	// Attempt to construct and insert a new Alias instance with the specified name
 	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
@@ -208,7 +211,7 @@ void TempFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr& 
 
 // DirectoryNode::CreateFile
 //
-FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags)
+FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags, uapi::mode_t mode)
 {
 	// The file system cannot be mounted as read-only when constructing new objects
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
@@ -222,6 +225,9 @@ FileSystem::HandlePtr TempFileSystem::DirectoryNode::CreateFile(const FileSystem
 	// Attempt to construct and insert a new Alias instance with the specified name
 	auto result = m_children.insert(std::make_pair(name, alias));
 	if(!result.second) throw LinuxException(LINUX_EEXIST);
+
+	// TODO: MODE BITMASK
+	(mode);
 
 	return handle;				// Return Handle instance generated above
 }
@@ -381,9 +387,8 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(const AliasPtr& alias, int 
 // Arguments:
 //
 //	alias		- Alias (name) used when this node was resolved
-//	flags		- Operational flags and attributes
 
-FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(const std::shared_ptr<FileSystem::Alias>& alias, int flags)
+FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(const std::shared_ptr<FileSystem::Alias>& alias)
 {
 	// TODO: This should really only be called by the Virtual Machine itself, not
 	// sure exactly what flags and attributes to check for yet
@@ -398,7 +403,7 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(const std::shared_ptr<F
 	// may want to consider a special handle instance that doesn't demand Read
 	FilePermission permission(LINUX_S_IRUSR | LINUX_S_IRGRP | LINUX_S_IROTH | LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH);
 
-	return std::make_shared<Handle>(shared_from_this(), alias, flags, permission);
+	return std::make_shared<Handle>(shared_from_this(), alias, 0, permission);
 }
 
 // FileNode::Resolve

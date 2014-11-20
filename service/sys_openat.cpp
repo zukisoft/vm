@@ -55,7 +55,7 @@ __int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::cha
 			((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
 
 		// Attempt to open the file system object relative from the base alias
-		return context->Process->AddHandle(context->VirtualMachine->OpenFile(base, pathname, flags, mode));
+		return context->Process->AddHandle(context->VirtualMachine->OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

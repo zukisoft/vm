@@ -411,8 +411,9 @@ HostFileSystem::DirectoryNode::~DirectoryNode()
 //
 //	parent		- Unused; parent alias to assign to the generated child alias
 //	name		- Name to assign to the new directory name
+//	mode		- Mode bitmask to assign to the new directory
 
-void HostFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t* name)
+void HostFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t* name, uapi::mode_t mode)
 {
 	tchar_t*				hostpath = nullptr;				// Completed path to the file system object
 
@@ -432,6 +433,9 @@ void HostFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr&,
 	// Set up an automatic release of the hostname string when the function exits
 	onunwind freehostname([&]() -> void { LocalFree(hostpath); });
 
+	// TODO: mode
+	(mode);
+
 	// Attempt to create the directory on the host file system
 	if(!::CreateDirectory(hostpath, nullptr)) throw MapHostException(); 
 }
@@ -446,8 +450,9 @@ void HostFileSystem::DirectoryNode::CreateDirectory(const FileSystem::AliasPtr&,
 //	parent		- Unused; Parent alias for the new object
 //	name		- Name to assign to the new file alias
 //	flags		- File creation flags
+//	mode		- Mode bitmask to assign to the new regular file
 
-FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags)
+FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags, uapi::mode_t mode)
 {
 	tchar_t*					hostpath = nullptr;				// Completed path to the file system object
 
@@ -483,6 +488,9 @@ FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem
 	std::shared_ptr<FileNode> node;
 	try { node = FileNode::FromHandle(m_mountpoint, handle); }
 	catch(...) { CloseHandle(handle); throw; }
+
+	// TODO: MODE
+	(mode);
 
 	// Generate a Handle instance for the new file object
 	return node->Open(Alias::Construct(name, parent, node), flags);
@@ -1151,9 +1159,8 @@ FileSystem::HandlePtr HostFileSystem::FileNode::Open(const AliasPtr& alias, int 
 // Arguments:
 //
 //	alias		- Aliased used to resolve this node instance
-//	flags		- Unused; File operation flags and attributes
 
-FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(const AliasPtr& alias, int flags)
+FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(const AliasPtr& alias)
 {
 	// If the file system was mounted with noexec, this file cannot be executed
 	if(m_mountpoint->Options.NoExecute) throw LinuxException(LINUX_EACCES);
@@ -1163,7 +1170,7 @@ FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(const AliasPtr& alias, 
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 
 	// Construct and return an ExecuteHandle instance; it takes ownership of the handle
-	try { return std::make_shared<ExecuteHandle>(m_mountpoint, alias, handle, flags); }
+	try { return std::make_shared<ExecuteHandle>(m_mountpoint, alias, handle, 0); }
 	catch(...) { CloseHandle(handle); throw; }
 }
 

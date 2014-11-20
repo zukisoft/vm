@@ -168,6 +168,8 @@ struct __declspec(novtable) FileSystem
 		//
 		// Resolves a relative path from this node to an Alias instance
 		// TODO: too many arguments, create a state object.  Resolve() is recursive, don't blow up the stack
+		// would like to swap root and current, but compiler won't catch that if I do and weird stuff will happen,
+		// that will take care of itself if I make a state object that has these instead
 		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;		
 
 		// Index
@@ -191,12 +193,12 @@ struct __declspec(novtable) FileSystem
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const AliasPtr& parent, const uapi::char_t* name) = 0;
+		virtual void CreateDirectory(const AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode) = 0;
 
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual HandlePtr CreateFile(const AliasPtr& parent, const uapi::char_t* name, int flags) = 0;
+		virtual HandlePtr CreateFile(const AliasPtr& parent, const uapi::char_t* name, int flags, uapi::mode_t mode) = 0;
 
 		// CreateNode
 		//
@@ -228,7 +230,7 @@ struct __declspec(novtable) FileSystem
 		//
 		// Creates a FileSystem::Handle instance for this node, specifically for use
 		// by the virtual machine as part of process creation
-		virtual HandlePtr OpenExec(const AliasPtr& alias, int flags) = 0;
+		virtual HandlePtr OpenExec(const AliasPtr& alias) = 0;
 	};
 
 	// SymbolicLink

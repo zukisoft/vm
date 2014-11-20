@@ -79,11 +79,6 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// CheckPermissions
-	//
-	// Checks the permissions of a file system object
-	virtual void CheckPermissions(const uapi::char_t* path, uapi::mode_t mode) = 0;
-
 	// FindProcessByHostID	// <--- TODO: Rename/repurpose to allow a wait for the host to register?
 	//
 	// Locates a Process instance by the host process' PID, necessary for the system
@@ -95,20 +90,36 @@ public:
 	// Locates an active VirtualMachine instance and returns its shared_ptr<>
 	static std::shared_ptr<VirtualMachine> FindVirtualMachine(const uuid_t& instanceid);
 
-	// OpenExecutable
 	//
-	// Opens a file system object for execute-only access
-	virtual std::shared_ptr<FileSystem::Handle> OpenExecutable(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path) = 0;
+	// FILE SYSTEM
+	//
 
-	// OpenFile
-	//
-	// Opens, or optionally creates, a file system object
-	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode) = 0;
+	// TODO: THESE NEED A PATH OBJECT, FIRST THREE PARAMETERS ARE A BIT RIDICULOUS
 
-	// ReadSymbolicLink
-	//
-	// Reads the value contained in a symbolic link file system object
-	virtual size_t ReadSymbolicLink(const uapi::char_t* path, uapi::char_t* buffer, size_t length) = 0;
+	virtual void CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, 
+		int flags, uapi::mode_t mode) = 0;
+
+	virtual void CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, uapi::mode_t mode) = 0;
+
+	virtual std::shared_ptr<FileSystem::Handle> CreateFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, int flags, uapi::mode_t mode) = 0;
+
+	virtual void CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, const uapi::char_t* target) = 0;
+
+	virtual std::shared_ptr<FileSystem::Handle> OpenExecutable(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path) = 0;
+
+	// rename to OpenFsObject? or OpenObject? or OpenNode? or OpenHandle?
+	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, int flags, uapi::mode_t mode) = 0;
+
+	virtual size_t ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, 
+		uapi::char_t* buffer, size_t length) = 0;
+
+	virtual std::shared_ptr<FileSystem::Alias> ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, int flags) = 0;
 
 	//
 	// PROPERTY MANAGEMENT
