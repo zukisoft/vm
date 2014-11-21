@@ -323,6 +323,30 @@ size_t VmService::GetProperty(VirtualMachine::Properties id, uapi::char_t* value
 }
 
 //-----------------------------------------------------------------------------
+// VmService::MountFileSystem
+//
+// Mounts a file system instance
+//
+// Arguments:
+//
+//	source		- Source device/object to be mounted
+//	target		- Target directory on which to mount the file system
+//	filesystem	- File system name
+//	flags		- Standard mount options/flags
+//	data		- Additional custom mounting data specific to filesystem
+
+void VmService::MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data)
+{
+	(source);
+	(target);
+	(filesystem);
+	(flags);
+	(data);
+
+	throw LinuxException(LINUX_ENOSYS);
+}
+
+//-----------------------------------------------------------------------------
 // VmService::OpenExecutable
 //
 // Opens an executable file system object and returns a Handle instance

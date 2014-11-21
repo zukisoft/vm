@@ -108,6 +108,8 @@ public:
 	virtual void CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
 		const uapi::char_t* path, const uapi::char_t* target) = 0;
 
+	virtual void MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data) = 0;
+
 	virtual std::shared_ptr<FileSystem::Handle> OpenExecutable(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
 		const uapi::char_t* path) = 0;
 
