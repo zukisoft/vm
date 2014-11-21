@@ -33,8 +33,9 @@
 // Arguments:
 //
 //	data		- String passed into mount(2) to be converted
+//	datalen		- Maximum length of the available data
 
-std::vector<std::tstring> MountOptions::MakeVector(const void* data)
+std::vector<std::tstring> MountOptions::MakeVector(const void* data, size_t datalen)
 {
 	std::vector<std::tstring>	args;			// vector<> of argument strings
 
@@ -42,7 +43,8 @@ std::vector<std::tstring> MountOptions::MakeVector(const void* data)
 	if(data) {
 
 		// Copy the data into a local buffer that can be trashed by strtok()
-		std::vector<tchar_t> buffer(_tcslen(reinterpret_cast<const tchar_t*>(data)) + 1);
+		size_t length = min(_tcslen(reinterpret_cast<const tchar_t*>(data)), datalen) + 1;
+		std::vector<tchar_t> buffer(length);
 		memcpy(buffer.data(), data, buffer.size() * sizeof(tchar_t));
 
 		// Use good old strtok() to break up the copy of the string by commas

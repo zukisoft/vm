@@ -48,7 +48,7 @@ public:
 
 	// Instance Constructor
 	//
-	MountOptions(uint32_t flags, const void* data) : m_flags(flags), m_arguments(MakeVector(data)) {}
+	MountOptions(uint32_t flags, const void* data, size_t datalen) : m_flags(flags), m_arguments(MakeVector(data, datalen)) {}
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -201,7 +201,7 @@ private:
 	// MakeVector
 	//
 	// Converts the raw argument data into a temporary vector<>
-	static std::vector<std::tstring> MakeVector(const void* data);
+	static std::vector<std::tstring> MakeVector(const void* data, size_t datalen);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

@@ -63,14 +63,16 @@ void RootFileSystem::DemandPermission(uapi::mode_t mode)
 // Arguments:
 //
 //	source		- Unused for root file system
-//	flags		- Mounting flags
+//	flags		- Standard mounting options and flags
 //	data		- Filesystem-specific mounting data
+//	datalen		- Length of the filesystem specific mounting data
 
-FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source, uint32_t flags, const void* data)
+FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source, uint32_t flags, const void* data, size_t datalen)
 {
 	UNREFERENCED_PARAMETER(source);
 	UNREFERENCED_PARAMETER(flags);
 	UNREFERENCED_PARAMETER(data);
+	UNREFERENCED_PARAMETER(datalen);
 
 	// Mounting the root file system is as simple as creating an instance of it
 	return std::make_shared<RootFileSystem>();

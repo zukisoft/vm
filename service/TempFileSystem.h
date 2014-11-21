@@ -56,7 +56,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t*, uint32_t flags, const void* data);
+	static FileSystemPtr Mount(const uapi::char_t*, uint32_t flags, const void* data, size_t datalen);
 
 	// FileSystem Implementation
 	//
@@ -88,7 +88,7 @@ private:
 	{
 	public:
 
-		MountPoint(uint32_t flags, const void* data);
+		MountPoint(uint32_t flags, const void* data, size_t datalen);
 		~MountPoint()=default;
 
 		// AllocateIndex

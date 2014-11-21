@@ -54,7 +54,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data);
+	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data, size_t datalen);
 
 private:
 

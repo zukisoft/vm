@@ -75,7 +75,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data);
+	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data, size_t datalen);
 
 	// FileSystem Implementation
 	//
@@ -410,7 +410,7 @@ private:
 
 		// Constructor / Destructor
 		//
-		MountPoint(HANDLE handle, uint32_t flags, const void* data);
+		MountPoint(HANDLE handle, uint32_t flags, const void* data, size_t datalen);
 		~MountPoint();
 
 		// HostPath

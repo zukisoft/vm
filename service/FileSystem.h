@@ -77,7 +77,7 @@ struct __declspec(novtable) FileSystem
 
 	// need typedef for Mount(const uapi::char_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
-	using mount_func = std::function<FileSystemPtr(const uapi::char_t* device, uint32_t flags, const void* data)>;
+	using mount_func = std::function<FileSystemPtr(const uapi::char_t* device, uint32_t flags, const void* data, size_t length)>;
 
 	// NodeType
 	//
