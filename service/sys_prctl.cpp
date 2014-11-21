@@ -71,9 +71,9 @@ sys32_long_t sys32_prctl(sys32_context_t context, sys32_int_t option, sys32_ulon
 }
 
 #ifdef _M_X64
-// sys64_openat
+// sys64_prctl
 //
-sys64_long_t sys64_openat(sys64_context_t context, sys64_int_t option, sys64_ulong_t arg2, sys64_ulong_t arg3, sys64_ulong_t arg4, sys64_ulong_t arg5)
+sys64_long_t sys64_prctl(sys64_context_t context, sys64_int_t option, sys64_ulong_t arg2, sys64_ulong_t arg3, sys64_ulong_t arg4, sys64_ulong_t arg5)
 {
 	return sys_prctl(reinterpret_cast<SystemCall::Context*>(context), option, arg2, arg3, arg4, arg5);
 }

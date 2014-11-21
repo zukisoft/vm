@@ -39,7 +39,7 @@
 //	flags		- Mount options and flags
 //	data		- Address of additional mounting options (NOTE: CLIENT PROCESS ADDRESS) 
 
-__int3264 sys_mount(const SystemCall::Context* context, const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, unsigned __int3264 flags, const void* data)
+__int3264 sys_mount(const SystemCall::Context* context, const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, const void* data)
 {
 	_ASSERTE(context);
 
@@ -80,7 +80,7 @@ sys32_long_t sys32_mount(sys32_context_t context, const sys32_char_t* source, co
 //
 sys64_long_t sys64_mount(sys64_context_t context, const sys64_char_t* source, const sys64_char_t* target, const sys64_char_t* filesystem, sys64_ulong_t flags, sys64_addr_t data)
 {
-	return sys_mount(reinterpret_cast<SystemCall::Context*>(context), source, target, filesystem, flags, reinterpret_cast<void*>(data));
+	return sys_mount(reinterpret_cast<SystemCall::Context*>(context), source, target, filesystem, static_cast<uint32_t>(flags), reinterpret_cast<void*>(data));
 }
 #endif
 
