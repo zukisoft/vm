@@ -459,9 +459,12 @@ std::shared_ptr<FileSystem::Alias> VmService::ResolvePath(const std::shared_ptr<
 {
 	int	symlinks = 0;							// Number of symbolic links encountered
 
-	// Per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
+
+	// If there is no path to consume, resolve to the base alias rather than
+	// raising ENOENT.  This is a valid operation when a parent directory needs
+	// to be resolved and it happens to be the base alias
+	if(*path == 0) return base;
 
 	// Determine if the path was absolute or relative and remove leading slashes
 	bool absolute = (*path == '/');
