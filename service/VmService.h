@@ -25,6 +25,7 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <linux/elf.h>
 #include "resource.h"
 #include "CompressedStreamReader.h"
@@ -32,11 +33,11 @@
 #include "Exception.h"
 #include "File.h"
 #include "FileSystem.h"
+#include "PathSplitter.h"
 #include "Process.h"
 #include "RpcInterface.h"
 #include "SystemLog.h"
 #include "VirtualMachine.h"
-#include "VmFileSystem.h"
 
 // File systems
 //
@@ -132,6 +133,16 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
+	// fs_map_t
+	//
+	// Typedef for a map<> of available file systems, not concurrent
+	using fs_map_t = std::map<std::string, FileSystem::mount_func>;
+
+	// mount_map_t
+	//
+	// Typedef for a concurrent map<> of mounted file systems and the alias they are mounted in
+	using mount_map_t = Concurrency::concurrent_unordered_map<FileSystem::AliasPtr, FileSystemPtr>;
+
 	// property_map_t
 	//
 	// Typedef for a concurrent map<> of property strings
@@ -143,8 +154,12 @@ private:
 	property_map_t						m_properties;	// Collection of vm properties
 	std::shared_ptr<Process>			m_initprocess;	// initial process object
 	std::unique_ptr<SystemLog>			m_syslog;		// System Log
-	std::unique_ptr<VmFileSystem>		m_vfs;			// Virtual File System
 	std::shared_ptr<FileSystem>			m_procfs;		// PROCFS file system instance
+
+	std::mutex							m_fslock;		// File system critical section
+	fs_map_t							m_availfs;		// Available file systems
+	FileSystemPtr						m_rootfs;		// Root file system
+	mount_map_t							m_mounts;		// Collection of mounted file systems
 
 	std::tstring m_hostarguments32;
 	std::tstring m_hostarguments64;

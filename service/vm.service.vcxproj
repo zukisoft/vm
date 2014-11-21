@@ -366,7 +366,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="VmFileSystem.h" />
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="SystemLog.h" />
@@ -657,7 +656,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="VirtualMachine.cpp" />
-    <ClCompile Include="VmFileSystem.cpp" />
     <ClCompile Include="VmService.cpp" />
     <ClCompile Include="SystemLog.cpp" />
   </ItemGroup>

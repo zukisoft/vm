@@ -224,9 +224,6 @@
     <ClInclude Include="RootFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="VmFileSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\IndexPool.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -465,9 +462,6 @@
     </ClCompile>
     <ClCompile Include="RootFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
-    </ClCompile>
-    <ClCompile Include="VmFileSystem.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MountOptions.cpp">
       <Filter>Source Files</Filter>

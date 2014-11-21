@@ -338,14 +338,26 @@ size_t VmService::GetProperty(VirtualMachine::Properties id, uapi::char_t* value
 
 void VmService::MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data, size_t datalen)
 {
-	(source);
-	(target);
-	(filesystem);
-	(flags);
-	(data);
+	std::lock_guard<std::mutex> critsec(m_fslock);
+
+	// Attempt to locate the filesystem by name in the collection
+	auto result = m_availfs.find(filesystem);
+	if(result == m_availfs.end()) throw LinuxException(LINUX_ENODEV);
+
+	// Create the file system by passing the arguments into it's mount function
+	auto mounted = result->second(source, flags, data);	// <--- TODO: NEED DATALEN ARGUMENT
 	(datalen);
 
-	throw LinuxException(LINUX_ENOSYS);
+	// Resolve the target alias and check that it's referencing a directory object
+	auto alias = ResolvePath(m_rootfs->Root, m_rootfs->Root, target, 0);
+	if(alias->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+	// Overmount the target alias with the new file system's root node
+	alias->Mount(mounted->Root->Node);
+
+	// File system was successfully mounted, insert it into the member collection.
+	// This will keep both the alias and the file system alive
+	m_mounts.insert(std::make_pair(alias, mounted));
 }
 
 //-----------------------------------------------------------------------------
@@ -566,7 +578,6 @@ void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& 
 
 			case LINUX_S_IFREG: 
 			{
-				//FileSystem::HandlePtr p = m_vfs->CreateFile(path.c_str(), 0, file.Mode);
 				FileSystem::HandlePtr p = CreateFile(target, target, path.c_str(), 0, file.Mode);
 				std::vector<uint8_t> buffer(64 KiB);
 				size_t read = file.Data.Read(buffer.data(), buffer.size());
@@ -579,7 +590,6 @@ void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& 
 				break;
 
 			case LINUX_S_IFDIR:
-				//m_vfs->CreateDirectory(path.c_str());
 				CreateDirectory(target, target, path.c_str(), file.Mode);
 				break;
 
@@ -588,7 +598,6 @@ void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& 
 				std::vector<char> buffer(file.Data.Length + 1);
 				file.Data.Read(buffer.data(), buffer.size());
 				std::string linktarget = std::to_string(buffer.data());
-				//m_vfs->CreateSymbolicLinkW(path.c_str(), linktarget.c_str());
 				CreateSymbolicLink(target, target, path.c_str(), linktarget.c_str());
 			}
 				break;
@@ -671,21 +680,24 @@ void VmService::OnStart(int, LPTSTR*)
 
 		m_procfs = ProcFileSystem::Create();
 
-		// clearly this is temporary code
-		m_vfs = VmFileSystem::Create(RootFileSystem::Mount(nullptr, 0, nullptr));
+		// temporary -- mount the root file system; this needs to actually be something
+		// specified by the options for the service instance
+		m_rootfs = RootFileSystem::Mount(nullptr, 0, nullptr);
 
-		m_vfs->AddFileSystem("hostfs", HostFileSystem::Mount);
-		m_vfs->AddFileSystem("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2, _3));
-		//m_vfs->AddFileSystem("rootfs", RootFileSystem::Mount);
-		m_vfs->AddFileSystem("tmpfs", TempFileSystem::Mount);
+		// add filesystems
+		// no need to lock, service has not gone multi-threaded yet; no RPC listener
+		m_availfs.insert(std::make_pair("hostfs", HostFileSystem::Mount));
+		m_availfs.insert(std::make_pair("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2, _3)));
+		//m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));		// <--- FIX ME
+		m_availfs.insert(std::make_pair("tmpfs", TempFileSystem::Mount));
 
-		//m_vfs->Mount(nullptr, "/", "tmpfs", 0, nullptr);
-		m_vfs->Mount("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr);
+		MountFileSystem("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr, 0);
 
-		// ??? PROCFS / SYSFS ???
-		//m_vfs->CreateDirectory("/proc");
-		//m_vfs->Mount(nullptr, "/proc", "procfs", 0, nullptr);
-
+		// ??? PROCFS / SYSFS
+		//
+		// This should be handled by init, but it can be tested here once PROCFS does something
+		//CreateDirectory(m_rootfs->Root, m_rootfs->Root, "/proc", 0);
+		//MountFileSystem(nullptr, "/proc", "procfs", 0, nullptr, 0);
 
 		//
 		// INITRAMFS
@@ -699,7 +711,7 @@ void VmService::OnStart(int, LPTSTR*)
 			if(!File::Exists(initramfs.c_str())) throw Exception(E_INITRAMFSNOTFOUND, initramfs.c_str());
 
 			// Attempt to extract the contents of the initramfs into the current root file system
-			try { LoadInitialFileSystem(m_vfs->Root, initramfs.c_str()); }
+			try { LoadInitialFileSystem(m_rootfs->Root, initramfs.c_str()); }
 			catch(Exception& ex) { throw Exception(E_INITRAMFSEXTRACT, ex, initramfs.c_str(), ex.Message); }
 		}
 
@@ -748,7 +760,7 @@ void VmService::OnStart(int, LPTSTR*)
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	// TODO: NEED INITIAL ENVIRONMENT
-	m_initprocess = CreateProcess(m_vfs->Root, m_vfs->Root, initpath.c_str(), args, nullptr);
+	m_initprocess = CreateProcess(m_rootfs->Root, m_rootfs->Root, initpath.c_str(), args, nullptr);
 	m_initprocess->Resume();
 
 	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?
