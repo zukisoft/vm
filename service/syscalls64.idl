@@ -122,6 +122,7 @@ interface SystemCalls64
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
+	/* 083 */ sys64_long_t	sys64_mkdir([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
 	/* 137 */ sys64_long_t	sys64_statfs([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_statfs64* buf);
 	/* 157 */ sys64_long_t	sys64_prctl([in] sys64_context_t context, [in] sys64_int_t option, [in] sys64_ulong_t arg2, [in] sys64_ulong_t arg3, [in] sys64_ulong_t arg4, [in] sys64_ulong_t arg5);
@@ -129,6 +130,7 @@ interface SystemCalls64
 	/* 171 */ sys64_long_t	sys64_setdomainname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);
 	/* 257 */ sys64_long_t	sys64_openat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
+	/* 258 */ sys64_long_t	sys64_mkdirat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 
 ///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 }
