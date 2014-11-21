@@ -91,6 +91,11 @@ public:
 	// Sets memory protection flags for a region
 	void ProtectMemory(void* address, size_t length, int prot);
 
+	// ReadMemory
+	//
+	// Reads directory from the process memory space, will abort on a fault
+	size_t ReadMemory(const void* address, void* buffer, size_t length);
+
 	// RemoveHandle
 	//
 	// Removes a file system handle from the process

@@ -334,14 +334,16 @@ size_t VmService::GetProperty(VirtualMachine::Properties id, uapi::char_t* value
 //	filesystem	- File system name
 //	flags		- Standard mount options/flags
 //	data		- Additional custom mounting data specific to filesystem
+//	datalen		- Length of the additional custom mounting data
 
-void VmService::MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data)
+void VmService::MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data, size_t datalen)
 {
 	(source);
 	(target);
 	(filesystem);
 	(flags);
 	(data);
+	(datalen);
 
 	throw LinuxException(LINUX_ENOSYS);
 }

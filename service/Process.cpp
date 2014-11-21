@@ -316,6 +316,44 @@ void Process::ProtectMemory(void* address, size_t length, int prot)
 }
 
 //-----------------------------------------------------------------------------
+// Process::ReadMemory
+//
+// Reads data from the client process into a local buffer.  If a fault will 
+// occur or is trapped, the read operation will stop prior to requested length
+//
+// Arguments:
+//
+//	address		- Address in the client process from which to read
+//	buffer		- Local output buffer
+//	length		- Size of the local output buffer, maximum bytes to read
+
+size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;		// Virtual memory information
+	SIZE_T						read;			// Number of bytes read from process
+
+	_ASSERTE(buffer);
+	if((buffer == nullptr) || (length == 0)) return 0;
+
+	// Query the status of the memory at the specified address
+	if(!VirtualQueryEx(m_host->ProcessHandle, address, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+		throw LinuxException(LINUX_EACCES, Win32Exception());
+	
+	// Ensure the the memory has been committed
+	if(meminfo.State != MEM_COMMIT) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// Check the protection status of the memory region, it cannot be NOACCESS or EXECUTE to continue
+	DWORD protection = meminfo.Protect & 0xFF;
+	if((protection == PAGE_NOACCESS) || (protection == PAGE_EXECUTE)) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// Attempt to read up to the requested length or to the end of the region, whichever is smaller
+	if(!ReadProcessMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read))
+		throw LinuxException(LINUX_EFAULT, Win32Exception());
+
+	return read;
+}
+
+//-----------------------------------------------------------------------------
 // Process::RemoveHandle
 //
 // Removes a file system handle from the process

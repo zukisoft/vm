@@ -43,17 +43,24 @@ __int3264 sys_mount(const SystemCall::Context* context, const uapi::char_t* sour
 {
 	_ASSERTE(context);
 
-	//// The way the data argument appears to work in the Linux kernel without a known size is that will try to copy out up to
-	//// one page of data from userspace into kernelspace, stopping if a page fault occurs
-	//HeapBuffer<uint8_t> copieddata(MemoryRegion::PageSize);
-	//if(data != 0) {
-	//}
-	(data);
-
-	try { 		
+	try {
 		
 		SystemCall::Impersonation impersonation;
-		context->VirtualMachine->MountFileSystem(source, target, filesystem, flags, nullptr);
+
+		// Custom mounting data that needs to be copied from the client process
+		if(data != nullptr) {
+
+			// The way the data argument appears to work in the Linux kernel without a known buffer size is that
+			// it will try to copy out up to PAGE_SIZE bytes of data and just stop if it encounters an issue
+			HeapBuffer<uint8_t> datapage(MemoryRegion::PageSize);
+			size_t datalen = context->Process->ReadMemory(data, &datapage, datapage.Size);
+
+			// Invoke the VirtualMachine with the custom mounting data read from the process
+			context->VirtualMachine->MountFileSystem(source, target, filesystem, flags, &datapage, datalen);
+		}
+
+		// No custom mounting data, just invoke the VirtualMachine without it
+		else context->VirtualMachine->MountFileSystem(source, target, filesystem, flags, nullptr, 0);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
