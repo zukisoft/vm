@@ -54,6 +54,9 @@ __int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::cha
 		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
 			((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
 
+		// Apply the process' current umask to the provided creation mode flags
+		mode &= ~context->Process->FileCreationModeMask;
+
 		// Attempt to open the file system object relative from the base alias
 		return context->Process->AddHandle(context->VirtualMachine->OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
 	}

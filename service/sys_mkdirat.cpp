@@ -53,6 +53,9 @@ __int3264 sys_mkdirat(const SystemCall::Context* context, int fd, const uapi::ch
 		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
 			((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
 
+		// Apply the process' current umask to the provided creation mode flags
+		mode &= ~context->Process->FileCreationModeMask;
+
 		// Attempt to create the directory object relative from the base alias
 		context->VirtualMachine->CreateDirectory(context->Process->RootDirectory, base, pathname, mode);
 	}
