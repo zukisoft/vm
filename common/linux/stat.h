@@ -74,5 +74,15 @@ namespace uapi {
 #define LINUX_S_IXOTH		0001
 
 //-----------------------------------------------------------------------------
+// include/linux/stat.h
+//-----------------------------------------------------------------------------
+
+#define LINUX_S_IRWXUGO		(LINUX_S_IRWXU | LINUX_S_IRWXG | LINUX_S_IRWXO)
+#define LINUX_S_IALLUGO		(LINUX_S_ISUID | LINUX_S_ISGID | LINUX_S_ISVTX | LINUX_S_IRWXUGO)
+#define LINUX_S_IRUGO		(LINUX_S_IRUSR | LINUX_S_IRGRP | LINUX_S_IROTH)
+#define LINUX_S_IWUGO		(LINUX_S_IWUSR | LINUX_S_IWGRP | LINUX_S_IWOTH)
+#define LINUX_S_IXUGO		(LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH)
+
+//-----------------------------------------------------------------------------
 
 #endif		// __LINUX_STAT_H_

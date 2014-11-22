@@ -29,6 +29,7 @@
 #include <memory>
 #include <linux/elf.h>
 #include <linux/mman.h>
+#include <linux/stat.h>
 #include "ElfArguments.h"
 #include "ElfClass.h"
 #include "ElfImage.h"
@@ -129,6 +130,13 @@ public:
 	// Gets the entry point address of the hosted process
 	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
 	const void* getEntryPoint(void) const { return m_startinfo.EntryPoint; }
+
+	// FileCreationModeMask
+	//
+	// Gets/sets the process UMASK for default file system permissions
+	__declspec(property(get=getFileCreationModeMask, put=putFileCreationModeMask)) uapi::mode_t FileCreationModeMask;
+	uapi::mode_t getFileCreationModeMask(void) const { return m_umask; }
+	void putFileCreationModeMask(uapi::mode_t value) { m_umask = (value & LINUX_S_IRWXUGO); }
 
 	// HostProcessId
 	//
@@ -266,6 +274,8 @@ private:
 
 	int						m_processid = 1;
 	void*					m_tidaddress = nullptr;
+
+	std::atomic<uapi::mode_t>	m_umask = 0022;	// System default UMASK
 
 	FileSystem::AliasPtr	m_rootdir;			// Process root directory
 	FileSystem::AliasPtr	m_workingdir;		// Process working directory
