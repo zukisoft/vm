@@ -27,6 +27,7 @@
 #include <vector>
 #include <linux/fcntl.h>
 #include <linux/stat.h>
+#include <linux/statfs.h>
 #include <linux/types.h>
 
 #pragma warning(push, 4)
@@ -170,7 +171,12 @@ struct __declspec(novtable) FileSystem
 		// TODO: too many arguments, create a state object.  Resolve() is recursive, don't blow up the stack
 		// would like to swap root and current, but compiler won't catch that if I do and weird stuff will happen,
 		// that will take care of itself if I make a state object that has these instead
-		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;		
+		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;
+
+		// Stat
+		//
+		// Retrieves information and status about the node
+		virtual void Stat(uapi::stat* stats) = 0;
 
 		// Index
 		//

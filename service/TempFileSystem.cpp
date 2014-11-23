@@ -312,6 +312,12 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root
 	throw LinuxException(LINUX_ENOENT);
 }
 
+// TODO
+void TempFileSystem::DirectoryNode::Stat(uapi::stat* stats)
+{
+	(stats);
+}
+
 //-----------------------------------------------------------------------------
 // TEMPFILESYSTEM::DIRECTORYNODE::HANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
@@ -419,6 +425,12 @@ FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 	// File nodes can only be resolved to themselves, they have no children
 	if(*path != 0) throw LinuxException(LINUX_ENOTDIR);
 	return current;
+}
+
+// TODO
+void TempFileSystem::FileNode::Stat(uapi::stat* stats)
+{
+	(stats);
 }
 
 // ----------------------------------------------------------------------------
@@ -627,7 +639,7 @@ uapi::size_t TempFileSystem::SymbolicLinkNode::ReadTarget(uapi::char_t* buffer, 
 	return count;
 }
 
-// SymbolicLinkNode::ResolvePath
+// SymbolicLinkNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks)
 {
@@ -656,6 +668,12 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 	// Construct an Alias to bridge between this symbolic link's parent and the target node
 	auto bridge = Alias::Construct(current->Name, current->Parent, followed->Node);
 	return bridge->Node->Resolve(root, bridge, path, flags, symlinks);
+}
+
+// TODO
+void TempFileSystem::SymbolicLinkNode::Stat(uapi::stat* stats)
+{
+	(stats);
 }
 
 //-----------------------------------------------------------------------------

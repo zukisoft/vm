@@ -77,7 +77,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 //#ifdef _M_X64
 //		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
 //#else
-		//harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x86.cpio.gz"));
+		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x86.cpio.gz"));
 //#endif
 
 		// test parameters

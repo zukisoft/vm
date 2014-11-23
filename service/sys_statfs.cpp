@@ -66,7 +66,7 @@ __int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* pat
 
 // sys32_statfs
 //
-sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, uapi::statfs32* buf)
+sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, linux_statfs32* buf)
 {
 	uapi::statfs		stats;				// Generic statfs structure (64-bit fields)
 
@@ -99,7 +99,7 @@ sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, uap
 #ifdef _M_X64
 // sys64_statfs
 //
-sys64_long_t sys64_statfs(sys64_context_t context, const sys64_char_t* path, uapi::statfs* buf)
+sys64_long_t sys64_statfs(sys64_context_t context, const sys64_char_t* path, linux_statfs64* buf)
 {
 	return sys_statfs(reinterpret_cast<SystemCall::Context*>(context), path, buf);
 }

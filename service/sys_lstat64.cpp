@@ -20,14 +20,39 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __UAPI_H_
-#define __UAPI_H_
-#pragma once
+#include "stdafx.h"
+#include "SystemCall.h"
 
-#include <linux/types.h>
-#include <linux/stat.h>
-#include <linux/statfs.h>
-#include <linux/utsname.h>
+#pragma warning(push, 4)
 
-#endif		// __UAPI_H_
+// sys_fstatat64.cpp
+//
+__int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags);
 
+//-----------------------------------------------------------------------------
+// sys_lstat64
+//
+// Get information and statistics about a file system object
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	pathname	- Pathname to the file system object
+//	stats		- Output structure
+
+__int3264 sys_lstat64(const SystemCall::Context* context, const uapi::char_t* pathname, linux_stat3264* buf)
+{
+	// sys_lstat64 is equivalent to sys_fstatat64(LINUX_AT_FDCWD, LINUX_AT_SYMLINK_NOFOLLOW)
+	return sys_fstatat64(context, LINUX_AT_FDCWD, pathname, buf, LINUX_AT_SYMLINK_NOFOLLOW);
+}
+
+// sys32_lstat64
+//
+sys32_long_t sys32_lstat64(sys32_context_t context, const sys32_char_t* pathname, linux_stat3264* buf)
+{
+	return static_cast<sys32_long_t>(sys_lstat64(reinterpret_cast<SystemCall::Context*>(context), pathname, buf));
+}
+
+//---------------------------------------------------------------------------
+
+#pragma warning(pop)

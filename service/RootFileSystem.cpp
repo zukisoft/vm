@@ -135,6 +135,12 @@ FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, c
 	throw LinuxException(LINUX_ENOENT);
 }
 
+// TODO
+void RootFileSystem::Stat(uapi::stat* stats)
+{
+	(stats);
+}
+
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)

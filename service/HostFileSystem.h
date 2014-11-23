@@ -179,6 +179,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
+		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void);
 		virtual FileSystem::NodeType	getType(void);
 
@@ -230,6 +231,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
+		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void);
 		virtual FileSystem::NodeType	getType(void);
 

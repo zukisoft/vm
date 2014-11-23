@@ -20,14 +20,39 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __UAPI_H_
-#define __UAPI_H_
-#pragma once
+#include "stdafx.h"
+#include "SystemCall.h"
 
-#include <linux/types.h>
-#include <linux/stat.h>
-#include <linux/statfs.h>
-#include <linux/utsname.h>
+#pragma warning(push, 4)
 
-#endif		// __UAPI_H_
+// sys_fstatat64.cpp
+//
+__int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags);
 
+//-----------------------------------------------------------------------------
+// sys_fstat64
+//
+// Get information and statistics about a file system object
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	fd			- File descriptor from which to retrieve the stats
+//	stats		- Output structure
+
+__int3264 sys_fstat64(const SystemCall::Context* context, int fd, linux_stat3264* buf)
+{
+	// sys_fstat64 is equivalent to sys_fstatat64(fd, LINUX_AT_EMPTY_PATH)
+	return sys_fstatat64(context, fd, "", buf, LINUX_AT_EMPTY_PATH);
+}
+
+// sys32_fstat64
+//
+sys32_long_t sys32_fstat64(sys32_context_t context, sys32_int_t fd, linux_stat3264* buf)
+{
+	return static_cast<sys32_long_t>(sys_fstat64(reinterpret_cast<SystemCall::Context*>(context), fd, buf));
+}
+
+//---------------------------------------------------------------------------
+
+#pragma warning(pop)

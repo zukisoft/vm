@@ -99,7 +99,10 @@ namespace uapi {
 
 	typedef linux_statfs32			statfs32;
 	typedef linux_statfs3264		statfs3264;
-	typedef linux_statfs64			statfs;			// <-- Generic version
+	typedef linux_statfs64			statfs64;
+
+	// stat is the version of the structure used by the Virtual Machine
+	typedef linux_statfs64			statfs;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)

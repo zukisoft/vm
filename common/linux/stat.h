@@ -84,5 +84,125 @@ namespace uapi {
 #define LINUX_S_IXUGO		(LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH)
 
 //-----------------------------------------------------------------------------
+// arch/x86/include/uapi/asm/stat.h
+//-----------------------------------------------------------------------------
+
+#pragma pack(push, 1)
+
+// size = 30 (x86)
+//
+// Used only with 32-bit stat() and family
+typedef struct {
+
+	uint16_t		st_dev;
+	uint16_t		st_ino;
+	uint16_t		st_mode;
+	uint16_t		st_nlink;
+	uint16_t		st_uid;
+	uint16_t		st_gid;
+	uint16_t		st_rdev;
+	uint32_t		st_size;
+	uint32_t		st_atime;
+	uint32_t		st_mtime;
+	uint32_t		st_ctime;
+
+} linux_oldstat;
+
+// size = 64 (x86)
+//
+// Used with 32-bit newstat() and family
+typedef struct {
+
+	uint32_t		st_dev;
+	uint32_t		st_ino;
+	uint16_t		st_mode;
+	uint16_t		st_nlink;
+	uint16_t		st_uid;
+	uint16_t		st_gid;
+	uint32_t		st_rdev;
+	uint32_t		st_size;
+	uint32_t		st_blksize;
+	uint32_t		st_blocks;
+	uint32_t		st_atime;
+	uint32_t		st_atime_nsec;
+	uint32_t		st_mtime;
+	uint32_t		st_mtime_nsec;
+	uint32_t		st_ctime;
+	uint32_t		st_ctime_nsec;
+	uint32_t		__unused4;
+	uint32_t		__unused5;
+
+} linux_stat32;
+
+// size = 144 (x64)
+//
+// Used with 64-bit stat() and family
+typedef struct {
+
+	uint64_t		st_dev;
+	uint64_t		st_ino;
+	uint64_t		st_nlink;
+	uint32_t		st_mode;
+	uint32_t		st_uid;
+	uint32_t		st_gid;
+	uint32_t		__pad0;
+	uint64_t		st_rdev;
+	int64_t			st_size;
+	int64_t			st_blksize;
+	int64_t			st_blocks;
+	uint64_t		st_atime;
+	uint64_t		st_atime_nsec;
+	uint64_t		st_mtime;
+	uint64_t		st_mtime_nsec;
+	uint64_t		st_ctime;
+	uint64_t		st_ctime_nsec;
+	int64_t			__unused[3];
+
+} linux_stat64;
+
+// size = 96 (x86)
+//
+// Used with 32-bit stat64() and family
+typedef struct {
+
+	uint64_t		st_dev;
+	uint8_t			__pad0[4];
+	uint32_t		__st_ino;
+	uint32_t		st_mode;
+	uint32_t		st_nlink;
+	uint32_t		st_uid;
+	uint32_t		st_gid;
+	uint64_t		st_rdev;
+	uint8_t			__pad3[4];
+	int64_t			st_size;
+	uint32_t		st_blksize;
+	uint64_t		st_blocks;
+	uint32_t		st_atime;
+	uint32_t		st_atime_nsec;
+	uint32_t		st_mtime;
+	uint32_t		st_mtime_nsec;
+	uint32_t		st_ctime;
+	uint32_t		st_ctime_nsec;
+	uint64_t		st_ino;
+
+} linux_stat3264;
+
+#pragma pack(pop)
+
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
+
+	typedef linux_oldstat			oldstat;
+	typedef linux_stat32			stat32;
+	typedef linux_stat3264			stat3264;
+	typedef linux_stat64			stat64;
+
+	// stat is the version of the structure used by the Virtual Machine
+	typedef linux_stat64			stat;
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
+
+//-----------------------------------------------------------------------------
 
 #endif		// __LINUX_STAT_H_

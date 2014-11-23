@@ -116,6 +116,9 @@ interface SystemCalls64
 	/* 001 */ sys64_long_t	sys64_write([in] sys64_context_t context, [in] sys64_int_t fd, [in, ref, size_is(count)] const sys64_uchar_t* buf, [in] sys64_sizeis_t count);
 	/* 002 */ sys64_long_t	sys64_open([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 	/* 003 */ sys64_long_t	sys64_close([in] sys64_context_t context, [in] sys64_int_t fd);
+//	/* 004 */ sys64_long_t	sys64_newstat([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_stat64* buf);
+//	/* 005 */ sys64_long_t	sys64_newfstat([in] sys64_context_t context, [in] sys64_int_t fd, [out, ref] linux_stat64* buf);
+//	/* 006 */ sys64_long_t	sys64_newlstat([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_stat64* buf);
 	/* 009 */ sys64_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys64_off_t offset);
 	/* 010 */ sys64_long_t	sys64_mprotect([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot);
 	/* 011 */ sys64_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
@@ -133,6 +136,7 @@ interface SystemCalls64
 	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);
 	/* 257 */ sys64_long_t	sys64_openat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 	/* 258 */ sys64_long_t	sys64_mkdirat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
+//	/* 262 */ sys64_long_t	sys64_newfstatat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [out, ref] linux_stat64* buf, [in] sys64_int_t flags);
 
 ///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 }

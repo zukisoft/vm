@@ -647,6 +647,12 @@ FileSystem::AliasPtr HostFileSystem::DirectoryNode::Resolve(const AliasPtr&, con
 	else return Alias::Construct(aliasname.c_str(), FileNode::FromPath(m_mountpoint, hostpath));
 }
 
+// TODO
+void HostFileSystem::DirectoryNode::Stat(uapi::stat* stats)
+{
+	(stats);
+}
+
 //-----------------------------------------------------------------------------
 // HostFileSystem::DirectoryNode::getIndex
 //
@@ -1198,6 +1204,12 @@ FileSystem::AliasPtr HostFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 	// File nodes can only be resolved to themselves, they have no children
 	if(path[0] != '\0') throw LinuxException(LINUX_ENOTDIR);
 	return current;
+}
+
+// TODO
+void HostFileSystem::FileNode::Stat(uapi::stat* stats)
+{
+	(stats);
 }
 
 //-----------------------------------------------------------------------------

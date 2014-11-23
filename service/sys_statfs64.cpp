@@ -30,11 +30,12 @@ __int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* pat
 
 // sys32_statfs64
 //
-sys32_long_t sys32_statfs64(sys32_context_t context, const sys32_char_t* path, sys32_size_t length, uapi::statfs3264* buf)
+sys32_long_t sys32_statfs64(sys32_context_t context, const sys32_char_t* path, sys32_size_t length, linux_statfs3264* buf)
 {
 	uapi::statfs		stats;				// Generic statfs structure (64-bit fields)
 
 	// Only the statfs3264 structure is supported by this system call
+	if(buf == nullptr) return -LINUX_EFAULT;
 	if(length != sizeof(uapi::statfs3264)) return -LINUX_EFAULT;
 
 	// Invoke the generic version of the system call using the local structure

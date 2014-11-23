@@ -247,6 +247,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
+		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void)	{ return FileSystem::NodeType::Directory; }
 
@@ -338,6 +339,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
+		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::File; }
 
@@ -419,6 +421,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
+		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::SymbolicLink; }
 

@@ -690,7 +690,8 @@ void VmService::OnStart(int, LPTSTR*)
 		//m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));		// <--- FIX ME
 		m_availfs.insert(std::make_pair("tmpfs", TempFileSystem::Mount));
 
-		MountFileSystem("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr, 0);
+		//MountFileSystem("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr, 0);
+		MountFileSystem("tmpfs", "/", "tmpfs", 0, nullptr, 0);
 
 		// ??? PROCFS / SYSFS
 		//
