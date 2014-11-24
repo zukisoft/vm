@@ -323,6 +323,12 @@
     <ClInclude Include="..\common\linux\statfs.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\uio.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\major.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -611,6 +617,9 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys_lstat64.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_writev.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>

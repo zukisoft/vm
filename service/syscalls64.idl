@@ -52,6 +52,16 @@ typedef sys64_uint_t					sys64_sizeis_t;		// Special for 64-bit RPC calls
 cpp_quote("__declspec(selectany) extern uuid_t EPVID_SYSTEMCALLS64 = ")
 cpp_quote("{ 0x94f810e2, 0x56fe, 0x4fab, { 0xa0, 0xa6, 0x2f, 0x63, 0x1c, 0x80, 0x70, 0x36 } };")
 
+// sys64_iovec
+//
+// Version of iovec structure that can be marshalled by RPC
+typedef struct _sys64_iovec {
+
+	sys64_addr_t		iov_base;
+	sys64_size_t		iov_len;
+
+} sys64_iovec_t;
+
 // sys64_startup_info
 //
 // Structure passed into the host process on startup
@@ -122,6 +132,7 @@ interface SystemCalls64
 	/* 009 */ sys64_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys64_off_t offset);
 	/* 010 */ sys64_long_t	sys64_mprotect([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot);
 	/* 011 */ sys64_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
+	/* 020 */ sys64_long_t	sys64_writev([in] sys64_context_t context, [in] sys64_int_t fd, [in, size_is(iovcnt)] sys64_iovec_t* iov, [in] sys64_int_t iovcnt);	
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);

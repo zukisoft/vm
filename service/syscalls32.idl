@@ -51,6 +51,16 @@ typedef sys32_long_t					sys32_ssize_t;
 cpp_quote("__declspec(selectany) extern uuid_t EPVID_SYSTEMCALLS32 = ")
 cpp_quote("{ 0xd967a755, 0x869f, 0x4180, { 0xa9, 0xc0, 0xba, 0x96, 0xd7, 0xb4, 0x1e, 0x18 } };")
 
+// sys32_iovec_t
+//
+// Version of iovec structure that can be marshalled by RPC
+typedef struct _sys32_iovec {
+
+	sys32_addr_t		iov_base;
+	sys32_size_t		iov_len;
+
+} sys32_iovec_t;
+
 // sys32_startup_info
 //
 // Structure passed into the host process on startup
@@ -135,6 +145,7 @@ interface SystemCalls32
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 125 */ sys32_long_t	sys32_mprotect([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot);
+	/* 146 */ sys32_long_t	sys32_writev([in] sys32_context_t context, [in] sys32_int_t fd, [in, size_is(iovcnt)] sys32_iovec_t* iov, [in] sys32_int_t iovcnt);
 	/* 172 */ sys32_long_t	sys32_prctl([in] sys32_context_t context, [in] sys32_int_t option, [in] sys32_ulong_t arg2, [in] sys32_ulong_t arg3, [in] sys32_ulong_t arg4, [in] sys32_ulong_t arg5);
 	/* 192 */ sys32_long_t	sys32_mmap_pgoff([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t pgoffset);
 	/* 195 */ sys32_long_t	sys32_stat64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat3264* buf);
