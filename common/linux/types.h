@@ -144,7 +144,7 @@ namespace uapi {
 	typedef linux_ptrdiff_t			ptrdiff_t;
 	typedef linux_time_t			time_t;
 	typedef linux_clock_t			clock_t;
-	typedef linux_caddr_t			caddt_t;
+	typedef linux_caddr_t			caddr_t;
 	typedef linux_char_t			char_t;
 
 }	// namespace uapi
