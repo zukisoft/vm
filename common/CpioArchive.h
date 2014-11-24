@@ -75,17 +75,17 @@ public:
 	__declspec(property(get=getData)) StreamReader& Data;
 	StreamReader& getData(void) const { return m_data; }
 
-	// DeviceMajorVersion
+	// DeviceMajor
 	//
 	// Gets the file device major version
-	__declspec(property(get=getDeviceMajorVersion)) uint32_t DeviceMajorVersion;
-	uint32_t getDeviceMajorVersion(void) const { return m_devmajor; }
+	__declspec(property(get=getDeviceMajor)) uint32_t DeviceMajor;
+	uint32_t getDeviceMajor(void) const { return m_devmajor; }
 
-	// DeviceMinorVersion
+	// DeviceMinor
 	//
 	// Gets the file device minor version
-	__declspec(property(get=getDeviceMinorVersion)) uint32_t DeviceMinorVersion;
-	uint32_t getDeviceMinorVersion(void) const { return m_devminor; }
+	__declspec(property(get=getDeviceMinor)) uint32_t DeviceMinor;
+	uint32_t getDeviceMinor(void) const { return m_devminor; }
 
 	// GroupId
 	//
@@ -123,6 +123,18 @@ public:
 	__declspec(property(get=getPath)) const char_t* Path;
 	const char_t* getPath(void) const { return m_path.c_str(); }
 
+	// ReferencedDeviceMajor
+	//
+	// Gets the major version of the device node referenced by a special file
+	__declspec(property(get=getReferencedDeviceMajor)) uint32_t ReferencedDeviceMajor;
+	uint32_t getReferencedDeviceMajor(void) const { return m_rdevmajor; }
+
+	// ReferencedDeviceMinor
+	//
+	// Gets the minor version of the device node referenced by a special file
+	__declspec(property(get=getReferencedDeviceMinor)) uint32_t ReferencedDeviceMinor;
+	uint32_t getReferencedDeviceMinor(void) const { return m_rdevminor; }
+
 	// UserId
 	//
 	// Gets the file owner UID
@@ -145,6 +157,8 @@ private:
 	uint32_t						m_mtime;			// Modification time of the file
 	uint32_t						m_devmajor;			// File device major version
 	uint32_t						m_devminor;			// File device minor version
+	uint32_t						m_rdevmajor;		// Special file device major version
+	uint32_t						m_rdevminor;		// Special file device minor version
 	std::string						m_path;				// File path
 	StreamReader&					m_data;				// File data
 };

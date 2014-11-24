@@ -78,6 +78,8 @@ CpioFile::CpioFile(const cpio_header_t& header, const char_t* path, StreamReader
 	m_numlinks	= ConvertHexString(header.c_nlink, 8);
 	m_mtime		= ConvertHexString(header.c_mtime, 8);
 	m_devmajor	= ConvertHexString(header.c_maj, 8);
+	m_rdevmajor = ConvertHexString(header.c_rmaj, 8);
+	m_rdevminor = ConvertHexString(header.c_rmin, 8);
 	m_devminor	= ConvertHexString(header.c_min, 8);
 }
 
