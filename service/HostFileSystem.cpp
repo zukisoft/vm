@@ -238,7 +238,7 @@ FileSystem::HandlePtr HostFileSystem::DuplicateFileHandle(const std::shared_ptr<
 
 	// HostFileSystem does not support unnamed temporary files via O_TMPFILE
 	// TODO: why is this here, this is Open(), not Create()
-	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
+	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EOPNOTSUPP);
 
 	// If the file system was mounted as read-only, write access cannot be granted
 	if(mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
@@ -404,7 +404,25 @@ HostFileSystem::DirectoryNode::~DirectoryNode()
 }
 
 //-----------------------------------------------------------------------------
-// HostFileSystem::DirectoryNode::CreateDirectory (private)
+// HostFileSystem::DirectoryNode::CreateCharacterDevice
+//
+// Creates a new character device node as a child of this node
+//
+// Arguments:
+//
+//	parent		- Unused; parent alias to assign to the generated child alias
+//	name		- Name to assign to the new directory name
+//	mode		- Mode bitmask to assign to the new directory
+//	device		- Device identifier to be referenced by the new node
+
+void HostFileSystem::DirectoryNode::CreateCharacterDevice(const FileSystem::AliasPtr&, const uapi::char_t*, uapi::mode_t, uapi::dev_t)
+{
+	// HostFileSystem doesn't currently support creation of special nodes
+	throw LinuxException(LINUX_EPERM);
+}
+
+//-----------------------------------------------------------------------------
+// HostFileSystem::DirectoryNode::CreateDirectory
 //
 // Creates a new directory node as a child of this node
 //
@@ -464,7 +482,7 @@ FileSystem::HandlePtr HostFileSystem::DirectoryNode::CreateFile(const FileSystem
 	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
 
 	// HostFileSystem does not support unnamed temporary files via O_TMPFILE
-	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EINVAL);
+	if(flags & LINUX___O_TMPFILE) throw LinuxException(LINUX_EOPNOTSUPP);
 
 	// Convert the file name to generic text from ANSI/UTF-8
 	std::tstring namestr = std::to_tstring(name);
@@ -645,12 +663,6 @@ FileSystem::AliasPtr HostFileSystem::DirectoryNode::Resolve(const AliasPtr&, con
 	if((attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) 
 		return Alias::Construct(aliasname.c_str(), DirectoryNode::FromPath(m_mountpoint, hostpath));
 	else return Alias::Construct(aliasname.c_str(), FileNode::FromPath(m_mountpoint, hostpath));
-}
-
-// TODO
-void HostFileSystem::DirectoryNode::Stat(uapi::stat* stats)
-{
-	(stats);
 }
 
 //-----------------------------------------------------------------------------
@@ -1204,12 +1216,6 @@ FileSystem::AliasPtr HostFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 	// File nodes can only be resolved to themselves, they have no children
 	if(path[0] != '\0') throw LinuxException(LINUX_ENOTDIR);
 	return current;
-}
-
-// TODO
-void HostFileSystem::FileNode::Stat(uapi::stat* stats)
-{
-	(stats);
 }
 
 //-----------------------------------------------------------------------------

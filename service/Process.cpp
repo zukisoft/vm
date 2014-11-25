@@ -65,6 +65,23 @@ int Process::AddHandle(const FileSystem::HandlePtr& handle)
 }
 
 //-----------------------------------------------------------------------------
+// Process::AddHandle
+//
+// Adds a file system handle to the process with a specific file descriptor index
+//
+// Arguments:
+//
+//	fd			- Specific file descriptor index to use
+//	handle		- Handle instance to be added to the process
+
+int Process::AddHandle(int fd, const FileSystem::HandlePtr& handle)
+{
+	// Attempt to insert the handle using the specified index
+	if(m_handles.insert(std::make_pair(fd, handle)).second) return fd;
+	throw LinuxException(LINUX_EBADF);
+}
+
+//-----------------------------------------------------------------------------
 // Process::AllocateRegion
 //
 // Allocates a region of memory in the hosted process

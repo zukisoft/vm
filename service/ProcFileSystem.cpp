@@ -108,12 +108,6 @@ FileSystem::AliasPtr ProcFileSystem::Resolve(const AliasPtr&, const AliasPtr&, c
 	throw LinuxException(LINUX_ENOENT);
 }
 
-// TODO
-void ProcFileSystem::Stat(uapi::stat* stats)
-{
-	(stats);
-}
-
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)

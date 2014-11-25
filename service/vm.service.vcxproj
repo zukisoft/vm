@@ -350,6 +350,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClInclude>
     <ClInclude Include="BlockDevice.h" />
     <ClInclude Include="CharacterDevice.h" />
+    <ClInclude Include="ConsoleCharacterDevice.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
@@ -631,6 +632,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_madvise.cpp" />
     <ClCompile Include="sys_mkdir.cpp" />
     <ClCompile Include="sys_mkdirat.cpp" />
+    <ClCompile Include="sys_mknod.cpp" />
+    <ClCompile Include="sys_mknodat.cpp" />
     <ClCompile Include="sys_mmap_pgoff.cpp" />
     <ClCompile Include="sys_mount.cpp" />
     <ClCompile Include="sys_mprotect.cpp" />

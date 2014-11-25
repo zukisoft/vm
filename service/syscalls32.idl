@@ -39,6 +39,7 @@ typedef unsigned __int64				sys32_ulonglong_t;
 // Derived Data Types
 //
 typedef sys32_ulong_t					sys32_addr_t;
+typedef sys32_uint_t					sys32_dev_t;
 typedef sys32_uint_t					sys32_mode_t;
 typedef sys32_long_t					sys32_off_t;
 typedef sys32_longlong_t				sys32_loff_t;
@@ -125,6 +126,7 @@ interface SystemCalls32
 	/* 004 */ sys32_long_t	sys32_write([in] sys32_context_t context, [in] sys32_int_t fd, [in, ref, size_is(count)] const sys32_uchar_t* buf, [in] sys32_size_t count);
 	/* 005 */ sys32_long_t	sys32_open([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 	/* 006 */ sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
+	/* 014 */ sys32_long_t	sys32_mknod([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 //	/* 018 */ sys32_long_t	sys32_stat([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_oldstat* buf);
 	/* 021 */ sys32_long_t	sys32_mount([in] sys32_context_t context, [in, string] const sys32_char_t* source, [in, string] const sys32_char_t* target, [in, string] const sys32_char_t* filesystem, [in] sys32_ulong_t flags, [in] sys32_addr_t data);
 //	/* 028 */ sys32_long_t	sys32_fstat([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_oldstat* buf);
@@ -155,7 +157,8 @@ interface SystemCalls32
 	/* 258 */ sys32_long_t	sys32_set_tid_address([in] sys32_context_t context, [in] sys32_addr_t tidptr);
 	/* 268 */ sys32_long_t	sys32_statfs64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [in] sys32_size_t length, [out, ref] linux_statfs3264* buf);
 	/* 295 */ sys32_long_t	sys32_openat([in] sys32_context_t context, [in] sys32_int_t fd, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
-	/* 296 */ sys32_long_t	sys32_mkdirat([in] sys32_context_t context, [in] sys32_int_t fd, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
+	/* 296 */ sys32_long_t	sys32_mkdirat([in] sys32_context_t context, [in] sys32_int_t dirfd, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
+	/* 297 */ sys32_long_t	sys32_mknodat([in] sys32_context_t context, [in] sys32_int_t dirfd, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 	/* 300 */ sys32_long_t	sys32_fstatat64([in] sys32_context_t context, [in] sys32_int_t fd, [in, string] const sys32_char_t* pathname, [out, ref] linux_stat3264* buf, [in] sys32_int_t flags);
 
 ///* 008 */	sys32_long_t	sys32_creat([in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);

@@ -74,6 +74,7 @@ public:
 
 	// updated file system api
 	virtual void								CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
+	virtual void								CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device);
 	virtual void								CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode);
 	virtual std::shared_ptr<FileSystem::Handle> CreateFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
 	virtual void								CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, const uapi::char_t* target);

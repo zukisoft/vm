@@ -34,11 +34,11 @@
 // Arguments:
 //
 //	context		- SystemCall context object
-//	fd			- Previously opened directory object file descriptor
+//	dirfd		- Previously opened directory object file descriptor
 //	pathname	- Relative path for the directory to create
 //	mode		- Mode flags to assign when creating the directory
 
-__int3264 sys_mkdirat(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, uapi::mode_t mode)
+__int3264 sys_mkdirat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode)
 {
 	_ASSERTE(context);
 
@@ -51,7 +51,7 @@ __int3264 sys_mkdirat(const SystemCall::Context* context, int fd, const uapi::ch
 
 		// Determine the base alias from which to resolve the path
 		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-			((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
+			((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
 
 		// Apply the process' current umask to the provided creation mode flags
 		mode &= ~context->Process->FileCreationModeMask;
@@ -67,17 +67,17 @@ __int3264 sys_mkdirat(const SystemCall::Context* context, int fd, const uapi::ch
 
 // sys32_mkdirat
 //
-sys32_long_t sys32_mkdirat(sys32_context_t context, sys32_int_t fd, const sys32_char_t* pathname, sys32_mode_t mode)
+sys32_long_t sys32_mkdirat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_mkdirat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, mode));
+	return static_cast<sys32_long_t>(sys_mkdirat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode));
 }
 
 #ifdef _M_X64
 // sys64_mkdirat
 //
-sys64_long_t sys64_mkdirat(sys64_context_t context, sys64_int_t fd, const sys64_char_t* pathname, sys64_mode_t mode)
+sys64_long_t sys64_mkdirat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return sys_mkdirat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, mode);
+	return sys_mkdirat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode);
 }
 #endif
 

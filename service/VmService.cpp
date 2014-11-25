@@ -69,6 +69,40 @@ void VmService::CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root,
 }
 
 //-----------------------------------------------------------------------------
+// VmService::CreateCharacterDevice
+//
+// Creates a file system character device object
+//
+// Arguments:
+//
+//	root		- Root alias to use for path resolution
+//	base		- Base alias from which to start path resolution
+//	path		- Path to the object to be opened/created
+//	mode		- Mode bitmask to use when creating the object
+//	device		- Target device identifier
+
+void VmService::CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, 
+	uapi::mode_t mode, uapi::dev_t device)
+{
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
+
+	// Split the path into branch and leaf components
+	PathSplitter splitter(path);
+
+	// Resolve the branch path to an Alias instance, must resolve to a Directory
+	auto branch = ResolvePath(root, base, splitter.Branch, 0);
+	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+	if(directory == nullptr) throw LinuxException(LINUX_ENOTDIR);
+
+	// Request a new character device node be created as a child of the resolved directory
+	directory->CreateCharacterDevice(branch, splitter.Leaf, mode, device);
+}
+
+//-----------------------------------------------------------------------------
 // VmService::CreateDirectory
 //
 // Creates a file system directory object
@@ -601,8 +635,9 @@ void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& 
 			}
 				break;
 				
+			// S_IFCHR - Create a character device node
 			case LINUX_S_IFCHR:
-				//_RPTF0(_CRT_ASSERT, "initramfs: S_IFCHR not implemented yet");
+				CreateCharacterDevice(target, target, path.c_str(), file.Mode, CreateDeviceId(file.ReferencedDeviceMajor, file.ReferencedDeviceMinor));
 				break;
 
 			case LINUX_S_IFBLK:
@@ -761,6 +796,11 @@ void VmService::OnStart(int, LPTSTR*)
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	// TODO: NEED INITIAL ENVIRONMENT
 	m_initprocess = CreateProcess(m_rootfs->Root, m_rootfs->Root, initpath.c_str(), args, nullptr);
+	
+	// stdout/stderr test
+	m_initprocess->AddHandle(1, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
+	m_initprocess->AddHandle(2, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
+
 	m_initprocess->Resume();
 
 	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?

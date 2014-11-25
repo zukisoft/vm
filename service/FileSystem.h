@@ -173,11 +173,6 @@ struct __declspec(novtable) FileSystem
 		// that will take care of itself if I make a state object that has these instead
 		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;
 
-		// Stat
-		//
-		// Retrieves information and status about the node
-		virtual void Stat(uapi::stat* stats) = 0;
-
 		// Index
 		//
 		// Gets the node index
@@ -196,6 +191,11 @@ struct __declspec(novtable) FileSystem
 	// Specialization of Node for Directory objects
 	struct __declspec(novtable) Directory : public Node
 	{
+		// CreateCharacterDevice
+		//
+		// Creates a new character device node as a child of this node
+		virtual void CreateCharacterDevice(const AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode, uapi::dev_t device) = 0;
+
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
@@ -205,11 +205,6 @@ struct __declspec(novtable) FileSystem
 		//
 		// Creates a new regular file node as a child of this node
 		virtual HandlePtr CreateFile(const AliasPtr& parent, const uapi::char_t* name, int flags, uapi::mode_t mode) = 0;
-
-		// CreateNode
-		//
-		// Creates a new special node as a child of this node
-		// TODO
 
 		// CreateSymbolicLink
 		//
@@ -225,6 +220,13 @@ struct __declspec(novtable) FileSystem
 		//
 		// Removes a non-directory child from the node
 		//virtual void RemoveNode(const uapi::char_t* name) = 0;
+	};
+
+	// CharacterDevice
+	//
+	// Specialization of Node for Character Device objects
+	struct __declspec(novtable) CharacterDevice : public Node
+	{
 	};
 
 	// File

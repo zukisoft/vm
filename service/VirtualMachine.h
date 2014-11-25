@@ -79,6 +79,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// CreateDeviceId (static)
+	//
+	// Creates a device identifier from major and minor components
+	static uapi::dev_t CreateDeviceId(uint32_t major, uint32_t minor);
+
 	// FindProcessByHostID	// <--- TODO: Rename/repurpose to allow a wait for the host to register?
 	//
 	// Locates a Process instance by the host process' PID, necessary for the system
@@ -104,6 +109,12 @@ public:
 
 	virtual std::shared_ptr<FileSystem::Handle> CreateFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
 		const uapi::char_t* path, int flags, uapi::mode_t mode) = 0;
+
+	//
+	// I think I would rather have CreateCharacterDevice, CreateBlockDevice, CreatePipe, CreateSocket ??
+	//
+	virtual void CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device) = 0;
 
 	virtual void CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
 		const uapi::char_t* path, const uapi::char_t* target) = 0;

@@ -68,11 +68,24 @@
 //
 sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t* iov, sys32_int_t iovcnt)
 {
+	if(iovcnt < 0) return -LINUX_EINVAL;
+
 	const SystemCall::Context* c = reinterpret_cast<SystemCall::Context*>(context);
 	FileSystem::HandlePtr h = c->Process->GetHandle(fd);
 
+	size_t written = 0;
+
+	//sys32_iovec_t* next = iov;
+	for(int index = 0; index < iovcnt; index++) {
+
+		sys32_iovec_t* next = &iov[index];
+		HeapBuffer<uint8_t> buffer(next->iov_len);
+		size_t read = c->Process->ReadMemory(reinterpret_cast<void*>(next->iov_base), buffer, next->iov_len);
+		written += h->Write(buffer, read);
+	}
+
 	//return static_cast<sys32_long_t>(sys_openat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, flags, mode));
-	return -LINUX_ENOSYS;
+	return written;
 }
 
 #ifdef _M_X64

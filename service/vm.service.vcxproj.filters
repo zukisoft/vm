@@ -329,6 +329,9 @@
     <ClInclude Include="..\common\linux\major.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="ConsoleCharacterDevice.h">
+      <Filter>Header Files\Character Devices</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -620,6 +623,12 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys_writev.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_mknodat.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_mknod.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>

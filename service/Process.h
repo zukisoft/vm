@@ -66,6 +66,7 @@ public:
 	//
 	// Adds a file system handle to the process
 	int AddHandle(const FileSystem::HandlePtr& handle);
+	int AddHandle(int fd, const FileSystem::HandlePtr& handle);
 
 	// Create (static)
 	//

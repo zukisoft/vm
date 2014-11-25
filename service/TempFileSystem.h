@@ -247,12 +247,12 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void)	{ return FileSystem::NodeType::Directory; }
 
 		// FileSystem::Directory Implementation
 		//
+		virtual void					CreateCharacterDevice(const AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode, uapi::dev_t device);
 		virtual void					CreateDirectory(const FileSystem::AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr& parent, const uapi::char_t* name, int flags, uapi::mode_t mode);
 		virtual void					CreateSymbolicLink(const FileSystem::AliasPtr& parent, const uapi::char_t* name, const uapi::char_t* target);
@@ -339,7 +339,6 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::File; }
 
@@ -421,7 +420,6 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual void					Stat(uapi::stat* stats);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::SymbolicLink; }
 
@@ -481,6 +479,83 @@ private:
 		// Member Variables
 
 		std::string			m_target;			// Symbolic link target
+	};
+
+	//-------------------------------------------------------------------------
+	// TempFileSystem::CharacterDeviceNode
+	//
+	// Specializes NodeBase for a CharacterDevice file system object
+	class CharacterDeviceNode : public NodeBase, public FileSystem::CharacterDevice, public std::enable_shared_from_this<CharacterDeviceNode>
+	{
+	public:
+
+		virtual ~CharacterDeviceNode()=default;
+
+		// Construct
+		//
+		// Constructs a new CharacterDeviceNode instance
+		static std::shared_ptr<CharacterDeviceNode> Construct(const std::shared_ptr<MountPoint>& mountpoint, uapi::dev_t device);
+
+		// FileSystem::Node Implementation
+		//
+		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
+		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
+		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
+		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::CharacterDevice; }
+
+	private:
+
+		CharacterDeviceNode(const CharacterDeviceNode&)=delete;
+		CharacterDeviceNode& operator=(const CharacterDeviceNode&)=delete;
+
+		// Instance Constructor
+		//
+		CharacterDeviceNode(const std::shared_ptr<MountPoint>& mountpoint, uapi::dev_t device) : NodeBase(mountpoint), m_device(device) {}
+		friend class std::_Ref_count_obj<CharacterDeviceNode>;
+
+		// CharacterDeviceNode::Handle
+		//
+		// Specialization of FileSystem::Handle for a CharacterDeviceNode object
+		class Handle : public FileSystem::Handle
+		{
+		public:
+
+			// Constructor / Destructor
+			//
+			// TODO: NEEDS DEVICE ID PASSED IN
+			Handle(const std::shared_ptr<CharacterDeviceNode>& node, const std::shared_ptr<FileSystem::Alias>& alias, int flags, const FilePermission& permission)
+				: m_flags(flags), m_alias(alias), m_node(node), m_position(0), m_permission(permission) {}
+			~Handle()=default;
+
+			// FileSystem::Handle Implementation
+			//
+			virtual FileSystem::HandlePtr	Duplicate(int flags)	{ return m_node->Open(m_alias, flags); }
+			virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
+			virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
+			virtual void					Sync(void)				{ /* do nothing */ }
+			virtual void					SyncData(void)			{ /* do nothing */ }
+			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
+
+			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+
+		private:
+
+			Handle(const Handle&)=delete;
+			Handle& operator=(const Handle&)=delete;
+
+			// Member Variables
+			//
+			int										m_flags;		// File control flags
+			std::shared_ptr<FileSystem::Alias>		m_alias;		// Alias instance used with this handle
+			std::shared_ptr<CharacterDeviceNode>	m_node;			// Node reference
+			FilePermission							m_permission;	// File permissions
+			std::atomic<size_t>						m_position;		// File position
+		};
+
+		// Member Variables
+		//
+		const uapi::dev_t				m_device;		// Referenced device id
 	};
 
 	//---------------------------------------------------------------------

@@ -36,6 +36,22 @@ VirtualMachine::instance_map_t VirtualMachine::s_instances;
 VirtualMachine::rwlock_t VirtualMachine::s_lock;
 
 //-----------------------------------------------------------------------------
+// VirtualMachine::CreateDeviceId (static)
+//
+// Creates a device identifier from major and minor components
+//
+// Arguments:
+//
+//	major		- Device major code
+//	minor		- Device minor code
+
+uapi::dev_t VirtualMachine::CreateDeviceId(uint32_t major, uint32_t minor)
+{
+	// MKDEV() from kdev_t.h
+	return ((major << 20) | (minor));
+}
+	
+//-----------------------------------------------------------------------------
 // VirtualMachine::FindVirtualMachine (static)
 //
 // Retrieves a VirtualMachine instance from the static collection

@@ -83,12 +83,12 @@ private:
 	virtual void					DemandPermission(uapi::mode_t mode);
 	virtual FileSystem::HandlePtr	Open(const AliasPtr&, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-	virtual void					Stat(uapi::stat* stats);
 	virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
 	virtual NodeType				getType(void) { return NodeType::Directory; }
 
 	// FileSystem::Directory Implementation
 	//
+	virtual void					CreateCharacterDevice(const AliasPtr&, const uapi::char_t*, uapi::mode_t, uapi::dev_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual void					CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t*, uapi::mode_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const uapi::char_t*, int, uapi::mode_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); } 

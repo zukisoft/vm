@@ -181,6 +181,115 @@ void TempFileSystem::Alias::Unmount(void)
 }
 
 //-----------------------------------------------------------------------------
+// TEMPFILESYSTEM::CHARACTERDEVICENODE IMPLEMENTATION
+//-----------------------------------------------------------------------------
+
+// CharacterDeviceNode::Construct (static)
+//
+std::shared_ptr<TempFileSystem::CharacterDeviceNode> TempFileSystem::CharacterDeviceNode::Construct(const std::shared_ptr<MountPoint>& mountpoint, uapi::dev_t device)
+{
+	// Construct a new shared CharacterDeviceNode instance and return it to the caller
+	return std::make_shared<CharacterDeviceNode>(mountpoint, device);
+}
+
+//-----------------------------------------------------------------------------
+// TempFileSystem::CharacterDeviceNode::Open
+//
+// Opens a Handle instance against this node
+//
+// Arguments:
+//
+//	alias		- Alias instance used to resolve this node
+//	flags		- Operational flags and attributes
+
+FileSystem::HandlePtr TempFileSystem::CharacterDeviceNode::Open(const AliasPtr& alias, int flags)
+{
+	// O_DIRECTORY verifies that the target node is a directory, which this is not
+	if(flags & LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
+
+	// If the file system was mounted as read-only, write access cannot be granted
+	if(m_mountpoint->Options.ReadOnly && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) throw LinuxException(LINUX_EROFS);
+
+	// Demand the proper permission based on the access mode flags provided
+	switch(flags & LINUX_O_ACCMODE) {
+
+		case LINUX_O_RDONLY: m_permission.Demand(FilePermission::Access::Read); break;
+		case LINUX_O_WRONLY: m_permission.Demand(FilePermission::Access::Write); break;
+		case LINUX_O_RDWR:   m_permission.Demand(FilePermission::Access::Read | FilePermission::Access::Write); break;
+	}
+
+	// Create a new permission for the handle, which is narrowed from the node permission
+	FilePermission permission(m_permission);
+	permission.Narrow(flags);
+
+	// Construct and return the new Handle instance for this node
+	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(shared_from_this(), alias, flags, permission);
+	else return std::make_shared<Handle>(shared_from_this(), alias, flags, permission);
+}
+
+// CharacterDeviceNode::Resolve
+//
+FileSystem::AliasPtr TempFileSystem::CharacterDeviceNode::Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*)
+{
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	// If the path operation required termination in a directory, it cannot end here
+	if((flags & LINUX_O_DIRECTORY) == LINUX_O_DIRECTORY) throw LinuxException(LINUX_ENOTDIR);
+
+	// Character device nodes can only be resolved to themselves, they have no children
+	if(*path != 0) throw LinuxException(LINUX_ENOTDIR);
+	return current;
+}
+
+// ----------------------------------------------------------------------------
+// TEMPFILESYSTEM::CHARACTERDEVICENODE::HANDLE IMPLEMENTATION
+// ----------------------------------------------------------------------------
+
+// CharacterDeviceNode::Handle::Read
+//
+uapi::size_t TempFileSystem::CharacterDeviceNode::Handle::Read(void* buffer, uapi::size_t count)
+{
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+	(buffer);
+	(count);
+
+	// TODO: IMPLEMENT ME
+	return 0;
+}
+
+// CharacterDeviceNode::Handle::Seek
+//
+uapi::loff_t TempFileSystem::CharacterDeviceNode::Handle::Seek(uapi::loff_t offset, int whence)
+{
+	(offset);
+	(whence);
+
+	// TODO: IMPLEMENT ME
+	return 0;
+}
+
+// CharacterDeviceNode::Handle::Write
+//
+uapi::size_t TempFileSystem::CharacterDeviceNode::Handle::Write(const void* buffer, uapi::size_t count)
+{
+	if(!buffer) throw LinuxException(LINUX_EFAULT);
+
+	// TODO: IMPLEMENT ME
+
+	////
+	// TEST
+	////
+
+	char* temp = new char[count + 1];
+	memcpy(temp, buffer, count);
+	temp[count] = '\0';
+	OutputDebugStringA(temp);
+	delete[] temp;
+
+	return count;
+}
+
+//-----------------------------------------------------------------------------
 // TEMPFILESYSTEM::DIRECTORYNODE IMPLEMENTATION
 //-----------------------------------------------------------------------------
 
@@ -190,6 +299,27 @@ std::shared_ptr<TempFileSystem::DirectoryNode> TempFileSystem::DirectoryNode::Co
 {
 	// Construct a new shared DirectoryNode instance and return it to the caller
 	return std::make_shared<DirectoryNode>(mountpoint);
+}
+
+// DirectoryNode::CreateCharacterDevice
+//
+void TempFileSystem::DirectoryNode::CreateCharacterDevice(const AliasPtr& parent, const uapi::char_t* name, uapi::mode_t mode, uapi::dev_t device)
+{
+	// The file system cannot be mounted as read-only when constructing new objects
+	if(m_mountpoint->Options.ReadOnly) throw LinuxException(LINUX_EROFS);
+
+	// The file system must have been mounted with the ability to create device nodes
+	if(m_mountpoint->Options.NoDevices) throw LinuxException(LINUX_EPERM);
+
+	// Construct the new CharacterDeviceNode instance
+	auto node = CharacterDeviceNode::Construct(m_mountpoint, device);
+
+	// TODO: mode
+	(mode);
+
+	// Attempt to construct and insert a new Alias instance with the specified name
+	auto result = m_children.insert(std::make_pair(name, Alias::Construct(name, parent, node)));
+	if(!result.second) throw LinuxException(LINUX_EEXIST);
 }
 
 // DirectoryNode::CreateDirectory
@@ -312,12 +442,6 @@ FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root
 	throw LinuxException(LINUX_ENOENT);
 }
 
-// TODO
-void TempFileSystem::DirectoryNode::Stat(uapi::stat* stats)
-{
-	(stats);
-}
-
 //-----------------------------------------------------------------------------
 // TEMPFILESYSTEM::DIRECTORYNODE::HANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
@@ -425,12 +549,6 @@ FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 	// File nodes can only be resolved to themselves, they have no children
 	if(*path != 0) throw LinuxException(LINUX_ENOTDIR);
 	return current;
-}
-
-// TODO
-void TempFileSystem::FileNode::Stat(uapi::stat* stats)
-{
-	(stats);
 }
 
 // ----------------------------------------------------------------------------
@@ -668,12 +786,6 @@ FileSystem::AliasPtr TempFileSystem::SymbolicLinkNode::Resolve(const AliasPtr& r
 	// Construct an Alias to bridge between this symbolic link's parent and the target node
 	auto bridge = Alias::Construct(current->Name, current->Parent, followed->Node);
 	return bridge->Node->Resolve(root, bridge, path, flags, symlinks);
-}
-
-// TODO
-void TempFileSystem::SymbolicLinkNode::Stat(uapi::stat* stats)
-{
-	(stats);
 }
 
 //-----------------------------------------------------------------------------

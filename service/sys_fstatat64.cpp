@@ -64,14 +64,16 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 			throw LinuxException(LINUX_ENOTDIR);
 
 		// Get the generic information and statistics for the node
-		context->VirtualMachine->ResolvePath(context->Process->RootDirectory, base, pathname, 
-			(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node->Stat(&stats);
+		//context->VirtualMachine->ResolvePath(context->Process->RootDirectory, base, pathname, 
+		//	(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node->Stat(&stats);
 
 		//
 		// CONVERT DATA STRUCTURE
 		// WATCH FOR E_OVERFLOW
 		//
-		memset(buf, 0, sizeof(linux_stat3264));
+		//memset(buf, 0, sizeof(linux_stat3264));
+		(stats);
+		throw LinuxException(LINUX_ENOSYS);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
