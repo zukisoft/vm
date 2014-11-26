@@ -138,6 +138,7 @@ interface SystemCalls64
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 039 */ sys64_long_t	sys64_getpid([in] sys64_context_t context);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
+	/* 079 */ sys64_long_t	sys64_getcwd([in] sys64_context_t context, [out, ref, size_is(size)] sys64_char_t* buf, [in] sys64_sizeis_t size);
 	/* 083 */ sys64_long_t	sys64_mkdir([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
 	/* 095 */ sys64_long_t	sys64_umask([in] sys64_context_t context, [in] sys64_mode_t mask);

@@ -628,6 +628,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_close.cpp" />
     <ClCompile Include="sys_fstat64.cpp" />
     <ClCompile Include="sys_fstatat64.cpp" />
+    <ClCompile Include="sys_getcwd.cpp" />
     <ClCompile Include="sys_getgid.cpp" />
     <ClCompile Include="sys_getpid.cpp" />
     <ClCompile Include="sys_getppid.cpp" />

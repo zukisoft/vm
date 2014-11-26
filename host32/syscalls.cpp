@@ -290,7 +290,7 @@ syscall_t g_syscalls[512] = {
 /* 180 */	sys_noentry,
 /* 181 */	sys_noentry,
 /* 182 */	sys_noentry,
-/* 183 */	sys_noentry,
+/* 183 */	REMOTE_SYSCALL_2(sys32_getcwd, sys32_char_t*, sys32_ulong_t),
 /* 184 */	sys_noentry,
 /* 185 */	sys_noentry,
 /* 186 */	sys_noentry,
