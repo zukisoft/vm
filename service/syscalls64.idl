@@ -136,10 +136,14 @@ interface SystemCalls64
 	/* 020 */ sys64_long_t	sys64_writev([in] sys64_context_t context, [in] sys64_int_t fd, [in, size_is(iovcnt)] sys64_iovec_t* iov, [in] sys64_int_t iovcnt);	
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
+	/* 039 */ sys64_long_t	sys64_getpid([in] sys64_context_t context);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 083 */ sys64_long_t	sys64_mkdir([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
 	/* 095 */ sys64_long_t	sys64_umask([in] sys64_context_t context, [in] sys64_mode_t mask);
+	/* 102 */ sys64_long_t	sys64_getuid([in] sys64_context_t context);
+	/* 104 */ sys64_long_t	sys64_getgid([in] sys64_context_t context);
+	/* 110 */ sys64_long_t	sys64_getppid([in] sys64_context_t context);
 	/* 133 */ sys64_long_t	sys64_mknod([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_dev_t device);
 	/* 137 */ sys64_long_t	sys64_statfs([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_statfs64* buf);
 	/* 157 */ sys64_long_t	sys64_prctl([in] sys64_context_t context, [in] sys64_int_t option, [in] sys64_ulong_t arg2, [in] sys64_ulong_t arg3, [in] sys64_ulong_t arg4, [in] sys64_ulong_t arg5);

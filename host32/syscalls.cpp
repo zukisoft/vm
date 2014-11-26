@@ -37,7 +37,7 @@ extern sys32_context_t g_rpccontext;
 // into the RPC interface or require any RPC memory allocation/release operations, otherwise
 // there needs to be a LOCAL_SYSCALL_X function defined for it
 #define REMOTE_SYSCALL_0(_syscall) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext); }
+[](PCONTEXT context) -> uapi::long_t { UNREFERENCED_PARAMETER(context); return _syscall(g_rpccontext); }
 
 #define REMOTE_SYSCALL_1(_syscall, _type_0) \
 [](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx)); }
@@ -61,7 +61,7 @@ extern sys32_context_t g_rpccontext;
 //
 // Local system call implementations
 #define LOCAL_SYSCALL_0(_syscall) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(); }
+[](PCONTEXT context) -> uapi::long_t { UNREFERENCED_PARAMETER(context); return _syscall(); }
 
 #define LOCAL_SYSCALL_1(_syscall, _type_0) \
 [](PCONTEXT context) -> uapi::long_t { return _syscall((_type_0)(context->Ebx)); }
@@ -127,7 +127,7 @@ syscall_t g_syscalls[512] = {
 /* 017 */	sys_noentry,
 /* 018 */	sys_noentry, //REMOTE_SYSCALL_2(sys32_stat, const sys32_char_t*, linux_oldstat*),
 /* 019 */	sys_noentry,
-/* 020 */	sys_noentry,
+/* 020 */	REMOTE_SYSCALL_0(sys32_getpid),
 /* 021 */	REMOTE_SYSCALL_5(sys32_mount, const sys32_char_t*, const sys32_char_t*, const sys32_char_t*, sys32_ulong_t, sys32_addr_t),
 /* 022 */	sys_noentry,
 /* 023 */	sys_noentry,
@@ -171,7 +171,7 @@ syscall_t g_syscalls[512] = {
 /* 061 */	sys_noentry,
 /* 062 */	sys_noentry,
 /* 063 */	sys_noentry,
-/* 064 */	sys_noentry,
+/* 064 */	REMOTE_SYSCALL_0(sys32_getppid),
 /* 065 */	sys_noentry,
 /* 066 */	sys_noentry,
 /* 067 */	sys_noentry,
@@ -306,8 +306,8 @@ syscall_t g_syscalls[512] = {
 /* 196 */	REMOTE_SYSCALL_2(sys32_lstat64, const sys32_char_t*, linux_stat3264*),
 /* 197 */	REMOTE_SYSCALL_2(sys32_fstat64, sys32_int_t, linux_stat3264*),
 /* 198 */	sys_noentry,
-/* 199 */	sys_noentry,
-/* 200 */	sys_noentry,
+/* 199 */	REMOTE_SYSCALL_0(sys32_getuid),
+/* 200 */	REMOTE_SYSCALL_0(sys32_getgid),
 /* 201 */	sys_noentry,
 /* 202 */	sys_noentry,
 /* 203 */	sys_noentry,

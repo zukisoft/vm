@@ -577,7 +577,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		(LINUX_AT_BASE_PLATFORM);																// 24 - NOT IMPLEMENTED
 		args.AppendAuxiliaryVector(LINUX_AT_RANDOM, random, 16);								// 25
 		(LINUX_AT_HWCAP2);																		// 26 - TODO
-		(LINUX_AT_EXECFN);																		// 31 - TODO WHICH PATH? ARGUMENT TO EXECVE() OR THE ACTUAL PATH?
+		(LINUX_AT_EXECFN);																		// 31 - TODO -- WHATEVER WAS PASSED INTO EXECVE() GOES HERE
 		(LINUX_AT_SYSINFO);																		// 32 - TODO MAY NOT IMPLEMENT?
 		//args.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);					// 33 - TODO NEEDS VDSO
 

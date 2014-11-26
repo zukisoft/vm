@@ -128,12 +128,14 @@ interface SystemCalls32
 	/* 006 */ sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
 	/* 014 */ sys32_long_t	sys32_mknod([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 //	/* 018 */ sys32_long_t	sys32_stat([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_oldstat* buf);
+	/* 020 */ sys32_long_t	sys32_getpid([in] sys32_context_t context);
 	/* 021 */ sys32_long_t	sys32_mount([in] sys32_context_t context, [in, string] const sys32_char_t* source, [in, string] const sys32_char_t* target, [in, string] const sys32_char_t* filesystem, [in] sys32_ulong_t flags, [in] sys32_addr_t data);
 //	/* 028 */ sys32_long_t	sys32_fstat([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_oldstat* buf);
 	/* 033 */ sys32_long_t	sys32_access([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
 	/* 039 */ sys32_long_t	sys32_mkdir([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
 	/* 059 */ sys32_long_t	sys32_olduname([in] sys32_context_t context, [out, ref] linux_oldold_utsname* buf);
 	/* 060 */ sys32_long_t	sys32_umask([in] sys32_context_t context, [in] sys32_mode_t mask);
+	/* 064 */ sys32_long_t	sys32_getppid([in] sys32_context_t context);
 	/* 074 */ sys32_long_t	sys32_sethostname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 //	/* 084 */ sys32_long_t	sys32_lstat([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_oldstat* buf);
 	/* 085 */ sys32_long_t	sys32_readlink([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [out, ref, size_is(bufsiz)] sys32_char_t* buf, [in] sys32_size_t bufsiz);
@@ -153,6 +155,8 @@ interface SystemCalls32
 	/* 195 */ sys32_long_t	sys32_stat64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat3264* buf);
 	/* 196 */ sys32_long_t	sys32_lstat64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat3264* buf);
 	/* 197 */ sys32_long_t	sys32_fstat64([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_stat3264* buf);
+	/* 199 */ sys32_long_t	sys32_getuid([in] sys32_context_t context);
+	/* 200 */ sys32_long_t	sys32_getgid([in] sys32_context_t context);
 	/* 219 */ sys32_long_t	sys32_madvise([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t advice);
 	/* 258 */ sys32_long_t	sys32_set_tid_address([in] sys32_context_t context, [in] sys32_addr_t tidptr);
 	/* 268 */ sys32_long_t	sys32_statfs64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [in] sys32_size_t length, [out, ref] linux_statfs3264* buf);

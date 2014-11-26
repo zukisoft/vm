@@ -631,6 +631,18 @@
     <ClCompile Include="sys_mknod.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
+    <ClCompile Include="sys_getuid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_getgid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_getpid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_getppid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">
