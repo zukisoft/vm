@@ -85,14 +85,17 @@ sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t
 	}
 
 	//return static_cast<sys32_long_t>(sys_openat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, flags, mode));
-	return written;
+	// TODO: CHECK FOR OVERFLOW ON X64 HERE
+	//if(written > blah then throw blah
+	return static_cast<sys32_long_t>(written);
 }
 
 #ifdef _M_X64
 // sys64_writev
 //
-sys64_long_t sys64_writev(sys64_context_t context, sys64_int_t fd, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
+sys64_long_t sys64_writev(sys64_context_t context, sys64_int_t fd, sys64_iovec_t* iov, sys64_int_t iovcnt)
 {
+	(context); (fd); (iov); (iovcnt);
 	//return sys_openat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, flags, mode);
 	return -LINUX_ENOSYS;
 }

@@ -59,7 +59,7 @@ sys32_long_t sys32_mknod(sys32_context_t context, const sys32_char_t* pathname, 
 //
 sys64_long_t sys64_mknod(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode, sys64_dev_t device)
 {
-d	return sys_mknod(reinterpret_cast<SystemCall::Context*>(context), pathname, mode);
+	return sys_mknod(reinterpret_cast<SystemCall::Context*>(context), pathname, mode, device);
 }
 #endif
 

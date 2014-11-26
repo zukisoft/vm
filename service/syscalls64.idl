@@ -156,6 +156,7 @@ interface SystemCalls64
 	/* 258 */ sys64_long_t	sys64_mkdirat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 259 */ sys64_long_t	sys64_mknodat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_dev_t device);
 //	/* 262 */ sys64_long_t	sys64_newfstatat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [out, ref] linux_stat64* buf, [in] sys64_int_t flags);
+	/* 269 */ sys64_long_t	sys64_faccessat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_int_t flags);
 
 ///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 }

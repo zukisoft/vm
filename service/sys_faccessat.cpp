@@ -25,40 +25,56 @@
 
 #pragma warning(push, 4)
 
-// sys_faccessat.cpp
-//
-__int3264 sys_faccessat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags);
-
 //-----------------------------------------------------------------------------
-// sys_access
+// sys_faccessat
 //
 // Checks permissions to a file system object
 //
 // Arguments:
 //
 //	context		- SystemCall context object
+//	dirfd		- Previously opened directory object file descriptor
 //	pathname	- Relative path for the file system object to check
 //	mode		- Accessibility check mask (F_OK, R_OK, etc)
+//	flags		- Behavioral flags
 
-__int3264 sys_access(const SystemCall::Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
+__int3264 sys_faccessat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
 {
-	// sys_access() is equivalent to sys_faccessat(AT_FDCWD)
-	return sys_faccessat(context, LINUX_AT_FDCWD, pathname, mode, 0);
+	_ASSERTE(context);
+
+	try {
+
+		SystemCall::Impersonation impersonation;
+
+		// Determine if an absolute or relative pathname has been provided
+		bool absolute = ((pathname) && (pathname[0] == '/'));
+
+		// Determine the base alias from which to resolve the path
+		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+			((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
+
+		// Use the VirtualMachine interface to check permissions to the specified file system object
+		context->VirtualMachine->CheckPermissions(context->Process->RootDirectory, base, pathname, flags, mode);
+	}
+
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+
+	return 0;
 }
 
-// sys32_access
+// sys32_faccessat
 //
-sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode)
+sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode, sys32_int_t flags)
 {
-	return static_cast<sys32_long_t>(sys_access(reinterpret_cast<SystemCall::Context*>(context), pathname, mode));
+	return static_cast<sys32_long_t>(sys_faccessat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode, flags));
 }
 
 #ifdef _M_X64
-// sys64_access
+// sys64_faccessat
 //
-sys64_long_t sys64_access(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode)
+sys64_long_t sys64_faccessat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode, sys64_int_t flags)
 {
-	return sys_access(reinterpret_cast<SystemCall::Context*>(context), pathname, mode);
+	return sys_faccessat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode, flags);
 }
 #endif
 
