@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_write (local)
+// sys_write
 //
 // Writes data to an open file system object
 //
@@ -37,7 +37,7 @@
 //	buf			- Input buffer containing the data to be written
 //	count		- Number of bytes written to the file system object
 
-static __int3264 sys_write(const SystemCall::Context* context, int fd, const void* buf, size_t count)
+__int3264 sys_write(const SystemCall::Context* context, int fd, const void* buf, size_t count)
 {
 	_ASSERTE(context);
 

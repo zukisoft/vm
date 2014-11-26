@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_setdomainname (local)
+// sys_setdomainname
 //
 // Changes the domain name reported by the virtual machine
 //
@@ -36,7 +36,7 @@
 //	name		- New domain name string to be assigned
 //	len			- Length of the name string, does not include null terminator
 
-static __int3264 sys_setdomainname(const SystemCall::Context* context, uapi::char_t* name, size_t len)
+__int3264 sys_setdomainname(const SystemCall::Context* context, uapi::char_t* name, size_t len)
 {
 	_ASSERTE(context);
 	if(name == nullptr) return -LINUX_EFAULT;

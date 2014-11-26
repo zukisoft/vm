@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_sethostname (local)
+// sys_sethostname
 //
 // Changes the host name reported by the virtual machine
 //
@@ -36,7 +36,7 @@
 //	name		- New host name string to be assigned
 //	len			- Length of the name string, does not include null terminator
 
-static __int3264 sys_sethostname(const SystemCall::Context* context, uapi::char_t* name, size_t len)
+__int3264 sys_sethostname(const SystemCall::Context* context, uapi::char_t* name, size_t len)
 {
 	_ASSERTE(context);
 	if(name == nullptr) return -LINUX_EFAULT;

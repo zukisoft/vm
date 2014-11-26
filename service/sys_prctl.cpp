@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_prctl (local)
+// sys_prctl
 //
 // Perform process operations
 //
@@ -39,7 +39,7 @@
 //	arg4		- Optional operation-specific argument
 //	arg5		- Optional operation-specific argument
 
-static __int3264 sys_prctl(const SystemCall::Context* context, int option, uapi::ulong_t arg2, uapi::ulong_t arg3, uapi::ulong_t arg4, uapi::ulong_t arg5)
+__int3264 sys_prctl(const SystemCall::Context* context, int option, uapi::ulong_t arg2, uapi::ulong_t arg3, uapi::ulong_t arg4, uapi::ulong_t arg5)
 {
 	_ASSERTE(context);
 	(option);

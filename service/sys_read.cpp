@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_read (local)
+// sys_read
 //
 // Reads data from an open file system object
 //
@@ -37,7 +37,7 @@
 //	buf			- Output buffer to receive the data read
 //	count		- Number of bytes to read from the file system object
 
-static __int3264 sys_read(const SystemCall::Context* context, int fd, void* buf, size_t count)
+__int3264 sys_read(const SystemCall::Context* context, int fd, void* buf, size_t count)
 {
 	_ASSERTE(context);
 

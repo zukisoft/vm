@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_uname (local)
+// sys_uname
 //
 // Gets information about the current virtual kernel
 //
@@ -35,7 +35,7 @@
 //	context		- SystemCall context object
 //	buf			- Pointer to the output data structure
 
-static __int3264 sys_uname(const SystemCall::Context* context, uapi::old_utsname* buf)
+__int3264 sys_uname(const SystemCall::Context* context, uapi::old_utsname* buf)
 {
 	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;

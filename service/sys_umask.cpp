@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_umask (local)
+// sys_umask
 //
 // Sets the default file creation mask for the calling process
 //
@@ -35,7 +35,7 @@
 //	context		- SystemCall context object
 //	mask		- New default file creation bitmask
 
-static __int3264 sys_umask(const SystemCall::Context* context, uapi::mode_t mask)
+__int3264 sys_umask(const SystemCall::Context* context, uapi::mode_t mask)
 {
 	_ASSERTE(context);
 

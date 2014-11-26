@@ -26,7 +26,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_close (local)
+// sys_close
 //
 // Closes a file descriptor
 //
@@ -35,7 +35,7 @@
 //	context		- SystemCall context object
 //	fd			- File descriptor to be closed
 
-static __int3264 sys_close(const SystemCall::Context* context, int fd)
+__int3264 sys_close(const SystemCall::Context* context, int fd)
 {
 	_ASSERTE(context);
 
