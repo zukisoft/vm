@@ -25,43 +25,75 @@
 
 #pragma warning(push, 4)
 
+// LIMITATIONS
+//
+//	- chroot()ed processes have not been checked
+//	- not sure what to do if the current directory has been deleted (unlinked)
+//	- path building is not optimal, uses a collection and a reverse iterator
+
+//-----------------------------------------------------------------------------
 // sys_getcwd
 //
-// Gets the current working directory
+// Gets the current working directory as an absolute path
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	buf			- Output buffer to receive the current working directory
+//	size		- Length of the output buffer in bytes
+
 __int3264 sys_getcwd(const SystemCall::Context* context, uapi::char_t* buf, size_t size)
 {
 	_ASSERTE(context);
+
+	if(buf == nullptr) return -LINUX_EFAULT;
 
 	try { 		
 		
 		SystemCall::Impersonation impersonation;
 
-		// Here's how I think this will need to work with the implementation I chose.
-		// Start at the current alias and work backwards towards the root node.
-		// If a symbolic link is detected, resolve that symlink and go again
+		std::vector<std::string> test;
 
-		//std::vector<std::string> test;
-		//FileSystem::AliasPtr current = context->Process->WorkingDirectory;
-		//if(current->Node->Type == FileSystem::NodeType::SymbolicLink) {
+		// Start at the current process working directory and continue working
+		// backwards until a root node (node == parent) has been reached
+		FileSystem::AliasPtr current = context->Process->WorkingDirectory;
+		while(current->Parent != current) {
 
-		//	auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->Node);
-		//	int loop = 0;
-		//	current = symlink->Resolve(context->Process->RootDirectory, current, nullptr, 0, &loop);
-		//}
+			// If the current node is a symbolic link, follow it to the target and loop again
+			if(current->Node->Type == FileSystem::NodeType::SymbolicLink) {
 
-		//// Need to deal with chroot() somehow, can't back up past the process root
+				auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->Node);
 
-		//if(current->Parent == current) test.push_back("/");
-		//else test.push_back(std::string(current->Name));
+				// if this throws, should it be "(unreachable)" -- see kernel code
+				int loop = 0;	// For ELOOP detection
+				current = symlink->Resolve(context->Process->RootDirectory, current, nullptr, 0, &loop);
+				continue;
+			}
 
-		//current = current->Parent;
+			// Should never happen, but check for it regardless
+			if(current->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
 
-		strncpy_s(buf, size, "/", size);
-		//memset(buf, 0, size);
-		return 0;
+			// Push the next Alias name into the path building collection and move up to parent
+			test.push_back(current->Name);
+			current = current->Parent;
+		}
+
+		test.push_back("");
+
+		std::string tododeleteme;
+		for (auto iterator = test.begin(); iterator != test.end(); iterator++) {
+			
+			tododeleteme += "/";
+			tododeleteme += *iterator;
+		}
+
+		if(tododeleteme.length() + 1 > size) throw LinuxException(LINUX_ERANGE);
+		strncpy_s(buf, size, tododeleteme.c_str(), _TRUNCATE);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+
+	return 0;
 }
 
 // sys32_readlink
