@@ -130,7 +130,7 @@ interface SystemCalls64
 //	/* 004 */ sys64_long_t	sys64_newstat([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_stat64* buf);
 //	/* 005 */ sys64_long_t	sys64_newfstat([in] sys64_context_t context, [in] sys64_int_t fd, [out, ref] linux_stat64* buf);
 //	/* 006 */ sys64_long_t	sys64_newlstat([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_stat64* buf);
-	/* 009 */ sys64_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys64_off_t offset);
+	/* 009 */ sys64_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys64_off_t pgoffset);
 	/* 010 */ sys64_long_t	sys64_mprotect([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot);
 	/* 011 */ sys64_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
 	/* 020 */ sys64_long_t	sys64_writev([in] sys64_context_t context, [in] sys64_int_t fd, [in, size_is(iovcnt)] sys64_iovec_t* iov, [in] sys64_int_t iovcnt);	

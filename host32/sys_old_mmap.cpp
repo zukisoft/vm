@@ -31,15 +31,15 @@
 extern sys32_context_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
-// sys_mmap_pgoff
+// sys_old_mmap
 //
 // Wrapper around the remote syscall to handle process-specific details that
 // the service can't handle on its own
 
-uapi::long_t sys_mmap_pgoff(void* address, uapi::size_t length, int prot, int flags, int fd, uapi::off_t offset)
+uapi::long_t sys_old_mmap(void* address, uapi::size_t length, int prot, int flags, int fd, uapi::off_t offset)
 {
 	// Invoke the remote system call first to perform the memory mapping operation
-	sys32_long_t result = sys32_mmap_pgoff(g_rpccontext, reinterpret_cast<sys32_addr_t>(address), length, prot, flags, fd, offset);
+	sys32_long_t result = sys32_old_mmap(g_rpccontext, reinterpret_cast<sys32_addr_t>(address), length, prot, flags, fd, offset);
 	if(result < 0) return result;
 
 	// The MAP_LOCKED flag can't be handled by the service; attempt VirtualLock after the fact

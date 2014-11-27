@@ -64,6 +64,7 @@ void VmService::CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root,
 	int resolveflags = ((flags & LINUX_AT_SYMLINK_NOFOLLOW) == LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0;
 
 	// TODO: support AT_EACCESS flag
+
 	// Demand the requested permission(s) from the target file system node
 	ResolvePath(root, base, path, resolveflags)->Node->DemandPermission(mode);
 }

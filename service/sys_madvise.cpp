@@ -25,9 +25,18 @@
 
 #pragma warning(push, 4)
 
+//-----------------------------------------------------------------------------
 // sys_madvise
 //
-// Provides guidance as to how a range of memory will be used by the application
+// Provides guidance as to how a range of memory will be used
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	address		- Base address of memory range to advise about
+//	length		- Length of the memory range
+//	advice		- Advice from the calling process about the region's usage
+
 __int3264 sys_madvise(const SystemCall::Context* context, void* address, size_t length, int advice)
 {
 	_ASSERTE(context);
@@ -37,7 +46,8 @@ __int3264 sys_madvise(const SystemCall::Context* context, void* address, size_t 
 	UNREFERENCED_PARAMETER(length);
 	UNREFERENCED_PARAMETER(advice);
 	
-	return 0;							// This system call is currently a no-op
+	// This system call is currently a no-op
+	return 0;
 }
 
 // sys32_madvise

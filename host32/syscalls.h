@@ -43,8 +43,8 @@ extern syscall_t g_syscalls[512];
 extern uapi::long_t sys_noentry(PCONTEXT);
 
 /* 045 */ extern uapi::long_t sys_brk(void*);
-/* 090 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 192 */ extern uapi::long_t sys_mmap_pgoff(void*, uapi::size_t, int, int, int, uapi::off_t);
+/* 090 */ extern uapi::long_t sys_old_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
+/* 192 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
 /* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
 
 //-----------------------------------------------------------------------------

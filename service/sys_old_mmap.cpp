@@ -21,51 +21,45 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "MemoryRegion.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// sys_readlink
+// sys_mmap.cpp
 //
-// Reads the value of a symbolic link
+__int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset);
+
+//-----------------------------------------------------------------------------
+// sys_old_mmap
+//
+// Maps files or devices into process memory
 //
 // Arguments:
 //
 //	context		- SystemCall context object
-//	pathname	- Relative path to the symbolic link object
-//	buf			- Output buffer
-//	bufsiz		- Length of the output buffer, in bytes
+//	address		- Base address for the mapping, or null
+//	length		- Length of the mapping
+//	protection	- Memory protection flags to assign to the mapping
+//	flags		- Flags and options
+//	fd			- File/device from which to create the mapping
+//	offset		- Offset into file/device from which to map
 
-__int3264 sys_readlink(const SystemCall::Context* context, const uapi::char_t* pathname, uapi::char_t* buf, size_t bufsiz)
+__int3264 sys_old_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t offset)
 {
-	_ASSERTE(context);
-	if(buf == nullptr) return -LINUX_EFAULT;
+	// Compatibility function; the offset must be a multiple of the system page size
+	if(offset & (MemoryRegion::PageSize - 1)) return -LINUX_EINVAL;
 
-	try { 		
-		
-		SystemCall::Impersonation impersonation;
-		return context->VirtualMachine->ReadSymbolicLink(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, buf, bufsiz);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// sys_old_mmap() is equivalent to sys_mmap() with the offset in pages rather than bytes
+	return sys_mmap(context, address, length, protection, flags, fd, offset / MemoryRegion::PageSize);
 }
 
-// sys32_readlink
+// sys32_old_mmap
 //
-sys32_long_t sys32_readlink(sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz)
+sys32_long_t sys32_old_mmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot, sys32_int_t flags, sys32_int_t fd, sys32_off_t offset)
 {
-	return static_cast<sys32_long_t>(sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, bufsiz));
+	return static_cast<sys32_long_t>(sys_old_mmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, offset));
 }
-
-#ifdef _M_X64
-// sys64_readlink
-//
-sys64_long_t sys64_readlink(sys64_context_t context, const sys64_char_t* pathname, sys64_char_t* buf, sys64_sizeis_t bufsiz)
-{
-	return sys_readlink(reinterpret_cast<SystemCall::Context*>(context), pathname, buf, static_cast<size_t>(bufsiz));
-}
-#endif
 
 //---------------------------------------------------------------------------
 

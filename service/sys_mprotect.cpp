@@ -25,9 +25,18 @@
 
 #pragma warning(push, 4)
 
+//-----------------------------------------------------------------------------
 // sys_mprotect
 //
 // Assigns the protection flags for a region of memory
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	address		- Base address from which to apply the protection
+//	length		- Length of the region to apply the protection
+//	prot		- Memory protection flags
+
 __int3264 sys_mprotect(const SystemCall::Context* context, void* address, uapi::size_t length, int prot)
 {
 	_ASSERTE(context);

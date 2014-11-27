@@ -37,7 +37,7 @@
 //	target		- Target directory on which to mount the filesystem
 //	filesystem	- Name of the filesystem to use for the device/object
 //	flags		- Mount options and flags
-//	data		- Address of additional mounting options (NOTE: CLIENT PROCESS ADDRESS) 
+//	data		- Address of additional mounting options
 
 __int3264 sys_mount(const SystemCall::Context* context, const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, const void* data)
 {

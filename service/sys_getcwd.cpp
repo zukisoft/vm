@@ -52,6 +52,8 @@ __int3264 sys_getcwd(const SystemCall::Context* context, uapi::char_t* buf, size
 		
 		SystemCall::Impersonation impersonation;
 
+		// THIS NEEDS TO BE A VIRTUAL MACHINE CALL, TOO MUCH LOGIC FOR THE SYSTEM CALL
+
 		std::vector<std::string> test;
 
 		// Start at the current process working directory and continue working

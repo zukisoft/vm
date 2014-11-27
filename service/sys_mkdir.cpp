@@ -32,7 +32,7 @@ __int3264 sys_mkdirat(const SystemCall::Context* context, int fd, const uapi::ch
 //-----------------------------------------------------------------------------
 // sys_mkdir
 //
-// Creates a directory
+// Creates a directory file system object
 //
 // Arguments:
 //

@@ -25,17 +25,24 @@
 
 #pragma warning(push, 4)
 
+//-----------------------------------------------------------------------------
 // sys_set_tid_address
 //
-// words
-__int3264 sys_set_tid_address(const SystemCall::Context* context, void* address)
+// Sets a pointer to the thread id.  See set_tid_address(2) for more details.
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	tidptr		- Address to assign as clear_child_tid
+
+__int3264 sys_set_tid_address(const SystemCall::Context* context, void* tidptr)
 {
 	_ASSERTE(context);
 
 	try { 		
 		
 		SystemCall::Impersonation impersonation; 
-		context->Process->TidAddress = address;
+		context->Process->TidAddress = tidptr;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
@@ -45,17 +52,17 @@ __int3264 sys_set_tid_address(const SystemCall::Context* context, void* address)
 
 // sys32_set_tid_address
 //
-sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t address)
+sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t tidptr)
 {
-	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address)));
+	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(tidptr)));
 }
 
 #ifdef _M_X64
 // sys64_set_tid_address
 //
-sys64_long_t sys64_set_tid_address(sys64_context_t context, sys64_addr_t address)
+sys64_long_t sys64_set_tid_address(sys64_context_t context, sys64_addr_t tidptr)
 {
-	return sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address));
+	return sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(tidptr));
 }
 #endif
 

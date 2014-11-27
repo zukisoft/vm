@@ -26,17 +26,15 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_openat
+// sys_writev
 //
-// Opens, and possibly creates, a file with a path relative to an open directory
+// Writes an array of blocks of data to an open file system object
 //
 // Arguments:
 //
 //	context		- SystemCall context object
-//	fd			- Previously opened directory object file descriptor
-//	pathname	- Relative path for the file system object to open
-//	flags		- Open operation flags
-//	mode		- Mode flags to assign when creating a new file system object
+
+// THIS REALLY CAN'T BE GENERIC DUE TO THE STRUCTURE DIFFERENCES
 
 //__int3264 sys_writev(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 //{

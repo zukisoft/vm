@@ -32,7 +32,7 @@ __int3264 sys_mknodat(const SystemCall::Context* context, int fd, const uapi::ch
 //-----------------------------------------------------------------------------
 // sys_mknod
 //
-// Creates a special node
+// Creates a special file system node
 //
 // Arguments:
 //

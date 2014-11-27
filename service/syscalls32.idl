@@ -140,7 +140,7 @@ interface SystemCalls32
 	/* 074 */ sys32_long_t	sys32_sethostname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 //	/* 084 */ sys32_long_t	sys32_lstat([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_oldstat* buf);
 	/* 085 */ sys32_long_t	sys32_readlink([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [out, ref, size_is(bufsiz)] sys32_char_t* buf, [in] sys32_size_t bufsiz);
-	/* 090 */ sys32_long_t	sys32_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t offset);
+	/* 090 */ sys32_long_t	sys32_old_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t offset);
 	/* 091 */ sys32_long_t	sys32_munmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length);
 	/* 099 */ sys32_long_t	sys32_statfs([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_statfs32* buf);
 //	/* 106 */ sys32_long_t	sys32_newstat([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat32* buf);
@@ -153,7 +153,7 @@ interface SystemCalls32
 	/* 146 */ sys32_long_t	sys32_writev([in] sys32_context_t context, [in] sys32_int_t fd, [in, size_is(iovcnt)] sys32_iovec_t* iov, [in] sys32_int_t iovcnt);
 	/* 172 */ sys32_long_t	sys32_prctl([in] sys32_context_t context, [in] sys32_int_t option, [in] sys32_ulong_t arg2, [in] sys32_ulong_t arg3, [in] sys32_ulong_t arg4, [in] sys32_ulong_t arg5);
 	/* 183 */ sys32_long_t	sys32_getcwd([in] sys32_context_t context, [out, ref, size_is(size)] sys32_char_t* buf, [in] sys32_ulong_t size);
-	/* 192 */ sys32_long_t	sys32_mmap_pgoff([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t pgoffset);
+	/* 192 */ sys32_long_t	sys32_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t pgoffset);
 	/* 195 */ sys32_long_t	sys32_stat64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat3264* buf);
 	/* 196 */ sys32_long_t	sys32_lstat64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat3264* buf);
 	/* 197 */ sys32_long_t	sys32_fstat64([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_stat3264* buf);

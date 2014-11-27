@@ -25,9 +25,17 @@
 
 #pragma warning(push, 4)
 
+//-----------------------------------------------------------------------------
 // sys_munmap
 //
 // Unmaps files or devices from process address space
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	address		- Base address of the region to unmap
+//	length		- Length of the region to unmap
+
 __int3264 sys_munmap(const SystemCall::Context* context, void* address, uapi::size_t length)
 {
 	_ASSERTE(context);

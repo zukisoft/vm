@@ -28,7 +28,7 @@
 //-----------------------------------------------------------------------------
 // sys_prctl
 //
-// Perform process operations
+// Perform process-specific operations
 //
 // Arguments:
 //
@@ -42,25 +42,14 @@
 __int3264 sys_prctl(const SystemCall::Context* context, int option, uapi::ulong_t arg2, uapi::ulong_t arg3, uapi::ulong_t arg4, uapi::ulong_t arg5)
 {
 	_ASSERTE(context);
+
 	(option);
 	(arg2);
 	(arg3);
 	(arg4);
 	(arg5);
+
 	return -LINUX_ENOSYS;
-
-	//try { 
-
-	//	SystemCall::Impersonation impersonation;
-
-	//	// Get the Alias instance to use as the base for the path resolution operation
-	//	auto alias = (fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias;
-
-	//	// Attempt to open the file system object relative to the existing handle's alias
-	//	return context->Process->AddHandle(context->VirtualMachine->OpenFile(alias, pathname, flags, mode));
-	//}
-
-	//catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
 // sys32_prctl

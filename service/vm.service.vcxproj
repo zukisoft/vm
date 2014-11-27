@@ -641,12 +641,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_mkdirat.cpp" />
     <ClCompile Include="sys_mknod.cpp" />
     <ClCompile Include="sys_mknodat.cpp" />
-    <ClCompile Include="sys_mmap_pgoff.cpp" />
+    <ClCompile Include="sys_mmap.cpp" />
     <ClCompile Include="sys_mount.cpp" />
     <ClCompile Include="sys_mprotect.cpp" />
     <ClCompile Include="sys_munmap.cpp" />
     <ClCompile Include="sys_olduname.cpp" />
-    <ClCompile Include="sys_mmap.cpp" />
+    <ClCompile Include="sys_old_mmap.cpp" />
     <ClCompile Include="sys_open.cpp" />
     <ClCompile Include="sys_openat.cpp" />
     <ClCompile Include="sys_prctl.cpp" />
