@@ -54,7 +54,7 @@ __int3264 sys_rt_sigprocmask(const SystemCall::Context* context, int how, const 
 		
 		SystemCall::Impersonation impersonation;
 
-		// This should be pretty straightfoward to implement as a property on the process object,
+		// This should be pretty straightforward to implement as a property on the process object,
 		// flesh out linux/signal.h and then add that
 
 		(how);
