@@ -33,68 +33,88 @@
 // Arguments:
 //
 //	context		- SystemCall context object
+//	fd			- Open file descriptor for the target object
+//	iov			- Array of iovec structures for the operation
+//	iovcnt		- Number of iovec structures provided via iov
 
-// THIS REALLY CAN'T BE GENERIC DUE TO THE STRUCTURE DIFFERENCES
+__int3264 sys_writev(const SystemCall::Context* context, int fd, uapi::iovec* iov, int iovcnt)
+{
+	_ASSERTE(context);
 
-//__int3264 sys_writev(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
-//{
-//	_ASSERTE(context);
-//
-//	try {
-//
-//		SystemCall::Impersonation impersonation;
-//
-//		// Determine if an absolute or relative pathname has been provided
-//		bool absolute = ((pathname) && (pathname[0] == '/'));
-//
-//		// Determine the base alias from which to resolve the path
-//		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-//			((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
-//
-//		// Apply the process' current umask to the provided creation mode flags
-//		mode &= ~context->Process->FileCreationModeMask;
-//
-//		// Attempt to open the file system object relative from the base alias
-//		return context->Process->AddHandle(context->VirtualMachine->OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
-//	}
-//
-//	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
-//}
+	if(iov == nullptr) return -LINUX_EFAULT;
+	if(iovcnt <= 0) return -LINUX_EINVAL;
 
-// sys32_writev
+	try { 
+		
+		SystemCall::Impersonation impersonation;
+
+		// Get the handle represented by the file descriptor
+		auto handle = context->Process->GetHandle(fd);
+
+		// Calcluate the maximum required intermediate data buffer for the operation
+		size_t max = 0;
+		for(int index = 0; index < iovcnt; index++) { if(iov[index].iov_len > max) max = iov[index].iov_len; }
+		if(max == 0) throw LinuxException(LINUX_EINVAL);
+
+		// Allocate the intermediate buffer
+		HeapBuffer<uint8_t> buffer(max);
+
+		// Repeatedly read the data from the child process address space and write it through the handle
+		size_t written = 0;
+		for(int index = 0; index < iovcnt; index++) {
+
+			size_t read = context->Process->ReadMemory(iov[index].iov_base, &buffer, iov[index].iov_len);
+			if(read) written += handle->Write(buffer, read);
+		}
+
+		// Return the total number of bytes written; should be checking for an overflow here (EINVAL)
+		return static_cast<__int3264>(written);
+	}
+
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+}
+
+#ifndef _M_X64
+// sys32_writev (32-bit)
 //
 sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t* iov, sys32_int_t iovcnt)
 {
-	if(iovcnt < 0) return -LINUX_EINVAL;
+	static_assert(sizeof(uapi::iovec) == sizeof(sys32_iovec_t), "uapi::iovec is not equivalent to sys32_iovec_t");
+	return sys_writev(reinterpret_cast<SystemCall::Context*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
+}
+#else
+// sys32_writev (64-bit)
+//
+sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t* iov, sys32_int_t iovcnt)
+{
+	if(iov == nullptr) return -LINUX_EFAULT;
+	if(iovcnt <= 0) return -LINUX_EINVAL;
 
-	const SystemCall::Context* c = reinterpret_cast<SystemCall::Context*>(context);
-	FileSystem::HandlePtr h = c->Process->GetHandle(fd);
+	try {
 
-	size_t written = 0;
+		// uapi::iovec and sys32_iovec_t are not equivalent structures; iov array must be converted
+		HeapBuffer<uapi::iovec> vector(iovcnt);
+		for(int index = 0; index < iovcnt; index++) {
 
-	//sys32_iovec_t* next = iov;
-	for(int index = 0; index < iovcnt; index++) {
+			vector[index].iov_base = reinterpret_cast<void*>(iov[index].iov_base);
+			vector[index].iov_len = static_cast<uapi::size_t>(iov[index].iov_len);
+		}
 
-		sys32_iovec_t* next = &iov[index];
-		HeapBuffer<uint8_t> buffer(next->iov_len);
-		size_t read = c->Process->ReadMemory(reinterpret_cast<void*>(next->iov_base), buffer, next->iov_len);
-		written += h->Write(buffer, read);
+		return static_cast<sys32_long_t>(sys_writev(reinterpret_cast<SystemCall::Context*>(context), fd, vector, iovcnt));
 	}
 
-	//return static_cast<sys32_long_t>(sys_openat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, flags, mode));
-	// TODO: CHECK FOR OVERFLOW ON X64 HERE
-	//if(written > blah then throw blah
-	return static_cast<sys32_long_t>(written);
+	catch(...) { return static_cast<sys32_long_t>(SystemCall::TranslateException(std::current_exception())); }
 }
+
+#endif
 
 #ifdef _M_X64
 // sys64_writev
 //
 sys64_long_t sys64_writev(sys64_context_t context, sys64_int_t fd, sys64_iovec_t* iov, sys64_int_t iovcnt)
 {
-	(context); (fd); (iov); (iovcnt);
-	//return sys_openat(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, flags, mode);
-	return -LINUX_ENOSYS;
+	static_assert(sizeof(uapi::iovec) == sizeof(sys64_iovec_t), "uapi::iovec is not equivalent to sys64_iovec_t");
+	return sys_writev(reinterpret_cast<SystemCall::Context*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
 }
 #endif
 

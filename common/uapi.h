@@ -27,6 +27,7 @@
 #include <linux/types.h>
 #include <linux/stat.h>
 #include <linux/statfs.h>
+#include <linux/uio.h>
 #include <linux/utsname.h>
 
 #endif		// __UAPI_H_

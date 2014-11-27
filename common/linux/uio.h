@@ -30,12 +30,16 @@
 // include/uapi/linux/uio.h
 //-----------------------------------------------------------------------------
 
+#pragma pack(push, 1)
+
 typedef struct {
 
-	void*	iov_base;
-	size_t	iov_len;
+	void*			iov_base;
+	linux_size_t	iov_len;
 
 } linux_iovec;
+
+#pragma pack(pop)
 
 #define LINUX_UIO_FASTIOV	8
 #define LINUX_UIO_MAXIOV	1024
