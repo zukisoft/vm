@@ -140,6 +140,7 @@ interface SystemCalls64
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 079 */ sys64_long_t	sys64_getcwd([in] sys64_context_t context, [out, ref, size_is(size)] sys64_char_t* buf, [in] sys64_sizeis_t size);
 	/* 083 */ sys64_long_t	sys64_mkdir([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
+	/* 085 */ sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
 	/* 095 */ sys64_long_t	sys64_umask([in] sys64_context_t context, [in] sys64_mode_t mask);
 	/* 102 */ sys64_long_t	sys64_getuid([in] sys64_context_t context);
@@ -157,6 +158,4 @@ interface SystemCalls64
 	/* 259 */ sys64_long_t	sys64_mknodat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_dev_t device);
 //	/* 262 */ sys64_long_t	sys64_newfstatat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [out, ref] linux_stat64* buf, [in] sys64_int_t flags);
 	/* 269 */ sys64_long_t	sys64_faccessat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_int_t flags);
-
-///* x */	sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 }

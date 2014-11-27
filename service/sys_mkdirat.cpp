@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "PathSplitter.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
