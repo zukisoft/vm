@@ -652,6 +652,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_prctl.cpp" />
     <ClCompile Include="sys_read.cpp" />
     <ClCompile Include="sys_release_context.cpp" />
+    <ClCompile Include="sys_rt_sigprocmask.cpp" />
     <ClCompile Include="sys_rundown_context.cpp" />
     <ClCompile Include="sys_setdomainname.cpp" />
     <ClCompile Include="sys_sethostname.cpp" />

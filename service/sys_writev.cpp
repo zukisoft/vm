@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "HeapBuffer.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -63,7 +64,7 @@ __int3264 sys_writev(const SystemCall::Context* context, int fd, uapi::iovec* io
 		size_t written = 0;
 		for(int index = 0; index < iovcnt; index++) {
 
-			size_t read = context->Process->ReadMemory(iov[index].iov_base, &buffer, iov[index].iov_len);
+			size_t read = context->Process->ReadMemory(iov[index].iov_base, buffer, iov[index].iov_len);
 			if(read) written += handle->Write(buffer, read);
 		}
 

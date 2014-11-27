@@ -282,7 +282,7 @@ syscall_t g_syscalls[512] = {
 /* 172 */	REMOTE_SYSCALL_5(sys32_prctl, sys32_int_t, sys32_ulong_t, sys32_ulong_t, sys32_ulong_t, sys32_ulong_t),
 /* 173 */	sys_noentry,
 /* 174 */	sys_noentry,
-/* 175 */	sys_noentry,
+/* 175 */	REMOTE_SYSCALL_4(sys32_rt_sigprocmask, sys32_int_t, const sys32_sigset_t*, sys32_sigset_t*, sys32_size_t),
 /* 176 */	sys_noentry,
 /* 177 */	sys_noentry,
 /* 178 */	sys_noentry,
