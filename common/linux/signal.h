@@ -70,6 +70,20 @@
 #define LINUX_SIGRTMIN		32
 #define LINUX_SIGRTMAX		LINUX__NSIG
 
+typedef uint64_t			linux_sigset_t;
+
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
+
+	typedef linux_sigset_t		sigset_t;
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
+
+//-----------------------------------------------------------------------------
+// include/linux/signal.h
+//-----------------------------------------------------------------------------
+
 //-----------------------------------------------------------------------------
 
 #endif		// __LINUX_SIGNAL_H_

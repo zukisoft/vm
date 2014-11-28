@@ -43,6 +43,7 @@ typedef sys64_uint_t					sys64_dev_t;
 typedef sys64_uint_t					sys64_mode_t;
 typedef sys64_long_t					sys64_off_t;
 typedef sys64_longlong_t				sys64_loff_t;
+typedef sys64_int_t						sys64_pid_t;
 typedef sys64_ulonglong_t				sys64_sigset_t;
 typedef sys64_ulong_t					sys64_size_t;
 typedef sys64_long_t					sys64_ssize_t;
@@ -155,6 +156,7 @@ interface SystemCalls64
 	/* 170 */ sys64_long_t	sys64_sethostname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 171 */ sys64_long_t	sys64_setdomainname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);
 	/* 218 */ sys64_long_t	sys64_set_tid_address([in] sys64_context_t context, [in] sys64_addr_t tidptr);
+	/* 234 */ sys64_long_t	sys64_tgkill([in] sys64_context_t context, [in] sys64_pid_t tgid, [in] sys64_pid_t pid, [in] sys64_int_t sig);
 	/* 257 */ sys64_long_t	sys64_openat([in] sys64_context_t context, [in] sys64_int_t fd, [in, string] const sys64_char_t* pathname, [in] sys64_int_t flags, [in] sys64_mode_t mode);
 	/* 258 */ sys64_long_t	sys64_mkdirat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 259 */ sys64_long_t	sys64_mknodat([in] sys64_context_t context, [in] sys64_int_t dirfd, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_dev_t device);
