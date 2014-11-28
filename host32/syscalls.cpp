@@ -328,7 +328,7 @@ syscall_t g_syscalls[512] = {
 /* 218 */	sys_noentry,
 /* 219 */	REMOTE_SYSCALL_3(sys32_madvise, sys32_addr_t, sys32_size_t, sys32_int_t),
 /* 220 */	sys_noentry,
-/* 221 */	sys_noentry,
+/* 221 */	REMOTE_SYSCALL_3(sys32_fcntl64, sys32_int_t, sys32_int_t, sys32_addr_t),
 /* 222 */	sys_noentry,
 /* 223 */	sys_noentry,
 /* 224 */	sys_noentry,

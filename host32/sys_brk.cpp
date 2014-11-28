@@ -54,7 +54,7 @@ static SYSTEM_INFO s_sysinfo = []() -> SYSTEM_INFO {
 //
 // Arguments:
 //
-//	address		- Address to set the program break to (hint)
+//	address		- Address to set the program break to
 
 uapi::long_t sys_brk(void* address)
 {
@@ -107,7 +107,16 @@ uapi::long_t sys_brk(void* address)
 		g_break = reinterpret_cast<void*>(current);
 	}
 
-	return reinterpret_cast<uapi::long_t>(g_break);
+	///// TODO: TESTING - CLEAN THIS UP (now this works with glibc, but un-hack it)
+	uintptr_t result = uintptr_t(address);
+	if((result >= uintptr_t(g_startupinfo.program_break)) && (result <= uintptr_t(g_break)))
+	{
+		return reinterpret_cast<uapi::long_t>(address);
+	}
+	else return 0;
+	/////////////////////////////
+
+//	return reinterpret_cast<uapi::long_t>(g_break);
 }
 
 //-----------------------------------------------------------------------------
