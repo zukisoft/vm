@@ -25,6 +25,7 @@
 #pragma once
 
 #include <linux/types.h>
+#include <linux/fcntl.h>
 #include <linux/stat.h>
 #include <linux/statfs.h>
 #include <linux/uio.h>

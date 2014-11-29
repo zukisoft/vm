@@ -292,6 +292,12 @@ struct __declspec(novtable) FileSystem
 		// Gets a reference to the Alias instance used to open this handle
 		__declspec(property(get=getAlias)) AliasPtr Alias;
 		virtual AliasPtr getAlias(void) = 0;
+
+		// Flags
+		//
+		// Gets a copy of the original flags used to open the handle
+		__declspec(property(get=getFlags)) int Flags;
+		virtual int getFlags(void) = 0;
 	};
 
 	//

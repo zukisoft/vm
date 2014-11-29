@@ -66,6 +66,8 @@
 // CUSTOM MOUNT OPTIONS:
 //
 
+// TODO: O_LARGEFILE support
+
 class HostFileSystem : public FileSystem
 {
 public:
@@ -303,6 +305,7 @@ private:
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
 		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+		virtual int						getFlags(void) { return m_flags; }
 
 	private:
 
@@ -331,6 +334,7 @@ private:
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
 		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+		virtual int						getFlags(void) { return m_flags; }
 
 	private:
 
@@ -358,6 +362,7 @@ private:
 		virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
 
 		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+		virtual int						getFlags(void) { return m_flags; }
 
 	private:
 
@@ -395,6 +400,7 @@ private:
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
 		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+		virtual int						getFlags(void) { return m_flags; }
 
 	private:
 

@@ -46,6 +46,8 @@
 // FILE SIZE: Limited to size_t (4GB on x86 builds, more than sufficient 
 // considering it's not possible to address that much memory)
 
+// TODO: O_LARGEFILE support - probably just ignore it, can't be more than size_t
+
 class TempFileSystem : public FileSystem
 {
 public:
@@ -213,6 +215,7 @@ private:
 		virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
 		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+		virtual int						getFlags(void) { return m_flags; }
 
 	private:
 
@@ -291,6 +294,7 @@ private:
 			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
 
 			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+			virtual int						getFlags(void) { return m_flags; }
 
 		private:
 
@@ -379,6 +383,7 @@ private:
 			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
 
 			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+			virtual int						getFlags(void) { return m_flags; }
 
 		private:
 
@@ -462,6 +467,7 @@ private:
 			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
 			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+			virtual int						getFlags(void) { return m_flags; }
 
 		private:
 
@@ -538,6 +544,7 @@ private:
 			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
 
 			virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
+			virtual int						getFlags(void) { return m_flags; }
 
 		private:
 

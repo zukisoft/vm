@@ -41,11 +41,94 @@ __int3264 sys_fcntl(const SystemCall::Context* context, int fd, int cmd, void* a
 
 		auto handle = context->Process->GetHandle(fd);
 
+		// Commands are listed in the order described in the man page, not numerically
 		switch(cmd) {
 
-			case 0:	
-				// testing - need access to original flags
-				return context->Process->AddHandle(handle->Duplicate(0));
+			//
+			// FILE DESCRIPTOR DUPLICATION
+			//
+
+			// F_DUPFD - Duplicate the handle using the original flags
+			case LINUX_F_DUPFD:	
+				return context->Process->AddHandle(handle->Duplicate(handle->Flags));
+
+			// F_DUPFD_CLOEXEC - Duplicate the handle with O_CLOEXEC specified as well
+			case LINUX_F_DUPFD_CLOEXEC:
+				return context->Process->AddHandle(handle->Duplicate(handle->Flags | LINUX_O_CLOEXEC));
+
+			//
+			// FILE DESCRIPTOR FLAGS
+			//
+
+			// F_GETFD - Get the file descriptor flags
+			// case LINUX_F_GETFD:
+				// only return LINUX_FD_CLOEXEC (1)
+
+			// F_SETFD - Set the file descriptor flags
+			//case LINUX_F_SETFD:
+				// arg must be LINUX_FD_CLOEXEC (1)
+
+			//
+			// FILE STATUS FLAGS
+			//
+
+			// F_GETFL
+			// F_SETFL
+
+			//
+			// ADVISORY RECORD LOCKING
+			//
+
+			// F_SETLK
+			// F_SETLKW
+			// F_GETLK
+
+			//
+			// OPEN FILE DESCRIPTOR LOCKS
+			//
+
+			// F_OFD_SETLK
+			// F_OFD_SETLKW
+			// F_OFD_GETLK
+
+			//
+			// MANDATORY LOCKING
+			// (Do not support?)
+
+			//
+			// MANAGING SIGNALS
+			//
+
+			// F_GETOWN
+			// F_SETOWN
+			// F_GETOWN_EX
+			// F_SETOWN_EX
+			// F_GETSIG
+			// F_SETSIG
+
+			//
+			// LEASES
+			//
+
+			// F_SETLEASE
+			// F_GETLEASE
+
+			//
+			// FILE AND DIRECTORY CHANGE NOTIFICATION
+			//
+
+			// F_NOTIFY
+
+			//
+			// CHANGING THE CAPACITY OF A PIPE
+			//
+
+			// F_SETPIPE_SZ
+			// F_GETPIPE_SZ
+
+			default:
+				_RPTF1(_CRT_ASSERT, "sys_fcntl: Unknown command %d", cmd);
+				throw LinuxException(LINUX_EINVAL);
 		}
 	}
 

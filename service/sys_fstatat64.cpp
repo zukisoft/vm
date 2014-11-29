@@ -40,10 +40,10 @@
 
 __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags)
 {
-	uapi::stat				stats;				// File system object statistics
-
 	_ASSERTE(context);
+
 	if(buf == nullptr) return -LINUX_EFAULT;
+	memset(buf, 0, sizeof(linux_stat3264));
 
 	// Verify the flags are valid for this operation
 	if((flags & ~(LINUX_AT_SYMLINK_NOFOLLOW | LINUX_AT_NO_AUTOMOUNT | LINUX_AT_EMPTY_PATH)) != 0) return -LINUX_EINVAL;
@@ -63,17 +63,14 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 		if(((flags & LINUX_AT_EMPTY_PATH) != LINUX_AT_EMPTY_PATH) && (base->Node->Type != FileSystem::NodeType::Directory))
 			throw LinuxException(LINUX_ENOTDIR);
 
-		// Get the generic information and statistics for the node
-		//context->VirtualMachine->ResolvePath(context->Process->RootDirectory, base, pathname, 
-		//	(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node->Stat(&stats);
+		// Attempt to resolve the target node
+		auto node = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, base, pathname, 
+			(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node;
 
-		//
-		// CONVERT DATA STRUCTURE
-		// WATCH FOR E_OVERFLOW
-		//
-		//memset(buf, 0, sizeof(linux_stat3264));
-		(stats);
-		throw LinuxException(LINUX_ENOSYS);
+		// Load the target structure with the information about the node
+		buf->st_ino = node->Index;
+		buf->st_mode = LINUX_S_IFREG | 0777;
+		// TODO!!! THIS NEEDS TO WORK PROPERLY SOON - ADD THE PROPERTIES TO NODE AND DEAL WITH IT
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
