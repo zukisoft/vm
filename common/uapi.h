@@ -28,6 +28,7 @@
 #include <linux/fcntl.h>
 #include <linux/stat.h>
 #include <linux/statfs.h>
+#include <linux/time.h>
 #include <linux/uio.h>
 #include <linux/utsname.h>
 

@@ -317,6 +317,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
     <ClInclude Include="..\common\linux\statfs.h" />
+    <ClInclude Include="..\common\linux\time.h" />
     <ClInclude Include="..\common\linux\types.h" />
     <ClInclude Include="..\common\linux\uio.h" />
     <ClInclude Include="..\common\linux\utsname.h" />

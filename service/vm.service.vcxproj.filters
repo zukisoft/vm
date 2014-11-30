@@ -332,6 +332,9 @@
     <ClInclude Include="ConsoleCharacterDevice.h">
       <Filter>Header Files\Character Devices</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\time.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
