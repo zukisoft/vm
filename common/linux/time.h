@@ -97,26 +97,23 @@ namespace uapi {
 	typedef linux_itimerspec		itimerspec;
 	typedef linux_itimerval			itimerval;
 
-	// Converts Windows FILEFILE to Linux timespec (Logic courtesy of pthreads-win32)
+	// Converts Windows FILEFILE to Linux timespec
 	//
 	inline timespec FILETIMEToTimeSpec(const FILETIME& ft)
 	{
-		const __int64 OFFSET = (((__int64)27111902 << 32) + (__int64)3577643008);
-
+		const __int64 OFFSET = 116444736000000000;
 		__int64 filetime = *reinterpret_cast<const __int64*>(&ft);
 		__int64 seconds = (filetime - OFFSET) / 10000000;
-		__int64 nanoseconds = (filetime - OFFSET - (seconds * 10000000)) * 100;
-
+		__int64 nanoseconds = ((filetime - OFFSET) * 100) % 1000000000;
 		return { static_cast<__kernel_time_t>(seconds), static_cast<__kernel_long_t>(nanoseconds) };
 	}
 
-	// Converts Linux timespec to Windows FILETIME (Logic courtesy of pthreads-win32)
+	// Converts Linux timespec to Windows FILETIME
 	//
 	inline FILETIME TimeSpecToFILETIME(const timespec& ts)
 	{
-		const __int64 OFFSET = (((__int64)27111902 << 32) + (__int64)3577643008);
-
-		__int64 filetime = ts.tv_sec * 10000000 + (ts.tv_nsec + 50) / 100 + OFFSET;
+		const __int64 OFFSET = 116444736000000000;
+		__int64 filetime = (static_cast<__int64>(ts.tv_sec) * 10000000) + (static_cast<__int64>(ts.tv_nsec) / 100) + OFFSET;
 		return *reinterpret_cast<FILETIME*>(&filetime);
 	}
 
