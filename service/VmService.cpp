@@ -766,9 +766,7 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall32_listener::AddObject(this->InstanceID);
 		m_hostarguments32 = syscall32_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
-		OutputDebugString(L"BINDSTR32: ");
-		OutputDebugString(m_hostarguments32.c_str());
-		OutputDebugString(L"\r\n");
+		_RPTW1(_CRT_WARN, L"BINDSTR32: %s", m_hostarguments32.c_str());
 
 		// THE BINDING STRINGS ARE EXACTLY THE SAME, WHY DO I HAVE TWO OF THEM
 		// collapse ProcessManager->HostArguments32 and 64 into just one property, the binding
@@ -780,9 +778,7 @@ void VmService::OnStart(int, LPTSTR*)
 		syscall64_listener::AddObject(this->InstanceID);
 		m_hostarguments64 = syscall64_listener::GetBindingString(this->InstanceID).c_str();
 		// m_syslog->Push(something)
-		OutputDebugString(L"BINDSTR64: ");
-		OutputDebugString(m_hostarguments64.c_str());
-		OutputDebugString(L"\r\n");
+		_RPTW1(_CRT_WARN, L"BINDSTR64: %s", m_hostarguments64.c_str());
 #endif
 	} 
 

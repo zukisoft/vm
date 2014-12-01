@@ -88,15 +88,7 @@ extern sys32_context_t g_rpccontext;
 uapi::long_t sys_noentry(PCONTEXT context) 
 { 
 	UNREFERENCED_PARAMETER(context);
-
-#ifdef _DEBUG
-
-	// Dump the non-implemented system call number to the debugger
-	tchar_t debugstr[256];
-	_sntprintf_s(debugstr, 256, _TRUNCATE, L"sys_noentry: system call number %d requested\r\n", context->Eax);
-	OutputDebugString(debugstr);
-
-#endif
+	_RPT1(_CRT_WARN, "sys_noentry: system call number %d requested", context->Eax);
 
 	return -LINUX_ENOSYS; 
 }

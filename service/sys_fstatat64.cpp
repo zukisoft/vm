@@ -42,7 +42,6 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 {
 	_ASSERTE(context);
 
-	// TODO: This can never happen from RPC, why do I keep checking for it
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	// Verify the flags are valid for this operation

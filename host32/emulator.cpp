@@ -51,12 +51,24 @@ template<typename size_type> inline size_type& GS(uintptr_t offset)
 // emulation handler due to an internal compiler error when __try/__except are
 // used inside a lambda function
 //
-inline DWORD InvokeSystemCall(syscall_t func, emulator::context_t* context)
+DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 {
+	// There are only 512 system call slots defined
+	_ASSERTE(syscall < 512);
+	if(syscall > 511) return -LINUX_ENOSYS;
+
+	// Grab the function pointer for the system call
+	syscall_t func = g_syscalls[syscall];
+	if(func == nullptr) return -LINUX_ENOSYS;
+
 	// Invoke the system call in a __try/__except to catch RPC errors like null
 	// ref pointers and whatnot and translate them to EFAULT for the application
-	__try { return static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS); }
-	__except(EXCEPTION_EXECUTE_HANDLER) { return -LINUX_EFAULT; }
+	__try { return static_cast<DWORD>(func(context)); }
+	__except(EXCEPTION_EXECUTE_HANDLER) { 
+		
+		_RPTF2(_CRT_ASSERT, "System call %d: Unhandled exception 0x%08X", 123, GetExceptionCode());
+		return -LINUX_EFAULT; 
+	}
 }
 
 //
@@ -67,29 +79,18 @@ inline DWORD InvokeSystemCall(syscall_t func, emulator::context_t* context)
 //
 emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
 
-#ifdef _DEBUG
 	int syscall = static_cast<int>(context->Eax);
-	wchar_t sc[255];
-	wsprintf(sc, L"System call %d\r\n", syscall);
-	OutputDebugString(sc);
-#endif
-
-	// There are only 512 system call slots defined
-	_ASSERTE(context->Eax < 512);
-	if(context->Eax > 511) { context->Eax = -LINUX_ENOSYS; return true; }
+	_RPT1(_CRT_WARN, "System call %d", syscall);
 
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit
-	context->Eax = InvokeSystemCall(g_syscalls[context->Eax], context);
+	context->Eax = InvokeSystemCall(syscall, context);
 
-#ifdef _DEBUG
-	if(static_cast<int>(context->Eax) < 0) 
-	{
-		wchar_t temp[255];
-		wsprintf(temp, L"System call %d failed; ec = %d\r\n", syscall, context->Eax);
-		OutputDebugString(temp);
+	// TODO: remove this at some point, it's only going to be useful until
+	// the applications can just report it on their own
+	if(static_cast<int>(context->Eax) < 0) {
+		_RPT2(_CRT_WARN, "System call %d: result = %d", syscall, context->Eax);
 	}
-#endif
 
 	return true;
 });
