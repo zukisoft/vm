@@ -32,10 +32,17 @@
 
 typedef struct {
 
-	__kernel_time_t			tv_sec;				/* seconds */
-	__kernel_long_t			tv_nsec;			/* nanoseconds */
+	__int32					tv_sec;				/* seconds */
+	__int32					tv_nsec;			/* nanoseconds */
 
-} linux_timespec;
+} linux_timespec32;
+
+typedef struct {
+
+	__int64					tv_sec;				/* seconds */
+	__int64					tv_nsec;			/* nanoseconds */
+
+} linux_timespec64;
 
 typedef struct {
 
@@ -57,10 +64,17 @@ typedef struct {
 
 typedef struct {
 
-	linux_timespec			it_interval;		/* timer period */
-	linux_timespec			it_value;			/* timer expiration */
+	linux_timespec32		it_interval;		/* timer period */
+	linux_timespec32		it_value;			/* timer expiration */
 
-} linux_itimerspec;
+} linux_itimerspec32;
+
+typedef struct {
+
+	linux_timespec64		it_interval;		/* timer period */
+	linux_timespec64		it_value;			/* timer expiration */
+
+} linux_itimerspec64;
 
 typedef struct {
 
@@ -91,10 +105,10 @@ typedef struct {
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
-	typedef linux_timespec			timespec;
+	typedef linux_timespec64		timespec;
 	typedef linux_timeval			timeval;
 	typedef linux_timezone			timezone;
-	typedef linux_itimerspec		itimerspec;
+	typedef linux_itimerspec64		itimerspec;
 	typedef linux_itimerval			itimerval;
 
 	// Converts Windows FILEFILE to Linux timespec
@@ -105,7 +119,18 @@ namespace uapi {
 		__int64 filetime = *reinterpret_cast<const __int64*>(&ft);
 		__int64 seconds = (filetime - OFFSET) / 10000000;
 		__int64 nanoseconds = ((filetime - OFFSET) * 100) % 1000000000;
+
 		return { static_cast<__kernel_time_t>(seconds), static_cast<__kernel_long_t>(nanoseconds) };
+	}
+
+	// Converts Windows FILEFILE to Linux timespec
+	//
+	inline void FILETIMEToTimeSpec(const FILETIME& ft, uint64_t* tv_sec, uint64_t* tv_nsec)
+	{
+		const __int64 OFFSET = 116444736000000000;
+		__int64 filetime = *reinterpret_cast<const __int64*>(&ft);
+		*tv_sec = (filetime - OFFSET) / 10000000;
+		*tv_nsec = ((filetime - OFFSET) * 100) % 1000000000;
 	}
 
 	// Converts Linux timespec to Windows FILETIME
@@ -114,6 +139,7 @@ namespace uapi {
 	{
 		const __int64 OFFSET = 116444736000000000;
 		__int64 filetime = (static_cast<__int64>(ts.tv_sec) * 10000000) + (static_cast<__int64>(ts.tv_nsec) / 100) + OFFSET;
+
 		return *reinterpret_cast<FILETIME*>(&filetime);
 	}
 

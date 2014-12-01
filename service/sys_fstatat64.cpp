@@ -42,8 +42,8 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 {
 	_ASSERTE(context);
 
+	// TODO: This can never happen from RPC, why do I keep checking for it
 	if(buf == nullptr) return -LINUX_EFAULT;
-	memset(buf, 0, sizeof(linux_stat3264));
 
 	// Verify the flags are valid for this operation
 	if((flags & ~(LINUX_AT_SYMLINK_NOFOLLOW | LINUX_AT_NO_AUTOMOUNT | LINUX_AT_EMPTY_PATH)) != 0) return -LINUX_EINVAL;
@@ -68,9 +68,12 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 			(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node;
 
 		// Load the target structure with the information about the node
+		uapi::stat stats;
+		node->TESTSTAT(&stats);
 		buf->st_ino = node->Index;
 		buf->st_mode = LINUX_S_IFREG | 0777;
 		// TODO!!! THIS NEEDS TO WORK PROPERLY SOON - ADD THE PROPERTIES TO NODE AND DEAL WITH IT
+		// got a working timespec converter, should be good to implement in FileSystem
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

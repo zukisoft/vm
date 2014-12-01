@@ -684,6 +684,9 @@ TempFileSystem::NodeBase::NodeBase(const std::shared_ptr<MountPoint>& mountpoint
 	m_mountpoint(mountpoint), m_index(mountpoint->AllocateIndex()), m_permission(0)
 {
 	_ASSERTE(mountpoint);
+	GetSystemTimeAsFileTime(&m_atime);
+	m_mtime = m_atime;
+	m_ctime = m_atime;
 }
 
 //-----------------------------------------------------------------------------

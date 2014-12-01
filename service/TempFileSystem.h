@@ -32,9 +32,11 @@
 #include <concurrent_unordered_map.h>
 #include <linux/types.h>
 #include <linux/fcntl.h>
+#include <linux/time.h>
 #include "LinuxException.h"
 #include "FilePermission.h"
 #include "FileSystem.h"
+#include "MemoryRegion.h"
 #include "MountOptions.h"
 #include "PathIterator.h"
 
@@ -171,6 +173,36 @@ private:
 		// todo: put comments back
 		uint64_t	getIndex(void) { return m_index; }
 
+		// todo: needs locking
+		void UpdateLastAccessTime(void) { GetSystemTimeAsFileTime(&m_atime); }
+		void UpdateLastWriteTime(void) { GetSystemTimeAsFileTime(&m_mtime); }
+		void UpdateLastChangeTime(void) { GetSystemTimeAsFileTime(&m_ctime); m_mtime = m_ctime; }
+
+		virtual void TESTSTAT(uapi::stat* stats)
+		{
+			if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
+			memset(stats, 0, sizeof(uapi::stat));
+			
+			stats->st_dev = 0;			// TODO
+			stats->st_mode = 0;			// TODO
+			
+			stats->st_nlink = 1;		// TODO - when hard links are implemented
+			stats->st_uid = 0;			// TODO
+			stats->st_gid = 0;			// TODO
+			stats->st_rdev = 0;			// TODO
+			
+			stats->st_blksize = MemoryRegion::PageSize;	// TODO - remove "MemoryRegion.h" later, this should be in m_mountpoint's metadata
+			stats->st_blocks = 1;						// TODO - needs to come from the FileNode
+
+			// lock times here
+			uapi::FILETIMEToTimeSpec(m_atime, &stats->st_atime, &stats->st_atime_nsec);
+			uapi::FILETIMEToTimeSpec(m_mtime, &stats->st_mtime, &stats->st_mtime_nsec);
+			uapi::FILETIMEToTimeSpec(m_ctime, &stats->st_ctime, &stats->st_ctime_nsec);
+			// unlock times here
+
+			stats->st_ino = m_index;
+		}
+
 	protected:
 
 		// Instance Constructor
@@ -182,6 +214,11 @@ private:
 		const uint64_t					m_index;		// Node index number
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
 		FilePermission					m_permission;	// Node permission
+
+		// need a mutex object here or something to protect times
+		FILETIME						m_atime;		// Last access time
+		FILETIME						m_mtime;		// Last write time
+		FILETIME						m_ctime;		// Last Change time
 
 	private:
 
@@ -345,6 +382,12 @@ private:
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::File; }
+
+		virtual void TESTSTAT(uapi::stat* stats)
+		{
+			NodeBase::TESTSTAT(stats);
+			stats->st_mode |= LINUX_S_IFREG;
+		}
 
 		// FileSystem::File Implementation
 		//		
