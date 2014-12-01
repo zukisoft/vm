@@ -69,22 +69,12 @@ void ProcFileSystem::Mount(const FileSystem::NodePtr& node)
 	m_mounted.push(node);
 }
 
-//-----------------------------------------------------------------------------
-// ProcFileSystem::Unmount (private)
-//
-// Unmounts/unbinds a node from this alias, revealing the previously bound node
-//
-// Arguments:
-//
-//	NONE
-
-void ProcFileSystem::Unmount(void)
+uapi::stat ProcFileSystem::getStatus(void)
 {
-	// Pop the topmost node instance from the stack, if one even exists
-	std::lock_guard<std::mutex> critsec(m_lock);
-	if(!m_mounted.empty()) m_mounted.pop();
+	_RPTF0(_CRT_ASSERT, "ProcFileSystem::ReadStatus -- not implemented yet");
+	return uapi::stat();
 }
-	
+
 //-----------------------------------------------------------------------------
 // ProcFileSystem::Resolve
 //
@@ -108,6 +98,22 @@ FileSystem::AliasPtr ProcFileSystem::Resolve(const AliasPtr&, const AliasPtr&, c
 	throw LinuxException(LINUX_ENOENT);
 }
 
+//-----------------------------------------------------------------------------
+// ProcFileSystem::Unmount (private)
+//
+// Unmounts/unbinds a node from this alias, revealing the previously bound node
+//
+// Arguments:
+//
+//	NONE
+
+void ProcFileSystem::Unmount(void)
+{
+	// Pop the topmost node instance from the stack, if one even exists
+	std::lock_guard<std::mutex> critsec(m_lock);
+	if(!m_mounted.empty()) m_mounted.pop();
+}
+	
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)

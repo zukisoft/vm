@@ -613,6 +613,12 @@ FileSystem::HandlePtr HostFileSystem::DirectoryNode::Open(const AliasPtr& alias,
 	return HostFileSystem::DuplicateDirectoryHandle(m_mountpoint, alias, m_handle, flags);
 }
 
+uapi::stat HostFileSystem::DirectoryNode::getStatus(void)
+{
+	_RPTF0(_CRT_ASSERT, "HostFileSystem::DirectoryNode::ReadStatus -- not implemented yet");
+	return uapi::stat();
+}
+
 void HostFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
 {
 	(name);
@@ -670,10 +676,10 @@ FileSystem::AliasPtr HostFileSystem::DirectoryNode::Resolve(const AliasPtr&, con
 //
 // Gets the file index for this node from the operating system
 
-uint64_t HostFileSystem::DirectoryNode::getIndex(void)
-{
-	return HandleToIndex(m_handle);
-}
+//uint64_t HostFileSystem::DirectoryNode::getIndex(void)
+//{
+//	return HandleToIndex(m_handle);
+//}
 
 //-----------------------------------------------------------------------------
 // HostFileSystem::DirectoryNode::getType
@@ -1193,6 +1199,12 @@ FileSystem::HandlePtr HostFileSystem::FileNode::OpenExec(const AliasPtr& alias)
 	catch(...) { CloseHandle(handle); throw; }
 }
 
+uapi::stat HostFileSystem::FileNode::getStatus(void)
+{
+	_RPTF0(_CRT_ASSERT, "HostFileSystem::FileNode::ReadStatus -- not implemented yet");
+	return uapi::stat();
+}
+
 //-----------------------------------------------------------------------------
 // HostFileSystem::FileNode::Resolve
 //
@@ -1223,10 +1235,10 @@ FileSystem::AliasPtr HostFileSystem::FileNode::Resolve(const AliasPtr&, const Al
 //
 // Gets the file index for this node from the operating system
 
-uint64_t HostFileSystem::FileNode::getIndex(void)
-{
-	return HandleToIndex(m_handle);
-}
+//uint64_t HostFileSystem::FileNode::getIndex(void)
+//{
+//	return HandleToIndex(m_handle);
+//}
 
 //-----------------------------------------------------------------------------
 // HostFileSystem::FileNode::getType

@@ -181,7 +181,8 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
-		virtual uint64_t				getIndex(void);
+		//virtual uint64_t				getIndex(void);
+		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void);
 
 		// FileSystem::Directory Implementation
@@ -233,7 +234,8 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
-		virtual uint64_t				getIndex(void);
+		//virtual uint64_t				getIndex(void);
+		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void);
 
 		// FileSystem::File Implementation

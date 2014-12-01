@@ -227,6 +227,14 @@ FileSystem::HandlePtr TempFileSystem::CharacterDeviceNode::Open(const AliasPtr& 
 	else return std::make_shared<Handle>(shared_from_this(), alias, flags, permission);
 }
 
+// CharacterDeviceNode::getStatus
+//
+uapi::stat TempFileSystem::CharacterDeviceNode::getStatus(void)
+{
+	_RPTF0(_CRT_ASSERT, "TempFileSystem::CharacterDeviceNode::ReadStatus -- not implemented yet");
+	return uapi::stat();
+}
+
 // CharacterDeviceNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::CharacterDeviceNode::Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*)
@@ -413,6 +421,14 @@ void TempFileSystem::DirectoryNode::RemoveNode(const uapi::char_t* name)
 	// todo: Remove from the collection, node will die off on it's own
 }
 
+// DirectoryNode::getStatus
+//
+uapi::stat TempFileSystem::DirectoryNode::getStatus(void)
+{
+	_RPTF0(_CRT_ASSERT, "TempFileSystem::DirectoryNode::ReadStatus -- not implemented yet");
+	return uapi::stat();
+}
+
 // DirectoryNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::DirectoryNode::Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks)
@@ -500,7 +516,7 @@ FileSystem::HandlePtr TempFileSystem::FileNode::Open(const AliasPtr& alias, int 
 	// write access to succeed, it is not an exception to request it with read-only handles
 	if((flags & LINUX_O_TRUNC) && ((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY)) {
 
-		Concurrency::reader_writer_lock::scoped_lock writer(m_lock);
+		Concurrency::reader_writer_lock::scoped_lock writer(m_datalock);
 		m_data.clear();
 	}
 
@@ -537,6 +553,33 @@ FileSystem::HandlePtr TempFileSystem::FileNode::OpenExec(const std::shared_ptr<F
 	return std::make_shared<Handle>(shared_from_this(), alias, 0, permission);
 }
 
+// FileNode::getStatus
+//
+uapi::stat TempFileSystem::FileNode::getStatus(void)
+{
+	zero_init<uapi::stat>		status;
+	std::lock_guard<std::mutex>	cs(m_lock);			
+
+	// Counting on Return Value Optimization here so that this can be a 
+	// property rather than a method call ....
+
+	status.st_dev		= 0;							// TODO
+	status.st_ino		= m_index;
+	status.st_nlink		= 1;							// TODO
+	status.st_mode		= LINUX_S_IFREG | 0777;			// TODO
+	status.st_uid		= 0;							// TODO
+	status.st_gid		= 0;							// TODO
+	status.st_rdev		= 0;							// TODO
+	status.st_size		= m_data.size();
+	status.st_blksize	= 4096;							// TODO
+	status.st_blocks	= (m_data.size() / 4096);		// TODO
+	uapi::FILETIMEToTimeSpec(m_atime, &status.st_atime, &status.st_atime_nsec);
+	uapi::FILETIMEToTimeSpec(m_mtime, &status.st_mtime, &status.st_mtime_nsec);
+	uapi::FILETIMEToTimeSpec(m_ctime, &status.st_ctime, &status.st_ctime_nsec);
+
+	return status;
+}
+
 // FileNode::Resolve
 //
 FileSystem::AliasPtr TempFileSystem::FileNode::Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*)
@@ -565,7 +608,7 @@ uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t c
 	m_permission.Demand(FilePermission::Access::Read);
 
 	// Acquire a reader lock against the file data buffer
-	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_lock);
+	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_datalock);
 	
 	// The current file position can be beyond the end from a Seek()
 	size_t position = m_position;
@@ -586,7 +629,7 @@ uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t c
 uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whence)
 {
 	// This is only necessary since the node data is accessed for SEEK_END
-	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_lock);
+	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_datalock);
 
 	// Note that it's not an error to move the file pointer beyond the end of the file;
 	// this must be accounted for with boundary checking in functions that use it
@@ -635,7 +678,7 @@ uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::s
 	m_permission.Demand(FilePermission::Access::Write);
 
 	// Acquire a writer lock against the file data buffer
-	Concurrency::reader_writer_lock::scoped_lock writer(m_node->m_lock);
+	Concurrency::reader_writer_lock::scoped_lock writer(m_node->m_datalock);
 
 	// O_APPEND: Move the file pointer to the end of file before writing
 	if(m_flags & LINUX_O_APPEND) m_position = m_node->m_data.size();
@@ -745,6 +788,14 @@ FileSystem::HandlePtr TempFileSystem::SymbolicLinkNode::Open(const AliasPtr& ali
 	// is never used in conjunction with symbolic links and that there is no need for
 	// a permissions object as symlinks are always read/write/execute for all users
 	return std::make_shared<Handle>(shared_from_this(), alias, flags);
+}
+
+// SymbolicLinkNode::getStatus
+//
+uapi::stat TempFileSystem::SymbolicLinkNode::getStatus(void)
+{
+	_RPTF0(_CRT_ASSERT, "TempFileSystem::SymbolicLinkNode::ReadStatus -- not implemented yet");
+	return uapi::stat();
 }
 
 // SymbolicLinkNode::ReadTarget

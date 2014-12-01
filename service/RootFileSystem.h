@@ -83,7 +83,8 @@ private:
 	virtual void					DemandPermission(uapi::mode_t mode);
 	virtual FileSystem::HandlePtr	Open(const AliasPtr&, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-	virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
+	//virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
+	virtual uapi::stat				getStatus(void);
 	virtual NodeType				getType(void) { return NodeType::Directory; }
 
 	// FileSystem::Directory Implementation

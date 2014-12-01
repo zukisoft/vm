@@ -173,16 +173,17 @@ struct __declspec(novtable) FileSystem
 		// that will take care of itself if I make a state object that has these instead
 		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;
 
-		virtual void TESTSTAT(uapi::stat* stats)
-		{
-			memset(stats, 0, sizeof(uapi::stat));
-		}
-
 		// Index
 		//
 		// Gets the node index
-		__declspec(property(get=getIndex)) uint64_t Index;
-		virtual uint64_t getIndex(void) = 0;
+		//__declspec(property(get=getIndex)) uint64_t Index;
+		//virtual uint64_t getIndex(void) = 0;
+
+		// Status
+		//
+		// Gets the node status information
+		__declspec(property(get=getStatus)) uapi::stat Status;
+		virtual uapi::stat getStatus(void) = 0;
 
 		// Type
 		//

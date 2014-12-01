@@ -178,31 +178,6 @@ private:
 		void UpdateLastWriteTime(void) { GetSystemTimeAsFileTime(&m_mtime); }
 		void UpdateLastChangeTime(void) { GetSystemTimeAsFileTime(&m_ctime); m_mtime = m_ctime; }
 
-		virtual void TESTSTAT(uapi::stat* stats)
-		{
-			if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
-			memset(stats, 0, sizeof(uapi::stat));
-			
-			stats->st_dev = 0;			// TODO
-			stats->st_mode = 0;			// TODO
-			
-			stats->st_nlink = 1;		// TODO - when hard links are implemented
-			stats->st_uid = 0;			// TODO
-			stats->st_gid = 0;			// TODO
-			stats->st_rdev = 0;			// TODO
-			
-			stats->st_blksize = MemoryRegion::PageSize;	// TODO - remove "MemoryRegion.h" later, this should be in m_mountpoint's metadata
-			stats->st_blocks = 1;						// TODO - needs to come from the FileNode
-
-			// lock times here
-			uapi::FILETIMEToTimeSpec(m_atime, &stats->st_atime, &stats->st_atime_nsec);
-			uapi::FILETIMEToTimeSpec(m_mtime, &stats->st_mtime, &stats->st_mtime_nsec);
-			uapi::FILETIMEToTimeSpec(m_ctime, &stats->st_ctime, &stats->st_ctime_nsec);
-			// unlock times here
-
-			stats->st_ino = m_index;
-		}
-
 	protected:
 
 		// Instance Constructor
@@ -215,10 +190,11 @@ private:
 		std::shared_ptr<MountPoint>		m_mountpoint;	// Contained mountpoint
 		FilePermission					m_permission;	// Node permission
 
-		// need a mutex object here or something to protect times
 		FILETIME						m_atime;		// Last access time
 		FILETIME						m_mtime;		// Last write time
 		FILETIME						m_ctime;		// Last Change time
+		
+		std::mutex						m_lock;			// Synchronization object
 
 	private:
 
@@ -287,7 +263,8 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
+		//virtual uint64_t				getIndex(void)	{ return NodeBase::getIndex(); }
+		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void)	{ return FileSystem::NodeType::Directory; }
 
 		// FileSystem::Directory Implementation
@@ -380,14 +357,9 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		//virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::File; }
-
-		virtual void TESTSTAT(uapi::stat* stats)
-		{
-			NodeBase::TESTSTAT(stats);
-			stats->st_mode |= LINUX_S_IFREG;
-		}
 
 		// FileSystem::File Implementation
 		//		
@@ -444,7 +416,7 @@ private:
 
 		// Member Variables
 		//
-		Concurrency::reader_writer_lock		m_lock;		// Synchronization object
+		Concurrency::reader_writer_lock		m_datalock;		// Synchronization object
 		std::vector<uint8_t>				m_data;		// Underlying file data
 	};
 
@@ -468,7 +440,8 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		//virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::SymbolicLink; }
 
 		// FileSystem::SymbolicLink Implementation
@@ -550,7 +523,8 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode) { NodeBase::DemandPermission(mode); }
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-		virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		//virtual uint64_t				getIndex(void) { return NodeBase::getIndex(); }
+		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void) { return FileSystem::NodeType::CharacterDevice; }
 
 	private:

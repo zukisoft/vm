@@ -67,13 +67,24 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 		auto node = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, base, pathname, 
 			(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node;
 
-		// Load the target structure with the information about the node
-		uapi::stat stats;
-		node->TESTSTAT(&stats);
-		buf->st_ino = node->Index;
-		buf->st_mode = LINUX_S_IFREG | 0777;
-		// TODO!!! THIS NEEDS TO WORK PROPERLY SOON - ADD THE PROPERTIES TO NODE AND DEAL WITH IT
-		// got a working timespec converter, should be good to implement in FileSystem
+		// Retrieve and convert the status information for the node
+		uapi::stat status = node->Status;
+		buf->st_dev			= status.st_dev;
+		buf->st_ino			= status.st_ino;
+		buf->st_nlink		= static_cast<uint32_t>(status.st_nlink);
+		buf->st_mode		= status.st_mode;
+		buf->st_uid			= status.st_uid;
+		buf->st_gid			= status.st_gid;
+		buf->st_rdev		= status.st_rdev;
+		buf->st_size		= status.st_size;
+		buf->st_blksize		= static_cast<uint32_t>(status.st_blksize);
+		buf->st_blocks		= status.st_blocks;
+		buf->st_atime		= static_cast<uint32_t>(status.st_atime);
+		buf->st_atime_nsec	= static_cast<uint32_t>(status.st_atime_nsec);
+		buf->st_mtime		= static_cast<uint32_t>(status.st_mtime);
+		buf->st_mtime_nsec	= static_cast<uint32_t>(status.st_mtime_nsec);
+		buf->st_ctime		= static_cast<uint32_t>(status.st_ctime);
+		buf->st_ctime_nsec	= static_cast<uint32_t>(status.st_ctime_nsec);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

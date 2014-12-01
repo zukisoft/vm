@@ -96,22 +96,12 @@ void RootFileSystem::Mount(const FileSystem::NodePtr& node)
 	m_mounted.push(node);
 }
 
-//-----------------------------------------------------------------------------
-// RootFileSystem::Unmount (private)
-//
-// Unmounts/unbinds a node from this alias, revealing the previously bound node
-//
-// Arguments:
-//
-//	NONE
-
-void RootFileSystem::Unmount(void)
+uapi::stat RootFileSystem::getStatus(void)
 {
-	// Pop the topmost node instance from the stack, if one even exists
-	std::lock_guard<std::mutex> critsec(m_lock);
-	if(!m_mounted.empty()) m_mounted.pop();
+	_RPTF0(_CRT_ASSERT, "RootFileSystem::ReadStatus -- not implemented yet");
+	return uapi::stat();
 }
-	
+
 //-----------------------------------------------------------------------------
 // RootFileSystem::Resolve
 //
@@ -133,6 +123,22 @@ FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, c
 	// name provided is an empty string, return ourselves otherwise fail
 	if(*path == 0) return shared_from_this();
 	throw LinuxException(LINUX_ENOENT);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Unmount (private)
+//
+// Unmounts/unbinds a node from this alias, revealing the previously bound node
+//
+// Arguments:
+//
+//	NONE
+
+void RootFileSystem::Unmount(void)
+{
+	// Pop the topmost node instance from the stack, if one even exists
+	std::lock_guard<std::mutex> critsec(m_lock);
+	if(!m_mounted.empty()) m_mounted.pop();
 }
 
 //-----------------------------------------------------------------------------
