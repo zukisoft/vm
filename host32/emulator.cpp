@@ -45,6 +45,20 @@ template<typename size_type> inline size_type& GS(uintptr_t offset)
 	return *reinterpret_cast<size_type*>(uintptr_t(TlsGetValue(slot)) + offset);
 }
 
+// InvokeSystemCall
+//
+// Invokes a system call from the global syscall table.  Pulled out of INT_80
+// emulation handler due to an internal compiler error when __try/__except are
+// used inside a lambda function
+//
+inline DWORD InvokeSystemCall(syscall_t func, emulator::context_t* context)
+{
+	// Invoke the system call in a __try/__except to catch RPC errors like null
+	// ref pointers and whatnot and translate them to EFAULT for the application
+	__try { return static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS); }
+	__except(EXCEPTION_EXECUTE_HANDLER) { return -LINUX_EFAULT; }
+}
+
 //
 // SYSTEM CALL EMULATION INSTRUCTIONS
 //
@@ -66,8 +80,7 @@ emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> boo
 
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit
-	syscall_t func = g_syscalls[context->Eax];
-	context->Eax = static_cast<DWORD>((func) ? func(context) : -LINUX_ENOSYS);
+	context->Eax = InvokeSystemCall(g_syscalls[context->Eax], context);
 
 #ifdef _DEBUG
 	if(static_cast<int>(context->Eax) < 0) 
