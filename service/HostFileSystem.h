@@ -309,8 +309,9 @@ private:
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
-		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
-		virtual int						getFlags(void) { return m_flags; }
+		virtual FileSystem::AliasPtr	getAlias(void)	{ return m_alias; }
+		virtual int						getFlags(void)	{ return m_flags; }
+		virtual FileSystem::NodePtr		getNode(void)	{ _RPTF0(_CRT_ASSERT, "getNode not implemented"); throw LinuxException(LINUX_EPERM); }
 
 	private:
 
@@ -338,8 +339,9 @@ private:
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
-		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
-		virtual int						getFlags(void) { return m_flags; }
+		virtual FileSystem::AliasPtr	getAlias(void)	{ return m_alias; }
+		virtual int						getFlags(void)	{ return m_flags; }
+		virtual FileSystem::NodePtr		getNode(void)	{ _RPTF0(_CRT_ASSERT, "getNode not implemented"); throw LinuxException(LINUX_EPERM); }
 
 	private:
 
@@ -366,8 +368,9 @@ private:
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
 
-		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
-		virtual int						getFlags(void) { return m_flags; }
+		virtual FileSystem::AliasPtr	getAlias(void)	{ return m_alias; }
+		virtual int						getFlags(void)	{ return m_flags; }
+		virtual FileSystem::NodePtr		getNode(void)	{ _RPTF0(_CRT_ASSERT, "getNode not implemented"); throw LinuxException(LINUX_EPERM); }
 
 	private:
 
@@ -404,8 +407,9 @@ private:
 		virtual void					SyncData(void);
 		virtual uapi::size_t			Write(const void*, uapi::size_t);
 
-		virtual FileSystem::AliasPtr	getAlias(void) { return m_alias; }
-		virtual int						getFlags(void) { return m_flags; }
+		virtual FileSystem::AliasPtr	getAlias(void)	{ return m_alias; }
+		virtual int						getFlags(void)	{ return m_flags; }
+		virtual FileSystem::NodePtr		getNode(void)	{ _RPTF0(_CRT_ASSERT, "getNode not implemented"); throw LinuxException(LINUX_EPERM); }
 
 	private:
 

@@ -310,6 +310,12 @@ struct __declspec(novtable) FileSystem
 		// Gets a copy of the original flags used to open the handle
 		__declspec(property(get=getFlags)) int Flags;
 		virtual int getFlags(void) = 0;
+
+		// Node
+		//
+		// Gets the node instance to which this alias references
+		__declspec(property(get=getNode)) NodePtr Node;
+		virtual NodePtr getNode(void) = 0;
 	};
 
 	//

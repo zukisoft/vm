@@ -45,13 +45,8 @@ __int3264 sys_fstatfs(const SystemCall::Context* context, int fd, uapi::statfs* 
 		
 		SystemCall::Impersonation impersonation;
 
-		// Resolve the file system through the file descriptor and retrieve the statistics
-		//*buf = context->Process->GetHandle(fd)->Node->FileSystem->Status;
-
-		(fd);
-
-		// TODO: can't currently get to the Node from the Handle, but need to add that
-		throw LinuxException(LINUX_ENOSYS);
+		// Resolve the file system through the file descriptor to retrieve the status
+		*buf = context->Process->GetHandle(fd)->Node->FileSystem->Status;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
