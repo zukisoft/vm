@@ -28,7 +28,14 @@
 //-----------------------------------------------------------------------------
 // sys_fcntl
 //
-// WORDS
+// Manipulates an open file descriptor
+//
+// Arguments:
+//
+//	context		- SystemCall context object
+//	fd			- Open file descriptor to be manipulated
+//	cmd			- Operation command code
+//	arg			- Optional argument for the specified command code
 
 __int3264 sys_fcntl(const SystemCall::Context* context, int fd, int cmd, void* arg)
 {

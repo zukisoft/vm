@@ -25,12 +25,12 @@
 
 #pragma warning(push, 4)
 
-// sys_statfs.cpp
-__int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* path, uapi::statfs* buf);
+// sys_fstatfs.cpp
+__int3264 sys_fstatfs(const SystemCall::Context* context, int fd, uapi::statfs* buf);
 
-// sys32_statfs64
+// sys32_fstatfs64
 //
-sys32_long_t sys32_statfs64(sys32_context_t context, const sys32_char_t* path, sys32_size_t length, linux_statfs3264* buf)
+sys32_long_t sys32_fstatfs64(sys32_context_t context, sys32_int_t fd, sys32_size_t length, linux_statfs3264* buf)
 {
 	uapi::statfs		stats;				// Generic statfs structure (64-bit fields)
 
@@ -39,9 +39,9 @@ sys32_long_t sys32_statfs64(sys32_context_t context, const sys32_char_t* path, s
 	if(length != sizeof(uapi::statfs3264)) return -LINUX_EFAULT;
 
 	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(sys_statfs(reinterpret_cast<SystemCall::Context*>(context), path, &stats));
+	sys32_long_t result = static_cast<sys32_long_t>(sys_fstatfs(reinterpret_cast<SystemCall::Context*>(context), fd, &stats));
 
-	// If sys_statfs() was successful, convert the data from the generic structure into the compatible one
+	// If sys_fstatfs() was successful, convert the data from the generic structure into the compatible one
 	if(result >= 0) {
 
 		buf->f_type		= static_cast<int32_t>(stats.f_type);

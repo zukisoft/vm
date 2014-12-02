@@ -173,6 +173,12 @@ struct __declspec(novtable) FileSystem
 		// that will take care of itself if I make a state object that has these instead
 		virtual AliasPtr Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks) = 0;
 
+		// FileSystem
+		//
+		// Gets a reference to this node's parent FileSystem instance
+		__declspec(property(get=getFileSystem)) std::shared_ptr<struct FileSystem> FileSystem;
+		virtual std::shared_ptr<struct FileSystem> getFileSystem(void) = 0;
+
 		// Index
 		//
 		// Gets the node index
@@ -320,6 +326,12 @@ struct __declspec(novtable) FileSystem
 	// Returns the root alias for the file system
 	__declspec(property(get=getRoot)) AliasPtr Root;
 	virtual AliasPtr getRoot(void) = 0;
+
+	// Status
+	//
+	// Gets the file system status information	
+	__declspec(property(get=getStatus)) uapi::statfs Status;
+	virtual uapi::statfs getStatus(void) = 0;
 };
 
 //-----------------------------------------------------------------------------

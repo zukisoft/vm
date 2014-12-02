@@ -303,6 +303,52 @@ std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 	return m_initprocess;
 }
 
+// GetAbsolutePath
+void VmService::GetAbsolutePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& alias, uapi::char_t* path, size_t pathlen)
+{
+	std::vector<std::string> pathvec;
+
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(pathlen == 0) throw LinuxException(LINUX_ERANGE);
+
+	// TODO: not sure what to do if the current directory has been deleted (unlinked)
+
+	// Start at the specified file system alias and continue working backwards until a root node is found
+	FileSystem::AliasPtr current = alias;
+	while(current->Parent != current) {
+
+		// If the current node is a symbolic link, follow it to the target and loop again
+		if(current->Node->Type == FileSystem::NodeType::SymbolicLink) {
+
+			auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->Node);
+
+			// if this throws, should it be "(unreachable)" -- see kernel code
+			int loop = 0;	// For ELOOP detection
+			current = symlink->Resolve(root, current, nullptr, 0, &loop);
+			continue;
+		}
+
+		// Should never happen, but check for it regardless
+		if(current->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+		// Push the next Alias name into the path building collection and move up to parent
+		pathvec.push_back(current->Name);
+		current = current->Parent;
+	}
+
+	pathvec.push_back("");
+
+	std::string tododeleteme;
+	for (auto iterator = pathvec.begin(); iterator != pathvec.end(); iterator++) {
+			
+		tododeleteme += "/";
+		tododeleteme += *iterator;
+	}
+
+	if(tododeleteme.length() + 1 > pathlen) throw LinuxException(LINUX_ERANGE);
+	strncpy_s(path, pathlen, tododeleteme.c_str(), _TRUNCATE);
+}
+
 FileSystemPtr VmService::MountProcFileSystem(const char_t* name, uint32_t flags, const void* data)
 {
 	(name);

@@ -64,10 +64,16 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 		// Allocate and initialize a Context object to be passed back as the RPC context
 		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
-		// TODO: CHECK THESE POINTERS FOR OVERFLOW - THIS IS 32BIT INTERFACE
+		if(uintptr_t(handle->Process->EntryPoint) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->entry_point = reinterpret_cast<sys32_addr_t>(handle->Process->EntryPoint);
+
+		if(uintptr_t(handle->Process->ProgramBreak) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->program_break = reinterpret_cast<sys32_addr_t>(handle->Process->ProgramBreak);
+
+		if(uintptr_t(handle->Process->StackImage) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->stack_image = reinterpret_cast<sys32_addr_t>(handle->Process->StackImage);
+
+		if(uintptr_t(handle->Process->StackImageLength) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->stack_image_length = static_cast<sys32_size_t>(handle->Process->StackImageLength);
 	}
 

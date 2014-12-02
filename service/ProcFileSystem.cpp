@@ -69,7 +69,7 @@ void ProcFileSystem::Mount(const FileSystem::NodePtr& node)
 	m_mounted.push(node);
 }
 
-uapi::stat ProcFileSystem::getStatus(void)
+uapi::stat ProcFileSystem::getDirectoryStatus(void)
 {
 	_RPTF0(_CRT_ASSERT, "ProcFileSystem::ReadStatus -- not implemented yet");
 	return uapi::stat();

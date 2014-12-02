@@ -26,17 +26,17 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_statfs
+// sys_fstatfs
 //
 // Gets mounted file system statistics
 //
 // Arguments:
 //
 //	context		- SystemCall context object
-//	path		- Path to any object within the mounted file system
+//	fd			- Open file descriptor for any object on the file system
 //	buf			- Output buffer
 
-__int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* path, uapi::statfs* buf)
+__int3264 sys_fstatfs(const SystemCall::Context* context, int fd, uapi::statfs* buf)
 {
 	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
@@ -45,9 +45,13 @@ __int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* pat
 		
 		SystemCall::Impersonation impersonation;
 
-		// Resolve the path to the target alias and go through it to get to the file system information
-		auto alias = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, context->Process->WorkingDirectory, path, 0);
-		*buf = alias->Node->FileSystem->Status;
+		// Resolve the file system through the file descriptor and retrieve the statistics
+		//*buf = context->Process->GetHandle(fd)->Node->FileSystem->Status;
+
+		(fd);
+
+		// TODO: can't currently get to the Node from the Handle, but need to add that
+		throw LinuxException(LINUX_ENOSYS);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
@@ -55,16 +59,16 @@ __int3264 sys_statfs(const SystemCall::Context* context, const uapi::char_t* pat
 	return 0;
 }
 
-// sys32_statfs
+// sys32_fstatfs
 //
-sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, linux_statfs32* buf)
+sys32_long_t sys32_fstatfs(sys32_context_t context, sys32_int_t fd, linux_statfs32* buf)
 {
 	uapi::statfs		stats;				// Generic statfs structure (64-bit fields)
 
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(sys_statfs(reinterpret_cast<SystemCall::Context*>(context), path, &stats));
+	sys32_long_t result = static_cast<sys32_long_t>(sys_fstatfs(reinterpret_cast<SystemCall::Context*>(context), fd, &stats));
 
 	// If sys_statfs() was successful, convert the data from the generic structure into the compatible one
 	if(result >= 0) {
@@ -94,11 +98,11 @@ sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, lin
 }
 
 #ifdef _M_X64
-// sys64_statfs
+// sys64_fstatfs
 //
-sys64_long_t sys64_statfs(sys64_context_t context, const sys64_char_t* path, linux_statfs64* buf)
+sys64_long_t sys64_fstatfs(sys64_context_t context, sys64_int_t fd, linux_statfs64* buf)
 {
-	return sys_statfs(reinterpret_cast<SystemCall::Context*>(context), path, buf);
+	return sys_fstatfs(reinterpret_cast<SystemCall::Context*>(context), fd, buf);
 }
 #endif
 

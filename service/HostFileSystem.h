@@ -81,7 +81,8 @@ public:
 
 	// FileSystem Implementation
 	//
-	virtual FileSystem::AliasPtr getRoot(void) { return m_root; }
+	virtual FileSystem::AliasPtr	getRoot(void) { return m_root; }
+	virtual uapi::statfs			getStatus(void) { throw LinuxException(LINUX_ENOSYS); }
 
 private:
 
@@ -181,6 +182,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
+		virtual FileSystemPtr			getFileSystem(void) { _RPTF0(_CRT_ASSERT, "getFileSystem not implemented"), throw LinuxException(LINUX_ENOSYS); }
 		//virtual uint64_t				getIndex(void);
 		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void);
@@ -234,6 +236,7 @@ private:
 		virtual void					DemandPermission(uapi::mode_t mode);
 		virtual FileSystem::HandlePtr	Open(const AliasPtr& alias, int flags);
 		virtual FileSystem::AliasPtr	Resolve(const AliasPtr&, const AliasPtr& current, const uapi::char_t* path, int flags, int*);
+		virtual FileSystemPtr			getFileSystem(void) { _RPTF0(_CRT_ASSERT, "getFileSystem not implemented"), throw LinuxException(LINUX_ENOSYS); }
 		//virtual uint64_t				getIndex(void);
 		virtual uapi::stat				getStatus(void);
 		virtual FileSystem::NodeType	getType(void);

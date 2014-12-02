@@ -25,12 +25,6 @@
 
 #pragma warning(push, 4)
 
-// LIMITATIONS
-//
-//	- chroot()ed processes have not been checked
-//	- not sure what to do if the current directory has been deleted (unlinked)
-//	- path building is not optimal, uses a collection and a reverse iterator
-
 //-----------------------------------------------------------------------------
 // sys_getcwd
 //
@@ -45,52 +39,14 @@
 __int3264 sys_getcwd(const SystemCall::Context* context, uapi::char_t* buf, size_t size)
 {
 	_ASSERTE(context);
-
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	try { 		
 		
 		SystemCall::Impersonation impersonation;
 
-		// THIS NEEDS TO BE A VIRTUAL MACHINE CALL, TOO MUCH LOGIC FOR THE SYSTEM CALL
-
-		std::vector<std::string> test;
-
-		// Start at the current process working directory and continue working
-		// backwards until a root node (node == parent) has been reached
-		FileSystem::AliasPtr current = context->Process->WorkingDirectory;
-		while(current->Parent != current) {
-
-			// If the current node is a symbolic link, follow it to the target and loop again
-			if(current->Node->Type == FileSystem::NodeType::SymbolicLink) {
-
-				auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->Node);
-
-				// if this throws, should it be "(unreachable)" -- see kernel code
-				int loop = 0;	// For ELOOP detection
-				current = symlink->Resolve(context->Process->RootDirectory, current, nullptr, 0, &loop);
-				continue;
-			}
-
-			// Should never happen, but check for it regardless
-			if(current->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-
-			// Push the next Alias name into the path building collection and move up to parent
-			test.push_back(current->Name);
-			current = current->Parent;
-		}
-
-		test.push_back("");
-
-		std::string tododeleteme;
-		for (auto iterator = test.begin(); iterator != test.end(); iterator++) {
-			
-			tododeleteme += "/";
-			tododeleteme += *iterator;
-		}
-
-		if(tododeleteme.length() + 1 > size) throw LinuxException(LINUX_ERANGE);
-		strncpy_s(buf, size, tododeleteme.c_str(), _TRUNCATE);
+		// Ask the virtual machine instance to resolve the absolute path to the working directory
+		context->VirtualMachine->GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

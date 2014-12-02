@@ -96,7 +96,7 @@ void RootFileSystem::Mount(const FileSystem::NodePtr& node)
 	m_mounted.push(node);
 }
 
-uapi::stat RootFileSystem::getStatus(void)
+uapi::stat RootFileSystem::getDirectoryStatus(void)
 {
 	_RPTF0(_CRT_ASSERT, "RootFileSystem::ReadStatus -- not implemented yet");
 	return uapi::stat();

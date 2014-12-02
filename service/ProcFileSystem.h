@@ -38,7 +38,25 @@
 //
 // todo: words
 
-class ProcFileSystem : public FileSystem, public FileSystem::Directory, public FileSystem::Alias,
+// getStatus() is ambiguous
+struct ProcFileSystem_FileSystem : public FileSystem
+{
+	__declspec(property(get=getFileSystemStatus)) uapi::statfs FileSystemStatus;
+	virtual uapi::statfs getFileSystemStatus(void) = 0;
+
+	virtual uapi::statfs getStatus(void) { return FileSystemStatus; }
+};
+
+// getStatus() is ambiguous
+struct ProcFileSystem_Directory : public FileSystem::Directory
+{
+	__declspec(property(get=getDirectoryStatus)) uapi::stat DirectoryStatus;
+	virtual uapi::stat getDirectoryStatus(void) = 0;
+
+	virtual uapi::stat getStatus(void) { return DirectoryStatus; }
+};
+
+class ProcFileSystem : public ProcFileSystem_FileSystem, public ProcFileSystem_Directory, public FileSystem::Alias,
 	public std::enable_shared_from_this<ProcFileSystem>
 {
 public:
@@ -64,6 +82,7 @@ private:
 	// FileSystem Implementation
 	//
 	virtual AliasPtr				getRoot(void) { return shared_from_this(); }
+	virtual uapi::statfs			getFileSystemStatus(void) { throw LinuxException(LINUX_ENOSYS); }
 
 	// FileSystem::Alias Implementation
 	//
@@ -79,7 +98,8 @@ private:
 	virtual FileSystem::HandlePtr	Open(const AliasPtr&, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
 	//virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
-	virtual uapi::stat				getStatus(void);
+	virtual uapi::stat				getDirectoryStatus(void);
+	virtual FileSystemPtr			getFileSystem(void) { return shared_from_this(); }
 	virtual NodeType				getType(void) { return NodeType::Directory; }
 
 	// FileSystem::Directory Implementation

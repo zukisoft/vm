@@ -96,10 +96,6 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()
 
-		// 128/129 == TEST HOST PROCESS CREATION
-		harness.SendControl((ServiceControl)128);
-		harness.SendControl((ServiceControl)129);
-
 		console.WriteLine(L"VM SERVICE RUNNING");
 		console.WriteLine();
 		console.WriteLine(L"Press ENTER to exit");
