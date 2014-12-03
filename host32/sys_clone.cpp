@@ -20,29 +20,29 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Interface LinuxTypes
-//
-// Dummy interface used to bring the <linux/types.h> header file into the IDL
-// without MIDL dumping all of the declarations themselves into the output
-//
-// See "Importing System Header Files" MSDN topic:
-// http://msdn.microsoft.com/en-us/library/windows/desktop/aa367049(v=vs.85).aspx
-//
-// This file should be excluded from compilation, it's for import purposes only
+#include "stdafx.h"
+#include <linux\mman.h>
 
-[ local ]
-interface LinuxTypes
+#pragma warning(push, 4)
+
+// g_rpccontext (main.cpp)
+//
+// RPC context handle
+extern sys32_context_t g_rpccontext;
+
+//-----------------------------------------------------------------------------
+// sys_clone
+//
+// TODO: WORDS
+
+uapi::long_t sys_clone(unsigned long clone_flags, void* newsp, uapi::pid_t* parent_tidptr, int tls_val, uapi::pid_t* child_tidptr)
 {
-	#include "linux/types.h"
-	#include "linux/fcntl.h"
-	#include "linux/sched.h"
-	#include "linux/signal.h"
-	#include "linux/stat.h"
-	#include "linux/statfs.h"
-	#include "linux/time.h"
-	#include "linux/uio.h"
-	#include "linux/utsname.h"
+	// 0x012000011 = CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
+
+#pragma warning(pop)
+
+

@@ -44,6 +44,7 @@ extern uapi::long_t sys_noentry(PCONTEXT);
 
 /* 045 */ extern uapi::long_t sys_brk(void*);
 /* 090 */ extern uapi::long_t sys_old_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
+/* 120 */ extern uapi::long_t sys_clone(unsigned long clone_flags, void* newsp, uapi::pid_t* parent_tidptr, int tls_val, uapi::pid_t* child_tidptr);
 /* 192 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
 /* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
 

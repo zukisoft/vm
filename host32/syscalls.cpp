@@ -219,7 +219,7 @@ syscall_t g_syscalls[512] = {
 /* 117 */	sys_noentry,
 /* 118 */	sys_noentry,
 /* 119 */	sys_noentry,
-/* 120 */	sys_noentry,
+/* 120 */	LOCAL_SYSCALL_5(sys_clone, unsigned long, void*, uapi::pid_t*, int, uapi::pid_t*),
 /* 121 */	REMOTE_SYSCALL_2(sys32_setdomainname, sys32_char_t*, sys32_size_t),
 /* 122 */	REMOTE_SYSCALL_1(sys32_newuname, linux_new_utsname*),
 /* 123 */	sys_noentry,

@@ -26,6 +26,9 @@
     <Filter Include="Source Files\System Calls">
       <UniqueIdentifier>{d18dffed-47ae-4c57-8c9b-420e74043ef7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common\linux">
+      <UniqueIdentifier>{369bac7b-da54-4c19-89e5-b3f3d0f719ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -46,9 +49,6 @@
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\linux\errno.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="syscalls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -57,6 +57,9 @@
     </ClInclude>
     <ClInclude Include="emulator.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\linux\errno.h">
+      <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -94,6 +97,9 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys_mmap.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_clone.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
