@@ -137,8 +137,9 @@ interface SystemCalls64
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 039 */ sys64_long_t	sys64_getpid([in] sys64_context_t context);
+	/* 056 */ sys64_long_t	sys64_clone([in] sys64_context_t context, [in] sys64_ulong_t clone_flags, [in] sys64_addr_t newsp, [in] sys64_addr_t parent_tidptr, [in] sys64_addr_t child_tidptr, [in] sys64_int_t tls_val);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
-	/* 072 */ sys64_long_t	sys64_fcntl([in] sys32_context_t context, [in] sys64_int_t fd, [in] sys64_int_t cmd, [in] sys64_addr_t arg);
+	/* 072 */ sys64_long_t	sys64_fcntl([in] sys64_context_t context, [in] sys64_int_t fd, [in] sys64_int_t cmd, [in] sys64_addr_t arg);
 	/* 079 */ sys64_long_t	sys64_getcwd([in] sys64_context_t context, [out, ref, size_is(size)] sys64_char_t* buf, [in] sys64_sizeis_t size);
 	/* 083 */ sys64_long_t	sys64_mkdir([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 085 */ sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
@@ -149,7 +150,7 @@ interface SystemCalls64
 	/* 110 */ sys64_long_t	sys64_getppid([in] sys64_context_t context);
 	/* 133 */ sys64_long_t	sys64_mknod([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_dev_t device);
 	/* 137 */ sys64_long_t	sys64_statfs([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_statfs64* buf);
-	/* 137 */ sys64_long_t	sys64_fstatfs([in] sys64_context_t context, [in] sys32_int_t fd, [out, ref] linux_statfs64* buf);
+	/* 137 */ sys64_long_t	sys64_fstatfs([in] sys64_context_t context, [in] sys64_int_t fd, [out, ref] linux_statfs64* buf);
 	/* 157 */ sys64_long_t	sys64_prctl([in] sys64_context_t context, [in] sys64_int_t option, [in] sys64_ulong_t arg2, [in] sys64_ulong_t arg3, [in] sys64_ulong_t arg4, [in] sys64_ulong_t arg5);
 	/* 165 */ sys64_long_t	sys64_mount([in] sys64_context_t context, [in, string] const sys64_char_t* source, [in, string] const sys64_char_t* target, [in, string] const sys64_char_t* filesystem, [in] sys64_ulong_t flags, [in] sys64_addr_t data);
 	/* 170 */ sys64_long_t	sys64_sethostname([in] sys64_context_t context, [in, ref, size_is(len)] sys64_char_t* name, [in] sys64_sizeis_t len);

@@ -21,14 +21,9 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <linux\mman.h>
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
-
-// g_rpccontext (main.cpp)
-//
-// RPC context handle
-extern sys32_context_t g_rpccontext;
 
 //-----------------------------------------------------------------------------
 // sys_clone
@@ -37,25 +32,51 @@ extern sys32_context_t g_rpccontext;
 //
 // Arguments:
 //
+//	context			- SystemCall context object
 //	clone_flags		- Operation flags
 //	newsp			- New child process/thread stack address
 //	parent_tidptr	- Address to store the new child pid_t (in parent and child)
-//	tls_val			- Ignored; new thread local storage descriptor 
 //	child_tidptr	- Address to store the new child pit_t (in child only)
+//	tls_val			- Ignored; new thread local storage descriptor 
 
-uapi::long_t sys_clone(unsigned long clone_flags, void* newsp, uapi::pid_t* parent_tidptr, int tls_val, uapi::pid_t* child_tidptr)
+__int3264 sys_clone(const SystemCall::Context* context, uint32_t clone_flags, void* newsp, uapi::pid_t* parent_tidptr, uapi::pid_t* child_tidptr, int tls_val)
 {
-	// For now this is just a pass-through to the RPC function, but I think I'll need to use
-	// a local syscall to deal with some of this.  It can always be removed later
-	//
-	// NOTE: The Linux kernel ignores tls_val completely
+	_ASSERTE(context);
+	UNREFERENCED_PARAMETER(tls_val);
 
-	return sys32_clone(g_rpccontext, clone_flags, reinterpret_cast<sys32_addr_t>(newsp), reinterpret_cast<sys32_addr_t>(parent_tidptr), 
-		tls_val, reinterpret_cast<sys32_addr_t>(child_tidptr));
+	(clone_flags);
+	(newsp);
+	(parent_tidptr);
+	(child_tidptr);
+
+	try { 
+
+		SystemCall::Impersonation impersonation;
+		return -LINUX_ENOSYS;
+	}
+
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
-//-----------------------------------------------------------------------------
+// sys32_clone
+//
+sys32_long_t sys32_clone(sys32_context_t context, sys32_ulong_t clone_flags, sys32_addr_t newsp, sys32_addr_t parent_tidptr, sys32_int_t tls_val, sys32_addr_t child_tidptr)
+{
+	// Note that the parameter order for the x86 system call differs from the standard system call, child_tidptr and tls_val get swapped here
+	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<SystemCall::Context*>(context), clone_flags, reinterpret_cast<void*>(newsp), 
+		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr), tls_val));
+}
+
+#ifdef _M_X64
+// sys64_clone
+//
+sys64_long_t sys64_clone(sys64_context_t context, sys64_ulong_t clone_flags, sys64_addr_t newsp, sys64_addr_t parent_tidptr, sys64_addr_t child_tidptr, sys64_int_t tls_val)
+{
+	return sys_clone(reinterpret_cast<SystemCall::Context*>(context), static_cast<uint32_t>(clone_flags), reinterpret_cast<void*>(newsp), 
+		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr), tls_val);
+}
+#endif
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-
