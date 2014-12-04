@@ -679,6 +679,9 @@
     <ClCompile Include="sys_clone.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
+    <ClCompile Include="sys_brk.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">

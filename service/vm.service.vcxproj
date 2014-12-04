@@ -627,6 +627,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="sys_access.cpp" />
     <ClCompile Include="sys_acquire_context.cpp" />
+    <ClCompile Include="sys_brk.cpp" />
     <ClCompile Include="sys_clone.cpp" />
     <ClCompile Include="sys_close.cpp" />
     <ClCompile Include="sys_creat.cpp" />

@@ -87,9 +87,6 @@
     <ClCompile Include="syscalls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sys_brk.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
     <ClCompile Include="sys_set_thread_area.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>

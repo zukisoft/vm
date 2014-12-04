@@ -144,7 +144,7 @@ syscall_t g_syscalls[512] = {
 /* 042 */	sys_noentry,
 /* 043 */	sys_noentry,
 /* 044 */	sys_noentry,
-/* 045 */	LOCAL_SYSCALL_1(sys_brk, void*),
+/* 045 */	REMOTE_SYSCALL_1(sys32_brk, sys32_addr_t),
 /* 046 */	sys_noentry,
 /* 047 */	sys_noentry,
 /* 048 */	sys_noentry,

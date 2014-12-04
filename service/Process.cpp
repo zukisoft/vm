@@ -388,6 +388,75 @@ void Process::RemoveHandle(int index)
 }
 
 //-----------------------------------------------------------------------------
+// Process::SetProgramBreak
+//
+// Adjusts the program break address by increasing or decreasing the number
+// of allocated pages immediately following the loaded binary image
+//
+// Arguments:
+//
+//	address		- Requested program break address
+
+void* Process::SetProgramBreak(void* address)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;	// Information on a memory region
+
+	// NULL can be passed in as the address to retrieve the current program break
+	if(address == nullptr) return m_break;
+
+	// Create a working copy of the current break and calcuate the requested delta
+	intptr_t current = intptr_t(m_break);
+	intptr_t delta = align::up(intptr_t(address) - current, s_sysinfo.dwAllocationGranularity);
+
+	// INCREASE PROGRAM BREAK
+	if(delta > 0) {
+
+		// Check to see if the region at the currently set break is MEM_FREE
+		VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
+		if(meminfo.State == MEM_FREE) {
+                     
+			// Only ask for as much as is available contiguously
+			delta = min(delta, align::down(intptr_t(meminfo.RegionSize), s_sysinfo.dwAllocationGranularity));
+
+			// Attempt to reserve and commit the calcuated region with READWRITE access
+			void* result = VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			if(result) m_break = reinterpret_cast<void*>(current + delta);
+		}
+	}
+
+	// DECREASE PROGRAM BREAK
+	else if(delta < 0) {
+
+		// Determine the target address, which can never be below the original program break
+		intptr_t target = max(intptr_t(m_startinfo.ProgramBreak), (current + delta));
+
+		// Work backwards from the previously allocated region to release as many as possible
+		VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(current - 1), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
+		while(target <= intptr_t(meminfo.AllocationBase)) {
+
+			// Attempt to decommit and release the entire region
+			if(!VirtualFreeEx(m_host->ProcessHandle, meminfo.AllocationBase, 0, MEM_RELEASE)) break;
+
+			// Align the current break pointer with the released region's base address
+			current = intptr_t(meminfo.AllocationBase);
+
+			// Get information on the next region lower in memory to check if it can be released
+			VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(current - 1), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
+		}
+
+		// Reset the program break to the last successfully released region base address
+		m_break = reinterpret_cast<void*>(current);
+	}
+
+	///// TODO: TESTING - CLEAN THIS UP (now this works with glibc, but un-hack it)
+	// should never return null, return the previously set address here
+	uintptr_t result = uintptr_t(address);
+	if((result >= uintptr_t(m_startinfo.ProgramBreak)) && (result <= uintptr_t(m_break))) return address;
+	else return nullptr;
+	/////////////////////////////
+}
+
+//-----------------------------------------------------------------------------
 // Process::UnmapMemory
 //
 // Releases a memory region allocated with MapMemory

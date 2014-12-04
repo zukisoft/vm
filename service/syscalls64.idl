@@ -132,6 +132,7 @@ interface SystemCalls64
 	/* 009 */ sys64_long_t	sys64_mmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot, [in] sys64_int_t flags, [in] sys64_int_t fd, [in] sys64_off_t pgoffset);
 	/* 010 */ sys64_long_t	sys64_mprotect([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot);
 	/* 011 */ sys64_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
+	/* 012 */ sys64_long_t	sys64_brk([in] sys64_context_t context, [in] sys64_addr_t brk);
 	/* 014 */ sys64_long_t	sys64_rt_sigprocmask([in] sys64_context_t context, [in] sys64_int_t how, [in] const sys64_sigset_t* nset, [in, out] sys64_sigset_t* oset, [in] sys64_size_t sigsetsize);
 	/* 020 */ sys64_long_t	sys64_writev([in] sys64_context_t context, [in] sys64_int_t fd, [in, size_is(iovcnt)] sys64_iovec_t* iov, [in] sys64_int_t iovcnt);	
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);

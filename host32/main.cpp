@@ -22,11 +22,6 @@
 
 #include "stdafx.h"
 
-// g_break (sys_brk.cpp)
-//
-// Global program break; initialized by main()
-extern void* g_break;
-
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
@@ -81,9 +76,6 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 
 	// Install the emulator, which operates by intercepting low-level exceptions
 	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
-
-	// Initialize the global program break value to match the initial value
-	g_break = reinterpret_cast<void*>(g_startupinfo.program_break);
 
 	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
 	// so that CreateThread() can be used rather than _beginthreadex

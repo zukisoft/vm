@@ -134,6 +134,7 @@ interface SystemCalls32
 	/* 021 */ sys32_long_t	sys32_mount([in] sys32_context_t context, [in, string] const sys32_char_t* source, [in, string] const sys32_char_t* target, [in, string] const sys32_char_t* filesystem, [in] sys32_ulong_t flags, [in] sys32_addr_t data);
 	/* 033 */ sys32_long_t	sys32_access([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
 	/* 039 */ sys32_long_t	sys32_mkdir([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
+	/* 045 */ sys32_long_t	sys32_brk([in] sys32_context_t context, [in] sys32_addr_t brk);
 	/* 059 */ sys32_long_t	sys32_olduname([in] sys32_context_t context, [out, ref] linux_oldold_utsname* buf);
 	/* 060 */ sys32_long_t	sys32_umask([in] sys32_context_t context, [in] sys32_mode_t mask);
 	/* 064 */ sys32_long_t	sys32_getppid([in] sys32_context_t context);

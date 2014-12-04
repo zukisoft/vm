@@ -108,6 +108,11 @@ public:
 	// Resumes the process from a suspended state
 	void Resume(void) { _ASSERTE(m_host); m_host->Resume(); }
 
+	// SetProgramBreak
+	//
+	// Sets the program break address to increase or decrease data segment length
+	void* SetProgramBreak(void* address);
+
 	// Suspend
 	//
 	// Suspends the process
@@ -203,7 +208,7 @@ private:
 	// Instance Constructor
 	//
 	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo) : 
-		m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo) {}
+		m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo), m_break(const_cast<void*>(startinfo.ProgramBreak)) {}
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -268,6 +273,7 @@ private:
 
 	std::unique_ptr<Host>	m_host;				// Hosted windows process
 	const StartupInfo		m_startinfo;		// Hosted process start information
+	void*					m_break;			// Current program break
 
 	handle_map_t			m_handles;			// Process file system handles
 	memory_map_t			m_mappings;			// Process memory mappings

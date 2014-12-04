@@ -20,35 +20,52 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
+#include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// syscall_t
-//
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
-
-// g_syscalls
-//
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
-
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
-
-/* 090 */ extern uapi::long_t sys_old_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 120 */ extern uapi::long_t sys_clone(unsigned long clone_flags, void* newsp, uapi::pid_t* parent_tidptr, int tls_val, uapi::pid_t* child_tidptr);
-/* 192 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
-
 //-----------------------------------------------------------------------------
+// sys_brk
+//
+// Sets the program break address for a process
+//
+// Arguments:
+//
+//	context			- SystemCall context object
+//	brk				- Requested new program break address
+
+__int3264 sys_brk(const SystemCall::Context* context, void* brk)
+{
+	_ASSERTE(context);
+
+	try { 
+
+		SystemCall::Impersonation impersonation;
+
+		// Request the new program break address from the Process object
+		return reinterpret_cast<__int3264>(context->Process->SetProgramBreak(brk));
+	}
+
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+}
+
+// sys32_brk
+//
+sys32_long_t sys32_brk(sys32_context_t context, sys32_addr_t brk)
+{
+	return static_cast<sys32_long_t>(sys_brk(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(brk)));
+}
+
+#ifdef _M_X64
+// sys64_brk
+//
+sys64_long_t sys64_brk(sys64_context_t context, sys64_addr_t brk)
+{
+	return sys_brk(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(brk));
+}
+#endif
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __SYSCALLS_H_
