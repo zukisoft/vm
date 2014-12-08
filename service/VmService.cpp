@@ -173,6 +173,22 @@ std::shared_ptr<FileSystem::Handle> VmService::CreateFile(const std::shared_ptr<
 }
 
 //-----------------------------------------------------------------------------
+// VmService::CloneProcess
+//
+// Clones an exising process
+//
+// Arguments:
+//
+//	process			- Parent process to be cloned
+//	flags			- Clone operation flags
+
+std::shared_ptr<Process> VmService::CloneProcess(std::shared_ptr<Process> process, uint32_t flags)
+{
+	// TODO - this needs to use the proper x86 or x64 host for the process
+	return process->Clone(shared_from_this(), ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str(), flags);
+}
+
+//-----------------------------------------------------------------------------
 // VmService::CreateProcess (private)
 //
 // Creates a new Process instance from a file system binary

@@ -44,18 +44,36 @@ __int3264 sys_clone(const SystemCall::Context* context, uint32_t clone_flags, vo
 	_ASSERTE(context);
 	UNREFERENCED_PARAMETER(tls_val);
 
-	(clone_flags);
 	(newsp);
 	(parent_tidptr);
 	(child_tidptr);
 
+	// Linux doesn't seem to use tls_val in clone(2) at all, it's just ignored completely
+
+	// GLIBC sends in CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD for clone_flags when fork(3) is called
+	// (0x01200011)
+
+	// if newsp is null, the original process stack should become copy-on-write (not possible right now,
+	// will start by just copying everything into a new process and go from there I guess), so in that
+	// case the stack pointer should match the parent's stack pointer?  How on Earth am I going to make
+	// that work? Gonna need to get the context for the calling thread, which can't be done while the
+	// thread is running.  Should be fun :)
+
 	try { 
 
 		SystemCall::Impersonation impersonation;
-		return -LINUX_ENOSYS;
+
+		auto child = context->VirtualMachine->CloneProcess(context->Process, clone_flags);
+		if(child == nullptr) throw LinuxException(LINUX_ENOSYS);	// <--- TODO: Proper exception
+
+		auto newpid = child->ProcessId;
+
+		if(parent_tidptr != 0) { (newpid); /* WRITE NEW PID HERE? */ }
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+
+	return 0;
 }
 
 // sys32_clone

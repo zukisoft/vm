@@ -38,6 +38,7 @@
 #include "Host.h"
 #include "IndexPool.h"
 #include "LinuxException.h"
+#include "MemorySection.h"
 #include "Random.h"
 #include "VirtualMachine.h"
 
@@ -67,6 +68,11 @@ public:
 	// Adds a file system handle to the process
 	int AddHandle(const FileSystem::HandlePtr& handle);
 	int AddHandle(int fd, const FileSystem::HandlePtr& handle);
+
+	// Clone
+	//
+	// Clones the process into a new child process
+	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags);
 
 	// Create (static)
 	//

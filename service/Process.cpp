@@ -213,6 +213,53 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 }
 
 //-----------------------------------------------------------------------------
+// Process::Clone
+//
+// Clones the running process into a new child process
+//
+// Arguments:
+//
+// TODO
+
+std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags)
+{
+	(vm);
+	(hostpath);
+	(hostargs);
+	(flags);
+
+	// general thoughts
+	//
+	// SUSPEND PARENT PROCESS
+	// CREATE NEW HOST FOR CHILD (SUSPENDED)
+	// CLONE ALL EXISTING SECTIONS FROM PARENT TO CHILD USING NEW SECTION CLASS
+	// RESUME PARENT PROCESS
+	// RESUME CHILD PROCESS
+	// CHILD REGISTERS ITSELF WITH sys32_acquire_context
+	// CHILD CREATES THREAD ZERO SUSPENDED
+	// PUSH PARENT CONTEXT TO CHILD THREAD ZERO WITH MAGIC
+	// CHILD THREAD ZERO PICKS UP WHERE PARENT LEFT OFF
+	// EVERYTHING IS AWESOME
+
+	Suspend();										// Suspend the parent process
+
+	//std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+
+	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
+	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
+	//HANDLE h = OpenThread(THREAD_ALL_ACCESS, FALSE, x);
+	//zero_init<CONTEXT> c;
+	//c.ContextFlags = CONTEXT_ALL;
+	//BOOL result = GetThreadContext(h, &c);		// Wow64GetThreadContext if _M_X64 and 32-bit parent
+	//DWORD dw = GetLastError();
+	//if(h != nullptr) CloseHandle(h);
+
+	Resume();										// Resume the parent process
+
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
 // Process::GetHandle
 //
 // Accesses a file system handle referenced by the process
@@ -420,7 +467,12 @@ void* Process::SetProgramBreak(void* address)
 
 			// Attempt to reserve and commit the calcuated region with READWRITE access
 			void* result = VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			if(result) m_break = reinterpret_cast<void*>(current + delta);
+			if(result) { 
+
+				// TODO -- Is this right
+				m_mappings.insert(std::make_pair(result, delta));
+				m_break = reinterpret_cast<void*>(current + delta);
+			}
 		}
 	}
 
@@ -436,6 +488,9 @@ void* Process::SetProgramBreak(void* address)
 
 			// Attempt to decommit and release the entire region
 			if(!VirtualFreeEx(m_host->ProcessHandle, meminfo.AllocationBase, 0, MEM_RELEASE)) break;
+			
+			// TODO -- Is this right
+			m_mappings.unsafe_erase(meminfo.AllocationBase);
 
 			// Align the current break pointer with the released region's base address
 			current = intptr_t(meminfo.AllocationBase);

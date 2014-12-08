@@ -338,6 +338,9 @@
     <ClInclude Include="..\common\linux\sched.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\MemorySection.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -681,6 +684,9 @@
     </ClCompile>
     <ClCompile Include="sys_brk.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MemorySection.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

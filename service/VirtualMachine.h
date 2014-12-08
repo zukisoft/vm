@@ -79,6 +79,8 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process> process, uint32_t flags) = 0;
+
 	// CreateDeviceId (static)
 	//
 	// Creates a device identifier from major and minor components
