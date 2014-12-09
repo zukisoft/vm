@@ -211,7 +211,7 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 		//if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
 		//else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
 		if(elfheader.e_type == LINUX_ET_EXEC) section = MemorySection::Reserve(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
-		else section = MemorySection::Reserve(process, maxvaddr - minvaddr); //, MEM_TOP_DOWN);
+		else section = MemorySection::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 

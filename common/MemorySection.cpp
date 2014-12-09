@@ -307,12 +307,16 @@ uint32_t MemorySection::Protect(void* address, size_t length, uint32_t protect)
 //	process			- Target process handle
 //	address			- [Optional] specific address for the mapping
 //	length			- Length of the section to create
+//	mapflags		- Mapping operation flags (limited to MEM_TOP_DOWN and MEM_LARGE_PAGES)
 
-std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* address, size_t length)
+std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* address, size_t length, uint32_t mapflags)
 {
 	HANDLE					section;			// Section handle
 	LARGE_INTEGER			sectionlength;		// Section length
 	NTSTATUS				result;				// Result from function call
+
+	// Verify that no invalid flags have been specified
+	if(mapflags & ~(MEM_TOP_DOWN | MEM_LARGE_PAGES)) throw Win32Exception(ERROR_INVALID_PARAMETER);
 
 	// Align the requested address down to an allocation boundary and adjust length appropriately
 	void* aligned = align::down(address, SystemInformation::AllocationGranularity);
@@ -327,7 +331,7 @@ std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* addr
 
 		// Attempt to map the section into the target process' address space with PAGE_EXECUTE_READWRITE, which will allow
 		// any valid protection to be specified when pages in the region are committed
-		result = NtMapViewOfSection(section, process, &aligned, 0, 0, nullptr, reinterpret_cast<PSIZE_T>(&length), ViewUnmap, 0, PAGE_EXECUTE_READWRITE);
+		result = NtMapViewOfSection(section, process, &aligned, 0, 0, nullptr, reinterpret_cast<PSIZE_T>(&length), ViewUnmap, mapflags, PAGE_EXECUTE_READWRITE);
 		if(result != STATUS_SUCCESS) throw StructuredException(result);
 	}
 
