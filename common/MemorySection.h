@@ -43,7 +43,7 @@ public:
 
 	// Destructor
 	//
-	~MemorySection();
+	virtual ~MemorySection();
 
 	//-------------------------------------------------------------------------
 	// Type Declarations

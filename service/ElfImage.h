@@ -47,7 +47,7 @@ public:
 
 	// Destructor
 	//
-	~ElfImage()=default;
+	virtual ~ElfImage()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
