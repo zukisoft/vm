@@ -29,7 +29,6 @@
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
-#include "MemoryRegion.h"
 #include "MemorySection.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
@@ -40,9 +39,9 @@
 //-----------------------------------------------------------------------------
 // ElfImage
 //
-// Loads an ELF binary image into virtual memory
+// Loads an ELF binary image into a virtual memory section
 
-class ElfImage
+class ElfImage : public MemorySection
 {
 public:
 
@@ -98,9 +97,6 @@ public:
 	__declspec(property(get=getProgramHeaders)) const void* ProgramHeaders;
 	const void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
 
-	// TODO: TEST
-	std::unique_ptr<MemorySection> getSection(void) { return std::move(m_metadata.Section); }
-
 private:
 
 	ElfImage(const ElfImage&)=delete;
@@ -112,40 +108,23 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImage(Metadata&& metadata) : m_metadata(std::move(metadata)) {}
-	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, Metadata>(Metadata&&);
+	ElfImage(std::unique_ptr<MemorySection>&& section, Metadata&& metadata) : MemorySection(std::move(section)), m_metadata(std::move(metadata)) {}
+	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, std::unique_ptr<MemorySection>, Metadata>(std::unique_ptr<MemorySection>&&, Metadata&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
 	// Metadata
 	//
-	// Provides information about an image that has been loaded by LoadBinary<>,
-	// this is passed back to the ElfImage instance on construction
+	// Provides information about an image that has been loaded by LoadBinary<>
 	struct Metadata
 	{
-		// todo: added these for now to test Sections
-		Metadata() {}
-		Metadata(Metadata&& rhs) : BaseAddress(rhs.BaseAddress), ProgramBreak(rhs.ProgramBreak), ProgramHeaders(rhs.ProgramHeaders),
-			NumProgramHeaders(rhs.NumProgramHeaders), EntryPoint(rhs.EntryPoint), Interpreter(std::move(rhs.Interpreter)),
-			Section(std::move(rhs.Section)) 
-		{
-			rhs.BaseAddress = nullptr;
-			rhs.ProgramBreak = nullptr;
-			rhs.ProgramHeaders = nullptr;
-			rhs.NumProgramHeaders = 0;
-			rhs.EntryPoint = nullptr;
-		}
-
 		void*					BaseAddress = nullptr;
 		void*					ProgramBreak = nullptr;
 		void*					ProgramHeaders = nullptr;
 		size_t					NumProgramHeaders = 0;
 		void*					EntryPoint = nullptr;
 		std::string				Interpreter;
-
-		// todo: testing
-		std::unique_ptr<MemorySection> Section;
 	};
 
 	//-------------------------------------------------------------------------
@@ -160,7 +139,7 @@ private:
 	//
 	// Loads an ELF binary image into virtual memory
 	template <ElfClass _class>
-	static Metadata LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process);
+	static std::unique_ptr<ElfImage> LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process);
 
 	// ValidateHeader
 	//
@@ -171,7 +150,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	Metadata			m_metadata;			// Loaded image metadata
+	Metadata						m_metadata;		// Loaded image metadata
 };
 
 //-----------------------------------------------------------------------------

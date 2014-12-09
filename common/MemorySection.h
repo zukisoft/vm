@@ -104,6 +104,12 @@ public:
 	__declspec(property(get=getLength)) size_t Length;
 	size_t getLength(void) const { return m_length; }
 
+protected:
+	
+	// Move Constructor
+	//
+	MemorySection(std::unique_ptr<MemorySection>&& rhs);
+
 private:
 
 	MemorySection(const MemorySection&)=delete;

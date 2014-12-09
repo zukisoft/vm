@@ -127,7 +127,7 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
-	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86>(handle, process));
+	return LoadBinary<ElfClass::x86>(handle, process);
 }
 
 //-----------------------------------------------------------------------------
@@ -143,7 +143,7 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(const FileSy
 template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
-	return std::make_unique<ElfImage>(LoadBinary<ElfClass::x86_64>(handle, process));
+	return LoadBinary<ElfClass::x86_64>(handle, process);
 }
 #endif
 
@@ -158,15 +158,13 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(const Fil
 //	process		- Handle to the process in which to load the image
 
 template <ElfClass _class>
-ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process)
+std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	using elf = elf_traits<_class>;
 
 	Metadata						metadata;		// Metadata to return about the loaded image
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
 	std::unique_ptr<MemorySection>	section;		// Allocated virtual memory section
-	//std::unique_ptr<MemoryRegion>	region;			// Allocated virtual memory region
-	//MEMORY_BASIC_INFORMATION		regioninfo;		// Allocated region metadata
 
 	// Acquire a copy of the ELF header from the binary file and validate it
 	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
@@ -208,8 +206,6 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
 		// so reserve them at the highest available virtual address to allow for as much heap space
 		// as possible (MEM_TOP_DOWN is really slow and should be avoided, so this may need to change)
-		//if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
-		//else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
 		if(elfheader.e_type == LINUX_ET_EXEC) section = MemorySection::Reserve(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
 		else section = MemorySection::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
 
@@ -271,11 +267,6 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 		}
 	}
 
-	// COMPLETION
-
-	// Detach the allocated memory region from the class object and acquire the underlying region data
-	//region->Detach(&regioninfo);
-
 	// Base address of the image is the original minimum virtual address, adjusted for load delta
 	metadata.BaseAddress = reinterpret_cast<void*>(minvaddr + vaddrdelta);
 
@@ -287,10 +278,8 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 	// Calculate the address of the image entry point, if one has been specified in the header
 	metadata.EntryPoint = (elfheader.e_entry) ? reinterpret_cast<void*>(elfheader.e_entry + vaddrdelta) : nullptr;
 
-	// todo: new
-	metadata.Section = std::move(section);
-
-	return metadata;		// Return the metadata about the loaded binary image
+	// Construct and return a new ElfImage instance from the section and metadata
+	return std::make_unique<ElfImage>(std::move(section), std::move(metadata));
 }
 
 //-----------------------------------------------------------------------------

@@ -95,13 +95,26 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID)>([]() -> FARPROC {
 }());
 
 //-----------------------------------------------------------------------------
+// MemorySection Move Constructor (protected)
+
+MemorySection::MemorySection(std::unique_ptr<MemorySection>&& rhs) : m_process(rhs->m_process), m_section(rhs->m_section), 
+	m_address(rhs->m_address), m_length(rhs->m_length)
+{
+	// Nullify the member variables of the source instance
+	rhs->m_process = nullptr;
+	rhs->m_section = nullptr;
+	rhs->m_address = nullptr;
+	rhs->m_length = 0;
+}
+
+//-----------------------------------------------------------------------------
 // MemorySection Destructor
 
 MemorySection::~MemorySection()
 {
 	// Unmap the section view from the process and close the section handle
-	NtUnmapViewOfSection(m_process, m_address);
-	NtClose(m_section);
+	if(m_address) NtUnmapViewOfSection(m_process, m_address);
+	if(m_section) NtClose(m_section);
 }
 
 //-----------------------------------------------------------------------------
