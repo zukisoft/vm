@@ -341,6 +341,9 @@
     <ClInclude Include="..\common\MemorySection.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SystemInformation.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -686,6 +689,9 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="..\common\MemorySection.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SystemInformation.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>

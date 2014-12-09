@@ -335,6 +335,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\RpcInterface.h" />
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\StructuredException.h" />
+    <ClInclude Include="..\common\SystemInformation.h" />
     <ClInclude Include="..\common\uapi.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\common\XzStreamReader.h" />
@@ -592,6 +593,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\rpcmem.cpp" />
     <ClCompile Include="..\common\StreamReader.cpp" />
     <ClCompile Include="..\common\StructuredException.cpp" />
+    <ClCompile Include="..\common\SystemInformation.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\common\XzStreamReader.cpp" />
     <ClCompile Include="..\tmp\vm.service\x64\syscalls32_s.c">
