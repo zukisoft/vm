@@ -25,11 +25,6 @@
 
 #pragma warning(push, 4)
 
-// Process::s_sysinfo
-//
-// Static SYSTEM_INFO information
-Process::SystemInfo Process::s_sysinfo;
-
 // Process::Create<ElfClass::x86>
 //
 // Explicit Instantiation of template function
@@ -104,7 +99,7 @@ void* Process::AllocateRegion(size_t length, int prot, int flags)
 
 	// Attempt to reserve the region of memory from the hosted process aligned up to the
 	// system allocation granularity to prevent unusable holes in the address space
-	size_t regionlength = align::up(length, MemoryRegion::AllocationGranularity);
+	size_t regionlength = align::up(length, SystemInformation::AllocationGranularity);
 	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, regionlength, MEM_RESERVE, PAGE_NOACCESS);
 	if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
 
@@ -148,8 +143,8 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 	if(length == 0) throw LinuxException(LINUX_EINVAL);
 
 	// Determine the starting and ending points for the reservation
-	uintptr_t regionbegin = align::down(uintptr_t(address), MemoryRegion::AllocationGranularity);
-	uintptr_t regionend = regionbegin + align::up(length, MemoryRegion::AllocationGranularity);
+	uintptr_t regionbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
+	uintptr_t regionend = regionbegin + align::up(length, SystemInformation::AllocationGranularity);
 
 	// Scan the calculated region to ensure that all required pages are reserved
 	while(regionbegin < regionend) {
@@ -243,7 +238,24 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 
 	Suspend();										// Suspend the parent process
 
-	//std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+	// Create the new host process
+	// TODO: WILL NEED NEW ARGUMENTS -- IT WILL NEED TO KNOW IT'S A CLONE
+	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+
+	try {
+		// LOCK SECTIONS COLLECTION HERE
+	
+		section_set_t newsections;
+
+		// Clone all of the sections from the parent process into the child process
+		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
+			newsections.insert((*iterator)->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
+
+		int x = 123;
+		(x);
+		// UNLOCK SECTIONS COLLECTION HERE
+	}
+	catch(...) { host->Terminate(E_FAIL); throw; }
 
 	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
 	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
@@ -253,6 +265,9 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 	//BOOL result = GetThreadContext(h, &c);		// Wow64GetThreadContext if _M_X64 and 32-bit parent
 	//DWORD dw = GetLastError();
 	//if(h != nullptr) CloseHandle(h);
+
+	// Just kill it for now
+	host->Terminate(E_FAIL);
 
 	Resume();										// Resume the parent process
 
@@ -319,7 +334,7 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 		size_t		read;								// Bytes read from the source file
 		SIZE_T		written;							// Result from WriteProcessMemory
 
-		HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);	// 64K buffer
+		HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);	// 64K buffer
 
 		// Seek the file handle to the specified offset
 		if(handle->Seek(offset, LINUX_SEEK_SET) != offset) throw LinuxException(LINUX_EINVAL);
@@ -453,7 +468,7 @@ void* Process::SetProgramBreak(void* address)
 
 	// Create a working copy of the current break and calcuate the requested delta
 	intptr_t current = intptr_t(m_break);
-	intptr_t delta = align::up(intptr_t(address) - current, s_sysinfo.dwAllocationGranularity);
+	intptr_t delta = align::up(intptr_t(address) - current, SystemInformation::AllocationGranularity);
 
 	// INCREASE PROGRAM BREAK
 	if(delta > 0) {
@@ -463,16 +478,23 @@ void* Process::SetProgramBreak(void* address)
 		if(meminfo.State == MEM_FREE) {
                      
 			// Only ask for as much as is available contiguously
-			delta = min(delta, align::down(intptr_t(meminfo.RegionSize), s_sysinfo.dwAllocationGranularity));
+			delta = min(delta, align::down(intptr_t(meminfo.RegionSize), SystemInformation::AllocationGranularity));
 
-			// Attempt to reserve and commit the calcuated region with READWRITE access
-			void* result = VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			if(result) { 
+			// ////////   TEST MEMORYSECTION
+			std::unique_ptr<MemorySection> section = MemorySection::Reserve(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta);
+			section->Commit(section->BaseAddress, section->Length, PAGE_READWRITE);
+			m_sections.push_back(std::move(section));
+			m_break = reinterpret_cast<void*>(current + delta);
+			//////////////////////////
+			
+			//// Attempt to reserve and commit the calcuated region with READWRITE access
+			//void* result = VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			//if(result) { 
 
-				// TODO -- Is this right
-				m_mappings.insert(std::make_pair(result, delta));
-				m_break = reinterpret_cast<void*>(current + delta);
-			}
+			//	// TODO -- Is this right
+			//	m_mappings.insert(std::make_pair(result, delta));
+			//	m_break = reinterpret_cast<void*>(current + delta);
+			//}
 		}
 	}
 
@@ -596,7 +618,7 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE pro
 	BOOL			result;				// Result from IsWow64Process
 
 	// 32-bit systems can only create 32-bit processes; nothing to worry about
-	if(s_sysinfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL) return;
+	if(SystemInformation::ProcessorArchitecture == SystemInformation::Architecture::Intel) return;
 
 	// 64-bit system; verify that the process is running under WOW64
 	if(!IsWow64Process(process, &result)) throw Win32Exception();
@@ -650,6 +672,8 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	uint8_t							random[16];				// 16-bytes of random data for AT_RANDOM auxvec
 	StartupInfo						startinfo;				// Hosted process startup information
 
+	std::vector<std::unique_ptr<MemorySection>> sections;
+
 	// Create the external host process (suspended by default) and verify the class/architecture
 	// as this will all go south very quickly if it's not the expected architecture
 	// todo: need the handles to stuff that are to be inherited (signals, etc)
@@ -666,12 +690,14 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 		// Attempt to load the binary image into the process, then check for an interpreter
 		executable = ElfImage::Load<_class>(handle, host->ProcessHandle);
+		sections.push_back(executable->getSection());
 		if(executable->Interpreter) {
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
 			bool absolute = (*executable->Interpreter == '/');
 			FileSystem::HandlePtr interphandle = vm->OpenExecutable(rootdir, (absolute) ? rootdir : workingdir, executable->Interpreter);
 			interpreter = ElfImage::Load<_class>(interphandle, host->ProcessHandle);
+			sections.push_back(interpreter->getSection());
 		}
 
 		// Construct the ELF arguments stack image for the hosted process
@@ -685,7 +711,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 			args.AppendAuxiliaryVector(LINUX_AT_PHNUM, executable->NumProgramHeaders);			//  5
 		}
 
-		args.AppendAuxiliaryVector(LINUX_AT_PAGESZ, MemoryRegion::PageSize);					//  6
+		args.AppendAuxiliaryVector(LINUX_AT_PAGESZ, SystemInformation::PageSize);				//  6
 		if(interpreter) args.AppendAuxiliaryVector(LINUX_AT_BASE, interpreter->BaseAddress);	//  7
 		args.AppendAuxiliaryVector(LINUX_AT_FLAGS, 0);											//  8
 		args.AppendAuxiliaryVector(LINUX_AT_ENTRY, executable->EntryPoint);						//  9
@@ -715,7 +741,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		startinfo.StackImageLength = stackimg.Length;
 
 		// Create the Process object, transferring the host and startup information
-		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(startinfo));
+		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(startinfo), std::move(sections));
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

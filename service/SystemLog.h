@@ -26,6 +26,7 @@
 
 #include "Exception.h"
 #include "MemoryRegion.h"
+#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4200)		// zero-sized array in struct/union

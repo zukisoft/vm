@@ -97,19 +97,6 @@ public:
 		{ return Reserve(process, length, address, MEM_RESERVE | flags, (flags & MEM_COMMIT) ? PAGE_READWRITE : PAGE_NOACCESS); }
 
 	//-------------------------------------------------------------------------
-	// Fields
-
-	// AllocationGranularity
-	//
-	// Exposes the system allocation granularity
-	static const size_t AllocationGranularity;
-
-	// PageSize
-	//
-	// Exposes the system page size
-	static const size_t PageSize;
-
-	//-------------------------------------------------------------------------
 	// Properties
 
 	// Length
@@ -134,14 +121,6 @@ private:
 	MemoryRegion(HANDLE process, void* base, size_t length, MEMORY_BASIC_INFORMATION& meminfo) : m_process(process), m_base(base), m_length(length), m_meminfo(meminfo) {}
 	friend std::unique_ptr<MemoryRegion> std::make_unique<MemoryRegion, HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION&>(HANDLE&, void*&, size_t&, MEMORY_BASIC_INFORMATION&);
 
-	// SystemInfo
-	//
-	// Used to initialize a static SYSTEM_INFO structure
-	struct SystemInfo : public SYSTEM_INFO
-	{
-		SystemInfo() { GetNativeSystemInfo(static_cast<SYSTEM_INFO*>(this)); }
-	};
-
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -157,7 +136,6 @@ private:
 	size_t						m_length;		// Length of the memory region
 	HANDLE						m_process;		// Process to operate against
 	MEMORY_BASIC_INFORMATION	m_meminfo;		// Actual allocation information
-	static SystemInfo			s_sysinfo;		// System information class
 };
 
 //-----------------------------------------------------------------------------

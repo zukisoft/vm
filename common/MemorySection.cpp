@@ -33,15 +33,6 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID, ULONG_PTR, PSIZE_T, ULONG, ULON
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtAllocateVirtualMemory"); 
 }());
 
-// MemorySection::NtAllocationGranularity
-//
-// Static copy of the system allocation granularity
-size_t MemorySection::NtAllocationGranularity = ([]() -> size_t {
-	SYSTEM_INFO sysinfo;
-	GetNativeSystemInfo(&sysinfo);
-	return static_cast<size_t>(sysinfo.dwAllocationGranularity);
-}());
-
 // MemorySection::NtClose
 //
 // Closes an object handle
@@ -324,7 +315,7 @@ std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* addr
 	NTSTATUS				result;				// Result from function call
 
 	// Align the requested address down to an allocation boundary and adjust length appropriately
-	void* aligned = align::down(address, NtAllocationGranularity);
+	void* aligned = align::down(address, SystemInformation::AllocationGranularity);
 	length += (uintptr_t(address) - uintptr_t(aligned));
 
 	// Allocate the section with PAGE_EXECUTE_READWRITE to allow the same protection when the section is mapped

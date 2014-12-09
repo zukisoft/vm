@@ -21,8 +21,8 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "MemoryRegion.h"
 #include "SystemCall.h"
+#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 
@@ -48,10 +48,10 @@ __int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t len
 __int3264 sys_old_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t offset)
 {
 	// Compatibility function; the offset must be a multiple of the system page size
-	if(offset & (MemoryRegion::PageSize - 1)) return -LINUX_EINVAL;
+	if(offset & (SystemInformation::PageSize - 1)) return -LINUX_EINVAL;
 
 	// sys_old_mmap() is equivalent to sys_mmap() with the offset in pages rather than bytes
-	return sys_mmap(context, address, length, protection, flags, fd, offset / MemoryRegion::PageSize);
+	return sys_mmap(context, address, length, protection, flags, fd, offset / SystemInformation::PageSize);
 }
 
 // sys32_old_mmap

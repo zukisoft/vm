@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 
@@ -54,7 +55,7 @@ __int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t len
 			// MAP_PRIVATE - Create a private memory mapping directly in the hosted process
 			//
 			case LINUX_MAP_PRIVATE:			
-				return reinterpret_cast<__int3264>(context->Process->MapMemory(address, length, protection, flags, fd, pgoffset * MemoryRegion::PageSize));
+				return reinterpret_cast<__int3264>(context->Process->MapMemory(address, length, protection, flags, fd, pgoffset * SystemInformation::PageSize));
 
 			// MAP_SHARED - A virtual machine level shared memory region must be created or accessed
 			//

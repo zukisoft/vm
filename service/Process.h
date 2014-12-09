@@ -27,8 +27,11 @@
 #include <array>
 #include <concurrent_unordered_map.h>
 #include <memory>
+#include <set>
+#include <vector>
 #include <linux/elf.h>
 #include <linux/mman.h>
+#include <linux/sched.h>
 #include <linux/stat.h>
 #include "ElfArguments.h"
 #include "ElfClass.h"
@@ -40,6 +43,7 @@
 #include "LinuxException.h"
 #include "MemorySection.h"
 #include "Random.h"
+#include "SystemInformation.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
@@ -162,12 +166,6 @@ public:
 	__declspec(property(get=getProcessId)) int ProcessId;
 	int getProcessId(void) const { return m_processid; }
 
-	// ProgramBreak
-	//
-	// Gets the initial program break for the process
-	__declspec(property(get=getProgramBreak)) const void* ProgramBreak;
-	const void* getProgramBreak(void) const { return m_startinfo.ProgramBreak; }
-
 	// StackImage
 	//
 	// Gets the location of the stack image in the hosted process
@@ -213,8 +211,12 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo) : 
-		m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo), m_break(const_cast<void*>(startinfo.ProgramBreak)) {}
+	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections) : 
+		m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo), m_break(const_cast<void*>(startinfo.ProgramBreak)), m_sections(std::move(sections)) 
+	{
+		int x = 123;
+		(x);
+	}
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -237,14 +239,6 @@ private:
 		size_t			StackImageLength;		// Length of the stack image
 	};
 
-	// SystemInfo
-	//
-	// Used to initialize a static SYSTEM_INFO structure
-	struct SystemInfo : public SYSTEM_INFO
-	{
-		SystemInfo() { GetNativeSystemInfo(static_cast<SYSTEM_INFO*>(this)); }
-	};
-
 	// handle_map_t
 	//
 	// Collection of file system handles, keyed on the index (file descriptor)
@@ -254,6 +248,11 @@ private:
 	//
 	// Collection of memory mappings allocated by MapMemory()
 	using memory_map_t = Concurrency::concurrent_unordered_map<void*, size_t>;
+
+	// section_set_t
+	//
+	// Collection of memory sections
+	using section_set_t = std::set<std::unique_ptr<MemorySection>>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -285,6 +284,9 @@ private:
 	memory_map_t			m_mappings;			// Process memory mappings
 	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
 
+	// needs lock object too
+	std::vector<std::unique_ptr<MemorySection>>	m_sections;
+
 	int						m_processid = 1;
 	void*					m_tidaddress = nullptr;
 
@@ -292,8 +294,6 @@ private:
 
 	FileSystem::AliasPtr	m_rootdir;			// Process root directory
 	FileSystem::AliasPtr	m_workingdir;		// Process working directory
-
-	static SystemInfo		s_sysinfo;			// System information
 };
 
 //-----------------------------------------------------------------------------

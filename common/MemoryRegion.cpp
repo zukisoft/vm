@@ -25,21 +25,6 @@
 
 #pragma warning(push, 4)				
 
-// MemoryRegion::s_sysinfo
-//
-// Static SYSTEM_INFO information
-MemoryRegion::SystemInfo MemoryRegion::s_sysinfo;
-
-// MemoryRegion::AllocationGranularity
-//
-// Static copy of the system allocation granularity
-size_t const MemoryRegion::AllocationGranularity = MemoryRegion::s_sysinfo.dwAllocationGranularity;
-
-// MemoryRegion::PageSize
-//
-// Static copy of the system page size
-size_t const MemoryRegion::PageSize = MemoryRegion::s_sysinfo.dwPageSize;
-
 //-----------------------------------------------------------------------------
 // MemoryRegion Destructor
 

@@ -35,7 +35,7 @@
 SystemLog::SystemLog(size_t size)
 {
 	// Minimum log size is the page size, maximum is constant MAX_BUFFER
-	if(size < MemoryRegion::PageSize) size = MemoryRegion::PageSize;
+	if(size < SystemInformation::PageSize) size = SystemInformation::PageSize;
 	else if(size > MAX_BUFFER) size = MAX_BUFFER;
 
 	// Attempt to allocate the log buffer from virtual memory

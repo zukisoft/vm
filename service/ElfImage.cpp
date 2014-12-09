@@ -68,7 +68,7 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 	SIZE_T				written;								// Result from WriteProcessMemory
 
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
-	HeapBuffer<uint8_t> buffer(MemoryRegion::AllocationGranularity);
+	HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);
 
 	// Seek the file handle to the specified offset value, if unable to assume that it's truncated
 	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
@@ -164,8 +164,9 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 
 	Metadata						metadata;		// Metadata to return about the loaded image
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
-	std::unique_ptr<MemoryRegion>	region;			// Allocated virtual memory region
-	MEMORY_BASIC_INFORMATION		regioninfo;		// Allocated region metadata
+	std::unique_ptr<MemorySection>	section;		// Allocated virtual memory section
+	//std::unique_ptr<MemoryRegion>	region;			// Allocated virtual memory region
+	//MEMORY_BASIC_INFORMATION		regioninfo;		// Allocated region metadata
 
 	// Acquire a copy of the ELF header from the binary file and validate it
 	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
@@ -207,13 +208,15 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
 		// so reserve them at the highest available virtual address to allow for as much heap space
 		// as possible (MEM_TOP_DOWN is really slow and should be avoided, so this may need to change)
-		if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
-		else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
+		//if(elfheader.e_type == LINUX_ET_EXEC) region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, reinterpret_cast<void*>(minvaddr));
+		//else region = MemoryRegion::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
+		if(elfheader.e_type == LINUX_ET_EXEC) section = MemorySection::Reserve(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
+		else section = MemorySection::Reserve(process, maxvaddr - minvaddr); //, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
-	intptr_t vaddrdelta = (elfheader.e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(region->Pointer) - minvaddr;
+	intptr_t vaddrdelta = (elfheader.e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(section->BaseAddress) - minvaddr;
 
 	// PROGRAM HEADERS PASS TWO - LOAD, COMMIT AND PROTECT SEGMENTS
 	for(size_t index = 0; index < progheaders.Count; index++) {
@@ -234,7 +237,7 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 
 			// Get the base address of the loadable segment and commit the virtual memory
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { region->Commit(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
+			try { section->Commit(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
@@ -248,7 +251,7 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 			}
 
 			// Attempt to apply the proper virtual memory protection flags to the segment
-			try { region->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
+			try { section->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
 			catch(Exception& ex) { throw Exception(E_ELFPROTECTSEGMENT, ex); }
 		}
 
@@ -271,18 +274,21 @@ ElfImage::Metadata ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HAN
 	// COMPLETION
 
 	// Detach the allocated memory region from the class object and acquire the underlying region data
-	region->Detach(&regioninfo);
+	//region->Detach(&regioninfo);
 
 	// Base address of the image is the original minimum virtual address, adjusted for load delta
 	metadata.BaseAddress = reinterpret_cast<void*>(minvaddr + vaddrdelta);
 
 	// The initial program break is the address just beyond the region allocated for the image,
 	// aligned upward to the allocation granularity of the system
-	metadata.ProgramBreak = reinterpret_cast<void*>(align::up(uintptr_t(regioninfo.AllocationBase) + regioninfo.RegionSize, 
-		MemoryRegion::AllocationGranularity));
+	metadata.ProgramBreak = reinterpret_cast<void*>(align::up(uintptr_t(section->BaseAddress) + section->Length, 
+		SystemInformation::AllocationGranularity));
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	metadata.EntryPoint = (elfheader.e_entry) ? reinterpret_cast<void*>(elfheader.e_entry + vaddrdelta) : nullptr;
+
+	// todo: new
+	metadata.Section = std::move(section);
 
 	return metadata;		// Return the metadata about the loaded binary image
 }

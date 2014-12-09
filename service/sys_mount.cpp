@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 
@@ -52,7 +53,7 @@ __int3264 sys_mount(const SystemCall::Context* context, const uapi::char_t* sour
 
 			// The way the data argument appears to work in the Linux kernel without a known buffer size is that
 			// it will try to copy out up to PAGE_SIZE bytes of data and just stop if it encounters an issue
-			HeapBuffer<uint8_t> datapage(MemoryRegion::PageSize);
+			HeapBuffer<uint8_t> datapage(SystemInformation::PageSize);
 			size_t datalen = context->Process->ReadMemory(data, &datapage, datapage.Size);
 
 			// Invoke the VirtualMachine with the custom mounting data read from the process

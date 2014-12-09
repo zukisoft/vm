@@ -26,6 +26,7 @@
 
 #include <memory>
 #include "StructuredException.h"
+#include "SystemInformation.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -158,7 +159,6 @@ private:
 	// NTAPI
 	//
 	static NtAllocateVirtualMemoryFunc	NtAllocateVirtualMemory;
-	static size_t						NtAllocationGranularity;
 	static NtCloseFunc					NtClose;
 	static NtCreateSectionFunc			NtCreateSection;
 	static HANDLE						NtCurrentProcess;

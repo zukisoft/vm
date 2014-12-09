@@ -67,9 +67,6 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 		if(uintptr_t(handle->Process->EntryPoint) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->entry_point = reinterpret_cast<sys32_addr_t>(handle->Process->EntryPoint);
 
-		if(uintptr_t(handle->Process->ProgramBreak) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
-		startinfo->program_break = reinterpret_cast<sys32_addr_t>(handle->Process->ProgramBreak);
-
 		if(uintptr_t(handle->Process->StackImage) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->stack_image = reinterpret_cast<sys32_addr_t>(handle->Process->StackImage);
 
@@ -125,7 +122,6 @@ HRESULT sys64_acquire_context(handle_t rpchandle, sys64_startup_info* startinfo,
 		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
 		startinfo->entry_point = reinterpret_cast<sys64_addr_t>(handle->Process->EntryPoint);
-		startinfo->program_break = reinterpret_cast<sys64_addr_t>(handle->Process->ProgramBreak);
 		startinfo->stack_image = reinterpret_cast<sys64_addr_t>(handle->Process->StackImage);
 		startinfo->stack_image_length = static_cast<sys64_size_t>(handle->Process->StackImageLength);
 	}
