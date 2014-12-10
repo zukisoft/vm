@@ -84,10 +84,28 @@ public:
 	// Reserve (static)
 	//
 	// Creates and reserves a new section
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length) { return Reserve(process, nullptr, length, 0); }
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, uint32_t mapflags) { return Reserve(process, nullptr, length, mapflags); }
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length) { return Reserve(process, address, length, 0); }
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, uint32_t mapflags);
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length) 
+		{ return Reserve(process, nullptr, length, 0, 0); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, size_t granularity) 
+		{ return Reserve(process, nullptr, length, granularity, 0); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, int mapflags) 
+		{ return Reserve(process, nullptr, length, 0, mapflags); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, size_t granularity, int mapflags) 
+		{ return Reserve(process, nullptr, length, granularity, mapflags); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length) 
+		{ return Reserve(process, address, length, 0, 0); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, size_t granularity) 
+		{ return Reserve(process, address, length, granularity, 0); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, int mapflags)
+		{ return Reserve(process, address, length, 0, mapflags); }
+
+	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, size_t granularity, int mapflags);
 
 	//-------------------------------------------------------------------------
 	// Properties

@@ -320,9 +320,10 @@ uint32_t MemorySection::Protect(void* address, size_t length, uint32_t protect)
 //	process			- Target process handle
 //	address			- [Optional] specific address for the mapping
 //	length			- Length of the section to create
+//	granularity		- Granularity to assign to the length of the section
 //	mapflags		- Mapping operation flags (limited to MEM_TOP_DOWN and MEM_LARGE_PAGES)
 
-std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* address, size_t length, uint32_t mapflags)
+std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* address, size_t length, size_t granularity, int mapflags)
 {
 	HANDLE					section;			// Section handle
 	LARGE_INTEGER			sectionlength;		// Section length
@@ -331,9 +332,12 @@ std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* addr
 	// Verify that no invalid flags have been specified
 	if(mapflags & ~(MEM_TOP_DOWN | MEM_LARGE_PAGES)) throw Win32Exception(ERROR_INVALID_PARAMETER);
 
+	// When a zero has been specified for the granularity, use the system page size
+	if(granularity == 0) granularity = SystemInformation::PageSize;
+
 	// Align the requested address down to an allocation boundary and adjust length appropriately
 	void* aligned = align::down(address, SystemInformation::AllocationGranularity);
-	length += (uintptr_t(address) - uintptr_t(aligned));
+	length = align::up(length + (uintptr_t(address) - uintptr_t(aligned)), granularity);
 
 	// Allocate the section with PAGE_EXECUTE_READWRITE to allow the same protection when the section is mapped
 	sectionlength.QuadPart = length;
