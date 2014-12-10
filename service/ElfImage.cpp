@@ -203,11 +203,12 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 	// MEMORY ALLOCATION
 	try {
 
-		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
-		// so reserve them at the highest available virtual address to allow for as much heap space
-		// as possible (MEM_TOP_DOWN is really slow and should be avoided, so this may need to change)
-		if(elfheader.e_type == LINUX_ET_EXEC) section = MemorySection::Reserve(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr);
-		else section = MemorySection::Reserve(process, maxvaddr - minvaddr, MEM_TOP_DOWN);
+		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so
+		// reserve them at the highest available virtual address to allow for as much heap space as possible.
+		// Note that the section length is aligned to the allocation granularity of the system to prevent holes
+		if(elfheader.e_type == LINUX_ET_EXEC) 
+			section = MemorySection::Reserve(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, SystemInformation::AllocationGranularity);
+		else section = MemorySection::Reserve(process, maxvaddr - minvaddr, SystemInformation::AllocationGranularity, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
@@ -270,10 +271,8 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 	// Base address of the image is the original minimum virtual address, adjusted for load delta
 	metadata.BaseAddress = reinterpret_cast<void*>(minvaddr + vaddrdelta);
 
-	// The initial program break is the address just beyond the region allocated for the image,
-	// aligned upward to the allocation granularity of the system
-	metadata.ProgramBreak = reinterpret_cast<void*>(align::up(uintptr_t(section->BaseAddress) + section->Length, 
-		SystemInformation::AllocationGranularity));
+	// The initial program break address is the page just beyond the committed image
+	metadata.ProgramBreak = align::up(reinterpret_cast<void*>(maxvaddr + vaddrdelta), SystemInformation::PageSize);
 
 	// Calculate the address of the image entry point, if one has been specified in the header
 	metadata.EntryPoint = (elfheader.e_entry) ? reinterpret_cast<void*>(elfheader.e_entry + vaddrdelta) : nullptr;
