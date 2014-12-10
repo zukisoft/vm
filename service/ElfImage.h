@@ -65,13 +65,13 @@ public:
 	//
 	// Gets the virtual memory base address of the loaded image
 	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-	const void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
+	void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
 
 	// EntryPoint
 	//
 	// Gets the entry point for the image
 	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
-	const void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
+	void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
 
 	// Interpreter
 	//
@@ -83,7 +83,7 @@ public:
 	//
 	// Pointer to the initial program break address
 	__declspec(property(get=getProgramBreak)) const void* ProgramBreak;
-	const void* getProgramBreak(void) const { return m_metadata.ProgramBreak; }
+	void* getProgramBreak(void) const { return m_metadata.ProgramBreak; }
 
 	// NumProgramHeaders
 	//
@@ -95,7 +95,7 @@ public:
 	//
 	// Pointer to program headers that were defined as part of the loaded image
 	__declspec(property(get=getProgramHeaders)) const void* ProgramHeaders;
-	const void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
+	void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
 
 private:
 

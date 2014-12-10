@@ -40,6 +40,25 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 #endif
 
 //-----------------------------------------------------------------------------
+// Process Constructor
+//
+// Arguments:
+//
+//	TODO: DOCUMENT THEM
+
+Process::Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections) : 
+	m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo), m_sections(std::move(sections)) 
+{
+	_ASSERTE(m_startinfo.ProgramBreak);
+
+	// Insert a guard page at the provided program break address to prevent heap
+	// underruns from trampling the loaded binary image sections.  This also prevents
+	// any need to keep track of what the original break address happened ot be
+	AllocateMemory(m_startinfo.ProgramBreak, SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
+	m_break = reinterpret_cast<void*>(uintptr_t(m_startinfo.ProgramBreak) + SystemInformation::PageSize);
+}
+
+//-----------------------------------------------------------------------------
 // Process::AddHandle
 //
 // Adds a file system handle to the process
@@ -76,6 +95,98 @@ int Process::AddHandle(int fd, const FileSystem::HandlePtr& handle)
 	throw LinuxException(LINUX_EBADF);
 }
 
+//------------------------------------------------------------------------------
+// Process::AllocateMemory (private)
+//
+// Allocates and commits memory in the process address space
+//
+// Arguments:
+//
+//	address		- Optional base address
+//	length		- Required allocation length
+//	protection	- WINDOWS memory protection flags (not LINUX_XXXX)
+
+void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
+{
+	// Allocations cannot be zero-length
+	if(length == 0) throw LinuxException(LINUX_EINVAL);
+
+	// If no specific address was requested, let the system decide where to put the new 
+	// section of memory, but ensure that the length is aligned up to the system allocation
+	// granularity to prevent address space holes from forming
+	if(address == nullptr) {
+
+		// Reserve an anonymous memory section and save the base address
+		std::unique_ptr<MemorySection> anonymous = MemorySection::Reserve(m_host->ProcessHandle, length, SystemInformation::AllocationGranularity);
+		void* base = anonymous->BaseAddress;
+
+		// Commit up to the requested length of pages within the new anonymous section
+		anonymous->Commit(base, length, protection);
+
+		// Insert the section into the member collection and return the generated base address
+		m_sections.push_back(std::move(anonymous));
+		return base;
+	}
+
+	// A specific virtual address was requested, scan over the existing virtual memory
+	// and ensure that it's either all reserved or all free.  Fill in any free areas
+	// with new memory sections, and commit everything using the specified protection
+
+	std::vector<std::unique_ptr<MemorySection>>	sections;		// Newly reserved sections
+	MEMORY_BASIC_INFORMATION					meminfo;		// Virtual memory information
+	
+	// First iterate over the entire aligned memory area and fill in free regions with new sections
+	uintptr_t allocbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
+	uintptr_t allocend = align::up((uintptr_t(address) + length), SystemInformation::AllocationGranularity);
+
+	while(allocbegin < allocend) {
+
+		// Query the information about the section beginning at the current address
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(allocbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// If the region is free (MEM_FREE), attempt to create a section in the free space, ensuring that we get
+		// a block of addresses aligned to the allocation granularity to avoid address space holes
+		if(meminfo.State == MEM_FREE) {
+
+			sections.push_back(MemorySection::Reserve(m_host->ProcessHandle, meminfo.BaseAddress, 
+				min(meminfo.RegionSize, (allocend - allocbegin)), SystemInformation::AllocationGranularity));
+		}
+
+		allocbegin += meminfo.RegionSize;
+	}
+
+	// Now iterate over the range of requested pages, which should all now be reserved (MEM_RESERVE) and
+	// commit them with the specified protection flags
+	uintptr_t commitbegin = align::down(uintptr_t(address), SystemInformation::PageSize);
+	uintptr_t commitend = align::up(commitbegin + length, SystemInformation::PageSize);
+
+	while(commitbegin < commitend) {
+
+		// Query the information about the section beginning at the current address
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// The page(s) must be reserved at this point, if they are already committed they are in use
+		if(meminfo.State != MEM_RESERVE) throw LinuxException(LINUX_EADDRINUSE);
+
+		// Commit the memory directly with VirtualAllocEx, even though it was likely allocated by a section object.
+		// There isn't a technical reason to need to find the right section object and call through it, and that would 
+		// entail searching not only the member collection but also the local collection above that hasn't been inserted yet
+		// so that they will be automatically unwound/released in the event of an exception
+		if(VirtualAllocEx(m_host->ProcessHandle, meminfo.BaseAddress, min(meminfo.RegionSize, commitend - commitbegin), MEM_COMMIT, 
+			protection) == nullptr) throw Win32Exception();
+
+		commitbegin += meminfo.RegionSize;
+	}
+
+	// Add any sections generated above to the member collection
+	for(auto& iterator : sections) { m_sections.push_back(std::move(iterator)); }
+
+	// Return the originally requested virtual address
+	return address;
+}
+
 //-----------------------------------------------------------------------------
 // Process::AllocateRegion
 //
@@ -99,21 +210,26 @@ void* Process::AllocateRegion(size_t length, int prot, int flags)
 
 	// Attempt to reserve the region of memory from the hosted process aligned up to the
 	// system allocation granularity to prevent unusable holes in the address space
-	size_t regionlength = align::up(length, SystemInformation::AllocationGranularity);
-	void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, regionlength, MEM_RESERVE, PAGE_NOACCESS);
-	if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
+	//size_t regionlength = align::up(length, SystemInformation::AllocationGranularity);
+	//void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, regionlength, MEM_RESERVE, PAGE_NOACCESS);
+	//if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
+	size_t sectionlength = align::up(length, SystemInformation::AllocationGranularity);
+	std::unique_ptr<MemorySection> section = MemorySection::Reserve(m_host->ProcessHandle, sectionlength);
 
 	// Attempt to commit and assign protection flags to the allocated region
-	if(!VirtualAllocEx(m_host->ProcessHandle, region, length, MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) {
+	//if(!VirtualAllocEx(m_host->ProcessHandle, region, length, MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) {
 
-		Win32Exception exception;										// Save the Windows exception
-		VirtualFreeEx(m_host->ProcessHandle, region, 0, MEM_RELEASE);	// Release the reservation
-		throw LinuxException(LINUX_EINVAL, exception);					// Allocation operation failed
-	}
+	//	Win32Exception exception;										// Save the Windows exception
+	//	VirtualFreeEx(m_host->ProcessHandle, region, 0, MEM_RELEASE);	// Release the reservation
+	//	throw LinuxException(LINUX_EINVAL, exception);					// Allocation operation failed
+	//}
+	section->Commit(section->BaseAddress, length, uapi::LinuxProtToWindowsPageFlags(prot));
 
 	// Keep track of the base address and original allocation size for this mapping
-	m_mappings.insert(std::make_pair(region, regionlength));
-	return region;
+	//m_mappings.insert(std::make_pair(region, regionlength));
+	void* base = section->BaseAddress;
+	m_sections.push_back(std::move(section));
+	return base;
 }
 
 //-----------------------------------------------------------------------------
@@ -143,30 +259,43 @@ void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int f
 	if(length == 0) throw LinuxException(LINUX_EINVAL);
 
 	// Determine the starting and ending points for the reservation
-	uintptr_t regionbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
-	uintptr_t regionend = regionbegin + align::up(length, SystemInformation::AllocationGranularity);
+	//uintptr_t regionbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
+	//uintptr_t regionend = regionbegin + align::up(length, SystemInformation::AllocationGranularity);
+	uintptr_t sectionbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
+	uintptr_t sectionend = sectionbegin + align::up(length, SystemInformation::AllocationGranularity);
 
-	// Scan the calculated region to ensure that all required pages are reserved
-	while(regionbegin < regionend) {
+	// Scan the calculated section to ensure that all required pages are reserved
+	while(sectionbegin < sectionend) {
 
-		// Query the information about the region beginning at the current address
-		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+		// Query the information about the section beginning at the current address
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(sectionbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
 			throw LinuxException(LINUX_EACCES, Win32Exception());
 
 		// If the region is not reserved (MEM_FREE), attempt to reserve it.  This will fail if the region
 		// is not aligned to the allocation granularity, which indicates a hole in the address space
 		if(meminfo.State == MEM_FREE) {
 
-			size_t regionlength = min(regionend - regionbegin, meminfo.RegionSize);
-			if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), regionlength,  MEM_RESERVE, PAGE_NOACCESS)) 
-				throw LinuxException(LINUX_ENOMEM, Win32Exception());
+			size_t sectionlength = min(sectionend - sectionbegin, meminfo.RegionSize);
+			try {
+			std::unique_ptr<MemorySection> section = MemorySection::Reserve(m_host->ProcessHandle, reinterpret_cast<void*>(sectionbegin), sectionlength);
+			//if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), regionlength,  MEM_RESERVE, PAGE_NOACCESS)) 
+			//	throw LinuxException(LINUX_ENOMEM, Win32Exception());
 
 			// Keep track of the reservation base address and original allocation length
-			m_mappings.insert(std::make_pair(reinterpret_cast<void*>(regionbegin), regionlength));
+			//m_mappings.insert(std::make_pair(reinterpret_cast<void*>(regionbegin), regionlength));
+			m_sections.push_back(std::move(section));
+			}
+			catch(Exception& ex)
+			{
+				int x = 123;
+			}
 		}
 
-		regionbegin += meminfo.RegionSize;			// Move to the next region
+		sectionbegin += meminfo.RegionSize;			// Move to the next region
 	}
+
+	//// THIS NEEDS TO BE CHANGED?
+	//// COMMIT/DECOMMIT MAY WORK
 
 	// Determine the starting and ending points for the commit; Windows will automatically
 	// adjust these values to align on the proper page size during VirtualAllocEx
@@ -242,20 +371,20 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 	// TODO: WILL NEED NEW ARGUMENTS -- IT WILL NEED TO KNOW IT'S A CLONE
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 
-	try {
-		// LOCK SECTIONS COLLECTION HERE
-	
-		section_set_t newsections;
+	//try {
+	//	// LOCK SECTIONS COLLECTION HERE
+	//
+	//	section_set_t newsections;
 
-		// Clone all of the sections from the parent process into the child process
-		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
-			newsections.insert((*iterator)->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
+	//	// Clone all of the sections from the parent process into the child process
+	//	for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
+	//		newsections.insert((*iterator)->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
 
-		int x = 123;
-		(x);
-		// UNLOCK SECTIONS COLLECTION HERE
-	}
-	catch(...) { host->Terminate(E_FAIL); throw; }
+	//	int x = 123;
+	//	(x);
+	//	// UNLOCK SECTIONS COLLECTION HERE
+	//}
+	//catch(...) { host->Terminate(E_FAIL); throw; }
 
 	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
 	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
@@ -433,6 +562,26 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 }
 
 //-----------------------------------------------------------------------------
+// Process::ReleaseMemory (private)
+//
+// Decommits and releases memory from the process address space
+//
+// Arguments:
+//
+//	address		- Base address of the memory region to be released
+//	length		- Length of the memory region to be released
+
+void Process::ReleaseMemory(void* address, size_t length)
+{
+	(address);
+	(length);
+	_RPTF0(_CRT_ASSERT, "Process::ReleaseMemory -- not implemented yet");
+
+	// This will have to scan the existing sections to see if an entire one can
+	// be deleted, otherwise just decommit partial sections and leave in MEM_RESERVE
+}
+
+//-----------------------------------------------------------------------------
 // Process::RemoveHandle
 //
 // Removes a file system handle from the process
@@ -461,76 +610,36 @@ void Process::RemoveHandle(int index)
 
 void* Process::SetProgramBreak(void* address)
 {
-	MEMORY_BASIC_INFORMATION	meminfo;	// Information on a memory region
-
 	// NULL can be passed in as the address to retrieve the current program break
 	if(address == nullptr) return m_break;
 
-	// Create a working copy of the current break and calcuate the requested delta
-	intptr_t current = intptr_t(m_break);
-	intptr_t delta = align::up(intptr_t(address) - current, SystemInformation::AllocationGranularity);
+	// The real break address must be aligned to a page boundary
+	void* oldbreak = align::up(m_break, SystemInformation::PageSize);
+	void* newbreak = align::up(address, SystemInformation::PageSize);
 
-	// INCREASE PROGRAM BREAK
-	if(delta > 0) {
+	// If the aligned addresses are not the same, the actual break must be changed
+	if(oldbreak != newbreak) {
 
-		// Check to see if the region at the currently set break is MEM_FREE
-		VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
-		if(meminfo.State == MEM_FREE) {
-                     
-			// Only ask for as much as is available contiguously
-			delta = min(delta, align::down(intptr_t(meminfo.RegionSize), SystemInformation::AllocationGranularity));
+		// Calculate the delta between the current and requested address
+		intptr_t delta = intptr_t(newbreak) - intptr_t(oldbreak);
 
-			// ////////   TEST MEMORYSECTION
-			std::unique_ptr<MemorySection> section = MemorySection::Reserve(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta);
-			section->Commit(section->BaseAddress, section->Length, PAGE_READWRITE);
-			m_sections.push_back(std::move(section));
-			m_break = reinterpret_cast<void*>(current + delta);
-			//////////////////////////
-			
-			//// Attempt to reserve and commit the calcuated region with READWRITE access
-			//void* result = VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(current), delta, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			//if(result) { 
+		try {
 
-			//	// TODO -- Is this right
-			//	m_mappings.insert(std::make_pair(result, delta));
-			//	m_break = reinterpret_cast<void*>(current + delta);
-			//}
-		}
-	}
-
-	// DECREASE PROGRAM BREAK
-	else if(delta < 0) {
-
-		// Determine the target address, which can never be below the original program break
-		intptr_t target = max(intptr_t(m_startinfo.ProgramBreak), (current + delta));
-
-		// Work backwards from the previously allocated region to release as many as possible
-		VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(current - 1), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
-		while(target <= intptr_t(meminfo.AllocationBase)) {
-
-			// Attempt to decommit and release the entire region
-			if(!VirtualFreeEx(m_host->ProcessHandle, meminfo.AllocationBase, 0, MEM_RELEASE)) break;
-			
-			// TODO -- Is this right
-			m_mappings.unsafe_erase(meminfo.AllocationBase);
-
-			// Align the current break pointer with the released region's base address
-			current = intptr_t(meminfo.AllocationBase);
-
-			// Get information on the next region lower in memory to check if it can be released
-			VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(current - 1), &meminfo, sizeof(MEMORY_BASIC_INFORMATION));
+			// Allocate or release program break address space based on the calculated delta.
+			// ReleaseMemory will run into the guard page installed in the constructor if the
+			// process attempts to underrun the original break address
+			if(delta > 0) AllocateMemory(oldbreak, delta, PAGE_READWRITE);
+			else ReleaseMemory(newbreak, delta);
 		}
 
-		// Reset the program break to the last successfully released region base address
-		m_break = reinterpret_cast<void*>(current);
+		// Return the previously set program break address if it could not be adjusted,
+		// this operation is not intended to return any error codes
+		catch(...) { return m_break; }
 	}
 
-	///// TODO: TESTING - CLEAN THIS UP (now this works with glibc, but un-hack it)
-	// should never return null, return the previously set address here
-	uintptr_t result = uintptr_t(address);
-	if((result >= uintptr_t(m_startinfo.ProgramBreak)) && (result <= uintptr_t(m_break))) return address;
-	else return nullptr;
-	/////////////////////////////
+	// Store and return the requested address, not the page-aligned address
+	m_break = address;
+	return m_break;
 }
 
 //-----------------------------------------------------------------------------
@@ -690,14 +799,12 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 		// Attempt to load the binary image into the process, then check for an interpreter
 		executable = ElfImage::Load<_class>(handle, host->ProcessHandle);
-		sections.push_back(executable->getSection());
 		if(executable->Interpreter) {
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
 			bool absolute = (*executable->Interpreter == '/');
 			FileSystem::HandlePtr interphandle = vm->OpenExecutable(rootdir, (absolute) ? rootdir : workingdir, executable->Interpreter);
 			interpreter = ElfImage::Load<_class>(interphandle, host->ProcessHandle);
-			sections.push_back(interpreter->getSection());
 		}
 
 		// Construct the ELF arguments stack image for the hosted process
@@ -734,11 +841,19 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		// Generate the stack image for the process in it's address space
 		ElfArguments::StackImage stackimg = args.GenerateStackImage<_class>(host->ProcessHandle);
 
+		// Allocate a guard page at the specified program break address and move beyond it
+		// TODO
+
 		// Load the StartupInfo structure with the necessary information to get the ELF binary running
 		startinfo.EntryPoint = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
 		startinfo.ProgramBreak = executable->ProgramBreak;
 		startinfo.StackImage = stackimg.BaseAddress;
 		startinfo.StackImageLength = stackimg.Length;
+
+		////////////////
+		if(executable->Interpreter) { /* TODO: PUSH_BACK INTERPRETER */ }
+		sections.push_back(std::move(executable));
+		//////////////////
 
 		// Create the Process object, transferring the host and startup information
 		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(startinfo), std::move(sections));

@@ -211,12 +211,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections) : 
-		m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo), m_break(const_cast<void*>(startinfo.ProgramBreak)), m_sections(std::move(sections)) 
-	{
-		int x = 123;
-		(x);
-	}
+	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -233,10 +228,10 @@ private:
 	// required for it to know how to get itself up and running
 	struct StartupInfo
 	{
-		const void*		EntryPoint;				// Execution entry point
-		const void*		ProgramBreak;			// Pointer to the program break;
-		const void*		StackImage;				// Pointer to the stack image
-		size_t			StackImageLength;		// Length of the stack image
+		void*		EntryPoint;				// Execution entry point
+		void*		ProgramBreak;			// Pointer to the program break;
+		void*		StackImage;				// Pointer to the stack image
+		size_t		StackImageLength;		// Length of the stack image
 	};
 
 	// handle_map_t
@@ -257,6 +252,12 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
+	// AllocateMemory
+	//
+	// Allocates and commits memory in the process virtual address space
+	void* AllocateMemory(size_t length, uint32_t protection) { return AllocateMemory(nullptr, length, protection); }
+	void* AllocateMemory(void* address, size_t length, uint32_t protection);
+
 	// AllocateRegion
 	//
 	// Allocates a memory region in the hosted process
@@ -273,11 +274,16 @@ private:
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
+	// ReleaseMemory
+	//
+	// Decommits and releases memory from the process virtual address space
+	void ReleaseMemory(void* address, size_t length);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	std::unique_ptr<Host>	m_host;				// Hosted windows process
-	const StartupInfo		m_startinfo;		// Hosted process start information
+	StartupInfo				m_startinfo;		// Hosted process start information
 	void*					m_break;			// Current program break
 
 	handle_map_t			m_handles;			// Process file system handles
