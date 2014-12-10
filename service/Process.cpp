@@ -167,13 +167,10 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
 			throw LinuxException(LINUX_EACCES, Win32Exception());
 
-		// The page(s) must be reserved at this point, if they are already committed they are in use
-		if(meminfo.State != MEM_RESERVE) throw LinuxException(LINUX_EADDRINUSE);
+		// The page(s) must be reserved at this point, if they are already committed that's a problem
+		if(meminfo.State != MEM_RESERVE) throw LinuxException(LINUX_ENOMEM, Win32Exception(ERROR_INVALID_ADDRESS));
 
-		// Commit the memory directly with VirtualAllocEx, even though it was likely allocated by a section object.
-		// There isn't a technical reason to need to find the right section object and call through it, and that would 
-		// entail searching not only the member collection but also the local collection above that hasn't been inserted yet
-		// so that they will be automatically unwound/released in the event of an exception
+		// Commit the memory with the requested protection flags
 		if(VirtualAllocEx(m_host->ProcessHandle, meminfo.BaseAddress, min(meminfo.RegionSize, commitend - commitbegin), MEM_COMMIT, 
 			protection) == nullptr) throw Win32Exception();
 
@@ -188,153 +185,45 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 }
 
 //-----------------------------------------------------------------------------
-// Process::AllocateRegion
+// Process::CheckHostProcessClass<x86> (static, private)
 //
-// Allocates a region of memory in the hosted process
+// Verifies that the created host process is 32-bit
 //
 // Arguments:
 //
-//	length		- Length of the region to be allocated
-//	prot		- Memory protection flags for the memory region
-//	flags		- Memory allocation behavioral flags
+//	process		- Handle to the created host process
 
-void* Process::AllocateRegion(size_t length, int prot, int flags)
+template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE process)
 {
-	UNREFERENCED_PARAMETER(flags);
+	BOOL			result;				// Result from IsWow64Process
 
-	_ASSERTE(m_host);
-	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+	// 32-bit systems can only create 32-bit processes; nothing to worry about
+	if(SystemInformation::ProcessorArchitecture == SystemInformation::Architecture::Intel) return;
 
-	// Allocations cannot be zero-length
-	if(length == 0) throw LinuxException(LINUX_EINVAL);
-
-	// Attempt to reserve the region of memory from the hosted process aligned up to the
-	// system allocation granularity to prevent unusable holes in the address space
-	//size_t regionlength = align::up(length, SystemInformation::AllocationGranularity);
-	//void* region = VirtualAllocEx(m_host->ProcessHandle, nullptr, regionlength, MEM_RESERVE, PAGE_NOACCESS);
-	//if(!region) throw LinuxException(LINUX_EINVAL, Win32Exception());
-	size_t sectionlength = align::up(length, SystemInformation::AllocationGranularity);
-	std::unique_ptr<MemorySection> section = MemorySection::Reserve(m_host->ProcessHandle, sectionlength);
-
-	// Attempt to commit and assign protection flags to the allocated region
-	//if(!VirtualAllocEx(m_host->ProcessHandle, region, length, MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) {
-
-	//	Win32Exception exception;										// Save the Windows exception
-	//	VirtualFreeEx(m_host->ProcessHandle, region, 0, MEM_RELEASE);	// Release the reservation
-	//	throw LinuxException(LINUX_EINVAL, exception);					// Allocation operation failed
-	//}
-	section->Commit(section->BaseAddress, length, uapi::LinuxProtToWindowsPageFlags(prot));
-
-	// Keep track of the base address and original allocation size for this mapping
-	//m_mappings.insert(std::make_pair(region, regionlength));
-	void* base = section->BaseAddress;
-	m_sections.push_back(std::move(section));
-	return base;
+	// 64-bit system; verify that the process is running under WOW64
+	if(!IsWow64Process(process, &result)) throw Win32Exception();
+	if(!result) throw Exception(E_PROCESSINVALIDX86HOST);
 }
 
 //-----------------------------------------------------------------------------
-// Process::AllocateFixedRegion
+// Process::CheckHostProcessClass<x86_64> (static, private)
 //
-// Allocates a region of memory in the hosted process at a specific address;
-// makes an assumption that the caller knows what they are doing
+// Verifies that the created host process is 64-bit
 //
 // Arguments:
 //
-//	address		- Address at which to allocate the memory region
-//	length		- Length of the region to be allocated
-//	prot		- Memory protection flags for the memory region
-//	flags		- Memory allocation behavioral flags
+//	process		- Handle to the created host process
 
-void* Process::AllocateFixedRegion(void* address, size_t length, int prot, int flags)
+#ifdef _M_X64
+template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE process)
 {
-	MEMORY_BASIC_INFORMATION		meminfo;		// Virtual memory information
+	BOOL				result;				// Result from IsWow64Process
 
-	UNREFERENCED_PARAMETER(flags);
-
-	_ASSERTE(m_host);
-	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
-
-	// Fixed allocations cannot start at zero or be zero-length
-	if(address == nullptr) throw LinuxException(LINUX_EINVAL);
-	if(length == 0) throw LinuxException(LINUX_EINVAL);
-
-	// Determine the starting and ending points for the reservation
-	//uintptr_t regionbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
-	//uintptr_t regionend = regionbegin + align::up(length, SystemInformation::AllocationGranularity);
-	uintptr_t sectionbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
-	uintptr_t sectionend = sectionbegin + align::up(length, SystemInformation::AllocationGranularity);
-
-	// Scan the calculated section to ensure that all required pages are reserved
-	while(sectionbegin < sectionend) {
-
-		// Query the information about the section beginning at the current address
-		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(sectionbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-			throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		// If the region is not reserved (MEM_FREE), attempt to reserve it.  This will fail if the region
-		// is not aligned to the allocation granularity, which indicates a hole in the address space
-		if(meminfo.State == MEM_FREE) {
-
-			size_t sectionlength = min(sectionend - sectionbegin, meminfo.RegionSize);
-			try {
-			std::unique_ptr<MemorySection> section = MemorySection::Reserve(m_host->ProcessHandle, reinterpret_cast<void*>(sectionbegin), sectionlength);
-			//if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(regionbegin), regionlength,  MEM_RESERVE, PAGE_NOACCESS)) 
-			//	throw LinuxException(LINUX_ENOMEM, Win32Exception());
-
-			// Keep track of the reservation base address and original allocation length
-			//m_mappings.insert(std::make_pair(reinterpret_cast<void*>(regionbegin), regionlength));
-			m_sections.push_back(std::move(section));
-			}
-			catch(Exception& ex)
-			{
-				int x = 123;
-			}
-		}
-
-		sectionbegin += meminfo.RegionSize;			// Move to the next region
-	}
-
-	//// THIS NEEDS TO BE CHANGED?
-	//// COMMIT/DECOMMIT MAY WORK
-
-	// Determine the starting and ending points for the commit; Windows will automatically
-	// adjust these values to align on the proper page size during VirtualAllocEx
-	uintptr_t commitbegin = uintptr_t(address);
-	uintptr_t commitend = commitbegin + length;
-
-	// Scan the requested mapping region and (re)commit all pages to memory
-	while(commitbegin < commitend) {
-
-		// Query the information about the current region to be committed
-		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-			throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		switch(meminfo.State) {
-
-			// MEM_COMMIT -- The region has already been committed; de-commit it to allow it to be reset
-			//
-			case MEM_COMMIT:
-				if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), min(commitend - commitbegin, meminfo.RegionSize), 
-					MEM_DECOMMIT)) throw LinuxException(LINUX_EACCES, Win32Exception());
-				// fall through
-			
-			// MEM_RESERVE -- The region is reserved but has not yet been committed to memory
-			// 
-			case MEM_RESERVE:
-				if(!VirtualAllocEx(m_host->ProcessHandle, reinterpret_cast<void*>(commitbegin), min(commitend - commitbegin, meminfo.RegionSize), 
-					MEM_COMMIT, uapi::LinuxProtToWindowsPageFlags(prot))) throw LinuxException(LINUX_EINVAL, Win32Exception());
-				break;
-
-			// MEM_FREE -- The region was not properly reserved above or was released by another thread in the process
-			//
-			default: throw LinuxException(LINUX_EACCES);
-		}
-
-		commitbegin += meminfo.RegionSize;
-	}
-
-	return address;
+	// 64-bit system; verify that the process is not running under WOW64
+	if(!IsWow64Process(process, &result)) throw Win32Exception();
+	if(result) throw Exception(E_PROCESSINVALIDX64HOST);
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // Process::Clone
@@ -402,357 +291,6 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 
 	return nullptr;
 }
-
-//-----------------------------------------------------------------------------
-// Process::GetHandle
-//
-// Accesses a file system handle referenced by the process
-//
-// Arguments:
-//
-//	index		- Index (file descriptor) of the target handle
-
-FileSystem::HandlePtr Process::GetHandle(int index)
-{
-	try { return m_handles.at(index); }
-	catch(...) { throw LinuxException(LINUX_EBADF); }
-}
-
-//-----------------------------------------------------------------------------
-// Process::MapMemory
-//
-// Creates a memory mapping for the process
-//
-// Arguments:
-//
-//	address		- Optional fixed address to use for the mapping
-//	length		- Length of the requested mapping
-//	prot		- Memory protection flags
-//	flags		- Memory mapping flags, must include MAP_PRIVATE
-//	fd			- Optional file descriptor from which to map
-//	offset		- Optional offset into fd from which to map
-
-void* Process::MapMemory(void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset)
-{
-	FileSystem::HandlePtr		handle = nullptr;		// Handle to the file object
-
-	_ASSERTE(m_host);
-	_ASSERTE(m_host->ProcessHandle);
-
-	// MAP_HUGETLB is not currently supported, but may be possible in the future
-	if(flags & LINUX_MAP_HUGETLB) throw LinuxException(LINUX_EINVAL);
-
-	// MAP_GROWSDOWN is not supported
-	if(flags & LINUX_MAP_GROWSDOWN) throw LinuxException(LINUX_EINVAL);
-
-	// Suggested base addresses are not supported, switch the address to NULL if MAP_FIXED is not set
-	if((flags & LINUX_MAP_FIXED) == 0) address = nullptr;
-
-	// Non-anonymous mappings require a valid file descriptor to be specified
-	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) throw LinuxException(LINUX_EBADF);
-	if(fd > 0) handle = GetHandle(fd)->Duplicate(LINUX_O_RDONLY);
-
-	// Attempt to reserve and commit the region of memory using the appropriate helper
-	address = (address == nullptr) ? AllocateRegion(length, prot, flags) : AllocateFixedRegion(address, length, prot, flags);
-
-	// If a file handle was specified, copy data from the file into the allocated region,
-	// private mappings need not be concerned with writing this data back to the file
-	if(handle != nullptr) {
-
-		uintptr_t	dest = uintptr_t(address);			// Easier pointer math as uintptr_t
-		size_t		read;								// Bytes read from the source file
-		SIZE_T		written;							// Result from WriteProcessMemory
-
-		HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);	// 64K buffer
-
-		// Seek the file handle to the specified offset
-		if(handle->Seek(offset, LINUX_SEEK_SET) != offset) throw LinuxException(LINUX_EINVAL);
-
-		do {
-			
-			// Copy the next chunk of bytes from the source file into the process' memory space
-			read = handle->Read(buffer, min(length, buffer.Size));
-			if(!WriteProcessMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written)) 
-				throw LinuxException(LINUX_EACCES, Win32Exception());
-
-			dest += written;						// Increment destination pointer
-			length -= read;							// Decrement remaining bytes to be copied
-
-		} while((length > 0) && (read > 0));
-	};
-
-	return address;
-}
-
-//-----------------------------------------------------------------------------
-// Process::ProtectMemory
-//
-// Assigns protection flags for an allocated region of memory
-//
-// Arguments:
-//
-//	address		- Base address of the region to be protected
-//	length		- Length of the region to be protected
-//	prot		- New protection flags for the memory region 
-
-void Process::ProtectMemory(void* address, size_t length, int prot)
-{
-	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
-	DWORD						oldprotection;		// Previously set protection flags
-
-	_ASSERTE(m_host);
-	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
-
-	// Determine the starting and ending points for the operation; Windows will automatically
-	// adjust these values to align on the proper page size during VirtualProtect
-	uintptr_t begin = uintptr_t(address);
-	uintptr_t end = begin + length;
-
-	// Scan the requested memory region and set the protection flags
-	while(begin < end) {
-
-		// Query the information about the current region to be protected
-		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-			throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		// Attempt to assign the protection flags for the current region
-		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
-			uapi::LinuxProtToWindowsPageFlags(prot), &oldprotection)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
-
-		begin += meminfo.RegionSize;		// Move to the next region
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Process::ReadMemory
-//
-// Reads data from the client process into a local buffer.  If a fault will 
-// occur or is trapped, the read operation will stop prior to requested length
-//
-// Arguments:
-//
-//	address		- Address in the client process from which to read
-//	buffer		- Local output buffer
-//	length		- Size of the local output buffer, maximum bytes to read
-
-size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
-{
-	MEMORY_BASIC_INFORMATION	meminfo;		// Virtual memory information
-	SIZE_T						read;			// Number of bytes read from process
-
-	_ASSERTE(buffer);
-	if((buffer == nullptr) || (length == 0)) return 0;
-
-	// Query the status of the memory at the specified address
-	if(!VirtualQueryEx(m_host->ProcessHandle, address, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-		throw LinuxException(LINUX_EACCES, Win32Exception());
-	
-	// Ensure the the memory has been committed
-	if(meminfo.State != MEM_COMMIT) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-
-	// Check the protection status of the memory region, it cannot be NOACCESS or EXECUTE to continue
-	DWORD protection = meminfo.Protect & 0xFF;
-	if((protection == PAGE_NOACCESS) || (protection == PAGE_EXECUTE)) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-
-	// Attempt to read up to the requested length or to the end of the region, whichever is smaller
-	if(!ReadProcessMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read))
-		throw LinuxException(LINUX_EFAULT, Win32Exception());
-
-	return read;
-}
-
-//-----------------------------------------------------------------------------
-// Process::ReleaseMemory (private)
-//
-// Decommits and releases memory from the process address space
-//
-// Arguments:
-//
-//	address		- Base address of the memory region to be released
-//	length		- Length of the memory region to be released
-
-void Process::ReleaseMemory(void* address, size_t length)
-{
-	(address);
-	(length);
-	_RPTF0(_CRT_ASSERT, "Process::ReleaseMemory -- not implemented yet");
-
-	// This will have to scan the existing sections to see if an entire one can
-	// be deleted, otherwise just decommit partial sections and leave in MEM_RESERVE
-}
-
-//-----------------------------------------------------------------------------
-// Process::RemoveHandle
-//
-// Removes a file system handle from the process
-//
-// Arguments:
-//
-//	index		- Index (file descriptor) of the target handle
-
-void Process::RemoveHandle(int index)
-{
-	// unsafe_erase *should* be OK to use here since values are shared_ptrs,
-	// but if problems start to happen, this is a good place to look at
-	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADF);
-	m_indexpool.Release(index);
-}
-
-//-----------------------------------------------------------------------------
-// Process::SetProgramBreak
-//
-// Adjusts the program break address by increasing or decreasing the number
-// of allocated pages immediately following the loaded binary image
-//
-// Arguments:
-//
-//	address		- Requested program break address
-
-void* Process::SetProgramBreak(void* address)
-{
-	// NULL can be passed in as the address to retrieve the current program break
-	if(address == nullptr) return m_break;
-
-	// The real break address must be aligned to a page boundary
-	void* oldbreak = align::up(m_break, SystemInformation::PageSize);
-	void* newbreak = align::up(address, SystemInformation::PageSize);
-
-	// If the aligned addresses are not the same, the actual break must be changed
-	if(oldbreak != newbreak) {
-
-		// Calculate the delta between the current and requested address
-		intptr_t delta = intptr_t(newbreak) - intptr_t(oldbreak);
-
-		try {
-
-			// Allocate or release program break address space based on the calculated delta.
-			// ReleaseMemory will run into the guard page installed in the constructor if the
-			// process attempts to underrun the original break address
-			if(delta > 0) AllocateMemory(oldbreak, delta, PAGE_READWRITE);
-			else ReleaseMemory(newbreak, delta);
-		}
-
-		// Return the previously set program break address if it could not be adjusted,
-		// this operation is not intended to return any error codes
-		catch(...) { return m_break; }
-	}
-
-	// Store and return the requested address, not the page-aligned address
-	m_break = address;
-	return m_break;
-}
-
-//-----------------------------------------------------------------------------
-// Process::UnmapMemory
-//
-// Releases a memory region allocated with MapMemory
-//
-// Arguments:
-//
-//	address		- Base address of the region to be released
-//	length		- Length of the region to be released
-
-void Process::UnmapMemory(void* address, size_t length)
-{
-	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
-
-	_ASSERTE(m_host);
-	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
-
-	// Determine the starting and ending points for the operation; Windows will automatically
-	// adjust these values to align on the proper page size during VirtualProtect
-	uintptr_t begin = uintptr_t(address);
-	uintptr_t end = begin + length;
-
-	// Scan the requested memory region and decommit/release the memory as is appropriate
-	while(begin < end) {
-
-		// Query the information about the current region to be released
-		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-			throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		// Don't try to decommit pages that aren't already committed, munmap() should not
-		// return an error if the page(s) aren't committed (MEM_FREE or MEM_RESERVE)
-		if(meminfo.State == MEM_COMMIT) {
-
-			//
-			// TODO: Write-back for shared memory maps goes here, need to check if it's
-			// dirty and the region flags indicate a write-back is necessary.  Determining
-			// if it's shared can't be done with MEMORY_BASIC_INFORMATION since the current
-			// intention is to do it all manually via VirtualAllocEx()
-			//
-			
-			if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), MEM_DECOMMIT))
-				throw LinuxException(LINUX_EINVAL, Win32Exception());
-		}
-
-		// If the current base address matches the allocation base address, this region can possibly be released
-		if(meminfo.BaseAddress == meminfo.AllocationBase) {
-
-			// Get updated information about the decommitted region
-			MEMORY_BASIC_INFORMATION freeinfo;
-			if(VirtualQueryEx(m_host->ProcessHandle, meminfo.AllocationBase, &freeinfo, sizeof(MEMORY_BASIC_INFORMATION))) {
-
-				_ASSERTE(freeinfo.State != MEM_COMMIT);				// Should never happen
-
-				// Don't attempt to release a region that is already MEM_FREE
-				if(freeinfo.State == MEM_RESERVE) {
-
-					// Find the original length of the allocation, and if the entire region is now decommitted, release it
-					auto it = m_mappings.find(reinterpret_cast<void*>(begin));
-					if((it != m_mappings.end()) && (it->second == freeinfo.RegionSize)) {
-
-						if(!VirtualFreeEx(m_host->ProcessHandle, freeinfo.AllocationBase, 0, MEM_RELEASE)) throw LinuxException(LINUX_EINVAL, Win32Exception());
-						m_mappings.unsafe_erase(it);
-					}
-				}
-			}
-		}
-
-		begin += meminfo.RegionSize;		// Move to the next region
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Process::CheckHostProcessClass<x86> (static, private)
-//
-// Verifies that the created host process is 32-bit
-//
-// Arguments:
-//
-//	process		- Handle to the created host process
-
-template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE process)
-{
-	BOOL			result;				// Result from IsWow64Process
-
-	// 32-bit systems can only create 32-bit processes; nothing to worry about
-	if(SystemInformation::ProcessorArchitecture == SystemInformation::Architecture::Intel) return;
-
-	// 64-bit system; verify that the process is running under WOW64
-	if(!IsWow64Process(process, &result)) throw Win32Exception();
-	if(!result) throw Exception(E_PROCESSINVALIDX86HOST);
-}
-
-//-----------------------------------------------------------------------------
-// Process::CheckHostProcessClass<x86_64> (static, private)
-//
-// Verifies that the created host process is 64-bit
-//
-// Arguments:
-//
-//	process		- Handle to the created host process
-
-#ifdef _M_X64
-template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE process)
-{
-	BOOL				result;				// Result from IsWow64Process
-
-	// 64-bit system; verify that the process is not running under WOW64
-	if(!IsWow64Process(process, &result)) throw Win32Exception();
-	if(result) throw Exception(E_PROCESSINVALIDX64HOST);
-}
-#endif
 
 //-----------------------------------------------------------------------------
 // Process::Create (static)
@@ -841,9 +379,6 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		// Generate the stack image for the process in it's address space
 		ElfArguments::StackImage stackimg = args.GenerateStackImage<_class>(host->ProcessHandle);
 
-		// Allocate a guard page at the specified program break address and move beyond it
-		// TODO
-
 		// Load the StartupInfo structure with the necessary information to get the ELF binary running
 		startinfo.EntryPoint = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
 		startinfo.ProgramBreak = executable->ProgramBreak;
@@ -863,6 +398,330 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// TODO: should be LinuxException wrapping the underlying one?  Only case right now where
 	// that wouldn't be true is interpreter's OpenExec() call which should already throw LinuxExceptions
 	catch(...) { host->Terminate(E_FAIL); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// Process::GetHandle
+//
+// Accesses a file system handle referenced by the process
+//
+// Arguments:
+//
+//	index		- Index (file descriptor) of the target handle
+
+FileSystem::HandlePtr Process::GetHandle(int index)
+{
+	try { return m_handles.at(index); }
+	catch(...) { throw LinuxException(LINUX_EBADF); }
+}
+
+//-----------------------------------------------------------------------------
+// Process::MapMemory
+//
+// Creates a memory mapping for the process
+//
+// Arguments:
+//
+//	address		- Optional fixed address to use for the mapping
+//	length		- Length of the requested mapping
+//	prot		- Memory protection flags
+//	flags		- Memory mapping flags, must include MAP_PRIVATE
+//	fd			- Optional file descriptor from which to map
+//	offset		- Optional offset into fd from which to map
+
+void* Process::MapMemory(void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset)
+{
+	FileSystem::HandlePtr		handle = nullptr;		// Handle to the file object
+
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle);
+
+	// MAP_HUGETLB is not currently supported, but may be possible in the future
+	if(flags & LINUX_MAP_HUGETLB) throw LinuxException(LINUX_EINVAL);
+
+	// MAP_GROWSDOWN is not supported
+	if(flags & LINUX_MAP_GROWSDOWN) throw LinuxException(LINUX_EINVAL);
+
+	// Suggested base addresses are not supported, switch the address to NULL if MAP_FIXED is not set
+	if((flags & LINUX_MAP_FIXED) == 0) address = nullptr;
+
+	// Non-anonymous mappings require a valid file descriptor to be specified
+	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) throw LinuxException(LINUX_EBADF);
+	if(fd > 0) handle = GetHandle(fd)->Duplicate(LINUX_O_RDONLY);
+
+	// Attempt to allocate the process memory and adjust address to that base if it was NULL
+	void* base = AllocateMemory(address, length, uapi::LinuxProtToWindowsPageFlags(prot));
+	if(address == nullptr) address = base;
+
+	// If a file handle was specified, copy data from the file into the allocated region,
+	// private mappings need not be concerned with writing this data back to the file
+	if(handle != nullptr) {
+
+		uintptr_t	dest = uintptr_t(address);			// Easier pointer math as uintptr_t
+		size_t		read;								// Bytes read from the source file
+		SIZE_T		written;							// Result from WriteProcessMemory
+
+		// TODO: Both tempfs and hostfs should be able to handle memory mappings now with
+		// the introduction of sections; this would be much more efficient that way.  Such
+		// a call would need to fail for FS that can't support it, and fall back to this
+		// type of implementation.  Also evaluate the same in ElfImage, mapping the source
+		// file would be better than having to read it from a stream
+
+		HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);	// 64K buffer
+
+		// Seek the file handle to the specified offset
+		if(handle->Seek(offset, LINUX_SEEK_SET) != offset) throw LinuxException(LINUX_EINVAL);
+
+		do {
+			
+			// Copy the next chunk of bytes from the source file into the process' memory space
+			read = handle->Read(buffer, min(length, buffer.Size));
+			if(!WriteProcessMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written)) 
+				throw LinuxException(LINUX_EACCES, Win32Exception());
+
+			dest += written;						// Increment destination pointer
+			length -= read;							// Decrement remaining bytes to be copied
+
+		} while((length > 0) && (read > 0));
+	};
+
+	return address;
+}
+
+//-----------------------------------------------------------------------------
+// Process::ProtectMemory
+//
+// Assigns protection flags for an allocated region of memory
+//
+// Arguments:
+//
+//	address		- Base address of the region to be protected
+//	length		- Length of the region to be protected
+//	prot		- New protection flags for the memory region 
+
+void Process::ProtectMemory(void* address, size_t length, int prot)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
+	DWORD						oldprotection;		// Previously set protection flags
+
+	_ASSERTE(m_host);
+	_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	// Determine the starting and ending points for the operation; Windows will automatically
+	// adjust these values to align on the proper page size during VirtualProtect
+	uintptr_t begin = uintptr_t(address);
+	uintptr_t end = begin + length;
+
+	// Scan the requested memory region and set the protection flags
+	while(begin < end) {
+
+		// Query the information about the current region to be protected
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
+
+		// Attempt to assign the protection flags for the current region of memory
+		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
+			uapi::LinuxProtToWindowsPageFlags(prot), &oldprotection)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
+
+		begin += meminfo.RegionSize;		// Move to the next region
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Process::ReadMemory
+//
+// Reads data from the client process into a local buffer.  If a fault will 
+// occur or is trapped, the read operation will stop prior to requested length
+//
+// Arguments:
+//
+//	address		- Address in the client process from which to read
+//	buffer		- Local output buffer
+//	length		- Size of the local output buffer, maximum bytes to read
+
+size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
+{
+	MEMORY_BASIC_INFORMATION	meminfo;		// Virtual memory information
+	SIZE_T						read;			// Number of bytes read from process
+
+	_ASSERTE(buffer);
+	if((buffer == nullptr) || (length == 0)) return 0;
+
+	// Query the status of the memory at the specified address
+	if(!VirtualQueryEx(m_host->ProcessHandle, address, &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+		throw LinuxException(LINUX_EACCES, Win32Exception());
+	
+	// Ensure the the memory has been committed
+	if(meminfo.State != MEM_COMMIT) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// Check the protection status of the memory region, it cannot be NOACCESS or EXECUTE to continue
+	DWORD protection = meminfo.Protect & 0xFF;
+	if((protection == PAGE_NOACCESS) || (protection == PAGE_EXECUTE)) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// Attempt to read up to the requested length or to the end of the region, whichever is smaller
+	if(!ReadProcessMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read))
+		throw LinuxException(LINUX_EFAULT, Win32Exception());
+
+	return read;
+}
+
+//-----------------------------------------------------------------------------
+// Process::ReleaseMemory (private)
+//
+// Decommits and releases memory from the process address space
+//
+// Arguments:
+//
+//	address		- Base address of the memory region to be released
+//	length		- Length of the memory region to be released
+
+void Process::ReleaseMemory(void* address, size_t length)
+{
+	(address);
+	(length);
+	_RPTF0(_CRT_ASSERT, "Process::ReleaseMemory -- not implemented yet");
+
+	// how will this work?
+	//auto iterator = m_test.find(nullptr);
+
+	// This will have to scan the existing sections to see if an entire one can
+	// be deleted, otherwise just decommit partial sections and leave in MEM_RESERVE
+
+	// OLD CODE FROM UNMAPMEMORY():
+
+	//MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
+
+	//_ASSERTE(m_host);
+	//_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+
+	//// Determine the starting and ending points for the operation; Windows will automatically
+	//// adjust these values to align on the proper page size during VirtualProtect
+	//uintptr_t begin = uintptr_t(address);
+	//uintptr_t end = begin + length;
+
+	//// Scan the requested memory region and decommit/release the memory as is appropriate
+	//while(begin < end) {
+
+	//	// Query the information about the current region to be released
+	//	if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+	//		throw LinuxException(LINUX_EACCES, Win32Exception());
+
+	//	// Don't try to decommit pages that aren't already committed, munmap() should not
+	//	// return an error if the page(s) aren't committed (MEM_FREE or MEM_RESERVE)
+	//	if(meminfo.State == MEM_COMMIT) {
+
+	//		//
+	//		// TODO: Write-back for shared memory maps goes here, need to check if it's
+	//		// dirty and the region flags indicate a write-back is necessary.  Determining
+	//		// if it's shared can't be done with MEMORY_BASIC_INFORMATION since the current
+	//		// intention is to do it all manually via VirtualAllocEx()
+	//		//
+	//		
+	//		if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), MEM_DECOMMIT))
+	//			throw LinuxException(LINUX_EINVAL, Win32Exception());
+	//	}
+
+	//	// If the current base address matches the allocation base address, this region can possibly be released
+	//	if(meminfo.BaseAddress == meminfo.AllocationBase) {
+
+	//		// Get updated information about the decommitted region
+	//		MEMORY_BASIC_INFORMATION freeinfo;
+	//		if(VirtualQueryEx(m_host->ProcessHandle, meminfo.AllocationBase, &freeinfo, sizeof(MEMORY_BASIC_INFORMATION))) {
+
+	//			_ASSERTE(freeinfo.State != MEM_COMMIT);				// Should never happen
+
+	//			// Don't attempt to release a region that is already MEM_FREE
+	//			if(freeinfo.State == MEM_RESERVE) {
+
+	//				// Find the original length of the allocation, and if the entire region is now decommitted, release it
+	//				auto it = m_mappings.find(reinterpret_cast<void*>(begin));
+	//				if((it != m_mappings.end()) && (it->second == freeinfo.RegionSize)) {
+
+	//					if(!VirtualFreeEx(m_host->ProcessHandle, freeinfo.AllocationBase, 0, MEM_RELEASE)) throw LinuxException(LINUX_EINVAL, Win32Exception());
+	//					m_mappings.unsafe_erase(it);
+	//				}
+	//			}
+	//		}
+	//	}
+
+	//	begin += meminfo.RegionSize;		// Move to the next region
+	//}
+}
+
+//-----------------------------------------------------------------------------
+// Process::RemoveHandle
+//
+// Removes a file system handle from the process
+//
+// Arguments:
+//
+//	index		- Index (file descriptor) of the target handle
+
+void Process::RemoveHandle(int index)
+{
+	// unsafe_erase *should* be OK to use here since values are shared_ptrs,
+	// but if problems start to happen, this is a good place to look at
+	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADF);
+	m_indexpool.Release(index);
+}
+
+//-----------------------------------------------------------------------------
+// Process::SetProgramBreak
+//
+// Adjusts the program break address by increasing or decreasing the number
+// of allocated pages immediately following the loaded binary image
+//
+// Arguments:
+//
+//	address		- Requested program break address
+
+void* Process::SetProgramBreak(void* address)
+{
+	// NULL can be passed in as the address to retrieve the current program break
+	if(address == nullptr) return m_break;
+
+	// The real break address must be aligned to a page boundary
+	void* oldbreak = align::up(m_break, SystemInformation::PageSize);
+	void* newbreak = align::up(address, SystemInformation::PageSize);
+
+	// If the aligned addresses are not the same, the actual break must be changed
+	if(oldbreak != newbreak) {
+
+		// Calculate the delta between the current and requested address
+		intptr_t delta = intptr_t(newbreak) - intptr_t(oldbreak);
+
+		try {
+
+			// Allocate or release program break address space based on the calculated delta.
+			// ReleaseMemory will run into the guard page installed in the constructor if the
+			// process attempts to underrun the original break address
+			if(delta > 0) AllocateMemory(oldbreak, delta, PAGE_READWRITE);
+			else ReleaseMemory(newbreak, delta);
+		}
+
+		// Return the previously set program break address if it could not be adjusted,
+		// this operation is not intended to return any error codes
+		catch(...) { return m_break; }
+	}
+
+	// Store and return the requested address, not the page-aligned address
+	m_break = address;
+	return m_break;
+}
+
+//-----------------------------------------------------------------------------
+// Process::UnmapMemory
+//
+// Releases a memory region allocated with MapMemory
+//
+// Arguments:
+//
+//	address		- Base address of the region to be released
+//	length		- Length of the region to be released
+
+void Process::UnmapMemory(void* address, size_t length)
+{
+	ReleaseMemory(address, length);
 }
 
 //-----------------------------------------------------------------------------

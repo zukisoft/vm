@@ -26,6 +26,7 @@
 
 #include <array>
 #include <concurrent_unordered_map.h>
+#include <concurrent_unordered_set.h>
 #include <memory>
 #include <set>
 #include <vector>
@@ -239,15 +240,28 @@ private:
 	// Collection of file system handles, keyed on the index (file descriptor)
 	using handle_map_t = Concurrency::concurrent_unordered_map<int, FileSystem::HandlePtr>;
 
-	// memory_map_t
+	//// section_equal_t
+	////
+	//// Equality function for std::unique_ptr<MemorySection> objects
+	//struct section_equal_t 
+	//{ 
+	//	// Compare the base address values of the MemorySection objects to determine equality
+	//	bool operator() (const std::unique_ptr<MemorySection>& lhs, const std::unique_ptr<MemorySection>& rhs) const { return lhs->BaseAddress == rhs->BaseAddress; }
+	//};
+
+	// section_hash_t
 	//
-	// Collection of memory mappings allocated by MapMemory()
-	using memory_map_t = Concurrency::concurrent_unordered_map<void*, size_t>;
+	// Hash function for std::unique_ptr<MemorySection> objects
+	struct section_hash_t 
+	{ 
+		// Shift out the lower 16 bits of the MemorySection base address, they should always be zero due to allocation granularity
+		size_t operator() (const std::unique_ptr<MemorySection>& element) const { return uintptr_t(element->BaseAddress) >> 16; }
+	};
 
 	// section_set_t
 	//
-	// Collection of memory sections
-	using section_set_t = std::set<std::unique_ptr<MemorySection>>;
+	// Collection of std::unique_ptr<MemorySection> objects
+	using section_set_t = Concurrency::concurrent_unordered_set<std::unique_ptr<MemorySection>, section_hash_t>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -257,16 +271,6 @@ private:
 	// Allocates and commits memory in the process virtual address space
 	void* AllocateMemory(size_t length, uint32_t protection) { return AllocateMemory(nullptr, length, protection); }
 	void* AllocateMemory(void* address, size_t length, uint32_t protection);
-
-	// AllocateRegion
-	//
-	// Allocates a memory region in the hosted process
-	void* AllocateRegion(size_t length, int prot, int flags);
-	
-	// AllocateFixedRegion
-	//
-	// Allocates a memory region at a specific address in the hosted process
-	void* AllocateFixedRegion(void* address, size_t length, int prot, int flags);
 
 	// CheckHostProcessClass (static)
 	//
@@ -287,11 +291,10 @@ private:
 	void*					m_break;			// Current program break
 
 	handle_map_t			m_handles;			// Process file system handles
-	memory_map_t			m_mappings;			// Process memory mappings
 	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
 
-	// needs lock object too
 	std::vector<std::unique_ptr<MemorySection>>	m_sections;
+	section_set_t			m_test;
 
 	int						m_processid = 1;
 	void*					m_tidaddress = nullptr;
