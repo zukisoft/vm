@@ -26,7 +26,6 @@
 
 #include <array>
 #include <concurrent_unordered_map.h>
-#include <concurrent_unordered_set.h>
 #include <memory>
 #include <set>
 #include <vector>
@@ -240,28 +239,19 @@ private:
 	// Collection of file system handles, keyed on the index (file descriptor)
 	using handle_map_t = Concurrency::concurrent_unordered_map<int, FileSystem::HandlePtr>;
 
-	//// section_equal_t
-	////
-	//// Equality function for std::unique_ptr<MemorySection> objects
-	//struct section_equal_t 
-	//{ 
-	//	// Compare the base address values of the MemorySection objects to determine equality
-	//	bool operator() (const std::unique_ptr<MemorySection>& lhs, const std::unique_ptr<MemorySection>& rhs) const { return lhs->BaseAddress == rhs->BaseAddress; }
-	//};
-
-	// section_hash_t
+	// section_map_hash_t
 	//
-	// Hash function for std::unique_ptr<MemorySection> objects
-	struct section_hash_t 
+	// Hash function for the section_map_t collection
+	struct section_map_hash_t 
 	{ 
-		// Shift out the lower 16 bits of the MemorySection base address, they should always be zero due to allocation granularity
-		size_t operator() (const std::unique_ptr<MemorySection>& element) const { return uintptr_t(element->BaseAddress) >> 16; }
+		// Shift out the lower 16 bits of the key (base address), they should always be zero due to allocation granularity
+		size_t operator() (void* const element) const { return uintptr_t(element) >> 16; }
 	};
 
-	// section_set_t
+	// section_map_t
 	//
 	// Collection of std::unique_ptr<MemorySection> objects
-	using section_set_t = Concurrency::concurrent_unordered_set<std::unique_ptr<MemorySection>, section_hash_t>;
+	using section_map_t = Concurrency::concurrent_unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -293,8 +283,7 @@ private:
 	handle_map_t			m_handles;			// Process file system handles
 	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
 
-	std::vector<std::unique_ptr<MemorySection>>	m_sections;
-	section_set_t			m_test;
+	section_map_t			m_sections;			// Allocated memory sections
 
 	int						m_processid = 1;
 	void*					m_tidaddress = nullptr;

@@ -47,9 +47,12 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 //	TODO: DOCUMENT THEM
 
 Process::Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections) : 
-	m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo), m_sections(std::move(sections)) 
+	m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo) 
 {
 	_ASSERTE(m_startinfo.ProgramBreak);
+
+	// Insert all of the provided memory sections into the member collection
+	for(auto& iterator : sections) m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator)));
 
 	// Insert a guard page at the provided program break address to prevent heap
 	// underruns from trampling the loaded binary image sections.  This also prevents
@@ -124,7 +127,7 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 		anonymous->Commit(base, length, protection);
 
 		// Insert the section into the member collection and return the generated base address
-		m_sections.push_back(std::move(anonymous));
+		m_sections.insert(std::make_pair(anonymous->BaseAddress, std::move(anonymous)));
 		return base;
 	}
 
@@ -178,7 +181,7 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 	}
 
 	// Add any sections generated above to the member collection
-	for(auto& iterator : sections) { m_sections.push_back(std::move(iterator)); }
+	for(auto& iterator : sections) { m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator))); }
 
 	// Return the originally requested virtual address
 	return address;
@@ -236,6 +239,8 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 
 std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags)
 {
+	std::vector<std::unique_ptr<MemorySection>>	sections;	// Cloned process sections
+
 	(vm);
 	(hostpath);
 	(hostargs);
@@ -260,20 +265,14 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 	// TODO: WILL NEED NEW ARGUMENTS -- IT WILL NEED TO KNOW IT'S A CLONE
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 
-	//try {
-	//	// LOCK SECTIONS COLLECTION HERE
-	//
-	//	section_set_t newsections;
+	try {
 
-	//	// Clone all of the sections from the parent process into the child process
-	//	for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
-	//		newsections.insert((*iterator)->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
+		// Clone all of the memory sections from the parent process into the child process
+		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
+			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
+	}
 
-	//	int x = 123;
-	//	(x);
-	//	// UNLOCK SECTIONS COLLECTION HERE
-	//}
-	//catch(...) { host->Terminate(E_FAIL); throw; }
+	catch(...) { host->Terminate(E_FAIL); throw; }
 
 	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
 	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
@@ -289,6 +288,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 
 	Resume();										// Resume the parent process
 
+	// transfer host, sections, etc to the new Process instance here
 	return nullptr;
 }
 
@@ -318,8 +318,6 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
 	uint8_t							random[16];				// 16-bytes of random data for AT_RANDOM auxvec
 	StartupInfo						startinfo;				// Hosted process startup information
-
-	std::vector<std::unique_ptr<MemorySection>> sections;
 
 	// Create the external host process (suspended by default) and verify the class/architecture
 	// as this will all go south very quickly if it's not the expected architecture
@@ -385,12 +383,13 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		startinfo.StackImage = stackimg.BaseAddress;
 		startinfo.StackImageLength = stackimg.Length;
 
-		////////////////
-		if(executable->Interpreter) { /* TODO: PUSH_BACK INTERPRETER */ }
+		// The allocated MemorySection instances need to be transferred to the Process instance
+		std::vector<std::unique_ptr<MemorySection>> sections;
+		if(interpreter) sections.push_back(std::move(interpreter));
 		sections.push_back(std::move(executable));
-		//////////////////
+		// todo: new stack allocation will go here too
 
-		// Create the Process object, transferring the host and startup information
+		// Create the Process object, transferring the host, startup information and allocated sections
 		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(startinfo), std::move(sections));
 	}
 
@@ -577,75 +576,38 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 
 void Process::ReleaseMemory(void* address, size_t length)
 {
-	(address);
-	(length);
-	_RPTF0(_CRT_ASSERT, "Process::ReleaseMemory -- not implemented yet");
+	MEMORY_BASIC_INFORMATION		meminfo;		// Virtual memory information
 
-	// how will this work?
-	//auto iterator = m_test.find(nullptr);
+	uintptr_t begin = align::down(uintptr_t(address), SystemInformation::PageSize);
+	uintptr_t end = begin + length;
 
-	// This will have to scan the existing sections to see if an entire one can
-	// be deleted, otherwise just decommit partial sections and leave in MEM_RESERVE
+	while(begin < end) {
 
-	// OLD CODE FROM UNMAPMEMORY():
+		// If there is a section mapped at the current address that entirely fits within the range,
+		// release the entire thing rather than decommitting the pages individually
+		const auto& mapentry = m_sections.find(address);
+		if((mapentry != m_sections.end()) && (mapentry->second->Length <= (end = begin))) {
+				
+			begin += mapentry->second->Length;		// Move to just beyond this section
+			m_sections.unsafe_erase(mapentry);			// Remove/release the MemorySection
+			continue;
+		}
 
-	//MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
+		// Query the state of the pages at the current address
+		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			throw LinuxException(LINUX_EACCES, Win32Exception());
 
-	//_ASSERTE(m_host);
-	//_ASSERTE(m_host->ProcessHandle != INVALID_HANDLE_VALUE);
+		// Ignore free or decommitted regions; attempting to release memory that has already been released
+		// is not an error condition per munmap(2)
+		if(meminfo.State == MEM_COMMIT) {
 
-	//// Determine the starting and ending points for the operation; Windows will automatically
-	//// adjust these values to align on the proper page size during VirtualProtect
-	//uintptr_t begin = uintptr_t(address);
-	//uintptr_t end = begin + length;
+			// Decommit all of the page(s) in the current region
+			if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), MEM_DECOMMIT))
+				throw LinuxException(LINUX_EINVAL, Win32Exception());
+		}
 
-	//// Scan the requested memory region and decommit/release the memory as is appropriate
-	//while(begin < end) {
-
-	//	// Query the information about the current region to be released
-	//	if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
-	//		throw LinuxException(LINUX_EACCES, Win32Exception());
-
-	//	// Don't try to decommit pages that aren't already committed, munmap() should not
-	//	// return an error if the page(s) aren't committed (MEM_FREE or MEM_RESERVE)
-	//	if(meminfo.State == MEM_COMMIT) {
-
-	//		//
-	//		// TODO: Write-back for shared memory maps goes here, need to check if it's
-	//		// dirty and the region flags indicate a write-back is necessary.  Determining
-	//		// if it's shared can't be done with MEMORY_BASIC_INFORMATION since the current
-	//		// intention is to do it all manually via VirtualAllocEx()
-	//		//
-	//		
-	//		if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), MEM_DECOMMIT))
-	//			throw LinuxException(LINUX_EINVAL, Win32Exception());
-	//	}
-
-	//	// If the current base address matches the allocation base address, this region can possibly be released
-	//	if(meminfo.BaseAddress == meminfo.AllocationBase) {
-
-	//		// Get updated information about the decommitted region
-	//		MEMORY_BASIC_INFORMATION freeinfo;
-	//		if(VirtualQueryEx(m_host->ProcessHandle, meminfo.AllocationBase, &freeinfo, sizeof(MEMORY_BASIC_INFORMATION))) {
-
-	//			_ASSERTE(freeinfo.State != MEM_COMMIT);				// Should never happen
-
-	//			// Don't attempt to release a region that is already MEM_FREE
-	//			if(freeinfo.State == MEM_RESERVE) {
-
-	//				// Find the original length of the allocation, and if the entire region is now decommitted, release it
-	//				auto it = m_mappings.find(reinterpret_cast<void*>(begin));
-	//				if((it != m_mappings.end()) && (it->second == freeinfo.RegionSize)) {
-
-	//					if(!VirtualFreeEx(m_host->ProcessHandle, freeinfo.AllocationBase, 0, MEM_RELEASE)) throw LinuxException(LINUX_EINVAL, Win32Exception());
-	//					m_mappings.unsafe_erase(it);
-	//				}
-	//			}
-	//		}
-	//	}
-
-	//	begin += meminfo.RegionSize;		// Move to the next region
-	//}
+		begin += meminfo.RegionSize;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -659,8 +621,7 @@ void Process::ReleaseMemory(void* address, size_t length)
 
 void Process::RemoveHandle(int index)
 {
-	// unsafe_erase *should* be OK to use here since values are shared_ptrs,
-	// but if problems start to happen, this is a good place to look at
+	// Remove the index from the handle collection and return it to the pool
 	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADF);
 	m_indexpool.Release(index);
 }
