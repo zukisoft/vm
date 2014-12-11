@@ -72,6 +72,8 @@ Process::Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootd
 
 int Process::AddHandle(const FileSystem::HandlePtr& handle)
 {
+	Concurrency::reader_writer_lock::scoped_lock writer(m_handlelock);
+
 	// Allocate a new index (file descriptor) for the handle and insert it
 	int index = m_indexpool.Allocate();
 	if(m_handles.insert(std::make_pair(index, handle)).second) return index;
@@ -93,6 +95,8 @@ int Process::AddHandle(const FileSystem::HandlePtr& handle)
 
 int Process::AddHandle(int fd, const FileSystem::HandlePtr& handle)
 {
+	Concurrency::reader_writer_lock::scoped_lock writer(m_handlelock);
+
 	// Attempt to insert the handle using the specified index
 	if(m_handles.insert(std::make_pair(fd, handle)).second) return fd;
 	throw LinuxException(LINUX_EBADF);
@@ -127,6 +131,8 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 		anonymous->Commit(base, length, protection);
 
 		// Insert the section into the member collection and return the generated base address
+		Concurrency::reader_writer_lock::scoped_lock writer(m_sectionlock);
+		// TODO: WHAT IF THIS THROWS
 		m_sections.insert(std::make_pair(anonymous->BaseAddress, std::move(anonymous)));
 		return base;
 	}
@@ -181,6 +187,8 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 	}
 
 	// Add any sections generated above to the member collection
+	Concurrency::reader_writer_lock::scoped_lock writer(m_sectionlock);
+	// TODO: WHAT IF THIS THROWS
 	for(auto& iterator : sections) { m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator))); }
 
 	// Return the originally requested virtual address
@@ -266,6 +274,8 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 
 	try {
+
+		Concurrency::reader_writer_lock::scoped_lock_read reader(m_sectionlock);
 
 		// Clone all of the memory sections from the parent process into the child process
 		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
@@ -410,6 +420,8 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 FileSystem::HandlePtr Process::GetHandle(int index)
 {
+	Concurrency::reader_writer_lock::scoped_lock_read reader(m_handlelock);
+
 	try { return m_handles.at(index); }
 	catch(...) { throw LinuxException(LINUX_EBADF); }
 }
@@ -581,6 +593,8 @@ void Process::ReleaseMemory(void* address, size_t length)
 	uintptr_t begin = align::down(uintptr_t(address), SystemInformation::PageSize);
 	uintptr_t end = begin + length;
 
+	Concurrency::reader_writer_lock::scoped_lock writer(m_sectionlock);
+
 	while(begin < end) {
 
 		// If there is a section mapped at the current address that entirely fits within the range,
@@ -589,7 +603,7 @@ void Process::ReleaseMemory(void* address, size_t length)
 		if((mapentry != m_sections.end()) && (mapentry->second->Length <= (end = begin))) {
 				
 			begin += mapentry->second->Length;		// Move to just beyond this section
-			m_sections.unsafe_erase(mapentry);			// Remove/release the MemorySection
+			m_sections.erase(mapentry);				// Remove/release the MemorySection
 			continue;
 		}
 
@@ -621,8 +635,10 @@ void Process::ReleaseMemory(void* address, size_t length)
 
 void Process::RemoveHandle(int index)
 {
+	Concurrency::reader_writer_lock::scoped_lock writer(m_handlelock);
+
 	// Remove the index from the handle collection and return it to the pool
-	if(m_handles.unsafe_erase(index) == 0) throw LinuxException(LINUX_EBADF);
+	if(m_handles.erase(index) == 0) throw LinuxException(LINUX_EBADF);
 	m_indexpool.Release(index);
 }
 

@@ -25,9 +25,9 @@
 #pragma once
 
 #include <array>
-#include <concurrent_unordered_map.h>
+#include <concrt.h>
 #include <memory>
-#include <set>
+#include <unordered_map>
 #include <vector>
 #include <linux/elf.h>
 #include <linux/mman.h>
@@ -237,7 +237,7 @@ private:
 	// handle_map_t
 	//
 	// Collection of file system handles, keyed on the index (file descriptor)
-	using handle_map_t = Concurrency::concurrent_unordered_map<int, FileSystem::HandlePtr>;
+	using handle_map_t = std::unordered_map<int, FileSystem::HandlePtr>;
 
 	// section_map_hash_t
 	//
@@ -251,7 +251,7 @@ private:
 	// section_map_t
 	//
 	// Collection of std::unique_ptr<MemorySection> objects
-	using section_map_t = Concurrency::concurrent_unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
+	using section_map_t = std::unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -278,20 +278,29 @@ private:
 
 	std::unique_ptr<Host>	m_host;				// Hosted windows process
 	StartupInfo				m_startinfo;		// Hosted process start information
-	void*					m_break;			// Current program break
 
-	handle_map_t			m_handles;			// Process file system handles
-	IndexPool<int>			m_indexpool { MIN_HANDLE_INDEX };
-
-	section_map_t			m_sections;			// Allocated memory sections
+	////
 
 	int						m_processid = 1;
 	void*					m_tidaddress = nullptr;
 
-	std::atomic<uapi::mode_t>	m_umask = 0022;	// System default UMASK
+	// MEMORY MANAGEMENT
+	//
+	void*							m_break;		// Current program break
+	Concurrency::reader_writer_lock	m_sectionlock;	// Section collection lock
+	section_map_t					m_sections;		// Allocated memory sections
 
-	FileSystem::AliasPtr	m_rootdir;			// Process root directory
-	FileSystem::AliasPtr	m_workingdir;		// Process working directory
+	// HANDLE MANAGEMENT
+	//
+	Concurrency::reader_writer_lock	m_handlelock;	// Handle collection lock
+	handle_map_t					m_handles;		// Process file system handles
+	IndexPool<int>					m_indexpool { MIN_HANDLE_INDEX };
+
+	// FILE SYSTEM MANAGEMENT
+	//
+	FileSystem::AliasPtr		m_rootdir;			// Process root directory
+	FileSystem::AliasPtr		m_workingdir;		// Process working directory
+	std::atomic<uapi::mode_t>	m_umask = 0022;		// Default UMASK value
 };
 
 //-----------------------------------------------------------------------------
