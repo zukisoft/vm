@@ -266,6 +266,24 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 #endif
 	}
 
+	else if(exception->ExceptionRecord->ExceptionCode == 0x40010006) {
+
+		// OUTPUT DEBUG STRING
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+
+	else if(exception->ExceptionRecord->ExceptionCode == 0xC0000028) {
+
+		// STATUS_BAD_STACK
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+
+	else if(exception->ExceptionRecord->ExceptionCode == 0xC0000096) {
+
+		// PRIVILEGED INSTRUCTION
+		ExitProcess(0);
+	}
+
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 

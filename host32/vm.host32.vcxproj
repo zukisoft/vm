@@ -93,6 +93,7 @@
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\generic_text.h" />
     <ClInclude Include="..\common\linux\errno.h" />
+    <ClInclude Include="..\common\SystemInformation.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h" />
@@ -103,6 +104,7 @@
   <ItemGroup>
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\rpcmem.cpp" />
+    <ClCompile Include="..\common\SystemInformation.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\tmp\vm.service\x86\syscalls32_c.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>

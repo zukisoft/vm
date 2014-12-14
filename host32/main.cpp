@@ -21,16 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "SystemInformation.h"
+#include <process.h>
 
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
 sys32_context_t g_rpccontext;
-
-// g_startupinfo
-//
-// Global process startup information retrieved from the server
-sys32_startup_info g_startupinfo;
 
 // elfmain (elfmain.asm)
 //
@@ -41,6 +38,18 @@ extern "C" void __stdcall elfmain(uint32_t entrypoint, uint32_t stackpointer);
 //
 // Vectored Exception handler used to provide emulation
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
+
+// HostedBinaryThread
+//
+// Launches the ELF binary on its own worker thread
+unsigned __stdcall HostedBinaryThread(void* arg)
+{
+	sys32_startup_info* startupinfo = reinterpret_cast<sys32_startup_info*>(arg);
+	elfmain(startupinfo->entry_point, startupinfo->stack_pointer);
+
+	// never returns
+	return 0;						// Never actually returns
+}
 
 //-----------------------------------------------------------------------------
 // WinMain
@@ -56,9 +65,10 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	RPC_BINDING_HANDLE				binding;			// RPC binding from command line
-	RPC_STATUS						rpcresult;			// Result from RPC function call
-	HRESULT							hresult;			// Result from system call API function
+	RPC_BINDING_HANDLE			binding;			// RPC binding from command line
+	sys32_startup_info			startupinfo;		// Startup information
+	RPC_STATUS					rpcresult;			// Result from RPC function call
+	HRESULT						hresult;			// Result from system call API function
 
 	// EXPECTED ARGUMENTS:
 	//
@@ -71,16 +81,18 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys32_acquire_context(binding, &g_startupinfo, &g_rpccontext);
+	hresult = sys32_acquire_context(binding, &startupinfo, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Install the emulator, which operates by intercepting low-level exceptions
 	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
 
-	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
-	// so that CreateThread() can be used rather than _beginthreadex
-	// Create the thread with the smallest possible stack size (64KiB?)
-	elfmain(g_startupinfo.entry_point, g_startupinfo.stack_pointer);
+	// Start the hosted binary on a worker thread, this main thread will wait for signals
+	_beginthreadex(nullptr, SystemInformation::AllocationGranularity, HostedBinaryThread, &startupinfo, 0, nullptr);
+
+	// TODO: temporary -- wait forever
+	HANDLE delay = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	WaitForSingleObject(delay, INFINITE);
 
 	// TODO: this is temporary; the main thread needs to wait for signals and whatnot
 	return static_cast<int>(sys32_release_context(&g_rpccontext));

@@ -386,16 +386,17 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 		// Allocate the stack for the process, using the currently set initial stack size for the Virtual Machine
 		//// TODO: NEED TO GET STACK LENGTH FROM RESOURCE LIMITS SET FOR VIRTUAL MACHINE
-		std::unique_ptr<MemorySection> stack = MemorySection::Reserve(host->ProcessHandle, 2 MiB, SystemInformation::AllocationGranularity);
+		std::unique_ptr<MemorySection> stack = MemorySection::Reserve(host->ProcessHandle, 1 MiB, SystemInformation::AllocationGranularity);
 
 		// Commit the entire stack, placing guard pages at both the beginning and end of the section
 		// TODO: Can this be reserved rather than committed? Windows doesn't seem to work with it properly when you make
 		// your own stack, it will access violation if just reserved.  There is probably a way to set that up, though.
+		// If nothing else, it could be done in the host
 		stack->Commit(stack->BaseAddress, stack->Length, PAGE_READWRITE);
 		stack->Protect(stack->BaseAddress, SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
 		stack->Protect(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + stack->Length - SystemInformation::PageSize), SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
 
-		// Write the ELF arguments into the process stack section and get the resultant pointer
+		// Write the ELF arguments into the read/write portion of the process stack section and get the resultant pointer
 		startinfo.StackPointer = args.GenerateProcessStack<_class>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), 
 			stack->Length - (SystemInformation::PageSize * 2));
 
