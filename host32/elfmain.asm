@@ -48,7 +48,6 @@ elfmain proc stdcall entrypoint:ptr dword, stackpointer:ptr dword
 	xor edx, edx	; TODO -- EDX SHOULD BE SET TO SOMETHING
 	xor esi, esi
 	xor edi, edi
-	xor ebp, ebp
 
 	; set the stack pointer
 	mov esp, stackpointer

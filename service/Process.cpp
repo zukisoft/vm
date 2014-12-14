@@ -385,13 +385,15 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		//args.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);					// 33 - TODO NEEDS VDSO
 
 		// Allocate the stack for the process, using the currently set initial stack size for the Virtual Machine
-		//// TODO: NEED TO GET STACK LENGTH FROM RESOURCE LIMITS ON VM - USE A PROPERTY
+		//// TODO: NEED TO GET STACK LENGTH FROM RESOURCE LIMITS SET FOR VIRTUAL MACHINE
 		std::unique_ptr<MemorySection> stack = MemorySection::Reserve(host->ProcessHandle, 2 MiB, SystemInformation::AllocationGranularity);
 
 		// Commit the entire stack, placing guard pages at both the beginning and end of the section
+		// TODO: Can this be reserved rather than committed? Windows doesn't seem to work with it properly when you make
+		// your own stack, it will access violation if just reserved.  There is probably a way to set that up, though.
 		stack->Commit(stack->BaseAddress, stack->Length, PAGE_READWRITE);
-		stack->Commit(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), stack->Length - (SystemInformation::PageSize * 2), PAGE_READWRITE);
-		stack->Commit(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + stack->Length - SystemInformation::PageSize), SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
+		stack->Protect(stack->BaseAddress, SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
+		stack->Protect(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + stack->Length - SystemInformation::PageSize), SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
 
 		// Write the ELF arguments into the process stack section and get the resultant pointer
 		startinfo.StackPointer = args.GenerateProcessStack<_class>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), 
@@ -403,7 +405,6 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 		// The allocated MemorySection instances need to be transferred to the Process instance
 		std::vector<std::unique_ptr<MemorySection>> sections;
-
 		sections.push_back(std::move(executable));
 		sections.push_back(std::move(stack));
 		if(interpreter) sections.push_back(std::move(interpreter));
