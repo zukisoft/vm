@@ -166,17 +166,11 @@ public:
 	__declspec(property(get=getProcessId)) int ProcessId;
 	int getProcessId(void) const { return m_processid; }
 
-	// StackImage
+	// StackPointer
 	//
-	// Gets the location of the stack image in the hosted process
-	__declspec(property(get=getStackImage)) const void* StackImage;
-	const void* getStackImage(void) const { return m_startinfo.StackImage; }
-
-	// StackImageLength
-	//
-	// Gets the length of the stack image in the hosted process
-	__declspec(property(get=getStackImageLength)) size_t StackImageLength;
-	size_t getStackImageLength(void) const { return m_startinfo.StackImageLength; }
+	// Gets the address of the initialized stack for the process
+	__declspec(property(get=getStackPointer)) void* StackPointer;
+	void* getStackPointer(void) const { return m_startinfo.StackPointer; }
 
 	// TidAddress
 	//
@@ -230,8 +224,7 @@ private:
 	{
 		void*		EntryPoint;				// Execution entry point
 		void*		ProgramBreak;			// Pointer to the program break;
-		void*		StackImage;				// Pointer to the stack image
-		size_t		StackImageLength;		// Length of the stack image
+		void*		StackPointer;			// Initial process tack pointer
 	};
 
 	// handle_map_t

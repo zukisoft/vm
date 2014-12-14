@@ -1211,6 +1211,13 @@ Language=English
 Unable to write ELF argument data to the allocated virtual memory region.
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_ELFARGUMENTSEXCEEDSTACK
+Language=English
+The amount of memory required (%1!lu! bytes) for the ELF process arguments exceeds the allocated stack size of %2!lu! bytes.
+.
+
 ;//----------------------------------------------------------------------------
 ;// Process
 ;//

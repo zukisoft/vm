@@ -74,11 +74,10 @@ typedef struct _sys32_startup_info {
 	// Address to jump into to begin execution
 	sys32_addr_t	entry_point;
 
-	// stack_image
+	// stack_pointer
 	//
-	// Stack image loaded into the host process on startup
-	sys32_addr_t	stack_image;
-	sys32_size_t	stack_image_length;
+	// Address of the initial process stack
+	sys32_addr_t	stack_pointer;
 	
 } sys32_startup_info;
 

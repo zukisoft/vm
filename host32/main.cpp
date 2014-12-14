@@ -35,7 +35,7 @@ sys32_startup_info g_startupinfo;
 // elfmain (elfmain.asm)
 //
 // Entry point used to launch the hosted ELF image
-extern "C" void __stdcall elfmain(uint32_t address, uint32_t stackimg, size_t stackimglen);
+extern "C" void __stdcall elfmain(uint32_t entrypoint, uint32_t stackpointer);
 
 // EmulationExceptionHandler (emulator.cpp)
 //
@@ -79,7 +79,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 
 	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
 	// so that CreateThread() can be used rather than _beginthreadex
-	elfmain(g_startupinfo.entry_point, g_startupinfo.stack_image, g_startupinfo.stack_image_length);
+	// Create the thread with the smallest possible stack size (64KiB?)
+	elfmain(g_startupinfo.entry_point, g_startupinfo.stack_pointer);
 
 	// TODO: this is temporary; the main thread needs to wait for signals and whatnot
 	return static_cast<int>(sys32_release_context(&g_rpccontext));

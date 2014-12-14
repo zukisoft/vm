@@ -384,22 +384,31 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		(LINUX_AT_SYSINFO);																		// 32 - TODO MAY NOT IMPLEMENT?
 		//args.AppendAuxiliaryVector(LINUX_AT_SYSINFO_EHDR, vdso->BaseAddress);					// 33 - TODO NEEDS VDSO
 
-		// Generate the stack image for the process in it's address space
-		ElfArguments::StackImage stackimg = args.GenerateStackImage<_class>(host->ProcessHandle);
+		// Allocate the stack for the process, using the currently set initial stack size for the Virtual Machine
+		//// TODO: NEED TO GET STACK LENGTH FROM RESOURCE LIMITS ON VM - USE A PROPERTY
+		std::unique_ptr<MemorySection> stack = MemorySection::Reserve(host->ProcessHandle, 2 MiB, SystemInformation::AllocationGranularity);
 
-		// Load the StartupInfo structure with the necessary information to get the ELF binary running
+		// Commit the entire stack, placing guard pages at both the beginning and end of the section
+		stack->Commit(stack->BaseAddress, stack->Length, PAGE_READWRITE);
+		stack->Commit(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), stack->Length - (SystemInformation::PageSize * 2), PAGE_READWRITE);
+		stack->Commit(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + stack->Length - SystemInformation::PageSize), SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
+
+		// Write the ELF arguments into the process stack section and get the resultant pointer
+		startinfo.StackPointer = args.GenerateProcessStack<_class>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), 
+			stack->Length - (SystemInformation::PageSize * 2));
+
+		// Load the remainder of the StartupInfo structure with the necessary information to get the ELF binary running
 		startinfo.EntryPoint = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
 		startinfo.ProgramBreak = executable->ProgramBreak;
-		startinfo.StackImage = stackimg.BaseAddress;
-		startinfo.StackImageLength = stackimg.Length;
 
 		// The allocated MemorySection instances need to be transferred to the Process instance
 		std::vector<std::unique_ptr<MemorySection>> sections;
-		if(interpreter) sections.push_back(std::move(interpreter));
-		sections.push_back(std::move(executable));
-		// todo: new stack allocation will go here too
 
-		// Create the Process object, transferring the host, startup information and allocated sections
+		sections.push_back(std::move(executable));
+		sections.push_back(std::move(stack));
+		if(interpreter) sections.push_back(std::move(interpreter));
+
+		// Create the Process object, transferring the host, startup information and allocated memory sections
 		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(startinfo), std::move(sections));
 	}
 

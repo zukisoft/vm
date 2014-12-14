@@ -32,34 +32,29 @@
 ;
 ;	Arguments:
 ;
-;		address			- ELF image entry point
-;		stackimage		- Initial stack image
-;		stackimagelen	- Length of stack image in bytes
+;		entrypoint			- ELF image entry point
+;		stackpointer		- Stack pointer
 ;
 ;	Function Prototype:
 ;
-;		void __stdcall elfmain(void* address, const void* stackimage, size_t stackimagelen);
+;		void __stdcall elfmain(void* entrypoint, void* stackpointer);
 
-elfmain proc stdcall address:ptr dword, stackimage:ptr dword, stackimagelen:dword
-
-	; copy the stack image into the thread stack space
-	mov esi, stackimage
-	sub esp, stackimagelen
-	mov edi, esp
-	mov ecx, stackimagelen
-	shr ecx, 2
-	rep movsd
+elfmain proc stdcall entrypoint:ptr dword, stackpointer:ptr dword
 
 	; zero out the general purpose registers
 	xor eax, eax
 	xor ebx, ebx
 	xor ecx, ecx
-	xor edx, edx
+	xor edx, edx	; TODO -- EDX SHOULD BE SET TO SOMETHING
 	xor esi, esi
 	xor edi, edi
+	xor ebp, ebp
+
+	; set the stack pointer
+	mov esp, stackpointer
 
 	; jump into the binary image entry point
-	jmp address
+	jmp entrypoint
 
 	; suppress A6001 warning
 	ret

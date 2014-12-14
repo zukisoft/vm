@@ -67,11 +67,8 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 		if(uintptr_t(handle->Process->EntryPoint) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
 		startinfo->entry_point = reinterpret_cast<sys32_addr_t>(handle->Process->EntryPoint);
 
-		if(uintptr_t(handle->Process->StackImage) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
-		startinfo->stack_image = reinterpret_cast<sys32_addr_t>(handle->Process->StackImage);
-
-		if(uintptr_t(handle->Process->StackImageLength) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
-		startinfo->stack_image_length = static_cast<sys32_size_t>(handle->Process->StackImageLength);
+		if(uintptr_t(handle->Process->StackPointer) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
+		startinfo->stack_pointer = reinterpret_cast<sys32_addr_t>(handle->Process->StackPointer);
 	}
 
 	catch(const Exception& ex) { SystemCall::FreeContext(handle); return ex.HResult; }
