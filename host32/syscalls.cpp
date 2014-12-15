@@ -88,7 +88,7 @@ extern sys32_context_t g_rpccontext;
 uapi::long_t sys_noentry(PCONTEXT context) 
 { 
 	UNREFERENCED_PARAMETER(context);
-	_RPT1(_CRT_WARN, "sys_noentry: system call number %d requested", context->Eax);
+	_RPT1(_CRT_WARN, "sys_noentry: system call number %d requested\r\n", context->Eax);
 
 	return -LINUX_ENOSYS; 
 }

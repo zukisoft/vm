@@ -25,6 +25,10 @@
 #include "syscalls.h"
 #include <linux/errno.h>
 
+// trace.cpp
+//
+void TraceMessage(const char_t* message, size_t length);
+
 // t_gs
 //
 // Emulated GS register value
@@ -66,7 +70,7 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 	__try { return static_cast<DWORD>(func(context)); }
 	__except(EXCEPTION_EXECUTE_HANDLER) { 
 		
-		_RPTF2(_CRT_ASSERT, "System call %d: Unhandled exception 0x%08X", 123, GetExceptionCode());
+		_RPTF2(_CRT_ASSERT, "System call %d: Unhandled exception 0x%08X\r\n", 123, GetExceptionCode());
 		return -LINUX_EFAULT; 
 	}
 }
@@ -80,7 +84,7 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
 
 	int syscall = static_cast<int>(context->Eax);
-	_RPT1(_CRT_WARN, "System call %d", syscall);
+	_RPT1(_CRT_WARN, "System call %d\r\n", syscall);
 
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit
@@ -89,7 +93,7 @@ emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> boo
 	// TODO: remove this at some point, it's only going to be useful until
 	// the applications can just report it on their own
 	if(static_cast<int>(context->Eax) < 0) {
-		_RPT2(_CRT_WARN, "System call %d: result = %d", syscall, context->Eax);
+		_RPT2(_CRT_WARN, "System call %d: result = %d\r\n", syscall, context->Eax);
 	}
 
 	return true;
@@ -266,22 +270,24 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 #endif
 	}
 
+	// 0x40010006 -- DBG_PRINTEXCEPTION_C
+	//
 	else if(exception->ExceptionRecord->ExceptionCode == 0x40010006) {
 
-		// OUTPUT DEBUG STRING
+		// OutputDebugString and _RPTFx(_CRT_WARN, ...) are flaky when called from within a vectored exception
+		// handler and can cause a stack overflow or just plain nuke the process.  This catches the attempt to 
+		// write a message and sends it to the custom trace handler instead
+		TraceMessage((char*)exception->ExceptionRecord->ExceptionInformation[1], exception->ExceptionRecord->ExceptionInformation[0]);
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 
-	else if(exception->ExceptionRecord->ExceptionCode == 0xC0000028) {
-
-		// STATUS_BAD_STACK
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
-
+	// 0xC00000096 -- STATUS_PRIVILEGED_INSTRUCTION
+	//
 	else if(exception->ExceptionRecord->ExceptionCode == 0xC0000096) {
 
-		// PRIVILEGED INSTRUCTION
-		ExitProcess(0);
+		// TODO: This happens when HLT is called; should likely be removed once proper exiting
+		// of the hosted application has been established
+		ExitProcess(0xC0000096);
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;

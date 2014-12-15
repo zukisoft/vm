@@ -47,8 +47,7 @@ unsigned __stdcall HostedBinaryThread(void* arg)
 	sys32_startup_info* startupinfo = reinterpret_cast<sys32_startup_info*>(arg);
 	elfmain(startupinfo->entry_point, startupinfo->stack_pointer);
 
-	// never returns
-	return 0;						// Never actually returns
+	return 0;					// <--- Never actually returns
 }
 
 //-----------------------------------------------------------------------------
@@ -89,7 +88,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 
 	// Start the hosted binary on a worker thread, this main thread will wait for signals
 	_beginthreadex(nullptr, SystemInformation::AllocationGranularity, HostedBinaryThread, &startupinfo, 0, nullptr);
-
+	
 	// TODO: temporary -- wait forever
 	HANDLE delay = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	WaitForSingleObject(delay, INFINITE);

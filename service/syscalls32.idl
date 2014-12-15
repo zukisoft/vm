@@ -115,6 +115,11 @@ interface SystemCalls32
 	// Releases a context handle previously allocated for a child process
 	HRESULT sys32_release_context([in, out, ref] sys32_context_exclusive_t* context);
 
+	// sys32_trace
+	//
+	// Sends a trace message back to the service from the host
+	HRESULT sys32_trace([in] sys32_context_t context, [in, size_is(length)] sys32_char_t* message, [in] sys32_size_t length);
+
 	// sys32_xxxxx
 	//
 	// Linux kernel system calls

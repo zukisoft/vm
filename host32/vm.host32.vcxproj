@@ -121,6 +121,7 @@
     <ClCompile Include="sys_old_mmap.cpp" />
     <ClCompile Include="sys_mmap.cpp" />
     <ClCompile Include="sys_set_thread_area.cpp" />
+    <ClCompile Include="trace.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />

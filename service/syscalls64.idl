@@ -116,6 +116,11 @@ interface SystemCalls64
 	// Releases a context handle previously allocated for a child process
 	HRESULT sys64_release_context([in, out, ref] sys64_context_exclusive_t* context);
 
+	// sys64_trace
+	//
+	// Sends a trace message back to the service from the host
+	HRESULT sys64_trace([in] sys64_context_t context, [in, size_is(length)] sys64_char_t* message, [in] sys64_sizeis_t length);
+
 	// sys_xxxxx
 	//
 	// Linux kernel system calls
