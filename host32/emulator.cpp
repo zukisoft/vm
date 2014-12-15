@@ -242,7 +242,7 @@ emulator::instruction MOV_GSRM32_IMM32(0x65, 0xC7, [](emulator::context_t* conte
 
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 {
-	// All the exceptions that are handled here are access violations
+	// All the exceptions that are handled here in the emulator are access violations
 	if(exception->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
 
 		// System Call Emulation
@@ -272,18 +272,18 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 
 	// 0x40010006 -- DBG_PRINTEXCEPTION_C
 	//
-	else if(exception->ExceptionRecord->ExceptionCode == 0x40010006) {
+	else if(exception->ExceptionRecord->ExceptionCode == DBG_PRINTEXCEPTION_C) {
 
 		// OutputDebugString and _RPTFx(_CRT_WARN, ...) are flaky when called from within a vectored exception
 		// handler and can cause a stack overflow or just plain nuke the process.  This catches the attempt to 
 		// write a message and sends it to the custom trace handler instead
-		TraceMessage((char*)exception->ExceptionRecord->ExceptionInformation[1], exception->ExceptionRecord->ExceptionInformation[0]);
+		TraceMessage(reinterpret_cast<char*>(exception->ExceptionRecord->ExceptionInformation[1]), exception->ExceptionRecord->ExceptionInformation[0]);
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 
 	// 0xC00000096 -- STATUS_PRIVILEGED_INSTRUCTION
 	//
-	else if(exception->ExceptionRecord->ExceptionCode == 0xC0000096) {
+	else if(exception->ExceptionRecord->ExceptionCode == STATUS_PRIVILEGED_INSTRUCTION) {
 
 		// TODO: This happens when HLT is called; should likely be removed once proper exiting
 		// of the hosted application has been established
