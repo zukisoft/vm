@@ -37,21 +37,40 @@ extern sys32_context_t g_rpccontext;
 //
 // Arguments:
 //
-//	clone_flags		- Operation flags
-//	newsp			- New child process/thread stack address
-//	parent_tidptr	- Address to store the new child pid_t (in parent and child)
-//	tls_val			- Ignored; new thread local storage descriptor 
-//	child_tidptr	- Address to store the new child pit_t (in child only)
+//	context		- Pointer to the CONTEXT structure from the exception handler
 
-uapi::long_t sys_clone(unsigned long clone_flags, void* newsp, uapi::pid_t* parent_tidptr, int tls_val, uapi::pid_t* child_tidptr)
+uapi::long_t sys_clone(PCONTEXT context)
 {
-	// For now this is just a pass-through to the RPC function, but I think I'll need to use
-	// a local syscall to deal with some of this.  It can always be removed later
-	//
-	// NOTE: The Linux kernel ignores tls_val completely
+	sys32_registers		registers;				// Child process/thread registers
 
-	return sys32_clone(g_rpccontext, clone_flags, reinterpret_cast<sys32_addr_t>(newsp), reinterpret_cast<sys32_addr_t>(parent_tidptr), 
-		tls_val, reinterpret_cast<sys32_addr_t>(child_tidptr));
+	// Initialize the child process/thread registers based on the provided CONTEXT,
+	// skipping over the INT 80H instruction currently being processed
+
+	registers.EAX = context->Eax;
+	registers.EBX = context->Ebx;
+	registers.ECX = context->Ecx;
+	registers.EDX = context->Edx;
+	registers.EDI = context->Edi;
+	registers.ESI = context->Esi;
+	registers.EBP = context->Ebp;
+	registers.EIP = context->Eip + 2;			// INT 80H [0xCD, 0x80]
+	registers.ESP = context->Esp;
+
+	// sys32_clone takes 2 additional arguments over the clone(2) system call, it needs to know what the
+	// state of the registers should be in the cloned thread/process as well as the thread id that's
+	// going to be cloned within this process (which is this thread). The thread that invoked sys32_clone() 
+	// comes back here like it normally would, whereas the newly created process/thread will jump to the 
+	// location specified by the registers, bypassing the emulator/exception handler layer.  This is why 
+	// the instruction pointer had to be incremented beyond the INT 80H call in the passed register set
+
+	return sys32_clone(g_rpccontext,				// context
+		&registers,									// registers
+		GetCurrentThreadId(),						// calling_thread_id
+		static_cast<sys32_ulong_t>(context->Ebx),	// clone_flags
+		static_cast<sys32_addr_t>(context->Ecx),	// newsp
+		static_cast<sys32_addr_t>(context->Edx),	// parent_tidptr
+		static_cast<sys32_int_t>(context->Esi),		// tls_val
+		static_cast<sys32_addr_t>(context->Edi));	// child_tidptr
 }
 
 //-----------------------------------------------------------------------------

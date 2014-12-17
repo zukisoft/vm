@@ -236,7 +236,7 @@ void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t leng
 
 	// Calculate the stack pointer and the address of the information block
 	void* stackpointer = reinterpret_cast<void*>((uintptr_t(base) + length) - stacklen);
-	typename elf::addr_t infoptr = (uintptr_t(base) + length) - infolen;
+	typename elf::addr_t infoptr = static_cast<elf::addr_t>((uintptr_t(base) + length) - infolen);
 
 	// Use a heap buffer to collect the information so only one call to WriteProcessMemory is needed
 	HeapBuffer<uint8_t> stackimage(stacklen);

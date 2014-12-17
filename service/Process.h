@@ -76,7 +76,7 @@ public:
 	// Clone
 	//
 	// Clones the process into a new child process
-	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags);
+	//std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t clienttid, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags);
 
 	// Create (static)
 	//
@@ -89,6 +89,12 @@ public:
 	//
 	// Accesses a file system handle referenced by the process
 	FileSystem::HandlePtr GetHandle(int index);
+
+	// GetStartupContext
+	//
+	// Acquires the startup CONTEXT structure used for the process, the contents of
+	// which varies depending on if the process is 32 or 64-bit
+	void GetStartupContext(void* context, size_t length);
 
 	// MapMemory
 	//
@@ -141,12 +147,6 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// EntryPoint
-	//
-	// Gets the entry point address of the hosted process
-	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
-	const void* getEntryPoint(void) const { return m_startinfo.EntryPoint; }
-
 	// FileCreationModeMask
 	//
 	// Gets/sets the process UMASK for default file system permissions
@@ -165,12 +165,6 @@ public:
 	// Gets the virtual machine process identifier
 	__declspec(property(get=getProcessId)) int ProcessId;
 	int getProcessId(void) const { return m_processid; }
-
-	// StackPointer
-	//
-	// Gets the address of the initialized stack for the process
-	__declspec(property(get=getStackPointer)) void* StackPointer;
-	void* getStackPointer(void) const { return m_startinfo.StackPointer; }
 
 	// TidAddress
 	//
@@ -205,7 +199,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections);
+	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -216,16 +210,10 @@ private:
 	// Minimum allowable file system handle index (file descriptor)
 	static const int MIN_HANDLE_INDEX = 3;
 
-	// StartupInfo
+	// context_t
 	//
-	// Information generated when the host process was created that is
-	// required for it to know how to get itself up and running
-	struct StartupInfo
-	{
-		void*		EntryPoint;				// Execution entry point
-		void*		ProgramBreak;			// Pointer to the program break;
-		void*		StackPointer;			// Initial process tack pointer
-	};
+	// Generic buffer that holds the startup CONTEXT (or WOW64_CONTEXT) information
+	using context_t = HeapBuffer<uint8_t>;
 
 	// handle_map_t
 	//
@@ -261,6 +249,10 @@ private:
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
+	// this version will zero out all but the control registers
+	template <ElfClass _class>
+	static context_t ContextFromThread(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer);
+
 	// ReleaseMemory
 	//
 	// Decommits and releases memory from the process virtual address space
@@ -269,8 +261,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::unique_ptr<Host>	m_host;				// Hosted windows process
-	StartupInfo				m_startinfo;		// Hosted process start information
+	std::unique_ptr<Host>		m_host;			// Hosted windows process
+	context_t					m_context;		// Startup CONTEXT information
 
 	////
 

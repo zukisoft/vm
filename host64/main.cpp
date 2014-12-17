@@ -65,12 +65,12 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	hresult = sys64_acquire_context(binding, &startinfo, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
-	// TODO: this goes on a worker thread; check to see if CRT can be removed completely
-	// so that CreateThread() can be used rather than _beginthreadex
-	// Use the smallest possible stack (64KiB?)
+	// TODO: Launch a worker thread or something to deal with signals.  This main thread
+	// should be reserved for executing the ELF binary so that CONTEXT for the thread
+	// is easily accessible for process forking/cloning
 	elfmain(startinfo.entry_point, startinfo.stack_pointer);
 
-	// TODO: this is temporary; the main thread needs to wait for signals and whatnot
+	// TODO: this is temporary; never actually gets here
 	return static_cast<int>(sys64_release_context(&g_rpccontext));
 }
 

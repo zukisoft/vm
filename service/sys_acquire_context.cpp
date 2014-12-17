@@ -25,6 +25,16 @@
 
 #pragma warning(push, 4)
 
+// CONTEXT32 / CONTEXT64
+//
+// Aliases for either CONTEXT or WOW64_CONTEXT, depending on build type
+#ifndef _M_X64
+using CONTEXT32 = CONTEXT;
+#else
+using CONTEXT32 = WOW64_CONTEXT;
+using CONTEXT64 = CONTEXT;
+#endif
+
 //-----------------------------------------------------------------------------
 // sys32_acquire_context
 //
@@ -33,10 +43,10 @@
 // Arguments:
 //
 //	rpchandle		- RPC binding handle
-//	startinfo		- [out] set to the startup information for the process
+//	registers		- [out] set to the startup registers for the process
 //	context			- [out] set to the newly allocated context handle
 
-HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo, sys32_context_exclusive_t* context)
+HRESULT sys32_acquire_context(handle_t rpchandle, sys32_registers* registers, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
 	SystemCall::Context*		handle = nullptr;	// System call context handle
@@ -55,7 +65,7 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 	attributes.Flags = RPC_QUERY_CLIENT_PID;
 
 	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
-	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
+	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult); 
 
 	try {
 
@@ -64,11 +74,20 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info* startinfo,
 		// Allocate and initialize a Context object to be passed back as the RPC context
 		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
-		if(uintptr_t(handle->Process->EntryPoint) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
-		startinfo->entry_point = reinterpret_cast<sys32_addr_t>(handle->Process->EntryPoint);
+		// Acquire the startup CONTEXT32 information for the process
+		CONTEXT32 startupcontext;
+		handle->Process->GetStartupContext(&startupcontext, sizeof(CONTEXT32));
 
-		if(uintptr_t(handle->Process->StackPointer) > UINT32_MAX) throw Win32Exception(ERROR_INVALID_ADDRESS);
-		startinfo->stack_pointer = reinterpret_cast<sys32_addr_t>(handle->Process->StackPointer);
+		// Copy the relevant portions of the CONTEXT32 into the sys32_registers structure
+		registers->EAX = startupcontext.Eax;
+		registers->EBX = startupcontext.Ebx;
+		registers->ECX = startupcontext.Ecx;
+		registers->EDX = startupcontext.Edx;
+		registers->EDI = startupcontext.Edi;
+		registers->ESI = startupcontext.Esi;
+		registers->EBP = startupcontext.Ebp;
+		registers->EIP = startupcontext.Eip;
+		registers->ESP = startupcontext.Esp;
 	}
 
 	catch(const Exception& ex) { SystemCall::FreeContext(handle); return ex.HResult; }

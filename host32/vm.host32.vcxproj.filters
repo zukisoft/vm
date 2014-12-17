@@ -117,9 +117,4 @@
       <Filter>Generated Files</Filter>
     </ResourceCompile>
   </ItemGroup>
-  <ItemGroup>
-    <MASM Include="elfmain.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-  </ItemGroup>
 </Project>

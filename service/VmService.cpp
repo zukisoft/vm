@@ -180,12 +180,14 @@ std::shared_ptr<FileSystem::Handle> VmService::CreateFile(const std::shared_ptr<
 // Arguments:
 //
 //	process			- Parent process to be cloned
+//	clienttid		- Thread ID that invoked the sys_clone() function
 //	flags			- Clone operation flags
 
-std::shared_ptr<Process> VmService::CloneProcess(std::shared_ptr<Process> process, uint32_t flags)
+std::shared_ptr<Process> VmService::CloneProcess(std::shared_ptr<Process> process, uint32_t clienttid, uint32_t flags)
 {
 	// TODO - this needs to use the proper x86 or x64 host for the process
-	return process->Clone(shared_from_this(), ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str(), flags);
+	//return process->Clone(shared_from_this(), clienttid, ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str(), flags);
+	throw Exception(E_NOTIMPL);
 }
 
 //-----------------------------------------------------------------------------

@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)
 
+//template Process::context_t Process::ContextFromThread<ElfClass::x86>(HANDLE, DWORD, void*, void*);
+//#ifdef _M_X64
+//template Process::context_t Process::ContextFromThread<ElfClass::x86_64>(HANDLE, DWORD, void*, void*);
+//#endif
+
 // Process::Create<ElfClass::x86>
 //
 // Explicit Instantiation of template function
@@ -46,19 +51,12 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, StartupInfo&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections) : 
-	m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(startinfo) 
+Process::Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, 
+	std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak) : 
+	m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_context(std::move(context)), m_break(programbreak)
 {
-	_ASSERTE(m_startinfo.ProgramBreak);
-
 	// Insert all of the provided memory sections into the member collection
 	for(auto& iterator : sections) m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator)));
-
-	// Insert a guard page at the provided program break address to prevent heap
-	// underruns from trampling the loaded binary image sections.  This also prevents
-	// any need to keep track of what the original break address happened ot be
-	AllocateMemory(m_startinfo.ProgramBreak, SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
-	m_break = reinterpret_cast<void*>(uintptr_t(m_startinfo.ProgramBreak) + SystemInformation::PageSize);
 }
 
 //-----------------------------------------------------------------------------
@@ -245,61 +243,104 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 //
 // TODO
 
-std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags)
+//std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t clienttid, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags)
+//{
+//	std::vector<std::unique_ptr<MemorySection>>	sections;	// Cloned process sections
+//
+//	(vm);
+//	(hostpath);
+//	(hostargs);
+//	(flags);
+//
+//	// general thoughts
+//	//
+//	// SUSPEND PARENT PROCESS
+//	// CREATE NEW HOST FOR CHILD (SUSPENDED)
+//	// CLONE ALL EXISTING SECTIONS FROM PARENT TO CHILD USING NEW SECTION CLASS
+//	// RESUME PARENT PROCESS
+//	// RESUME CHILD PROCESS
+//	// CHILD REGISTERS ITSELF WITH sys32_acquire_context
+//	// CHILD CREATES THREAD ZERO SUSPENDED
+//	// PUSH PARENT CONTEXT TO CHILD THREAD ZERO WITH MAGIC
+//	// CHILD THREAD ZERO PICKS UP WHERE PARENT LEFT OFF
+//	// EVERYTHING IS AWESOME
+//
+//	Suspend();										// Suspend the parent process
+//
+//	// Create the new host process
+//	// TODO: WILL NEED NEW ARGUMENTS -- IT WILL NEED TO KNOW IT'S A CLONE
+//	// Or will it ... new plan; always send in a CONTEXT structure
+//	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+//
+//	zero_init<StartupInfo> startinfo;
+//	startinfo.EntryPoint = m_startinfo.EntryPoint;			// Same
+//	startinfo.ProgramBreak = m_startinfo.ProgramBreak;		// Same as initial break; not the current one - that needs to be copied
+//	startinfo.StackPointer = m_startinfo.StackPointer;		// NULLPTR if cloned thread; gets stack via context
+//
+//	// following does work - trying something else first
+//	//HANDLE thread = OpenThread(THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, clienttid);
+//	//if(thread == nullptr) {
+//	//	
+//	//	DWORD dw = GetLastError();
+//	//	int x = 123; (x); (dw);
+//	//}
+//	//
+//	//startinfo.ThreadContext.ContextFlags = CONTEXT_ALL;
+//	//if(!GetThreadContext(thread, &startinfo.ThreadContext)) {
+//
+//	//	DWORD dw = GetLastError();
+//	//	int x = 123; (x); (dw); 
+//	//}
+//
+//	//CloseHandle(thread);
+//
+//	try {
+//
+//		Concurrency::reader_writer_lock::scoped_lock_read reader(m_sectionlock);
+//
+//		// Clone all of the memory sections from the parent process into the child process
+//		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
+//			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
+//	}
+//
+//	catch(...) { host->Terminate(E_FAIL); throw; }
+//
+//	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
+//	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
+//	//HANDLE h = OpenThread(THREAD_ALL_ACCESS, FALSE, x);
+//	//zero_init<CONTEXT> c;
+//	//c.ContextFlags = CONTEXT_ALL;
+//	//BOOL result = GetThreadContext(h, &c);		// Wow64GetThreadContext if _M_X64 and 32-bit parent
+//	//DWORD dw = GetLastError();
+//	//if(h != nullptr) CloseHandle(h);
+//
+//	// Just kill it for now
+//	host->Terminate(E_FAIL);
+//
+//	Resume();										// Resume the parent process
+//
+//	// transfer host, sections, etc to the new Process instance here
+//	return nullptr;
+//}
+
+// x86 / 32-bit version
+template <>
+Process::context_t Process::ContextFromThread<ElfClass::x86>(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer)
 {
-	std::vector<std::unique_ptr<MemorySection>>	sections;	// Cloned process sections
+	context_t context(sizeof(CONTEXT));
+	memset(&context, 0, context.Size);
+	PCONTEXT pointer = reinterpret_cast<PCONTEXT>(&context);
 
-	(vm);
-	(hostpath);
-	(hostargs);
-	(flags);
+	pointer->ContextFlags = flags;
 
-	// general thoughts
-	//
-	// SUSPEND PARENT PROCESS
-	// CREATE NEW HOST FOR CHILD (SUSPENDED)
-	// CLONE ALL EXISTING SECTIONS FROM PARENT TO CHILD USING NEW SECTION CLASS
-	// RESUME PARENT PROCESS
-	// RESUME CHILD PROCESS
-	// CHILD REGISTERS ITSELF WITH sys32_acquire_context
-	// CHILD CREATES THREAD ZERO SUSPENDED
-	// PUSH PARENT CONTEXT TO CHILD THREAD ZERO WITH MAGIC
-	// CHILD THREAD ZERO PICKS UP WHERE PARENT LEFT OFF
-	// EVERYTHING IS AWESOME
+	if(!GetThreadContext(thread, pointer)) throw Win32Exception();
 
-	Suspend();										// Suspend the parent process
+	// Adjust the instruction and stack pointer registers as specified, since the
+	// result type is opaque the caller will be unable to do this
+	pointer->Eip = reinterpret_cast<DWORD>(entrypoint);
+	pointer->Esp = reinterpret_cast<DWORD>(stackpointer);
 
-	// Create the new host process
-	// TODO: WILL NEED NEW ARGUMENTS -- IT WILL NEED TO KNOW IT'S A CLONE
-	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
-
-	try {
-
-		Concurrency::reader_writer_lock::scoped_lock_read reader(m_sectionlock);
-
-		// Clone all of the memory sections from the parent process into the child process
-		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
-			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
-	}
-
-	catch(...) { host->Terminate(E_FAIL); throw; }
-
-	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
-	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
-	//HANDLE h = OpenThread(THREAD_ALL_ACCESS, FALSE, x);
-	//zero_init<CONTEXT> c;
-	//c.ContextFlags = CONTEXT_ALL;
-	//BOOL result = GetThreadContext(h, &c);		// Wow64GetThreadContext if _M_X64 and 32-bit parent
-	//DWORD dw = GetLastError();
-	//if(h != nullptr) CloseHandle(h);
-
-	// Just kill it for now
-	host->Terminate(E_FAIL);
-
-	Resume();										// Resume the parent process
-
-	// transfer host, sections, etc to the new Process instance here
-	return nullptr;
+	return context;
 }
 
 //-----------------------------------------------------------------------------
@@ -327,7 +368,6 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	std::unique_ptr<ElfImage>		executable;				// The main ELF binary image to be loaded
 	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
 	uint8_t							random[16];				// 16-bytes of random data for AT_RANDOM auxvec
-	StartupInfo						startinfo;				// Hosted process startup information
 
 	// Create the external host process (suspended by default) and verify the class/architecture
 	// as this will all go south very quickly if it's not the expected architecture
@@ -397,12 +437,15 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		stack->Protect(reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + stack->Length - SystemInformation::PageSize), SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
 
 		// Write the ELF arguments into the read/write portion of the process stack section and get the resultant pointer
-		startinfo.StackPointer = args.GenerateProcessStack<_class>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), 
+		void* stack_pointer = args.GenerateProcessStack<_class>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack->BaseAddress) + SystemInformation::PageSize), 
 			stack->Length - (SystemInformation::PageSize * 2));
 
 		// Load the remainder of the StartupInfo structure with the necessary information to get the ELF binary running
-		startinfo.EntryPoint = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
-		startinfo.ProgramBreak = executable->ProgramBreak;
+		void* entry_point = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
+		void* program_break = executable->ProgramBreak;
+
+		// TESTING NEW CONTEXT
+		context_t context = ContextFromThread<_class>(host->ThreadHandle, CONTEXT_CONTROL, entry_point, stack_pointer);
 
 		// The allocated MemorySection instances need to be transferred to the Process instance
 		std::vector<std::unique_ptr<MemorySection>> sections;
@@ -411,7 +454,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		if(interpreter) sections.push_back(std::move(interpreter));
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(startinfo), std::move(sections));
+		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(context), std::move(sections), program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
@@ -435,6 +478,29 @@ FileSystem::HandlePtr Process::GetHandle(int index)
 
 	try { return m_handles.at(index); }
 	catch(...) { throw LinuxException(LINUX_EBADF); }
+}
+
+//-----------------------------------------------------------------------------
+// Process::GetStartupContext
+//
+// Gets a copy of the original startup CONTEXT information for the process,
+// the context of which varies based on if the process is 32 or 64-bit
+//
+// Arguments:
+//
+//	context		- Pointer to receive the CONTEXT information
+//	length		- Length of the CONTEXT buffer
+
+void Process::GetStartupContext(void* context, size_t length)
+{
+	if(context == nullptr) throw Exception(E_POINTER);
+	
+	// The requested size must match that which was provided for this Process
+	// instance when it was created, otherwise this is incompatible
+	if(length != m_context.Size) throw Exception(E_FAIL);		// <--- TODO: CUSTOM EXCEPTION
+
+	// The length matches, just copy the CONTEXT information to the caller
+	memcpy(context, &m_context, length);
 }
 
 //-----------------------------------------------------------------------------

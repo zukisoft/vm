@@ -127,9 +127,6 @@
     <ResourceCompile Include="..\tmp\version\version.rc" />
     <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
   </ItemGroup>
-  <ItemGroup>
-    <MASM Include="elfmain.asm" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />

@@ -57,6 +57,11 @@ extern sys32_context_t g_rpccontext;
 #define REMOTE_SYSCALL_6(_syscall, _type_0, _type_1, _type_2, _type_3, _type_4, _type_5) \
 [](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi), (_type_5)(context->Ebp)); }
 
+// CONTEXT_SYSCALL
+//
+// System call implementation that operates against the raw CONTEXT structure
+#define CONTEXT_SYSCALL(_syscall) _syscall
+
 // LOCAL_SYSCALL_X
 //
 // Local system call implementations
@@ -219,7 +224,7 @@ syscall_t g_syscalls[512] = {
 /* 117 */	sys_noentry,
 /* 118 */	sys_noentry,
 /* 119 */	sys_noentry,
-/* 120 */	LOCAL_SYSCALL_5(sys_clone, unsigned long, void*, uapi::pid_t*, int, uapi::pid_t*),
+/* 120 */	CONTEXT_SYSCALL(sys_clone),
 /* 121 */	REMOTE_SYSCALL_2(sys32_setdomainname, sys32_char_t*, sys32_size_t),
 /* 122 */	REMOTE_SYSCALL_1(sys32_newuname, linux_new_utsname*),
 /* 123 */	sys_noentry,
