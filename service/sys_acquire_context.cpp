@@ -106,10 +106,10 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_registers* registers, sy
 // Arguments:
 //
 //	rpchandle		- RPC binding handle
-//	startinfo		- [out] set to the startup information for the process
+//	registers		- [out] set to the startup registers for the process
 //	context			- [out] set to the newly allocated context handle
 
-HRESULT sys64_acquire_context(handle_t rpchandle, sys64_startup_info* startinfo, sys64_context_exclusive_t* context)
+HRESULT sys64_acquire_context(handle_t rpchandle, sys64_registers* registers, sys64_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
 	SystemCall::Context*		handle = nullptr;	// System call context handle
@@ -137,8 +137,28 @@ HRESULT sys64_acquire_context(handle_t rpchandle, sys64_startup_info* startinfo,
 		// Allocate and initialize a Context object to be passed back as the RPC context
 		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
-		startinfo->entry_point = reinterpret_cast<sys64_addr_t>(handle->Process->EntryPoint);
-		startinfo->stack_pointer = reinterpret_cast<sys64_addr_t>(handle->Process->StackPointer);
+		// Acquire the startup CONTEXT64 information for the process
+		CONTEXT64 startupcontext;
+		handle->Process->GetStartupContext(&startupcontext, sizeof(CONTEXT64));
+
+		// Copy the relevant portions of the CONTEXT64 into the sys64_registers structure
+		registers->RAX = startupcontext.Rax;
+		registers->RBX = startupcontext.Rbx;
+		registers->RCX = startupcontext.Rcx;
+		registers->RDX = startupcontext.Rdx;
+		registers->RDI = startupcontext.Rdi;
+		registers->RSI = startupcontext.Rsi;
+		registers->R8  = startupcontext.R8;
+		registers->R9  = startupcontext.R9;
+		registers->R10 = startupcontext.R10;
+		registers->R11 = startupcontext.R11;
+		registers->R12 = startupcontext.R12;
+		registers->R13 = startupcontext.R13;
+		registers->R14 = startupcontext.R14;
+		registers->R15 = startupcontext.R15;
+		registers->RBP = startupcontext.Rbp;
+		registers->RIP = startupcontext.Rip;
+		registers->RSP = startupcontext.Rsp;
 	}
 
 	catch(const Exception& ex) { SystemCall::FreeContext(handle); return ex.HResult; }

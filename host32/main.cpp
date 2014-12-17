@@ -29,11 +29,6 @@
 // Global RPC context handle to the system calls server
 sys32_context_t g_rpccontext;
 
-// elfmain (elfmain.asm)
-//
-// Entry point used to launch the hosted ELF image
-extern "C" void __stdcall elfmain(uint32_t entrypoint, uint32_t stackpointer);
-
 // EmulationExceptionHandler (emulator.cpp)
 //
 // Vectored Exception handler used to provide emulation

@@ -46,6 +46,9 @@
     <ClInclude Include="..\common\align.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SystemInformation.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -66,6 +69,9 @@
     <ClCompile Include="..\tmp\vm.service\x64\syscalls64_c.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SystemInformation.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">
@@ -74,10 +80,5 @@
     <ResourceCompile Include="..\tmp\vm.messages\messages.rc">
       <Filter>Generated Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="elfmain.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
   </ItemGroup>
 </Project>

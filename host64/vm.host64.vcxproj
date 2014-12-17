@@ -89,6 +89,7 @@
     <ClInclude Include="..\common\align.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\generic_text.h" />
+    <ClInclude Include="..\common\SystemInformation.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\tmp\vm.messages\messages.h" />
     <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h" />
@@ -97,6 +98,7 @@
   <ItemGroup>
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\rpcmem.cpp" />
+    <ClCompile Include="..\common\SystemInformation.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\tmp\vm.service\x64\syscalls64_c.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -111,9 +113,6 @@
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
     <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="elfmain.asm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

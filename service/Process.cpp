@@ -324,6 +324,7 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 //}
 
 // x86 / 32-bit version
+#ifndef _M_X64
 template <>
 Process::context_t Process::ContextFromThread<ElfClass::x86>(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer)
 {
@@ -342,6 +343,49 @@ Process::context_t Process::ContextFromThread<ElfClass::x86>(HANDLE thread, DWOR
 
 	return context;
 }
+#endif
+
+// x64 / 32-bit version
+#ifdef _M_X64
+template <>
+Process::context_t Process::ContextFromThread<ElfClass::x86>(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer)
+{
+	_ASSERTE(uintptr_t(entrypoint) <= MAXUINT32);
+	_ASSERTE(uintptr_t(stackpointer) <= MAXUINT32);
+
+	context_t context(sizeof(WOW64_CONTEXT));
+	memset(&context, 0, context.Size);
+	PWOW64_CONTEXT pointer = reinterpret_cast<PWOW64_CONTEXT>(&context);
+
+	pointer->ContextFlags = flags;
+
+	if(!Wow64GetThreadContext(thread, pointer)) throw Win32Exception();
+
+	// Adjust the instruction and stack pointer registers as specified, since the
+	// result type is opaque the caller will be unable to do this
+	pointer->Eip = reinterpret_cast<DWORD>(entrypoint);
+	pointer->Esp = reinterpret_cast<DWORD>(stackpointer);
+
+	return context;
+}
+
+template <>
+Process::context_t Process::ContextFromThread<ElfClass::x86_64>(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer)
+{
+	context_t context(sizeof(CONTEXT));
+	memset(&context, 0, context.Size);
+	PCONTEXT pointer = reinterpret_cast<PCONTEXT>(&context);
+
+	pointer->ContextFlags = flags;
+
+	if(!GetThreadContext(thread, pointer)) throw Win32Exception();
+
+	pointer->Rip = reinterpret_cast<unsigned __int64>(entrypoint);
+	pointer->Rsp = reinterpret_cast<unsigned __int64>(stackpointer);
+
+	return context;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Process::Create (static)

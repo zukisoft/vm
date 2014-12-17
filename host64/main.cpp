@@ -21,16 +21,32 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-
-// elfmain (elfmain.asm)
-//
-// Entry point used to launch the hosted ELF image
-extern "C" void elfmain(uint64_t entrypoint, uint64_t stackpointer);
+#include "SystemInformation.h"
+#include <process.h>
 
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
 sys64_context_t g_rpccontext;
+
+//-----------------------------------------------------------------------------
+// ElfMain
+//
+// Dummy thread to execute the loaded ELF binary code.  Created in a suspended
+// state and then has it's context changed, this code should never actually run
+//
+// Arguments:
+//
+//	arg			- Argument passed to _beginthreadex
+
+unsigned __stdcall ElfMain(void* arg)
+{
+	UNREFERENCED_PARAMETER(arg);
+
+	// As stated above, this code should never actually execute
+	_RPTF0(_CRT_ASSERT, "ElfMain thread is executing directly; context was not set");
+	return 0;
+}
 
 //-----------------------------------------------------------------------------
 // WinMain
@@ -46,10 +62,10 @@ sys64_context_t g_rpccontext;
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	zero_init<sys64_startup_info>	startinfo;			// Startup information from the service
-	RPC_BINDING_HANDLE				binding;			// RPC binding from command line
-	RPC_STATUS						rpcresult;			// Result from RPC function call
-	HRESULT							hresult;			// Result from system call API function
+	zero_init<sys64_registers>		registers;		// Startup registers from the service
+	RPC_BINDING_HANDLE				binding;		// RPC binding from command line
+	RPC_STATUS						rpcresult;		// Result from RPC function call
+	HRESULT							hresult;		// Result from system call API function
 
 	// EXPECTED ARGUMENTS:
 	//
@@ -62,15 +78,52 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys64_acquire_context(binding, &startinfo, &g_rpccontext);
+	hresult = sys64_acquire_context(binding, &registers, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
-	// TODO: Launch a worker thread or something to deal with signals.  This main thread
-	// should be reserved for executing the ELF binary so that CONTEXT for the thread
-	// is easily accessible for process forking/cloning
-	elfmain(startinfo.entry_point, startinfo.stack_pointer);
+	// Create a suspended thread that will execute the Linux binary
+	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ElfMain, nullptr, CREATE_SUSPENDED, nullptr));
+	if(thread == nullptr) { /* TODO: HANDLE THIS */ }
 
-	// TODO: this is temporary; never actually gets here
+	// TODO: WORDS
+	// only want the CONTROL registers, INTEGER will be set from sys32_registers
+	zero_init<CONTEXT> context;
+	context.ContextFlags = CONTEXT_CONTROL;
+	
+	// Acquire the current thread CONTEXT information for registers that aren't going to be changed
+	if(!GetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }
+
+	// Change the general purpose and control registers to the values provided
+	context.Rax = registers.RAX;
+	context.Rbx = registers.RBX;
+	context.Rcx = registers.RCX;
+	context.Rdx = registers.RDX;
+	context.Rdi = registers.RDI;
+	context.Rsi = registers.RSI;
+	context.R8  = registers.R8;
+	context.R9  = registers.R9;
+	context.R10 = registers.R10;
+	context.R11 = registers.R11;
+	context.R12 = registers.R12;
+	context.R13 = registers.R13;
+	context.R14 = registers.R14;
+	context.R15 = registers.R15;
+	context.Rbp = registers.RBP;
+	context.Rip = registers.RIP;
+	context.Rsp = registers.RSP;
+
+	// Apply the updated CONTEXT information to the suspended thread
+	if(!SetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }
+
+	ResumeThread(thread);						// Launch the hosted process
+	CloseHandle(thread);						// Finished with the thread handle
+
+	// TODO: TEMPORARY - This thread will need to wait for signals and also shouldn't
+	// die until every hosted thread has called exit() or some reasonable equivalent
+	HANDLE delay = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	WaitForSingleObject(delay, INFINITE);
+
+	// All hosted threads have terminated, release the RPC context
 	return static_cast<int>(sys64_release_context(&g_rpccontext));
 }
 
