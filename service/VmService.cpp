@@ -179,15 +179,32 @@ std::shared_ptr<FileSystem::Handle> VmService::CreateFile(const std::shared_ptr<
 //
 // Arguments:
 //
-//	process			- Parent process to be cloned
-//	clienttid		- Thread ID that invoked the sys_clone() function
-//	flags			- Clone operation flags
+//	TODO: Document when done
 
-std::shared_ptr<Process> VmService::CloneProcess(std::shared_ptr<Process> process, uint32_t clienttid, uint32_t flags)
+std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* tss, size_t tsslen)
 {
-	// TODO - this needs to use the proper x86 or x64 host for the process
-	//return process->Clone(shared_from_this(), clienttid, ((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str(), flags);
-	throw Exception(E_NOTIMPL);
+	std::tstring hoststr;
+	const tchar_t* host;
+	const tchar_t* hostarguments;
+
+	if(process->Class == ElfClass::x86) {
+		hoststr = process_host_32bit;
+		host = hoststr.c_str();
+		hostarguments = m_hostarguments32.c_str();
+	}
+
+#ifdef _M_X64
+	else if(process->Class == ElfClass::x86_64) {
+		host = ((svctl::tstring)process_host_64bit).c_str();
+		hostarguments = m_hostarguments64.c_str();
+	}
+#endif
+
+	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
+
+	std::shared_ptr<Process> child = process->Clone(shared_from_this(), host, hostarguments, flags, tss, tsslen);
+	m_processes.insert(child);
+	return child;
 }
 
 //-----------------------------------------------------------------------------
@@ -316,9 +333,11 @@ void VmService::CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& roo
 
 std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 {
-	// dummy for testing
-	(hostpid);
-	return m_initprocess;
+	if(hostpid == m_initprocess->HostProcessId) return m_initprocess;
+	for(auto iterator : m_processes)
+		if(hostpid == iterator->HostProcessId) return iterator;
+
+	return nullptr;
 }
 
 // GetAbsolutePath

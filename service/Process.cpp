@@ -25,11 +25,6 @@
 
 #pragma warning(push, 4)
 
-//template Process::context_t Process::ContextFromThread<ElfClass::x86>(HANDLE, DWORD, void*, void*);
-//#ifdef _M_X64
-//template Process::context_t Process::ContextFromThread<ElfClass::x86_64>(HANDLE, DWORD, void*, void*);
-//#endif
-
 // Process::Create<ElfClass::x86>
 //
 // Explicit Instantiation of template function
@@ -51,9 +46,9 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, 
+Process::Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, 
 	std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak) : 
-	m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_context(std::move(context)), m_break(programbreak)
+	m_class(elfclass), m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_context(std::move(context)), m_break(programbreak)
 {
 	// Insert all of the provided memory sections into the member collection
 	for(auto& iterator : sections) m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator)));
@@ -243,15 +238,11 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 //
 // TODO
 
-//std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t clienttid, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags)
-//{
-//	std::vector<std::unique_ptr<MemorySection>>	sections;	// Cloned process sections
-//
-//	(vm);
-//	(hostpath);
-//	(hostargs);
-//	(flags);
-//
+std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags, void* tss, size_t tsslen)
+{
+	(vm);
+	(flags);
+
 //	// general thoughts
 //	//
 //	// SUSPEND PARENT PROCESS
@@ -264,64 +255,39 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 //	// PUSH PARENT CONTEXT TO CHILD THREAD ZERO WITH MAGIC
 //	// CHILD THREAD ZERO PICKS UP WHERE PARENT LEFT OFF
 //	// EVERYTHING IS AWESOME
-//
-//	Suspend();										// Suspend the parent process
-//
-//	// Create the new host process
-//	// TODO: WILL NEED NEW ARGUMENTS -- IT WILL NEED TO KNOW IT'S A CLONE
-//	// Or will it ... new plan; always send in a CONTEXT structure
-//	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
-//
-//	zero_init<StartupInfo> startinfo;
-//	startinfo.EntryPoint = m_startinfo.EntryPoint;			// Same
-//	startinfo.ProgramBreak = m_startinfo.ProgramBreak;		// Same as initial break; not the current one - that needs to be copied
-//	startinfo.StackPointer = m_startinfo.StackPointer;		// NULLPTR if cloned thread; gets stack via context
-//
-//	// following does work - trying something else first
-//	//HANDLE thread = OpenThread(THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, clienttid);
-//	//if(thread == nullptr) {
-//	//	
-//	//	DWORD dw = GetLastError();
-//	//	int x = 123; (x); (dw);
-//	//}
-//	//
-//	//startinfo.ThreadContext.ContextFlags = CONTEXT_ALL;
-//	//if(!GetThreadContext(thread, &startinfo.ThreadContext)) {
-//
-//	//	DWORD dw = GetLastError();
-//	//	int x = 123; (x); (dw); 
-//	//}
-//
-//	//CloseHandle(thread);
-//
-//	try {
-//
-//		Concurrency::reader_writer_lock::scoped_lock_read reader(m_sectionlock);
-//
-//		// Clone all of the memory sections from the parent process into the child process
-//		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
-//			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
-//	}
-//
-//	catch(...) { host->Terminate(E_FAIL); throw; }
-//
-//	// TEST TO ACQUIRE CONTEXT; NOT SURE IF THIS WILL BE USED
-//	//DWORD x = 0;  // get from OutputDebugString for process and type into debugger for now
-//	//HANDLE h = OpenThread(THREAD_ALL_ACCESS, FALSE, x);
-//	//zero_init<CONTEXT> c;
-//	//c.ContextFlags = CONTEXT_ALL;
-//	//BOOL result = GetThreadContext(h, &c);		// Wow64GetThreadContext if _M_X64 and 32-bit parent
-//	//DWORD dw = GetLastError();
-//	//if(h != nullptr) CloseHandle(h);
-//
-//	// Just kill it for now
-//	host->Terminate(E_FAIL);
-//
-//	Resume();										// Resume the parent process
-//
-//	// transfer host, sections, etc to the new Process instance here
-//	return nullptr;
-//}
+
+	context_t context = ContextFromTaskStateSegment(tss, tsslen);
+	std::vector<std::unique_ptr<MemorySection>>	sections;
+
+	Suspend();										// Suspend the parent process
+
+	// Create the new host process
+	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+
+	try {
+
+		Concurrency::reader_writer_lock::scoped_lock_read reader(m_sectionlock);
+
+		// TESTING: Clone all of the memory sections from the parent process into the child process
+		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
+			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
+	}
+
+	catch(...) { host->Terminate(E_FAIL); throw; /* TODO */ }
+
+	Resume();
+	host->Resume();
+
+	return std::make_shared<Process>(m_class, std::move(host), m_rootdir, m_workingdir, std::move(context), std::move(sections), m_break);
+}
+
+Process::context_t Process::ContextFromTaskStateSegment(void* tss, size_t tsslen)
+{
+	context_t context(tsslen);
+	memcpy(context, tss, tsslen);
+
+	return context;
+}
 
 // x86 / 32-bit version
 #ifndef _M_X64
@@ -498,7 +464,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		if(interpreter) sections.push_back(std::move(interpreter));
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(std::move(host), rootdir, workingdir, std::move(context), std::move(sections), program_break);
+		return std::make_shared<Process>(_class, std::move(host), rootdir, workingdir, std::move(context), std::move(sections), program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

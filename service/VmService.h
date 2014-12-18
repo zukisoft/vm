@@ -26,6 +26,7 @@
 
 #include <map>
 #include <mutex>
+#include <set>	// temp
 #include <linux/elf.h>
 #include "resource.h"
 #include "CompressedStreamReader.h"
@@ -70,7 +71,7 @@ public:
 
 	// VirtualMachine Implementation
 	//
-	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process> process, uint32_t clienttid, uint32_t flags);
+	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* tss, size_t tsslen);
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 
 	// updated file system api
@@ -163,6 +164,9 @@ private:
 	fs_map_t							m_availfs;		// Available file systems
 	FileSystemPtr						m_rootfs;		// Root file system
 	mount_map_t							m_mounts;		// Collection of mounted file systems
+
+	// temp
+	std::set<std::shared_ptr<Process>> m_processes;
 
 	std::tstring m_hostarguments32;
 	std::tstring m_hostarguments64;

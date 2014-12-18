@@ -149,7 +149,7 @@ interface SystemCalls64
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 039 */ sys64_long_t	sys64_getpid([in] sys64_context_t context);
-	/* 056 */ sys64_long_t	sys64_clone([in] sys64_context_t context, [in] sys64_ulong_t clone_flags, [in] sys64_addr_t newsp, [in] sys64_addr_t parent_tidptr, [in] sys64_addr_t child_tidptr, [in] sys64_int_t tls_val);
+	/* 056 */ sys64_long_t	sys64_clone([in] sys64_context_t context, [in, ref] sys64_registers* registers, [in] sys64_uint_t calling_thread_id, [in] sys64_ulong_t clone_flags, [in] sys64_addr_t newsp, [in] sys64_addr_t parent_tidptr, [in] sys64_addr_t child_tidptr, [in] sys64_int_t tls_val);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 072 */ sys64_long_t	sys64_fcntl([in] sys64_context_t context, [in] sys64_int_t fd, [in] sys64_int_t cmd, [in] sys64_addr_t arg);
 	/* 079 */ sys64_long_t	sys64_getcwd([in] sys64_context_t context, [out, ref, size_is(size)] sys64_char_t* buf, [in] sys64_sizeis_t size);

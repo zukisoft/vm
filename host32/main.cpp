@@ -110,6 +110,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	context.Esp = registers.ESP;
 
 	// Apply the updated CONTEXT information to the suspended thread
+	context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 	if(!SetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }
 
 	// Install the emulator, which operates by intercepting low-level exceptions

@@ -76,7 +76,8 @@ public:
 	// Clone
 	//
 	// Clones the process into a new child process
-	//std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t clienttid, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags);
+	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags,
+		void* tss, size_t tsslen);
 
 	// Create (static)
 	//
@@ -111,7 +112,7 @@ public:
 
 	// ReadMemory
 	//
-	// Reads directory from the process memory space, will abort on a fault
+	// Reads directly from the process memory space, will abort on a fault
 	size_t ReadMemory(const void* address, void* buffer, size_t length);
 
 	// RemoveHandle
@@ -144,8 +145,19 @@ public:
 	// Releases a memory mapping from the process
 	void UnmapMemory(void* address, size_t length);
 
+	// WriteMemory
+	//
+	// Writes directly into the process memory space, will abort on a fault
+	size_t WriteMemory(const void* address, void* buffer, size_t length);
+
 	//-------------------------------------------------------------------------
 	// Properties
+
+	// Class
+	//
+	// Gets the class (x86/x86_64) of the process
+	__declspec(property(get=getClass)) ElfClass Class;
+	ElfClass getClass(void) const { return m_class; }
 
 	// FileCreationModeMask
 	//
@@ -163,8 +175,8 @@ public:
 	// ProcessId
 	//
 	// Gets the virtual machine process identifier
-	__declspec(property(get=getProcessId)) int ProcessId;
-	int getProcessId(void) const { return m_processid; }
+	__declspec(property(get=getProcessId)) uapi::pid_t ProcessId;
+	uapi::pid_t getProcessId(void) const { return m_processid; }
 
 	// TidAddress
 	//
@@ -199,7 +211,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
+	Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -249,6 +261,8 @@ private:
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
+	static context_t ContextFromTaskStateSegment(void* tss, size_t tsslen);
+
 	// this version will zero out all but the control registers
 	template <ElfClass _class>
 	static context_t ContextFromThread(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer);
@@ -264,9 +278,10 @@ private:
 	std::unique_ptr<Host>		m_host;			// Hosted windows process
 	context_t					m_context;		// Startup CONTEXT information
 
+	const ElfClass				m_class;
 	////
 
-	int						m_processid = 1;
+	uapi::pid_t					m_processid = 1;
 	void*					m_tidaddress = nullptr;
 
 	// MEMORY MANAGEMENT

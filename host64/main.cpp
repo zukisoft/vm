@@ -82,7 +82,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Create a suspended thread that will execute the Linux binary
-	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ElfMain, nullptr, CREATE_SUSPENDED, nullptr));
+	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, static_cast<unsigned int>(SystemInformation::AllocationGranularity), 
+		ElfMain, nullptr, CREATE_SUSPENDED, nullptr));
 	if(thread == nullptr) { /* TODO: HANDLE THIS */ }
 
 	// TODO: WORDS

@@ -41,33 +41,18 @@ extern sys32_context_t g_rpccontext;
 
 uapi::long_t sys_clone(PCONTEXT context)
 {
-	sys32_registers		registers;				// Child process/thread registers
+	// Create the task state segment for the new process/thread based on the point where the
+	// exception handler took over (EIP is already moved forward at this point)
+	CONTEXT tss;
+	memcpy(&tss, context, sizeof(CONTEXT));							
 
-	// Initialize the child process/thread registers based on the provided CONTEXT,
-	// skipping over the INT 80H instruction currently being processed
-
-	registers.EAX = context->Eax;
-	registers.EBX = context->Ebx;
-	registers.ECX = context->Ecx;
-	registers.EDX = context->Edx;
-	registers.EDI = context->Edi;
-	registers.ESI = context->Esi;
-	registers.EBP = context->Ebp;
-	registers.EIP = context->Eip + 2;			// INT 80H [0xCD, 0x80]
-	registers.ESP = context->Esp;
-
-	// sys32_clone takes 2 additional arguments over the clone(2) system call, it needs to know what the
-	// state of the registers should be in the cloned thread/process as well as the thread id that's
-	// going to be cloned within this process (which is this thread). The thread that invoked sys32_clone() 
-	// comes back here like it normally would, whereas the newly created process/thread will jump to the 
-	// location specified by the registers, bypassing the emulator/exception handler layer.  This is why 
-	// the instruction pointer had to be incremented beyond the INT 80H call in the passed register set
+	// TODO: WORDS ON WHY THIS WORKS (IF IT DOES)
 
 	return sys32_clone(g_rpccontext,				// context
-		&registers,									// registers
-		GetCurrentThreadId(),						// calling_thread_id
+		reinterpret_cast<sys32_uchar_t*>(&tss),		// task_state
+		sizeof(CONTEXT),							// task_state_len
 		static_cast<sys32_ulong_t>(context->Ebx),	// clone_flags
-		static_cast<sys32_addr_t>(context->Ecx),	// newsp
+		static_cast<sys32_addr_t>(context->Ecx),	// child_stack
 		static_cast<sys32_addr_t>(context->Edx),	// parent_tidptr
 		static_cast<sys32_int_t>(context->Esi),		// tls_val
 		static_cast<sys32_addr_t>(context->Edi));	// child_tidptr
