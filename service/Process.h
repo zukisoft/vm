@@ -46,6 +46,9 @@
 #include "SystemInformation.h"
 #include "VirtualMachine.h"
 
+// TODO - remove me
+#include <syscalls32.h>
+
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
@@ -77,7 +80,7 @@ public:
 	//
 	// Clones the process into a new child process
 	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags,
-		void* tss, size_t tsslen);
+		void* startinfo, size_t startinfolen);
 
 	// Create (static)
 	//
@@ -91,11 +94,11 @@ public:
 	// Accesses a file system handle referenced by the process
 	FileSystem::HandlePtr GetHandle(int index);
 
-	// GetStartupContext
+	// GetStartupInfo
 	//
-	// Acquires the startup CONTEXT structure used for the process, the contents of
-	// which varies depending on if the process is 32 or 64-bit
-	void GetStartupContext(void* context, size_t length);
+	// Acquires the startup information structure used for the process, the contents of which
+	// varies depending on if the process is 32 or 64-bit, is a new or cloned process, etc.
+	void GetStartupInfo(void* startinfo, size_t length);
 
 	// MapMemory
 	//
@@ -148,7 +151,7 @@ public:
 	// WriteMemory
 	//
 	// Writes directly into the process memory space, will abort on a fault
-	size_t WriteMemory(const void* address, void* buffer, size_t length);
+	size_t WriteMemory(void* address, const void* buffer, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -205,13 +208,10 @@ private:
 	Process(const Process&)=delete;
 	Process& operator=(const Process&)=delete;
 
-	// Forward Declarations
-	//
-	struct StartupInfo;
-
 	// Instance Constructor
 	//
-	Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& context, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
+	Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+		HeapBuffer<uint8_t>&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -221,11 +221,6 @@ private:
 	//
 	// Minimum allowable file system handle index (file descriptor)
 	static const int MIN_HANDLE_INDEX = 3;
-
-	// context_t
-	//
-	// Generic buffer that holds the startup CONTEXT (or WOW64_CONTEXT) information
-	using context_t = HeapBuffer<uint8_t>;
 
 	// handle_map_t
 	//
@@ -246,6 +241,11 @@ private:
 	// Collection of std::unique_ptr<MemorySection> objects
 	using section_map_t = std::unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
 
+	// startinfo_t
+	//
+	// Generic buffer that holds the process startup information
+	using startinfo_t = HeapBuffer<uint8_t>;
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -261,11 +261,8 @@ private:
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
-	static context_t ContextFromTaskStateSegment(void* tss, size_t tsslen);
-
-	// this version will zero out all but the control registers
-	template <ElfClass _class>
-	static context_t ContextFromThread(HANDLE thread, DWORD flags, void* entrypoint, void* stackpointer);
+	// TODO: Cleanup -- move to new StartupInfo class?
+	template <ElfClass _class> static startinfo_t TODONewStartInfo(void* entrypoint, void* stackpointer);
 
 	// ReleaseMemory
 	//
@@ -276,7 +273,7 @@ private:
 	// Member Variables
 
 	std::unique_ptr<Host>		m_host;			// Hosted windows process
-	context_t					m_context;		// Startup CONTEXT information
+	startinfo_t					m_startinfo;	// Startup information blob
 
 	const ElfClass				m_class;
 	////
@@ -289,6 +286,8 @@ private:
 	void*							m_break;		// Current program break
 	Concurrency::reader_writer_lock	m_sectionlock;	// Section collection lock
 	section_map_t					m_sections;		// Allocated memory sections
+
+	// LDT section?
 
 	// HANDLE MANAGEMENT
 	//

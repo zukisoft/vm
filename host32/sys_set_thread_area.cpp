@@ -26,34 +26,36 @@
 
 #pragma warning(push, 4)
 
+// t_ldt
+//
+// Thread-local LDT
+extern __declspec(thread) sys32_ldt_t t_ldt;
+
+// AllocateLDTEntry (emulator.cpp)
+//
+sys32_ldt_entry_t* AllocateLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry);
+
 //-----------------------------------------------------------------------------
 // sys_set_thread_area
 //
 // Arguments:
 //
-//	u_info		- Thread-locl storage descriptor
+//	u_info		- Thread-local storage descriptor
 
 uapi::long_t sys_set_thread_area(uapi::user_desc* u_info)
 {
 	if(u_info == nullptr) return -LINUX_EFAULT;
 
-	// Windows doesn't allow us to set a specific TLS slot
-	if(u_info->entry_number != -1) return -LINUX_EINVAL;
+	// Attempt to allocate/alter the entry at the specified position in the LDT
+	sys32_ldt_entry_t* result = AllocateLDTEntry(&t_ldt, reinterpret_cast<sys32_ldt_entry_t*>(u_info));
+	if(result == nullptr) return -LINUX_ESRCH;
 
-	// Allocate a Thread Local Storage slot for the calling process
-	uint32_t slot = TlsAlloc();
-	if(slot == TLS_OUT_OF_INDEXES) return -LINUX_ESRCH;
+	// Return the resultant entry number back through the user_desc structure upon success
+	//
+	// TODO: THIS VALUE IS HACKED LIKE IT WAS - THIS NEEDS TO BE CLEANED UP AND DOCUMENTED
+	// IN ADDITION A NON -1 ENTRY_NUMBER IS NOT LIKELY TO WORK
 
-	// LIBC/Bionic will turn around and put the returned slot number into the GS
-	// segment register.  Unfortunately, if the munged slot number happens to be
-	// valid, that call will not raise an access violation and the vectored handler
-	// won't be triggered.  For now I'm shifting it left 8 bits to try and guarantee
-	// it won't bump into anything, but this results in a maximum slot number of 31
-	if(slot > 31) { TlsFree(slot); return -LINUX_ESRCH; }
-
-	u_info->entry_number = (slot << 8);
-	TlsSetValue(slot, reinterpret_cast<void*>(u_info->base_addr));
-
+	u_info->entry_number = ((result->entry_number + 1) << 8);
 	return 0;
 }
 

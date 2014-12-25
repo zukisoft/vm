@@ -32,7 +32,65 @@ void TraceMessage(const char_t* message, size_t length);
 // t_gs
 //
 // Emulated GS register value
-__declspec(thread) static uint16_t t_gs = 0;
+__declspec(thread) uint32_t t_gs = 0;
+
+// t_ldt
+//
+// Thread-local LDT
+__declspec(thread) sys32_ldt_t t_ldt;
+
+// AllocateLDTEntry
+//
+// Allocates an emulated LDT entry
+//
+sys32_ldt_entry_t* AllocateLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry)
+{
+	_ASSERTE((ldt != nullptr) && (entry != nullptr));
+
+	// Get the requested slot number and cast out the LDT for array access
+	int slot = entry->entry_number;
+	sys32_ldt_entry_t* table = reinterpret_cast<sys32_ldt_entry_t*>(ldt);
+
+	// If the entry number is -1, select the first available entry in the table
+	// (this will be the first slot with a -1 as the entry_number)
+	if(slot == -1) {
+
+		for(int index = 0; index < sys32_ldt_entries; index++)
+			if(table[index].entry_number == -1) { slot = index; break; }
+	}
+
+	// After auto-selection, the slot number must be in bounds for the table
+	if((slot < 0) || (slot >= sys32_ldt_entries)) return nullptr;
+
+	// Copy the entry into the LDT and assign the slot number
+	table[slot] = *entry;
+	table[slot].entry_number = slot;
+
+	// Return a pointer to the allocated/updated entry
+	return &table[slot];
+}
+
+// FreeLDTEntry
+//
+// Releases an emulated LDT entry
+//
+sys32_ldt_entry_t* FreeLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry)
+{
+	_ASSERTE((ldt != nullptr) && (entry != nullptr));
+
+	// Get the requested slot number and cast out the LDT for array access
+	int slot = entry->entry_number;
+	sys32_ldt_entry_t* table = reinterpret_cast<sys32_ldt_entry_t*>(ldt);
+
+	// The slot number must be in bounds for the table
+	if((slot < 0) || (slot >= sys32_ldt_entries)) return nullptr;
+
+	// Set the entire slot to -1 to clear it out and reset the entry_number
+	memset(&table[slot], -1, sizeof(sys32_ldt_entry_t));
+
+	// Return a pointer to the released entry
+	return &table[slot];
+}
 
 // GS<>
 //
@@ -41,12 +99,15 @@ __declspec(thread) static uint16_t t_gs = 0;
 // and must be decoded to get back to the TLS slot
 template<typename size_type> inline size_type& GS(uintptr_t offset)
 {
-	_ASSERTE(t_gs);
+	_ASSERTE(t_gs > 0);		// This would never be zero if set properly
 
-	// Demunge the thread local storage slot and return a reference to the
-	// specified offset as the requested data type
-	uintptr_t slot = ((uintptr_t(t_gs) - 3) >> 3) >> 8;
-	return *reinterpret_cast<size_type*>(uintptr_t(TlsGetValue(slot)) + offset);
+	// Demunge the thread local storage slot
+	// TODO: HACKED VALUE; SEE SET_THREAD_AREA AND CLEAN THIS UP
+	uintptr_t slot = (((uintptr_t(t_gs) - 3) >> 3) >> 8) - 1;
+
+	// Return a reference to the specified offset as the requested data type
+	_ASSERTE(t_ldt[slot].entry_number >= 0);
+	return *reinterpret_cast<size_type*>(uintptr_t(t_ldt[slot].base_addr) + offset);
 }
 
 // InvokeSystemCall

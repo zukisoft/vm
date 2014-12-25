@@ -43,10 +43,10 @@ using CONTEXT64 = CONTEXT;
 // Arguments:
 //
 //	rpchandle		- RPC binding handle
-//	registers		- [out] set to the startup registers for the process
+//	startinfo		- [out] set to the startup information for the process
 //	context			- [out] set to the newly allocated context handle
 
-HRESULT sys32_acquire_context(handle_t rpchandle, sys32_registers* registers, sys32_context_exclusive_t* context)
+HRESULT sys32_acquire_context(handle_t rpchandle, sys32_startup_info_t* startinfo, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
 	SystemCall::Context*		handle = nullptr;	// System call context handle
@@ -74,20 +74,8 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_registers* registers, sy
 		// Allocate and initialize a Context object to be passed back as the RPC context
 		handle = SystemCall::AllocContext(objectid, reinterpret_cast<uint32_t>(attributes.ClientPID));
 
-		// Acquire the startup CONTEXT32 information for the process
-		CONTEXT32 startupcontext;
-		handle->Process->GetStartupContext(&startupcontext, sizeof(CONTEXT32));
-
-		// Copy the relevant portions of the CONTEXT32 into the sys32_registers structure
-		registers->EAX = startupcontext.Eax;
-		registers->EBX = startupcontext.Ebx;
-		registers->ECX = startupcontext.Ecx;
-		registers->EDX = startupcontext.Edx;
-		registers->EDI = startupcontext.Edi;
-		registers->ESI = startupcontext.Esi;
-		registers->EBP = startupcontext.Ebp;
-		registers->EIP = startupcontext.Eip;
-		registers->ESP = startupcontext.Esp;
+		// Acquire the startup information for the process
+		handle->Process->GetStartupInfo(startinfo, sizeof(sys32_startup_info_t));
 	}
 
 	catch(const Exception& ex) { SystemCall::FreeContext(handle); return ex.HResult; }

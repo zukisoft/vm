@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include <linux/ldt.h>
 
 #pragma warning(push, 4)
 
@@ -33,22 +34,15 @@
 // Arguments:
 //
 //	context			- SystemCall context object
-//	tss				- Child task state segment (CONTEXT blob)
-//	tsslen			- Length of the child task state segment
+//	startinfo		- Child task startup information
+//	startinfolen	- Length of the child task startup information
 //	flags			- Clone operation flags
-//	newstack		- New child stack address
 //	ptid			- Address to store the new child pid_t (in parent and child)
 //	ctid			- Address to store the new child pit_t (in child only)
-//	tls				- Ignored (new thread local storage descriptor)
 
-__int3264 sys_clone(const SystemCall::Context* context, void* tss, size_t tsslen, uint32_t flags, void* newstack, uapi::pid_t* ptid, uapi::pid_t* ctid, int tls)
+__int3264 sys_clone(const SystemCall::Context* context, void* startinfo, size_t startinfolen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid)
 {
 	_ASSERTE(context);
-	UNREFERENCED_PARAMETER(tls);				// Linux doesn't appear to ever use the tls argument
-
-	(newstack);		// <---- todo; need to know how this works and if I should send it in the TSS or as an argument
-	(ptid);
-	(ctid);
 
 	// NOTE: GLIBC sends in CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD for flags when fork(3) is called
 	// (0x01200011)
@@ -58,16 +52,26 @@ __int3264 sys_clone(const SystemCall::Context* context, void* tss, size_t tsslen
 		SystemCall::Impersonation impersonation;
 
 		auto parent = context->Process;
-		auto child = context->VirtualMachine->CloneProcess(parent, flags, tss, tsslen);
+		auto child = context->VirtualMachine->CloneProcess(parent, flags, startinfo, startinfolen);
 
-		// Write the new process/thread identifier into the requested locations for the parent and child
-		// todo: these are enabled via clone_flags
-		//uapi::pid_t newpid = child->ProcessId;
-		//if(ptid) parent->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
-		//if(ptid) child->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
-		//if(ctid) child->WriteMemory(ctid, &newpid, sizeof(uapi::pid_t));
+		uapi::pid_t newpid = 2; //child->ProcessId;
 
-		return child->ProcessId;
+		// CLONE_PARENT_SETTID
+		//
+		// Write the new process/thread identifier to the specified location in both the parent and child
+		if((flags & LINUX_CLONE_PARENT_SETTID) && ptid) {
+
+			parent->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
+			child->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
+		}
+
+		// CLONE_CHILD_SETTID
+		//
+		// Write the new process/thread identifier to the specified location in the child's address space
+		if((flags & LINUX_CLONE_CHILD_SETTID) && ctid) child->WriteMemory(ctid, &newpid, sizeof(uapi::pid_t));
+
+		// The calling process gets the new PID as the result
+		return static_cast<__int3264>(newpid);
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
@@ -75,11 +79,11 @@ __int3264 sys_clone(const SystemCall::Context* context, void* tss, size_t tsslen
 
 // sys32_clone
 //
-sys32_long_t sys32_clone(sys32_context_t context, sys32_uchar_t* task_state, sys32_size_t task_state_len, sys32_ulong_t clone_flags, sys32_addr_t child_stack, sys32_addr_t parent_tidptr, sys32_int_t tls_val, sys32_addr_t child_tidptr)
+sys32_long_t sys32_clone(sys32_context_t context, sys32_startup_info_t* startinfo, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
 {
 	// Note that the parameter order for the x86 system call differs from the standard system call, ctid and tls are swapped
-	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<SystemCall::Context*>(context), task_state, task_state_len, clone_flags, 
-		reinterpret_cast<void*>(child_stack), reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr), tls_val));
+	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<SystemCall::Context*>(context), startinfo, sizeof(sys32_startup_info_t), clone_flags, 
+		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr)));
 }
 
 #ifdef _M_X64

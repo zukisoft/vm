@@ -24,6 +24,9 @@
 #include "SystemInformation.h"
 #include <process.h>
 
+#pragma warning(push, 4)
+#pragma warning(disable:4731)	// frame pointer modified by inline assembly code
+
 // g_rpccontext
 //
 // Global RPC context handle to the system calls server
@@ -34,23 +37,58 @@ sys32_context_t g_rpccontext;
 // Vectored Exception handler used to provide emulation
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
 
-//-----------------------------------------------------------------------------
-// ElfMain
+// t_gs (emulator.cpp)
 //
-// Dummy thread to execute the loaded ELF binary code.  Created in a suspended
-// state and then has it's context changed, this code should never actually run
+// Emulated GS register value
+extern __declspec(thread) uint32_t t_gs;
+
+// t_ldt (emulator.cpp)
+//
+// Thread-local LDT
+extern __declspec(thread) sys32_ldt_t t_ldt;
+
+//-----------------------------------------------------------------------------
+// ThreadMain
+//
+// Entry point for a hosted thread
 //
 // Arguments:
 //
-//	arg			- Argument passed to _beginthreadex
+//	arg			- Argument passed to _beginthreadex (sys32_startup_info)
 
-unsigned __stdcall ElfMain(void* arg)
+unsigned __stdcall ThreadMain(void* arg)
 {
-	UNREFERENCED_PARAMETER(arg);
+	// Cast out the sys32_startup_info structure passed into the thread entry point
+	sys32_startup_info_t* startinfo = reinterpret_cast<sys32_startup_info_t*>(arg);
 
-	// As stated above, this code should never actually execute
-	_RPTF0(_CRT_ASSERT, "ElfMain thread is executing directly; context was not set");
-	return 0;
+	// Initialize the LDT as a copy of the provided LDT
+	memcpy(&t_ldt, startinfo->ldt, sizeof(sys32_ldt_t));
+
+	// Set up the emulated GS register for this thread
+	t_gs = startinfo->gs;
+	
+	// Use the frame pointer to access the startup information fields;
+	// this function will never return so it can be trashed
+	__asm mov ebp, arg;
+
+	// Set the general-purpose registers
+	__asm mov eax, [ebp]sys32_startup_info_t.eax;
+	__asm mov ebx, [ebp]sys32_startup_info_t.ebx;
+	__asm mov ecx, [ebp]sys32_startup_info_t.ecx;
+	__asm mov edx, [ebp]sys32_startup_info_t.edx;
+	__asm mov edi, [ebp]sys32_startup_info_t.edi;
+	__asm mov esi, [ebp]sys32_startup_info_t.esi;
+
+	// Set the stack pointer and push the instruction pointer
+	__asm mov esp, [ebp]sys32_startup_info_t.esp;
+	__asm push [ebp]sys32_startup_info_t.eip;
+
+	// Restore the frame pointer and jump via return
+	__asm mov ebp, [ebp]sys32_startup_info_t.ebp;
+	__asm ret
+
+	// Hosted thread never returns control back to here
+	return static_cast<unsigned>(E_UNEXPECTED);
 }
 
 //-----------------------------------------------------------------------------
@@ -67,7 +105,7 @@ unsigned __stdcall ElfMain(void* arg)
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	zero_init<sys32_registers>		registers;		// Startup registers from the service
+	zero_init<sys32_startup_info_t>	startinfo;		// Startup information from the service
 	RPC_BINDING_HANDLE				binding;		// RPC binding from command line
 	RPC_STATUS						rpcresult;		// Result from RPC function call
 	HRESULT							hresult;		// Result from system call API function
@@ -83,35 +121,12 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys32_acquire_context(binding, &registers, &g_rpccontext);
+	hresult = sys32_acquire_context(binding, &startinfo, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Create a suspended thread that will execute the Linux binary
-	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ElfMain, nullptr, CREATE_SUSPENDED, nullptr));
+	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ThreadMain, &startinfo, CREATE_SUSPENDED, nullptr));
 	if(thread == nullptr) { /* TODO: HANDLE THIS */ }
-
-	// TODO: WORDS
-	// only want the CONTROL registers, INTEGER will be set from sys32_registers
-	zero_init<CONTEXT> context;
-	context.ContextFlags = CONTEXT_CONTROL;
-	
-	// Acquire the current thread CONTEXT information for registers that aren't going to be changed
-	if(!GetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }
-
-	// Change the general purpose and control registers to the values provided
-	context.Eax = registers.EAX;
-	context.Ebx = registers.EBX;
-	context.Ecx = registers.ECX;
-	context.Edx = registers.EDX;
-	context.Edi = registers.EDI;
-	context.Esi = registers.ESI;
-	context.Ebp = registers.EBP;
-	context.Eip = registers.EIP;
-	context.Esp = registers.ESP;
-
-	// Apply the updated CONTEXT information to the suspended thread
-	context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-	if(!SetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }
 
 	// Install the emulator, which operates by intercepting low-level exceptions
 	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
@@ -129,3 +144,5 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 }
 
 //-----------------------------------------------------------------------------
+
+#pragma warning(pop)

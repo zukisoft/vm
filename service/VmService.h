@@ -71,7 +71,7 @@ public:
 
 	// VirtualMachine Implementation
 	//
-	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* tss, size_t tsslen);
+	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* startinfo, size_t startinfolen);
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 
 	// updated file system api

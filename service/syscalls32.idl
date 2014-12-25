@@ -64,26 +64,54 @@ typedef struct _sys32_iovec {
 
 } sys32_iovec_t;
 
-// sys32_registers
+// sys32_ldt_entries
 //
-// Structure used to set the processor registers when launching
-// a hosted binary, creating threads or cloning processes
-typedef struct _sys32_registers {
+// Indicates the number of entries in the emulated LDT
+const int sys32_ldt_entries = 64;
+
+// sys32_ldt_entry_t
+//
+// 32-bit host process emulated LDT entry; same size as user_desc
+// but collapses the bit fields into a single value for RPC
+typedef struct _sys32_ldt_entry {
+
+	sys32_uint_t		entry_number;
+	sys32_addr_t		base_addr;
+	sys32_uint_t		limit;
+	sys32_uint_t		flags;
+
+} sys32_ldt_entry_t;
+
+// sys32_ldt_t
+//
+// 32-bit host process emulated LDT; currently fixed length
+typedef sys32_ldt_entry_t sys32_ldt_t[sys32_ldt_entries];
+
+// sys32_startup_info_t
+//
+// Structure used to initialize a new process
+typedef struct _sys32_startup_info {
 
 	// Integer Registers
-	sys32_ulong_t		EAX;
-	sys32_ulong_t		EBX;
-	sys32_ulong_t		ECX;
-	sys32_ulong_t		EDX;
-	sys32_ulong_t		EDI;
-	sys32_ulong_t		ESI;
+	sys32_ulong_t		eax;
+	sys32_ulong_t		ebx;
+	sys32_ulong_t		ecx;
+	sys32_ulong_t		edx;
+	sys32_ulong_t		edi;
+	sys32_ulong_t		esi;
 
 	// Control Registers
-	sys32_ulong_t		EBP;
-	sys32_ulong_t		EIP;
-	sys32_ulong_t		ESP;
+	sys32_addr_t		eip;
+	sys32_addr_t		ebp;
+	sys32_addr_t		esp;
 
-} sys32_registers;
+	// Segment Registers
+	sys32_ulong_t		gs;
+
+	// Local Descriptor Table
+	sys32_ldt_t			ldt;
+
+} sys32_startup_info_t;
 
 // Interface SystemCalls32
 //
@@ -112,7 +140,7 @@ interface SystemCalls32
 	// sys32_acquire_context
 	//
 	// Allocates a new context handle and startup information for a child process
-	HRESULT sys32_acquire_context([out, ref] sys32_registers* registers, [out, ref] sys32_context_exclusive_t* context);
+	HRESULT sys32_acquire_context([out, ref] sys32_startup_info_t* startinfo, [out, ref] sys32_context_exclusive_t* context);
 
 	// sys32_release_context
 	//
@@ -148,10 +176,7 @@ interface SystemCalls32
 	/* 099 */ sys32_long_t	sys32_statfs([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_statfs32* buf);
 	/* 100 */ sys32_long_t	sys32_fstatfs([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_statfs32* buf);
 	/* 109 */ sys32_long_t	sys32_uname([in] sys32_context_t context, [out, ref] linux_old_utsname* buf);
-
-	/* 120 */ sys32_long_t	sys32_clone([in] sys32_context_t context, [in, ref, size_is(task_state_len)] sys32_uchar_t* task_state, [in] sys32_size_t task_state_len,
-		[in] sys32_ulong_t clone_flags, [in] sys32_addr_t child_stack, [in] sys32_addr_t parent_tidptr, [in] sys32_int_t tls_val, [in] sys32_addr_t child_tidptr);
-
+	/* 120 */ sys32_long_t	sys32_clone([in] sys32_context_t context, [in, ref] sys32_startup_info_t* startinfo, [in] sys32_ulong_t clone_flags, [in] sys32_addr_t parent_tidptr, [in] sys32_addr_t child_tidptr);
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 125 */ sys32_long_t	sys32_mprotect([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot);
