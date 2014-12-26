@@ -46,9 +46,10 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, HeapBuffer<uint8_t>&& startinfo, 
+Process::Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+	std::unique_ptr<TaskState>&& taskstate, 
 	std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak) : 
-	m_class(elfclass), m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_startinfo(std::move(startinfo)), m_break(programbreak)
+	m_class(elfclass), m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_break(programbreak)
 {
 	// Insert all of the provided memory sections into the member collection
 	for(auto& iterator : sections) m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator)));
@@ -239,26 +240,12 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE 
 // TODO
 
 std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags, 
-	void* startinfo, size_t startinfolen)
+	void* taskstate, size_t taskstatelen)
 {
 	(vm);
 	(flags);
 
-//	// general thoughts
-//	//
-//	// SUSPEND PARENT PROCESS
-//	// CREATE NEW HOST FOR CHILD (SUSPENDED)
-//	// CLONE ALL EXISTING SECTIONS FROM PARENT TO CHILD USING NEW SECTION CLASS
-//	// RESUME PARENT PROCESS
-//	// RESUME CHILD PROCESS
-//	// CHILD REGISTERS ITSELF WITH sys32_acquire_context
-//	// CHILD CREATES THREAD ZERO SUSPENDED
-//	// PUSH PARENT CONTEXT TO CHILD THREAD ZERO WITH MAGIC
-//	// CHILD THREAD ZERO PICKS UP WHERE PARENT LEFT OFF
-//	// EVERYTHING IS AWESOME
-
-	startinfo_t context(startinfolen);
-	memcpy(context, startinfo, startinfolen);
+	std::unique_ptr<TaskState> ts = TaskState::Create(m_class, taskstate, taskstatelen);
 
 	std::vector<std::unique_ptr<MemorySection>>	sections;
 	std::shared_ptr<Process> child;
@@ -277,39 +264,20 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
 			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::Duplicate));
 
-		 child = std::make_shared<Process>(m_class, std::move(host), m_rootdir, m_workingdir, std::move(context), std::move(sections), m_break);
+		 child = std::make_shared<Process>(m_class, std::move(host), m_rootdir, m_workingdir, std::move(ts), std::move(sections), m_break);
 
-		// TEST: CLONE ALL OF THE HANDLES
+		// TEST: CLONE ALL OF THE HANDLES - this isn't how it needs to be done, just trying it out
 		for(auto iterator : m_handles) 
 			child->AddHandle(iterator.first, iterator.second);
 	}
 
-	catch(std::exception& ex) { host->Terminate(E_FAIL); throw; /* TODO */ }
+	catch(std::exception& ex) { host->Terminate(E_FAIL); throw; (ex); /* TODO */ }
 
 	Resume();
 	child->Resume();
 
 	return child;
 }
-
-///// THIS NEEDS TO BE MOVED OUT - Declare a [local] function in the RPC, perhaps
-/////
-template <>
-Process::startinfo_t Process::TODONewStartInfo<ElfClass::x86>(void* entrypoint, void* stackpointer)
-{
-	startinfo_t context(sizeof(sys32_startup_info_t));
-	memset(&context, 0, context.Size);
-	sys32_startup_info_t* p = reinterpret_cast<sys32_startup_info_t*>(&context);
-
-	p->eip = reinterpret_cast<sys32_addr_t>(entrypoint);
-	p->ebp = reinterpret_cast<sys32_addr_t>(stackpointer);
-	p->esp = reinterpret_cast<sys32_addr_t>(stackpointer);
-
-	memset(&p->ldt, -1, sizeof(sys32_ldt_t));
-
-	return context;
-}
-/////////////////////////////////////////////////////
 
 //-----------------------------------------------------------------------------
 // Process::Create (static)
@@ -413,7 +381,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		void* program_break = executable->ProgramBreak;
 
 		// TESTING NEW STARTUP INFORMATION
-		startinfo_t si = TODONewStartInfo<_class>(entry_point, stack_pointer);
+		std::unique_ptr<TaskState> ts = TaskState::Create(_class, entry_point, stack_pointer);
 
 		// The allocated MemorySection instances need to be transferred to the Process instance
 		std::vector<std::unique_ptr<MemorySection>> sections;
@@ -422,7 +390,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		if(interpreter) sections.push_back(std::move(interpreter));
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(_class, std::move(host), rootdir, workingdir, std::move(si), std::move(sections), program_break);
+		return std::make_shared<Process>(_class, std::move(host), rootdir, workingdir, std::move(ts), std::move(sections), program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
@@ -449,26 +417,19 @@ FileSystem::HandlePtr Process::GetHandle(int index)
 }
 
 //-----------------------------------------------------------------------------
-// Process::GetStartupInfo
+// Process::GetInitialTaskState
 //
-// Gets a copy of the original startup information for the process, the
+// Gets a copy of the original task state information for the process, the
 // contents of which varies based on if the process is 32 or 64-bit
 //
 // Arguments:
 //
-//	startinfo	- Pointer to receive the startup information
+//	taskstate	- Pointer to receive the task state information
 //	length		- Length of the startup information buffer
 
-void Process::GetStartupInfo(void* startinfo, size_t length)
+void Process::GetInitialTaskState(void* startinfo, size_t length)
 {
-	if(startinfo == nullptr) throw Exception(E_POINTER);
-	
-	// The requested size must match that which was provided for this Process
-	// instance when it was created, otherwise this is incompatible
-	if(length != m_startinfo.Size) throw Exception(E_FAIL);		// <--- TODO: CUSTOM EXCEPTION
-
-	// The length matches, just copy the startup information to the caller
-	memcpy(startinfo, &m_startinfo, length);
+	return m_taskstate->CopyTo(startinfo, length);
 }
 
 //-----------------------------------------------------------------------------

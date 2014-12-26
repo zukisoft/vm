@@ -44,10 +44,8 @@
 #include "MemorySection.h"
 #include "Random.h"
 #include "SystemInformation.h"
+#include "TaskState.h"
 #include "VirtualMachine.h"
-
-// TODO - remove me
-#include <syscalls32.h>
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -80,7 +78,7 @@ public:
 	//
 	// Clones the process into a new child process
 	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags,
-		void* startinfo, size_t startinfolen);
+		void* taskstate, size_t taskstatelen);
 
 	// Create (static)
 	//
@@ -94,11 +92,11 @@ public:
 	// Accesses a file system handle referenced by the process
 	FileSystem::HandlePtr GetHandle(int index);
 
-	// GetStartupInfo
+	// GetInitialTaskState
 	//
-	// Acquires the startup information structure used for the process, the contents of which
+	// Acquires the task state information structure used for the process, the contents of which
 	// varies depending on if the process is 32 or 64-bit, is a new or cloned process, etc.
-	void GetStartupInfo(void* startinfo, size_t length);
+	void GetInitialTaskState(void* taskstate, size_t length);
 
 	// MapMemory
 	//
@@ -211,7 +209,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		HeapBuffer<uint8_t>&& startinfo, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -241,11 +239,6 @@ private:
 	// Collection of std::unique_ptr<MemorySection> objects
 	using section_map_t = std::unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
 
-	// startinfo_t
-	//
-	// Generic buffer that holds the process startup information
-	using startinfo_t = HeapBuffer<uint8_t>;
-
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -261,9 +254,6 @@ private:
 	template <ElfClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
-	// TODO: Cleanup -- move to new StartupInfo class?
-	template <ElfClass _class> static startinfo_t TODONewStartInfo(void* entrypoint, void* stackpointer);
-
 	// ReleaseMemory
 	//
 	// Decommits and releases memory from the process virtual address space
@@ -273,7 +263,7 @@ private:
 	// Member Variables
 
 	std::unique_ptr<Host>		m_host;			// Hosted windows process
-	startinfo_t					m_startinfo;	// Startup information blob
+	std::unique_ptr<TaskState>	m_taskstate;	// Initial task state information
 
 	const ElfClass				m_class;
 	////

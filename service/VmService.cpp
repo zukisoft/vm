@@ -884,7 +884,7 @@ void VmService::OnStart(int, LPTSTR*)
 	m_initprocess->Resume();
 
 	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?
-	// TODO: MONITOR INIT PROCESS
+	// TODO: MONITOR INIT PROCESS - PANIC WHEN IT TERMINATES
 
 	// need to maintain a reference to the Process object since
 	// this will need a watcher thread to panic if init stops before service stops

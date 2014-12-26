@@ -27,6 +27,7 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			Elf=3:FACILITY_ELF
+			TaskState=4:FACILITY_TASKSTATE
 			Process=5:FACILITY_PROCESS
 			Service=6:FACILITY_SERVICE
 			)
@@ -1216,6 +1217,26 @@ Severity=Error
 SymbolicName=E_ELFARGUMENTSEXCEEDSTACK
 Language=English
 The amount of memory required (%1!lu! bytes) for the ELF process arguments exceeds the allocated stack size of %2!lu! bytes.
+.
+
+;//----------------------------------------------------------------------------
+;// TaskState
+;//
+;// Messages specific to hosted process/thread task state
+
+MessageId=1
+Severity=Error
+Facility=TaskState
+SymbolicName=E_TASKSTATEUNSUPPORTEDCLASS
+Language=English
+The specified process architecture class (%1!d!) is not supported.
+.
+
+MessageId=2
+Severity=Error
+SymbolicName=E_TASKSTATEINVALIDLENGTH
+Language=English
+The length of the specified existing task state (%1!d! bytes) does not match the expected length for the process architecture class (%2!d!).
 .
 
 ;//----------------------------------------------------------------------------

@@ -26,7 +26,7 @@
 
 #include "Exception.h"
 
-#pragma warning(push, 4)				
+#pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
 // HeapBuffer
@@ -67,11 +67,11 @@ public:
 	
 	// _type* conversion operator
 	//
-	operator _type*() { return m_buffer; }
+	operator _type*() const { return m_buffer; }
 
 	// Address-of operator
 	//
-	_type* operator&() { return m_buffer; }
+	_type* operator&() const { return m_buffer; }
 
 	// Array subscript operator
 	//

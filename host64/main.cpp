@@ -62,7 +62,7 @@ unsigned __stdcall ElfMain(void* arg)
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	zero_init<sys64_registers>		registers;		// Startup registers from the service
+	zero_init<sys64_task_state_t>	taskstate;		// Task state information from the service
 	RPC_BINDING_HANDLE				binding;		// RPC binding from command line
 	RPC_STATUS						rpcresult;		// Result from RPC function call
 	HRESULT							hresult;		// Result from system call API function
@@ -78,7 +78,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys64_acquire_context(binding, &registers, &g_rpccontext);
+	hresult = sys64_acquire_context(binding, &taskstate, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Create a suspended thread that will execute the Linux binary
@@ -87,31 +87,30 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(thread == nullptr) { /* TODO: HANDLE THIS */ }
 
 	// TODO: WORDS
-	// only want the CONTROL registers, INTEGER will be set from sys32_registers
 	zero_init<CONTEXT> context;
-	context.ContextFlags = CONTEXT_CONTROL;
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 	
 	// Acquire the current thread CONTEXT information for registers that aren't going to be changed
 	if(!GetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }
 
 	// Change the general purpose and control registers to the values provided
-	context.Rax = registers.RAX;
-	context.Rbx = registers.RBX;
-	context.Rcx = registers.RCX;
-	context.Rdx = registers.RDX;
-	context.Rdi = registers.RDI;
-	context.Rsi = registers.RSI;
-	context.R8  = registers.R8;
-	context.R9  = registers.R9;
-	context.R10 = registers.R10;
-	context.R11 = registers.R11;
-	context.R12 = registers.R12;
-	context.R13 = registers.R13;
-	context.R14 = registers.R14;
-	context.R15 = registers.R15;
-	context.Rbp = registers.RBP;
-	context.Rip = registers.RIP;
-	context.Rsp = registers.RSP;
+	context.Rax = taskstate.rax;
+	context.Rbx = taskstate.rbx;
+	context.Rcx = taskstate.rcx;
+	context.Rdx = taskstate.rdx;
+	context.Rdi = taskstate.rdi;
+	context.Rsi = taskstate.rsi;
+	context.R8  = taskstate.r8;
+	context.R9  = taskstate.r9;
+	context.R10 = taskstate.r10;
+	context.R11 = taskstate.r11;
+	context.R12 = taskstate.r12;
+	context.R13 = taskstate.r13;
+	context.R14 = taskstate.r14;
+	context.R15 = taskstate.r15;
+	context.Rbp = taskstate.rbp;
+	context.Rip = taskstate.rip;
+	context.Rsp = taskstate.rsp;
 
 	// Apply the updated CONTEXT information to the suspended thread
 	if(!SetThreadContext(thread, &context)) { /* TODO: HANDLE THIS */ }

@@ -34,13 +34,13 @@
 // Arguments:
 //
 //	context			- SystemCall context object
-//	startinfo		- Child task startup information
-//	startinfolen	- Length of the child task startup information
+//	taskstate		- Child task startup information
+//	taskstatelen	- Length of the child task startup information
 //	flags			- Clone operation flags
 //	ptid			- Address to store the new child pid_t (in parent and child)
 //	ctid			- Address to store the new child pit_t (in child only)
 
-__int3264 sys_clone(const SystemCall::Context* context, void* startinfo, size_t startinfolen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid)
+__int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid)
 {
 	_ASSERTE(context);
 
@@ -52,7 +52,7 @@ __int3264 sys_clone(const SystemCall::Context* context, void* startinfo, size_t 
 		SystemCall::Impersonation impersonation;
 
 		auto parent = context->Process;
-		auto child = context->VirtualMachine->CloneProcess(parent, flags, startinfo, startinfolen);
+		auto child = context->VirtualMachine->CloneProcess(parent, flags, taskstate, taskstatelen);
 
 		uapi::pid_t newpid = 2; //child->ProcessId;
 
@@ -70,6 +70,11 @@ __int3264 sys_clone(const SystemCall::Context* context, void* startinfo, size_t 
 		// Write the new process/thread identifier to the specified location in the child's address space
 		if((flags & LINUX_CLONE_CHILD_SETTID) && ctid) child->WriteMemory(ctid, &newpid, sizeof(uapi::pid_t));
 
+		// CLONE_CHILD_CLEARTID
+		//
+		// Sets a pointer to the thread id in the child process.  See set_tid_address(2) for more details.
+		if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) child->TidAddress = reinterpret_cast<void*>(ctid);
+
 		// The calling process gets the new PID as the result
 		return static_cast<__int3264>(newpid);
 	}
@@ -79,28 +84,20 @@ __int3264 sys_clone(const SystemCall::Context* context, void* startinfo, size_t 
 
 // sys32_clone
 //
-sys32_long_t sys32_clone(sys32_context_t context, sys32_startup_info_t* startinfo, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
+sys32_long_t sys32_clone(sys32_context_t context, sys32_task_state_t* taskstate, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
 {
 	// Note that the parameter order for the x86 system call differs from the standard system call, ctid and tls are swapped
-	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<SystemCall::Context*>(context), startinfo, sizeof(sys32_startup_info_t), clone_flags, 
+	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys32_task_state_t), clone_flags, 
 		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr)));
 }
 
 #ifdef _M_X64
 // sys64_clone
 //
-sys64_long_t sys64_clone(sys64_context_t context, sys64_registers* registers, sys64_uint_t calling_thread_id, sys64_ulong_t clone_flags, sys64_addr_t newsp, sys64_addr_t parent_tidptr, sys64_addr_t child_tidptr, sys64_int_t tls_val)
+sys64_long_t sys64_clone(sys64_context_t context, sys64_task_state_t* taskstate, sys64_ulong_t clone_flags, sys64_addr_t parent_tidptr, sys64_addr_t child_tidptr)
 {
-	//return sys_clone(reinterpret_cast<SystemCall::Context*>(context), static_cast<uint32_t>(clone_flags), reinterpret_cast<void*>(newsp), 
-	//	reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr), tls_val);
-	(context);
-	(clone_flags);
-	(newsp);
-	(parent_tidptr);
-	(child_tidptr);
-	(tls_val);
-
-	return -LINUX_ENOSYS;;
+	return sys_clone(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys64_task_state_t), static_cast<uint32_t>(clone_flags),
+		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr));
 }
 
 #endif

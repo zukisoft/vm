@@ -54,37 +54,37 @@ extern __declspec(thread) sys32_ldt_t t_ldt;
 //
 // Arguments:
 //
-//	arg			- Argument passed to _beginthreadex (sys32_startup_info)
+//	arg			- Argument passed to _beginthreadex (sys32_task_state_t)
 
 unsigned __stdcall ThreadMain(void* arg)
 {
-	// Cast out the sys32_startup_info structure passed into the thread entry point
-	sys32_startup_info_t* startinfo = reinterpret_cast<sys32_startup_info_t*>(arg);
+	// Cast out the task state structure passed into the thread entry point
+	sys32_task_state_t* taskstate = reinterpret_cast<sys32_task_state_t*>(arg);
 
 	// Initialize the LDT as a copy of the provided LDT
-	memcpy(&t_ldt, startinfo->ldt, sizeof(sys32_ldt_t));
+	memcpy(&t_ldt, taskstate->ldt, sizeof(sys32_ldt_t));
 
 	// Set up the emulated GS register for this thread
-	t_gs = startinfo->gs;
+	t_gs = taskstate->gs;
 	
 	// Use the frame pointer to access the startup information fields;
 	// this function will never return so it can be trashed
 	__asm mov ebp, arg;
 
 	// Set the general-purpose registers
-	__asm mov eax, [ebp]sys32_startup_info_t.eax;
-	__asm mov ebx, [ebp]sys32_startup_info_t.ebx;
-	__asm mov ecx, [ebp]sys32_startup_info_t.ecx;
-	__asm mov edx, [ebp]sys32_startup_info_t.edx;
-	__asm mov edi, [ebp]sys32_startup_info_t.edi;
-	__asm mov esi, [ebp]sys32_startup_info_t.esi;
+	__asm mov eax, [ebp]sys32_task_state_t.eax;
+	__asm mov ebx, [ebp]sys32_task_state_t.ebx;
+	__asm mov ecx, [ebp]sys32_task_state_t.ecx;
+	__asm mov edx, [ebp]sys32_task_state_t.edx;
+	__asm mov edi, [ebp]sys32_task_state_t.edi;
+	__asm mov esi, [ebp]sys32_task_state_t.esi;
 
 	// Set the stack pointer and push the instruction pointer
-	__asm mov esp, [ebp]sys32_startup_info_t.esp;
-	__asm push [ebp]sys32_startup_info_t.eip;
+	__asm mov esp, [ebp]sys32_task_state_t.esp;
+	__asm push [ebp]sys32_task_state_t.eip;
 
 	// Restore the frame pointer and jump via return
-	__asm mov ebp, [ebp]sys32_startup_info_t.ebp;
+	__asm mov ebp, [ebp]sys32_task_state_t.ebp;
 	__asm ret
 
 	// Hosted thread never returns control back to here
@@ -105,7 +105,7 @@ unsigned __stdcall ThreadMain(void* arg)
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	zero_init<sys32_startup_info_t>	startinfo;		// Startup information from the service
+	zero_init<sys32_task_state_t>	taskstate;		// State information from the service
 	RPC_BINDING_HANDLE				binding;		// RPC binding from command line
 	RPC_STATUS						rpcresult;		// Result from RPC function call
 	HRESULT							hresult;		// Result from system call API function
@@ -121,11 +121,11 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys32_acquire_context(binding, &startinfo, &g_rpccontext);
+	hresult = sys32_acquire_context(binding, &taskstate, &g_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Create a suspended thread that will execute the Linux binary
-	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ThreadMain, &startinfo, CREATE_SUSPENDED, nullptr));
+	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ThreadMain, &taskstate, CREATE_SUSPENDED, nullptr));
 	if(thread == nullptr) { /* TODO: HANDLE THIS */ }
 
 	// Install the emulator, which operates by intercepting low-level exceptions

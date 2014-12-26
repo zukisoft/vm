@@ -344,6 +344,9 @@
     <ClInclude Include="..\common\SystemInformation.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="TaskState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -696,6 +699,12 @@
     </ClCompile>
     <ClCompile Include="sys_trace.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_waitpid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="TaskState.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

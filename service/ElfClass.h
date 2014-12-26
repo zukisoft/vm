@@ -34,6 +34,8 @@
 // ElfClass Enumeration
 //
 // Used to select which instantiation of elf_traits a class will use
+//
+// TODO: Consider changing to ProcessClass
 
 enum class ElfClass
 {

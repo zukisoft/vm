@@ -59,7 +59,7 @@ static_assert(sizeof(sys32_ldt_entry_t) == sizeof(uapi::user_desc), "sys32_ldt_e
 
 uapi::long_t sys_clone(PCONTEXT context)
 {
-	zero_init<sys32_startup_info_t>		startinfo;		// Child startup information
+	zero_init<sys32_task_state_t>		taskstate;		// Child task state data
 
 	// Cast out the arguments to sys_clone
 	sys32_ulong_t		clone_flags		= static_cast<sys32_ulong_t>(context->Ebx);	
@@ -69,33 +69,33 @@ uapi::long_t sys_clone(PCONTEXT context)
 	uapi::pid_t*		child_tidptr	= reinterpret_cast<uapi::pid_t*>(context->Edi);
 
 	// The result of sys_clone in the child process/thread should be zero, set EAX
-	startinfo.eax = 0;
+	taskstate.eax = 0;
 
 	// Set the other general-purpose registers based on their current values
-	startinfo.ebx = context->Ebx;
-	startinfo.ecx = context->Ecx;
-	startinfo.edx = context->Edx;
-	startinfo.edi = context->Edi;
-	startinfo.esi = context->Esi;
-	startinfo.eip = context->Eip;
+	taskstate.ebx = context->Ebx;
+	taskstate.ecx = context->Ecx;
+	taskstate.edx = context->Edx;
+	taskstate.edi = context->Edi;
+	taskstate.esi = context->Esi;
+	taskstate.eip = context->Eip;
 
 	// Set the frame and stack pointers explicitly if requested, otherwise use this thread's registers
 	// TODO: What should EBP be set to if there is a new stack pointer?
-	startinfo.ebp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Ebp;
-	startinfo.esp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Esp;
+	taskstate.ebp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Ebp;
+	taskstate.esp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Esp;
 
 	// Copy this thread's current emulated GS register value
-	startinfo.gs = t_gs;
+	taskstate.gs = t_gs;
 
 	// Copy this thread's local descriptor table into the startup information
-	memcpy(&startinfo.ldt, &t_ldt, sizeof(sys32_ldt_t));
+	memcpy(&taskstate.ldt, &t_ldt, sizeof(sys32_ldt_t));
 
 	// If a new TLS slot is to be allocated in the cloned process, allocate it in the startup
 	// information, but do not actually modify this thread's emulated LDT
-	if(tls_val) AllocateLDTEntry(&startinfo.ldt, reinterpret_cast<sys32_ldt_entry_t*>(tls_val));
+	if(tls_val) AllocateLDTEntry(&taskstate.ldt, reinterpret_cast<sys32_ldt_entry_t*>(tls_val));
 
 	// Invoke sys_clone with the generated startup information for the new process/thread
-	return sys32_clone(g_rpccontext, &startinfo, clone_flags, reinterpret_cast<sys32_addr_t>(parent_tidptr), 
+	return sys32_clone(g_rpccontext, &taskstate, clone_flags, reinterpret_cast<sys32_addr_t>(parent_tidptr), 
 		reinterpret_cast<sys32_addr_t>(child_tidptr));
 }
 

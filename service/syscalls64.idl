@@ -65,34 +65,33 @@ typedef struct _sys64_iovec {
 
 } sys64_iovec_t;
 
-// sys64_registers
+// sys64_task_state_t
 //
-// Structure used to get/set the processor registers when launching
-// a hosted binary, creating threads or cloning processes
-typedef struct _sys64_registers {
+// Structure used to initialize a new process or thread
+typedef struct _sys64_task_state {
 
 	// Integer Registers
-	sys64_ulong_t		RAX;
-	sys64_ulong_t		RBX;
-	sys64_ulong_t		RCX;
-	sys64_ulong_t		RDX;
-	sys64_ulong_t		RDI;
-	sys64_ulong_t		RSI;
-	sys64_ulong_t		R8;
-	sys64_ulong_t		R9;
-	sys64_ulong_t		R10;
-	sys64_ulong_t		R11;
-	sys64_ulong_t		R12;
-	sys64_ulong_t		R13;
-	sys64_ulong_t		R14;
-	sys64_ulong_t		R15;
+	sys64_ulong_t		rax;
+	sys64_ulong_t		rbx;
+	sys64_ulong_t		rcx;
+	sys64_ulong_t		rdx;
+	sys64_ulong_t		rdi;
+	sys64_ulong_t		rsi;
+	sys64_ulong_t		r8;
+	sys64_ulong_t		r9;
+	sys64_ulong_t		r10;
+	sys64_ulong_t		r11;
+	sys64_ulong_t		r12;
+	sys64_ulong_t		r13;
+	sys64_ulong_t		r14;
+	sys64_ulong_t		r15;
 
 	// Control Registers
-	sys64_ulong_t		RBP;
-	sys64_ulong_t		RIP;
-	sys64_ulong_t		RSP;
+	sys64_addr_t		rbp;
+	sys64_addr_t		rip;
+	sys64_addr_t		rsp;
 
-} sys64_registers;
+} sys64_task_state_t;
 
 // Interface SystemCalls64
 //
@@ -121,7 +120,7 @@ interface SystemCalls64
 	// sys64_acquire_context
 	//
 	// Allocates a new context handle and startup information for a child process
-	HRESULT sys64_acquire_context([out, ref] sys64_registers* registers, [out, ref] sys64_context_exclusive_t* context);
+	HRESULT sys64_acquire_context([out, ref] sys64_task_state_t* taskstate, [out, ref] sys64_context_exclusive_t* context);
 
 	// sys64_release_context
 	//
@@ -149,7 +148,7 @@ interface SystemCalls64
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
 	/* 039 */ sys64_long_t	sys64_getpid([in] sys64_context_t context);
-	/* 056 */ sys64_long_t	sys64_clone([in] sys64_context_t context, [in, ref] sys64_registers* registers, [in] sys64_uint_t calling_thread_id, [in] sys64_ulong_t clone_flags, [in] sys64_addr_t newsp, [in] sys64_addr_t parent_tidptr, [in] sys64_addr_t child_tidptr, [in] sys64_int_t tls_val);
+	/* 056 */ sys64_long_t	sys64_clone([in] sys64_context_t context, [in, ref] sys64_task_state_t* registers, [in] sys64_ulong_t clone_flags, [in] sys64_addr_t parent_tidptr, [in] sys64_addr_t child_tidptr);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 072 */ sys64_long_t	sys64_fcntl([in] sys64_context_t context, [in] sys64_int_t fd, [in] sys64_int_t cmd, [in] sys64_addr_t arg);
 	/* 079 */ sys64_long_t	sys64_getcwd([in] sys64_context_t context, [out, ref, size_is(size)] sys64_char_t* buf, [in] sys64_sizeis_t size);

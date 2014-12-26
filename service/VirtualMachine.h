@@ -79,7 +79,7 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* startinfo, size_t startinfolen) = 0;
+	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* taskstate, size_t taskstatelen) = 0;
 
 	// CreateDeviceId (static)
 	//

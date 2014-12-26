@@ -87,10 +87,10 @@ typedef struct _sys32_ldt_entry {
 // 32-bit host process emulated LDT; currently fixed length
 typedef sys32_ldt_entry_t sys32_ldt_t[sys32_ldt_entries];
 
-// sys32_startup_info_t
+// sys32_task_state_t
 //
-// Structure used to initialize a new process
-typedef struct _sys32_startup_info {
+// Structure used to initialize a new process or thread
+typedef struct _sys32_task_state {
 
 	// Integer Registers
 	sys32_ulong_t		eax;
@@ -111,12 +111,11 @@ typedef struct _sys32_startup_info {
 	// Local Descriptor Table
 	sys32_ldt_t			ldt;
 
-} sys32_startup_info_t;
+} sys32_task_state_t;
 
 // Interface SystemCalls32
 //
-// Provides the 32-bit system calls interface for the virtual kernel instance.  Based on the
-// function prototypes provided by the Linux kernel's include/linux/syscalls.h header file
+// Provides the 32-bit system calls interface for the virtual kernel instance
 [
 	version(1.0),
 	uuid(55DEB757-F4E0-4197-9116-3B8046594629),
@@ -125,7 +124,7 @@ typedef struct _sys32_startup_info {
 
 interface SystemCalls32
 {
-	// sys32_context_exclusive
+	// sys32_context_exclusive_t
 	//
 	// Exclusive (write) access context handle; use when the handle or the data that
 	// the handle points to needs to be changed by an interface method
@@ -140,7 +139,7 @@ interface SystemCalls32
 	// sys32_acquire_context
 	//
 	// Allocates a new context handle and startup information for a child process
-	HRESULT sys32_acquire_context([out, ref] sys32_startup_info_t* startinfo, [out, ref] sys32_context_exclusive_t* context);
+	HRESULT sys32_acquire_context([out, ref] sys32_task_state_t* taskstate, [out, ref] sys32_context_exclusive_t* context);
 
 	// sys32_release_context
 	//
@@ -159,6 +158,7 @@ interface SystemCalls32
 	/* 004 */ sys32_long_t	sys32_write([in] sys32_context_t context, [in] sys32_int_t fd, [in, ref, size_is(count)] const sys32_uchar_t* buf, [in] sys32_size_t count);
 	/* 005 */ sys32_long_t	sys32_open([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 	/* 006 */ sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
+	/* 007 */ sys32_long_t	sys32_waitpid([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out] sys32_int_t* status, [in] sys32_int_t options);
 	/* 008 */ sys32_long_t	sys32_creat([in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
 	/* 014 */ sys32_long_t	sys32_mknod([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 	/* 020 */ sys32_long_t	sys32_getpid([in] sys32_context_t context);
@@ -176,7 +176,7 @@ interface SystemCalls32
 	/* 099 */ sys32_long_t	sys32_statfs([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_statfs32* buf);
 	/* 100 */ sys32_long_t	sys32_fstatfs([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_statfs32* buf);
 	/* 109 */ sys32_long_t	sys32_uname([in] sys32_context_t context, [out, ref] linux_old_utsname* buf);
-	/* 120 */ sys32_long_t	sys32_clone([in] sys32_context_t context, [in, ref] sys32_startup_info_t* startinfo, [in] sys32_ulong_t clone_flags, [in] sys32_addr_t parent_tidptr, [in] sys32_addr_t child_tidptr);
+	/* 120 */ sys32_long_t	sys32_clone([in] sys32_context_t context, [in, ref] sys32_task_state_t* startinfo, [in] sys32_ulong_t clone_flags, [in] sys32_addr_t parent_tidptr, [in] sys32_addr_t child_tidptr);
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 125 */ sys32_long_t	sys32_mprotect([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot);
