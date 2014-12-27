@@ -28,161 +28,161 @@
 // Bitmap::RtlAreBitsClear
 //
 //Bitmap::RtlAreBitsClearFunc Bitmap::RtlAreBitsClear = 
-//reinterpret_cast<BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlAreBitsClearFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlAreBitsClear"); 
 //}());
 
 // Bitmap::RtlAreBitsSet
 //
 //Bitmap::RtlAreBitsSetFunc Bitmap::RtlAreBitsSet = 
-//reinterpret_cast<BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlAreBitsSetFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlAreBitsSet"); 
 //}());
 
 // Bitmap::RtlClearAllBits
 //
 Bitmap::RtlClearAllBitsFunc Bitmap::RtlClearAllBits = 
-reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP)>([]() -> FARPROC { 
+reinterpret_cast<RtlClearAllBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlClearAllBits"); 
 }());
 
 // Bitmap::RtlClearBit
 //
 Bitmap::RtlClearBitFunc Bitmap::RtlClearBit = 
-reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlClearBitFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlClearBit"); 
 }());
 
 // Bitmap::RtlClearBits
 //
 Bitmap::RtlClearBitsFunc Bitmap::RtlClearBits = 
-reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlClearBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlClearBits"); 
 }());
 
 // Bitmap::RtlFindClearBits
 //
 Bitmap::RtlFindClearBitsFunc Bitmap::RtlFindClearBits = 
-reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlFindClearBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindClearBits"); 
 }());
 
 // Bitmap::RtlFindClearBitsAndSet
 //
 Bitmap::RtlFindClearBitsAndSetFunc Bitmap::RtlFindClearBitsAndSet = 
-reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlFindClearBitsAndSetFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindClearBitsAndSet"); 
 }());
 
 // Bitmap::RtlFindClearRuns
 //
 //Bitmap::RtlFindClearRunsFunc Bitmap::RtlFindClearRuns = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, PRTL_BITMAP_RUN, ULONG, BOOLEAN)>([]() -> FARPROC { 
+//reinterpret_cast<RtlFindClearRunsFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindClearRuns"); 
 //}());
 
 // Bitmap::RtlFindFirstRunClear
 //
 //Bitmap::RtlFindFirstRunClearFunc Bitmap::RtlFindFirstRunClear = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, PULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlFindFirstRunClearFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindFirstRunClear"); 
 //}());
 
 // Bitmap::RtlFindLastBackwardRunClear
 //
 //Bitmap::RtlFindLastBackwardRunClearFunc Bitmap::RtlFindLastBackwardRunClear = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, PULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlFindLastBackwardRunClearFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindLastBackwardRunClear"); 
 //}());
 
 // Bitmap::RtlFindLongestRunClear
 //
 //Bitmap::RtlFindLongestRunClearFunc Bitmap::RtlFindLongestRunClear = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, PULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlFindLongestRunClearFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindLongestRunClear"); 
 //}());
 
 // Bitmap::RtlFindNextForwardRunClear
 //
 //Bitmap::RtlFindNextForwardRunClearFunc Bitmap::RtlFindNextForwardRunClear = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, PULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlFindNextForwardRunClearFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindNextForwardRunClear"); 
 //}());
 
 // Bitmap::RtlFindSetBits
 //
 Bitmap::RtlFindSetBitsFunc Bitmap::RtlFindSetBits = 
-reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlFindSetBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindSetBits"); 
 }());
 
 // Bitmap::RtlFindSetBitsAndClear
 //
 Bitmap::RtlFindSetBitsAndClearFunc Bitmap::RtlFindSetBitsAndClear = 
-reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlFindSetBitsAndClearFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlFindSetBitsAndClear"); 
 }());
 
 // Bitmap::RtlInitializeBitMap
 //
 //Bitmap::RtlInitializeBitMapFunc Bitmap::RtlInitializeBitMap = 
-//reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP, PULONG, ULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlInitializeBitMapFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlInitializeBitMap"); 
 //}());
 
 // Bitmap::RtlNumberOfClearBits
 //
 Bitmap::RtlNumberOfClearBitsFunc Bitmap::RtlNumberOfClearBits = 
-reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP)>([]() -> FARPROC { 
+reinterpret_cast<RtlNumberOfClearBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlNumberOfClearBits"); 
 }());
 
 //// Bitmap::RtlNumberOfClearBitsInRange
 ////
 //Bitmap::RtlNumberOfClearBitsInRangeFunc Bitmap::RtlNumberOfClearBitsInRange = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlNumberOfClearBitsInRangeFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlNumberOfClearBitsInRange"); 
 //}());
 
 // Bitmap::RtlNumberOfSetBits
 //
 Bitmap::RtlNumberOfSetBitsFunc Bitmap::RtlNumberOfSetBits = 
-reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP)>([]() -> FARPROC { 
+reinterpret_cast<RtlNumberOfSetBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlNumberOfSetBits"); 
 }());
 
 //// Bitmap::RtlNumberOfSetBitsInRange
 ////
 //Bitmap::RtlNumberOfSetBitsInRangeFunc Bitmap::RtlNumberOfSetBitsInRange = 
-//reinterpret_cast<ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlNumberOfSetBitsInRangeFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlNumberOfSetBitsInRange"); 
 //}());
 
 // Bitmap::RtlSetAllBits
 //
 Bitmap::RtlSetAllBitsFunc Bitmap::RtlSetAllBits = 
-reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP)>([]() -> FARPROC { 
+reinterpret_cast<RtlSetAllBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlSetAllBits"); 
 }());
 
 // Bitmap::RtlSetBit
 //
 Bitmap::RtlSetBitFunc Bitmap::RtlSetBit = 
-reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlSetBitFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlSetBit"); 
 }());
 
 // Bitmap::RtlSetBits
 //
 Bitmap::RtlSetBitsFunc Bitmap::RtlSetBits = 
-reinterpret_cast<VOID(NTAPI*)(PRTL_BITMAP, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<RtlSetBitsFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlSetBits"); 
 }());
 
 // Bitmap::RtlTestBit
 //
 //Bitmap::RtlTestBitFunc Bitmap::RtlTestBit = 
-//reinterpret_cast<BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG)>([]() -> FARPROC { 
+//reinterpret_cast<RtlTestBitFunc>([]() -> FARPROC { 
 //	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlTestBit"); 
 //}());
 

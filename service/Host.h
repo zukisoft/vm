@@ -106,12 +106,20 @@ private:
 	Host(const PROCESS_INFORMATION& procinfo) : m_procinfo(procinfo) {}
 	friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
 
+	// NTAPI Functions
+	//
+	using NtResumeProcessFunc	= NTSTATUS(NTAPI*)(HANDLE);
+	using NtSuspendProcessFunc	= NTSTATUS(NTAPI*)(HANDLE);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	PROCESS_INFORMATION								m_procinfo;
-	static std::function<NTSTATUS(HANDLE handle)>	s_resumefunc;
-	static std::function<NTSTATUS(HANDLE handle)>	s_suspendfunc;
+	PROCESS_INFORMATION				m_procinfo;
+
+	// NTAPI
+	//
+	static NtResumeProcessFunc		NtResumeProcess;
+	static NtSuspendProcessFunc		NtSuspendProcess;
 };
 
 //-----------------------------------------------------------------------------

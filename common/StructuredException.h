@@ -50,12 +50,12 @@ public:
 	// Instance Constructor (NTSTATUS)
 	//
 	StructuredException(const NTSTATUS& status) : 
-		Exception((s_convertfunc) ? HRESULT_FROM_WIN32(s_convertfunc(status)) : status) {}
+		Exception(HRESULT_FROM_WIN32(RtlNtStatusToDosError(status))) {}
 
 	// Instance Constructor (NTSTATUS + Inner Exception)
 	//
 	StructuredException(const NTSTATUS& status, const Exception& inner) :
-		Exception((s_convertfunc) ? HRESULT_FROM_WIN32(s_convertfunc(status)) : status, inner) {}
+		Exception(HRESULT_FROM_WIN32(RtlNtStatusToDosError(status)), inner) {}
 
 	// Destructor
 	//
@@ -75,10 +75,16 @@ protected:
 
 private:
 
-	// s_convertfunc
+	// NTAPI Functions
 	//
-	// Pointer to RtlNtStatusToDosError(), loaded from ntdll.dll
-	static std::function<ULONG(NTSTATUS status)> s_convertfunc;
+	using RtlNtStatusToDosErrorFunc = ULONG(NTAPI*)(NTSTATUS);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	// NTAPI
+	//
+	static RtlNtStatusToDosErrorFunc RtlNtStatusToDosError;
 };
 
 //-----------------------------------------------------------------------------

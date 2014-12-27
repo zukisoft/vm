@@ -29,7 +29,7 @@
 //
 // Reserves, commits, or both, a region of pages within the user-mode virtual address space of a specified process
 MemorySection::NtAllocateVirtualMemoryFunc MemorySection::NtAllocateVirtualMemory = 
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID, ULONG_PTR, PSIZE_T, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<NtAllocateVirtualMemoryFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtAllocateVirtualMemory"); 
 }());
 
@@ -37,7 +37,7 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID, ULONG_PTR, PSIZE_T, ULONG, ULON
 //
 // Closes an object handle
 MemorySection::NtCloseFunc MemorySection::NtClose =
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC { 
+reinterpret_cast<NtCloseFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtClose"); 
 }());
 
@@ -45,7 +45,7 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC {
 //
 // Creates a section object
 MemorySection::NtCreateSectionFunc MemorySection::NtCreateSection =
-reinterpret_cast<NTSTATUS(NTAPI*)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES, PLARGE_INTEGER, ULONG, ULONG, HANDLE)>([]() -> FARPROC {
+reinterpret_cast<NtCreateSectionFunc>([]() -> FARPROC {
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtCreateSection"); 
 }());
 
@@ -58,7 +58,7 @@ HANDLE MemorySection::NtCurrentProcess = reinterpret_cast<HANDLE>(static_cast<LO
 //
 // Creates a handle that is a duplicate of the specified source handle
 MemorySection::NtDuplicateObjectFunc MemorySection::NtDuplicateObject =
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<NtDuplicateObjectFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtDuplicateObject"); 
 }());
 
@@ -66,7 +66,7 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, 
 //
 // Releases, decommits, or both, a region of pages within the virtual address space of a specified process
 MemorySection::NtFreeVirtualMemoryFunc MemorySection::NtFreeVirtualMemory =
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID, PSIZE_T, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<NtFreeVirtualMemoryFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtFreeVirtualMemory"); 
 }());
 
@@ -74,7 +74,7 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID, PSIZE_T, ULONG)>([]() -> FARPRO
 //
 // Maps a view of a section into the virtual address space of a subject process
 MemorySection::NtMapViewOfSectionFunc MemorySection::NtMapViewOfSection =
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG)>([]() -> FARPROC { 
+reinterpret_cast<NtMapViewOfSectionFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtMapViewOfSection"); 
 }());
 
@@ -82,7 +82,7 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID, ULONG_PTR, SIZE_T, PLAR
 //
 // Changes the protection on a region of committed pages in the virtual address space of a subject process
 MemorySection::NtProtectVirtualMemoryFunc MemorySection::NtProtectVirtualMemory =
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG, PULONG)>([]() -> FARPROC { 
+reinterpret_cast<NtProtectVirtualMemoryFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtProtectVirtualMemory");
 }());
 
@@ -90,7 +90,7 @@ reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG, PULONG)>([]() 
 //
 // Unmaps a view of a section from the virtual address space of a subject process
 MemorySection::NtUnmapViewOfSectionFunc MemorySection::NtUnmapViewOfSection =
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE, PVOID)>([]() -> FARPROC { 
+reinterpret_cast<NtUnmapViewOfSectionFunc>([]() -> FARPROC { 
 	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtUnmapViewOfSection"); 
 }());
 

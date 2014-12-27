@@ -165,14 +165,14 @@ private:
 
 	// NTAPI Functions
 	//
-	using NtAllocateVirtualMemoryFunc	= std::function<NTSTATUS(HANDLE, PVOID*, ULONG_PTR, PSIZE_T, ULONG, ULONG)>;
-	using NtCreateSectionFunc			= std::function<NTSTATUS(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES, PLARGE_INTEGER, ULONG, ULONG, HANDLE)>;
-	using NtDuplicateObjectFunc			= std::function<NTSTATUS(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG)>;
-	using NtFreeVirtualMemoryFunc		= std::function<NTSTATUS(HANDLE, PVOID, PSIZE_T, ULONG)>;
-	using NtProtectVirtualMemoryFunc	= std::function<NTSTATUS(HANDLE, PVOID*, SIZE_T*, ULONG, PULONG)>;
-	using NtMapViewOfSectionFunc		= std::function<NTSTATUS(HANDLE, HANDLE, PVOID, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG)>;
-	using NtUnmapViewOfSectionFunc		= std::function<NTSTATUS(HANDLE, PVOID)>;
-	using NtCloseFunc					= std::function<NTSTATUS(HANDLE)>;
+	using NtAllocateVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, ULONG_PTR, PSIZE_T, ULONG, ULONG);
+	using NtCreateSectionFunc			= NTSTATUS(NTAPI*)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES, PLARGE_INTEGER, ULONG, ULONG, HANDLE);
+	using NtDuplicateObjectFunc			= NTSTATUS(NTAPI*)(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG);
+	using NtFreeVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, PSIZE_T, ULONG);
+	using NtProtectVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, SIZE_T*, ULONG, PULONG);
+	using NtMapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG);
+	using NtUnmapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID);
+	using NtCloseFunc					= NTSTATUS(NTAPI*)(HANDLE);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

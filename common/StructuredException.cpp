@@ -25,14 +25,11 @@
 
 #pragma warning(push, 4)
 
-// StructuredException::s_convertfunc
+// StructuredException::RtlNtStatusToDosError
 //
-// RtlNtStatusToDosError function pointer
-std::function<ULONG(NTSTATUS status)> StructuredException::s_convertfunc = 
-reinterpret_cast<ULONG(NTAPI*)(NTSTATUS)>([]() -> FARPROC {
-
-	HMODULE module = LoadLibrary(_T("ntdll.dll"));
-	return (module) ? GetProcAddress(module, "RtlNtStatusToDosError") : nullptr;
+StructuredException::RtlNtStatusToDosErrorFunc StructuredException::RtlNtStatusToDosError = 
+reinterpret_cast<RtlNtStatusToDosErrorFunc>([]() -> FARPROC {
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlNtStatusToDosError");
 }());
 
 //-----------------------------------------------------------------------------

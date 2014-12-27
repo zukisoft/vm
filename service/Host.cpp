@@ -25,24 +25,18 @@
 
 #pragma warning(push, 4)
 
-// Host::s_resumefunc
+// Host::NtResumeProcess
 //
-// NtResumeProcess function pointer
-std::function<NTSTATUS(HANDLE status)> Host::s_resumefunc = 
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC {
-
-	HMODULE module = LoadLibrary(_T("ntdll.dll"));
-	return (module) ? GetProcAddress(module, "NtResumeProcess") : nullptr;
+Host::NtResumeProcessFunc Host::NtResumeProcess = 
+reinterpret_cast<NtResumeProcessFunc>([]() -> FARPROC {
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtResumeProcess");
 }());
 
-// Host::s_suspendfunc
+// Host::NtSuspendProces
 //
-// NtSuspendProcess function pointer
-std::function<NTSTATUS(HANDLE status)> Host::s_suspendfunc = 
-reinterpret_cast<NTSTATUS(NTAPI*)(HANDLE)>([]() -> FARPROC {
-
-	HMODULE module = LoadLibrary(_T("ntdll.dll"));
-	return (module) ? GetProcAddress(module, "NtSuspendProcess") : nullptr;
+Host::NtSuspendProcessFunc Host::NtSuspendProcess = 
+reinterpret_cast<NtSuspendProcessFunc>([]() -> FARPROC {
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtSuspendProcess");
 }());
 
 //-----------------------------------------------------------------------------
@@ -125,9 +119,7 @@ std::unique_ptr<Host> Host::Create(const tchar_t* path, const tchar_t* arguments
 
 void Host::Resume(void)
 {
-	if(!s_resumefunc) throw Exception(E_NOTIMPL);
-
-	NTSTATUS result = s_resumefunc(m_procinfo.hProcess);
+	NTSTATUS result = NtResumeProcess(m_procinfo.hProcess);
 	if(result != 0) throw StructuredException(result);
 }
 
@@ -142,9 +134,7 @@ void Host::Resume(void)
 
 void Host::Suspend(void)
 {
-	if(!s_suspendfunc) throw Exception(E_NOTIMPL);
-
-	NTSTATUS result = s_suspendfunc(m_procinfo.hProcess);
+	NTSTATUS result = NtSuspendProcess(m_procinfo.hProcess);
 	if(result != 0) throw StructuredException(result);
 }
 
