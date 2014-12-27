@@ -292,6 +292,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
     <ClInclude Include="..\common\align.h" />
+    <ClInclude Include="..\common\Bitmap.h" />
     <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
     <ClInclude Include="..\common\CommandLine.h" />
@@ -570,6 +571,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">GZ_NO_COMPRESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">GZ_NO_COMPRESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\common\Bitmap.cpp" />
     <ClCompile Include="..\common\BufferStreamReader.cpp" />
     <ClCompile Include="..\common\BZip2StreamReader.cpp" />
     <ClCompile Include="..\common\bz_internal_error.cpp" />
