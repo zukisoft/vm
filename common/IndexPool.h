@@ -34,10 +34,10 @@
 //-----------------------------------------------------------------------------
 // IndexPool
 //
-// Implements a thread-safe signed integer index allocator.  This class is 
-// intended for use in situations where indexes are frequently allocated and
-// released; a queue is maintained of the released indexes to reuse them
-// aggressively.
+// Implements a lock-free index pool with the potential for an extremely high
+// upper boundary.  This type is most effective for pools where indexes tend to
+// be released in small quantities and can be recycled aggressively, for example 
+// file descriptor values or process/thread identifiers.
 //
 // Not recommended for situations where a large number of index values may be
 // released and then not reallocated; this would cause the spent index queue
@@ -52,9 +52,14 @@ class IndexPool
 
 public:
 
-	// Constructor
-	IndexPool()=default;
-	IndexPool(_index_t base) : m_next(base) {}
+	// Constructors
+	//
+	IndexPool() : IndexPool(0) {}
+	IndexPool(_index_t reserved) : m_next(reserved) {}
+
+	// Destructor
+	//
+	~IndexPool()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -97,7 +102,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::atomic<_index_t>	m_next = 0;		// Next unused sequential index
+	std::atomic<_index_t>	m_next;			// Next unused sequential index
 	_queue_t				m_spent;		// Queue of spent indexes to reuse
 };
 
