@@ -27,9 +27,9 @@
 
 // Explicit Instantiations
 //
-template void* ElfArguments::GenerateProcessStack<ElfClass::x86>(HANDLE, void*, size_t);
+template void* ElfArguments::GenerateProcessStack<ProcessClass::x86>(HANDLE, void*, size_t);
 #ifdef _M_X64
-template void* ElfArguments::GenerateProcessStack<ElfClass::x86_64>(HANDLE, void*, size_t);
+template void* ElfArguments::GenerateProcessStack<ProcessClass::x86_64>(HANDLE, void*, size_t);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -213,10 +213,10 @@ uint32_t ElfArguments::AppendInfo(const void* buffer, size_t length)
 //	base		- Base address of the process stack
 //	length		- Length of the process stack
 
-template <ElfClass _elfclass>
+template <ProcessClass _class>
 void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t length)
 {
-	using elf = elf_traits<_elfclass>;
+	using elf = elf_traits<_class>;
 
 	size_t				infolen;				// Length of the information block
 	size_t				stacklen;				// Length of the entire stack

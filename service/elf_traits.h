@@ -27,23 +27,9 @@
 #include <linux/auxvec.h>
 #include <linux/elf.h>
 #include <linux/elf-em.h>
+#include "ProcessClass.h"
 
 #pragma warning(push, 4)
-
-//-----------------------------------------------------------------------------
-// ElfClass Enumeration
-//
-// Used to select which instantiation of elf_traits a class will use
-//
-// TODO: Consider changing to ProcessClass
-
-enum class ElfClass
-{
-	x86			= 0,				// 32-bit ELF data types
-#ifdef _M_X64
-	x86_64		= 1,				// 64-bit ELF data types
-#endif
-};
 
 //-----------------------------------------------------------------------------
 // elf_traits
@@ -53,11 +39,11 @@ enum class ElfClass
 
 // elf_traits
 //
-template <ElfClass _class> struct elf_traits {};
+template <ProcessClass _class> struct elf_traits {};
 
 // elf_traits<x86>
 //
-template <> struct elf_traits<ElfClass::x86>
+template <> struct elf_traits<ProcessClass::x86>
 {
 	typedef uapi::Elf32_Addr		addr_t;
 	typedef uapi::Elf32_auxv_t		auxv_t;
@@ -87,12 +73,12 @@ template <> struct elf_traits<ElfClass::x86>
 // elf_traits<x86> static initializers
 //
 __declspec(selectany)
-const uapi::char_t* elf_traits<ElfClass::x86>::platform = "i686";
+const uapi::char_t* elf_traits<ProcessClass::x86>::platform = "i686";
 
 #ifdef _M_X64
 // elf_traits<x86_64>
 //
-template <> struct elf_traits<ElfClass::x86_64>
+template <> struct elf_traits<ProcessClass::x86_64>
 {
 	typedef uapi::Elf64_Addr		addr_t;
 	typedef uapi::Elf64_auxv_t		auxv_t;
@@ -122,7 +108,7 @@ template <> struct elf_traits<ElfClass::x86_64>
 // elf_traits<x86_64> static initializers
 //
 __declspec(selectany)
-const uapi::char_t* elf_traits<ElfClass::x86_64>::platform = "x86_64";
+const uapi::char_t* elf_traits<ProcessClass::x86_64>::platform = "x86_64";
 #endif
 
 //-----------------------------------------------------------------------------

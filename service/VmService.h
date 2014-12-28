@@ -36,6 +36,7 @@
 #include "FileSystem.h"
 #include "PathSplitter.h"
 #include "Process.h"
+#include "ProcessClass.h"
 #include "RpcInterface.h"
 #include "SystemLog.h"
 #include "VirtualMachine.h"

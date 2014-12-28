@@ -116,7 +116,7 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 }
 
 //-----------------------------------------------------------------------------
-// ElfImage::Load (ELFCLASS32)
+// ElfImage::Load (ProcessClass::x86)
 //
 // Loads a 32-bit ELF image into virtual memory
 //
@@ -124,14 +124,14 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 //
 //	handle		- FileSystem object handle instance for the binary image
 
-template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(const FileSystem::HandlePtr& handle, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86>(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
-	return LoadBinary<ElfClass::x86>(handle, process);
+	return LoadBinary<ProcessClass::x86>(handle, process);
 }
 
 //-----------------------------------------------------------------------------
-// ElfImage::Load (ELFCLASS64)
+// ElfImage::Load (ProcessClass::x86_64)
 //
 // Loads a 64-bit ELF image into virtual memory
 //
@@ -140,10 +140,10 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86>(const FileSy
 //	handle		- FileSystem object handle instance for the binary image
 
 #ifdef _M_X64
-template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(const FileSystem::HandlePtr& handle, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86_64>(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
-	return LoadBinary<ElfClass::x86_64>(handle, process);
+	return LoadBinary<ProcessClass::x86_64>(handle, process);
 }
 #endif
 
@@ -157,7 +157,7 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ElfClass::x86_64>(const Fil
 //	handle		- FileSystem object handle instance for the binary image
 //	process		- Handle to the process in which to load the image
 
-template <ElfClass _class>
+template <ProcessClass _class>
 std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process)
 {
 	using elf = elf_traits<_class>;
@@ -290,7 +290,7 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 //
 //	elfheader	- Pointer to the ELF header loaded by LoadBinary
 
-template <ElfClass _class>
+template <ProcessClass _class>
 void ElfImage::ValidateHeader(const typename elf_traits<_class>::elfheader_t* elfheader)
 {
 	using elf = elf_traits<_class>;

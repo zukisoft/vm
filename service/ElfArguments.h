@@ -26,10 +26,11 @@
 
 #include <memory>
 #include <vector>
-#include "ElfClass.h"
+#include "elf_traits.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
 #include "MemoryRegion.h"
+#include "ProcessClass.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)				
@@ -90,7 +91,7 @@ public:
 	// GenerateProcessStack
 	//
 	// Generates a stack from the collected ELF arguments
-	template <ElfClass _elfclass> void* GenerateProcessStack(HANDLE process, void* base, size_t length);
+	template <ProcessClass _class> void* GenerateProcessStack(HANDLE process, void* base, size_t length);
 
 private:
 

@@ -25,11 +25,12 @@
 #pragma once
 
 #include <linux/fs.h>
-#include "ElfClass.h"
+#include "elf_traits.h"
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
 #include "MemorySection.h"
+#include "ProcessClass.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
 
@@ -55,7 +56,7 @@ public:
 	// Load (StreamReader)
 	//
 	// Loads an ELF image into memory from a StreamReader instance
-	template <ElfClass _class>
+	template <ProcessClass _class>
 	static std::unique_ptr<ElfImage> Load(const FileSystem::HandlePtr& handle, HANDLE process = INVALID_HANDLE_VALUE);
 
 	//-------------------------------------------------------------------------
@@ -138,13 +139,13 @@ private:
 	// LoadBinary
 	//
 	// Loads an ELF binary image into virtual memory
-	template <ElfClass _class>
+	template <ProcessClass _class>
 	static std::unique_ptr<ElfImage> LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process);
 
 	// ValidateHeader
 	//
 	// Validates the contents of an ELF binary header
-	template <ElfClass _class>
+	template <ProcessClass _class>
 	static void ValidateHeader(const typename elf_traits<_class>::elfheader_t* elfheader);
 
 	//-------------------------------------------------------------------------

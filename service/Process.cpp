@@ -25,17 +25,17 @@
 
 #pragma warning(push, 4)
 
-// Process::Create<ElfClass::x86>
+// Process::Create<ProcessClass::x86>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Process> Process::Create<ElfClass::x86>(const std::shared_ptr<VirtualMachine>&, const FileSystem::AliasPtr&,
+template std::shared_ptr<Process> Process::Create<ProcessClass::x86>(const std::shared_ptr<VirtualMachine>&, const FileSystem::AliasPtr&,
 	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 
 #ifdef _M_X64
-// Process::Create<ElfClass::x86_64>
+// Process::Create<ProcessClass::x86_64>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::shared_ptr<VirtualMachine>&, const FileSystem::AliasPtr&,
+template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const std::shared_ptr<VirtualMachine>&, const FileSystem::AliasPtr&,
 	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 #endif
 
@@ -46,10 +46,10 @@ template std::shared_ptr<Process> Process::Create<ElfClass::x86_64>(const std::s
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	std::unique_ptr<TaskState>&& taskstate, 
 	std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak) : 
-	m_class(elfclass), m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_break(programbreak)
+	m_class(_class), m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_break(programbreak)
 {
 	// Insert all of the provided memory sections into the member collection
 	for(auto& iterator : sections) m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator)));
@@ -198,7 +198,7 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 //
 //	process		- Handle to the created host process
 
-template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE process)
+template <> inline void Process::CheckHostProcessClass<ProcessClass::x86>(HANDLE process)
 {
 	BOOL			result;				// Result from IsWow64Process
 
@@ -220,7 +220,7 @@ template <> inline void Process::CheckHostProcessClass<ElfClass::x86>(HANDLE pro
 //	process		- Handle to the created host process
 
 #ifdef _M_X64
-template <> inline void Process::CheckHostProcessClass<ElfClass::x86_64>(HANDLE process)
+template <> inline void Process::CheckHostProcessClass<ProcessClass::x86_64>(HANDLE process)
 {
 	BOOL				result;				// Result from IsWow64Process
 
@@ -295,7 +295,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 //	hostpath	- Path to the external host to load
 //	hostargs	- Command line arguments to pass to the host
 
-template <ElfClass _class>
+template <ProcessClass _class>
 std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 	const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs)
 {

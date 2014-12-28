@@ -33,8 +33,8 @@
 #include <linux/mman.h>
 #include <linux/sched.h>
 #include <linux/stat.h>
+#include "elf_traits.h"
 #include "ElfArguments.h"
-#include "ElfClass.h"
 #include "ElfImage.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
@@ -42,6 +42,7 @@
 #include "IndexPool.h"
 #include "LinuxException.h"
 #include "MemorySection.h"
+#include "ProcessClass.h"
 #include "Random.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
@@ -83,7 +84,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance via an external Windows host binary
-	template <ElfClass _class>
+	template <ProcessClass _class>
 	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 		const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
@@ -157,8 +158,8 @@ public:
 	// Class
 	//
 	// Gets the class (x86/x86_64) of the process
-	__declspec(property(get=getClass)) ElfClass Class;
-	ElfClass getClass(void) const { return m_class; }
+	__declspec(property(get=getClass)) ProcessClass Class;
+	ProcessClass getClass(void) const { return m_class; }
 
 	// FileCreationModeMask
 	//
@@ -208,7 +209,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(ElfClass elfclass, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+	Process(ProcessClass _class, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 		std::unique_ptr<TaskState>&& taskstate, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
@@ -251,7 +252,7 @@ private:
 	// CheckHostProcessClass (static)
 	//
 	// Verifies that the created host process type matches what is expected
-	template <ElfClass _class>
+	template <ProcessClass _class>
 	static void CheckHostProcessClass(HANDLE process);
 
 	// ReleaseMemory
@@ -265,7 +266,7 @@ private:
 	std::unique_ptr<Host>		m_host;			// Hosted windows process
 	std::unique_ptr<TaskState>	m_taskstate;	// Initial task state information
 
-	const ElfClass				m_class;
+	const ProcessClass			m_class;
 	////
 
 	uapi::pid_t					m_processid = 1;

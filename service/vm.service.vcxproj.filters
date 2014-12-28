@@ -257,9 +257,6 @@
     <ClInclude Include="ElfArguments.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
-    <ClInclude Include="ElfClass.h">
-      <Filter>Header Files\Elf</Filter>
-    </ClInclude>
     <ClInclude Include="ElfImage.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
@@ -325,6 +322,12 @@
     </ClInclude>
     <ClInclude Include="..\common\IndexPool2.h">
       <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessClass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="elf_traits.h">
+      <Filter>Header Files\Elf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
