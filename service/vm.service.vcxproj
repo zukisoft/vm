@@ -354,10 +354,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="BlockDevice.h" />
-    <ClInclude Include="CharacterDevice.h" />
-    <ClInclude Include="ConsoleCharacterDevice.h" />
-    <ClInclude Include="Device.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ElfClass.h" />
@@ -365,8 +361,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Host.h" />
     <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="MountOptions.h" />
-    <ClInclude Include="NullCharacterDevice.h" />
-    <ClInclude Include="PipeDevice.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="TaskState.h" />
@@ -374,12 +368,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RootFileSystem.h" />
-    <ClInclude Include="SocketDevice.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="VmService.h" />
     <ClInclude Include="SystemLog.h" />
-    <ClInclude Include="ZeroCharacterDevice.h" />
     <ClInclude Include="VirtualMachine.h" />
   </ItemGroup>
   <ItemGroup>
