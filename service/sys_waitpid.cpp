@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2014 Michael G. Brehm
+// Copyright (c) 2015 Michael G. Brehm
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,7 +50,7 @@ __int3264 sys_waitpid(const SystemCall::Context* context, uapi::pid_t pid, int* 
 	try { 
 
 		SystemCall::Impersonation impersonation;
-		return 0;
+		return -38;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
