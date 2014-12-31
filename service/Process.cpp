@@ -121,9 +121,9 @@ int Process::AddHandle(int fd, const FileSystem::HandlePtr& handle)
 //
 //	address		- Optional base address
 //	length		- Required allocation length
-//	protection	- WINDOWS memory protection flags (not LINUX_XXXX)
+//	protect		- WINDOWS memory protection flags (not LINUX_XXXX)
 
-void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
+void* Process::AllocateMemory(void* address, size_t length, uint32_t protect)
 {
 	// Allocations cannot be zero-length
 	if(length == 0) throw LinuxException(LINUX_EINVAL);
@@ -138,7 +138,7 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 		void* base = anonymous->BaseAddress;
 
 		// Commit up to the requested length of pages within the new anonymous section
-		anonymous->Commit(base, length, protection);
+		anonymous->Commit(base, length, protect);
 
 		// Insert the section into the member collection and return the generated base address
 		Concurrency::reader_writer_lock::scoped_lock writer(m_sectionlock);
@@ -189,9 +189,16 @@ void* Process::AllocateMemory(void* address, size_t length, uint32_t protection)
 		// The page(s) must be reserved at this point, if they are already committed that's a problem
 		if(meminfo.State != MEM_RESERVE) throw LinuxException(LINUX_ENOMEM, Win32Exception(ERROR_INVALID_ADDRESS));
 
+		// If this region was allocated for copy-on-write, the input flags may need to be adjusted
+		if((meminfo.AllocationProtect == PAGE_WRITECOPY) || (meminfo.AllocationProtect == PAGE_EXECUTE_WRITECOPY)) {
+
+			if(protect == PAGE_READWRITE) protect = PAGE_WRITECOPY;
+			else if(protect == PAGE_EXECUTE_READWRITE) protect = PAGE_EXECUTE_WRITECOPY;
+		}
+
 		// Commit the memory with the requested protection flags
 		if(VirtualAllocEx(m_host->ProcessHandle, meminfo.BaseAddress, min(meminfo.RegionSize, commitend - commitbegin), MEM_COMMIT, 
-			protection) == nullptr) throw Win32Exception();
+			protect) == nullptr) throw Win32Exception();
 
 		commitbegin += meminfo.RegionSize;
 	}
@@ -531,7 +538,7 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 //	length		- Length of the region to be protected
 //	prot		- New protection flags for the memory region 
 
-void Process::ProtectMemory(void* address, size_t length, int prot)
+void Process::ProtectMemory(void* address, size_t length, int protect)
 {
 	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
 	DWORD						oldprotection;		// Previously set protection flags
@@ -551,9 +558,16 @@ void Process::ProtectMemory(void* address, size_t length, int prot)
 		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
 			throw LinuxException(LINUX_EACCES, Win32Exception());
 
+		// If this region was allocated for copy-on-write, the input flags may need to be adjusted
+		if((meminfo.AllocationProtect == PAGE_WRITECOPY) || (meminfo.AllocationProtect == PAGE_EXECUTE_WRITECOPY)) {
+
+			if(protect == PAGE_READWRITE) protect = PAGE_WRITECOPY;
+			else if(protect == PAGE_EXECUTE_READWRITE) protect = PAGE_EXECUTE_WRITECOPY;
+		}
+
 		// Attempt to assign the protection flags for the current region of memory
 		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
-			uapi::LinuxProtToWindowsPageFlags(prot), &oldprotection)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
+			uapi::LinuxProtToWindowsPageFlags(protect), &oldprotection)) throw LinuxException(LINUX_ENOMEM, Win32Exception());
 
 		begin += meminfo.RegionSize;		// Move to the next region
 	}
@@ -585,6 +599,8 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 	
 	// Ensure the the memory has been committed
 	if(meminfo.State != MEM_COMMIT) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+
+	// TODO: WHY AM I MAKING IT THIS COMPLICATED; LET THE FUNCTION CALL FAIL
 
 	// Check the protection status of the memory region, it cannot be NOACCESS or EXECUTE to continue
 	DWORD protection = meminfo.Protect & 0xFF;

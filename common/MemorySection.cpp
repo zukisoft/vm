@@ -206,6 +206,18 @@ std::unique_ptr<MemorySection> MemorySection::Clone(HANDLE process, CloneMode mo
 
 void MemorySection::Commit(void* address, size_t length, uint32_t protect)
 {
+	MEMORY_BASIC_INFORMATION		meminfo;		// Memory region information
+
+	// The base allocation flags need to be determined to know if this was copy-on-write
+	if(!VirtualQueryEx(m_process, address, &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+
+	// If this region was allocated for copy-on-write, the input flags may need to be adjusted
+	if((meminfo.AllocationProtect == PAGE_WRITECOPY) || (meminfo.AllocationProtect == PAGE_EXECUTE_WRITECOPY)) {
+
+		if(protect == PAGE_READWRITE) protect = PAGE_WRITECOPY;
+		else if(protect == PAGE_EXECUTE_READWRITE) protect = PAGE_EXECUTE_WRITECOPY;
+	}
+
 	// The system will automatically align the provided address and length to page boundaries
 	NTSTATUS result = NtAllocateVirtualMemory(m_process, &address, 0, reinterpret_cast<PSIZE_T>(&length), MEM_COMMIT, protect);
 	if(result != STATUS_SUCCESS) throw StructuredException(result);
@@ -284,7 +296,18 @@ std::unique_ptr<MemorySection> MemorySection::Duplicate(HANDLE process)
 
 uint32_t MemorySection::Protect(void* address, size_t length, uint32_t protect)
 {
-	ULONG				previous;				// Previously set protection flags
+	MEMORY_BASIC_INFORMATION	meminfo;		// Memory region information
+	ULONG						previous;		// Previously set protection flags
+
+	// The base allocation flags need to be determined to know if this was copy-on-write
+	if(!VirtualQueryEx(m_process, address, &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+
+	// If this region was allocated for copy-on-write, the input flags may need to be adjusted
+	if((meminfo.AllocationProtect == PAGE_WRITECOPY) || (meminfo.AllocationProtect == PAGE_EXECUTE_WRITECOPY)) {
+
+		if(protect == PAGE_READWRITE) protect = PAGE_WRITECOPY;
+		else if(protect == PAGE_EXECUTE_READWRITE) protect = PAGE_EXECUTE_WRITECOPY;
+	}
 
 	// The system will automatically align the provided address and length to page boundaries
 	NTSTATUS result = NtProtectVirtualMemory(m_process, &address, reinterpret_cast<PSIZE_T>(&length), protect, &previous);
