@@ -66,6 +66,10 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 	uintptr_t			dest = uintptr_t(destination);			// Easier pointer math as uintptr_t
 	size_t				total = 0;								// Total bytes written
 	SIZE_T				written;								// Result from WriteProcessMemory
+	
+	//
+	// TODO: REPLACE WITH NTWRITEVIRTUALMEMORY - CHECK THE NOTE I MADE BELOW AS WELL
+	//
 
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
 	HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);

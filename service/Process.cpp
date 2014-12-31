@@ -25,6 +25,22 @@
 
 #pragma warning(push, 4)
 
+// Process::NtReadVirtualMemory
+//
+// Reads directly from a process' virtual address space
+Process::NtReadVirtualMemoryFunc Process::NtReadVirtualMemory =
+reinterpret_cast<NtReadVirtualMemoryFunc>([]() -> FARPROC { 
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtReadVirtualMemory"); 
+}());
+
+// Process::NtWriteVirtualMemory
+//
+// Writes directly into a process' virtual address space
+Process::NtWriteVirtualMemoryFunc Process::NtWriteVirtualMemory =
+reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
+}());
+
 // Process::Create<ProcessClass::x86>
 //
 // Explicit Instantiation of template function
@@ -260,9 +276,8 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 		Concurrency::reader_writer_lock::scoped_lock_read reader(m_sectionlock);
 
 		// TESTING: Clone all of the memory sections from the parent process into the child process
-		// TODO: COPY ON WRITE ISN'T WORKING FOR SOME REASON -- NEED TO FIX THAT
 		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
-			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::Duplicate));
+			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
 
 		 child = std::make_shared<Process>(m_class, std::move(host), m_rootdir, m_workingdir, std::move(ts), std::move(sections), m_break);
 
@@ -476,7 +491,7 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 
 		uintptr_t	dest = uintptr_t(address);			// Easier pointer math as uintptr_t
 		size_t		read;								// Bytes read from the source file
-		SIZE_T		written;							// Result from WriteProcessMemory
+		ULONG		written;							// Result from NtWriteVirtualMemory
 
 		// TODO: Both tempfs and hostfs should be able to handle memory mappings now with
 		// the introduction of sections; this would be much more efficient that way.  Such
@@ -493,8 +508,8 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 			
 			// Copy the next chunk of bytes from the source file into the process' memory space
 			read = handle->Read(buffer, min(length, buffer.Size));
-			if(!WriteProcessMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written)) 
-				throw LinuxException(LINUX_EACCES, Win32Exception());
+			NTSTATUS result = NtWriteVirtualMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written);
+			if(result != STATUS_SUCCESS) throw LinuxException(LINUX_EACCES, StructuredException(result));
 
 			dest += written;						// Increment destination pointer
 			length -= read;							// Decrement remaining bytes to be copied
@@ -559,7 +574,7 @@ void Process::ProtectMemory(void* address, size_t length, int prot)
 size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 {
 	MEMORY_BASIC_INFORMATION	meminfo;		// Virtual memory information
-	SIZE_T						read;			// Number of bytes read from process
+	ULONG						read;			// Number of bytes read from process
 
 	_ASSERTE(buffer);
 	if((buffer == nullptr) || (length == 0)) return 0;
@@ -576,8 +591,8 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 	if((protection == PAGE_NOACCESS) || (protection == PAGE_EXECUTE)) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
 
 	// Attempt to read up to the requested length or to the end of the region, whichever is smaller
-	if(!ReadProcessMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read))
-		throw LinuxException(LINUX_EFAULT, Win32Exception());
+	NTSTATUS result = NtReadVirtualMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read);
+	if(result != STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
 
 	return read;
 }
@@ -622,6 +637,8 @@ void Process::ReleaseMemory(void* address, size_t length)
 		if(meminfo.State == MEM_COMMIT) {
 
 			// Decommit all of the page(s) in the current region
+			//
+			// TODO: THIS WILL NOT WORK FOR SECTIONS
 			if(!VirtualFreeEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), MEM_DECOMMIT))
 				throw LinuxException(LINUX_EINVAL, Win32Exception());
 		}
@@ -709,14 +726,14 @@ void Process::UnmapMemory(void* address, size_t length)
 
 size_t Process::WriteMemory(void* address, const void* buffer, size_t length)
 {
-	SIZE_T						written;		// Number of bytes written
+	ULONG					written;			// Number of bytes written
 
 	_ASSERTE(buffer);
 	if((buffer == nullptr) || (length == 0)) return 0;
 
 	// Attempt to write the data to the target process
-	if(!WriteProcessMemory(m_host->ProcessHandle, address, buffer, length, &written))
-		throw LinuxException(LINUX_EFAULT, Win32Exception());
+	NTSTATUS result = NtWriteVirtualMemory(m_host->ProcessHandle, address, buffer, length, &written);
+	if(result != STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
 
 	return written;
 }

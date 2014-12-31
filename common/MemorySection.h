@@ -71,11 +71,6 @@ public:
 	// Commits page(s) within the section
 	void Commit(void* address, size_t length, uint32_t protect);
 
-	// Decommit
-	//
-	// Decommits page(s) within the section
-	void Decommit(void* address, size_t length);
-
 	// Protect
 	//
 	// Applies protection flags to page(s) within the section
@@ -133,10 +128,13 @@ private:
 	MemorySection(const MemorySection&)=delete;
 	MemorySection& operator=(const MemorySection&)=delete;
 
-	// Instance Constructor
+	// Instance Constructors
 	//
+	MemorySection(HANDLE process, HANDLE section, void* address, SIZE_T length) : MemorySection(process, section, address, static_cast<size_t>(length)) {}
 	MemorySection(HANDLE process, HANDLE section, void* address, size_t length) : m_process(process), m_section(section), m_address(address), m_length(length) {}
+
 	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&>(HANDLE&, HANDLE&, void*&, size_t&);
+	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, SIZE_T&>(HANDLE&, HANDLE&, void*&, SIZE_T&);
 
 	// Duplicate
 	//
@@ -166,13 +164,13 @@ private:
 	// NTAPI Functions
 	//
 	using NtAllocateVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, ULONG_PTR, PSIZE_T, ULONG, ULONG);
+	using NtCloseFunc					= NTSTATUS(NTAPI*)(HANDLE);
 	using NtCreateSectionFunc			= NTSTATUS(NTAPI*)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES, PLARGE_INTEGER, ULONG, ULONG, HANDLE);
 	using NtDuplicateObjectFunc			= NTSTATUS(NTAPI*)(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG);
-	using NtFreeVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, PSIZE_T, ULONG);
+	using NtMapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID*, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG);
 	using NtProtectVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, SIZE_T*, ULONG, PULONG);
-	using NtMapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG);
 	using NtUnmapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID);
-	using NtCloseFunc					= NTSTATUS(NTAPI*)(HANDLE);
+	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -189,10 +187,10 @@ private:
 	static NtCreateSectionFunc			NtCreateSection;
 	static HANDLE						NtCurrentProcess;
 	static NtDuplicateObjectFunc		NtDuplicateObject;
-	static NtFreeVirtualMemoryFunc		NtFreeVirtualMemory;
 	static NtMapViewOfSectionFunc		NtMapViewOfSection;
 	static NtProtectVirtualMemoryFunc	NtProtectVirtualMemory;
 	static NtUnmapViewOfSectionFunc		NtUnmapViewOfSection;
+	static NtWriteVirtualMemoryFunc		NtWriteVirtualMemory;
 };
 
 //-----------------------------------------------------------------------------

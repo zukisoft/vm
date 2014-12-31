@@ -240,6 +240,16 @@ private:
 	// Collection of std::unique_ptr<MemorySection> objects
 	using section_map_t = std::unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
 
+	// STATUS_SUCCESS
+	//
+	// NTAPI constant not defined in the standard Win32 user-mode headers
+	static const NTSTATUS STATUS_SUCCESS = 0;
+
+	// NTAPI Functions
+	//
+	using NtReadVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, LPCVOID, PVOID, ULONG, PULONG);
+	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -291,6 +301,11 @@ private:
 	FileSystem::AliasPtr		m_rootdir;			// Process root directory
 	FileSystem::AliasPtr		m_workingdir;		// Process working directory
 	std::atomic<uapi::mode_t>	m_umask = 0022;		// Default UMASK value
+
+	// NTAPI
+	//
+	static NtReadVirtualMemoryFunc		NtReadVirtualMemory;
+	static NtWriteVirtualMemoryFunc		NtWriteVirtualMemory;
 };
 
 //-----------------------------------------------------------------------------

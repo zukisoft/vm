@@ -272,6 +272,8 @@ void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t leng
 	if(m_info.size()) memcpy(&stackimage[stackimage.Size - infolen], m_info.data(), m_info.size());
 
 	// Copy the generated stack image from the local heap buffer into the target process' memory
+	//
+	// TODO: CHANGE TO NTWRITEVIRTUALMEMORY
 	try { if(!WriteProcessMemory(process, stackpointer, stackimage, stackimage.Size, nullptr)) throw Win32Exception(); }
 	catch(Exception& ex) { throw Exception(E_ELFWRITEARGUMENTS, ex); }
 
