@@ -78,14 +78,14 @@ public:
 	// Clone
 	//
 	// Clones the process into a new child process
-	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags,
-		void* taskstate, size_t taskstatelen);
+	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const tchar_t* hostpath, const tchar_t* hostargs, 
+		uint32_t flags, void* taskstate, size_t taskstatelen);
 
 	// Create (static)
 	//
 	// Creates a new process instance via an external Windows host binary
 	template <ProcessClass _class>
-	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
+	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 		const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
 	// GetHandle
@@ -178,7 +178,7 @@ public:
 	//
 	// Gets the virtual machine process identifier
 	__declspec(property(get=getProcessId)) uapi::pid_t ProcessId;
-	uapi::pid_t getProcessId(void) const { return m_processid; }
+	uapi::pid_t getProcessId(void) const { return m_pid; }
 
 	// TidAddress
 	//
@@ -209,7 +209,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(ProcessClass _class, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 		std::unique_ptr<TaskState>&& taskstate, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
@@ -279,7 +279,7 @@ private:
 	const ProcessClass			m_class;
 	////
 
-	uapi::pid_t					m_processid = 1;
+	uapi::pid_t					m_pid = 1;
 	void*					m_tidaddress = nullptr;
 
 	// MEMORY MANAGEMENT

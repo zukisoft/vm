@@ -44,14 +44,14 @@ reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC {
 // Process::Create<ProcessClass::x86>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Process> Process::Create<ProcessClass::x86>(const std::shared_ptr<VirtualMachine>&, const FileSystem::AliasPtr&,
+template std::shared_ptr<Process> Process::Create<ProcessClass::x86>(const std::shared_ptr<VirtualMachine>&, uapi::pid_t pid, const FileSystem::AliasPtr&,
 	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 
 #ifdef _M_X64
 // Process::Create<ProcessClass::x86_64>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const std::shared_ptr<VirtualMachine>&, const FileSystem::AliasPtr&,
+template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const std::shared_ptr<VirtualMachine>&, uapi::pid_t pid, const FileSystem::AliasPtr&,
 	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 #endif
 
@@ -62,10 +62,10 @@ template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const st
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	std::unique_ptr<TaskState>&& taskstate, 
 	std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak) : 
-	m_class(_class), m_host(std::move(host)), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_break(programbreak)
+	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_break(programbreak)
 {
 	// Insert all of the provided memory sections into the member collection
 	for(auto& iterator : sections) m_sections.insert(std::make_pair(iterator->BaseAddress, std::move(iterator)));
@@ -261,9 +261,8 @@ template <> inline void Process::CheckHostProcessClass<ProcessClass::x86_64>(HAN
 // Arguments:
 //
 // TODO
-
-std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, const tchar_t* hostpath, const tchar_t* hostargs, uint32_t flags, 
-	void* taskstate, size_t taskstatelen)
+std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const tchar_t* hostpath, const tchar_t* hostargs, 
+	uint32_t flags, void* taskstate, size_t taskstatelen)
 {
 	(vm);
 	(flags);
@@ -286,7 +285,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 		for(auto iterator = m_sections.cbegin(); iterator != m_sections.cend(); iterator++)
 			sections.push_back(iterator->second->Clone(host->ProcessHandle, MemorySection::CloneMode::SharedCopyOnWrite));
 
-		 child = std::make_shared<Process>(m_class, std::move(host), m_rootdir, m_workingdir, std::move(ts), std::move(sections), m_break);
+		 child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), std::move(sections), m_break);
 
 		// TEST: CLONE ALL OF THE HANDLES - this isn't how it needs to be done, just trying it out
 		for(auto iterator : m_handles) 
@@ -318,8 +317,9 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 //	hostargs	- Command line arguments to pass to the host
 
 template <ProcessClass _class>
-std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
-	const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs)
+std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, 
+	const FileSystem::AliasPtr& workingdir, const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, 
+	const tchar_t* hostpath, const tchar_t* hostargs)
 {
 	using elf = elf_traits<_class>;
 
@@ -412,7 +412,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		if(interpreter) sections.push_back(std::move(interpreter));
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(_class, std::move(host), rootdir, workingdir, std::move(ts), std::move(sections), program_break);
+		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), std::move(sections), program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

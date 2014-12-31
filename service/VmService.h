@@ -34,6 +34,7 @@
 #include "Exception.h"
 #include "File.h"
 #include "FileSystem.h"
+#include "IndexPool.h"
 #include "PathSplitter.h"
 #include "Process.h"
 #include "ProcessClass.h"
@@ -68,7 +69,8 @@ class VmService : public Service<VmService>, public VirtualMachine,	public std::
 {
 public:
 
-	VmService()=default;
+	// TODO: Minimum PID is actually based on a constant multiplied by the number of CPUs (or something like that)
+	VmService() : m_pidpool(MIN_PROCESS_INDEX) {}
 
 	// VirtualMachine Implementation
 	//
@@ -115,7 +117,7 @@ private:
 	// CreateProcess
 	//
 	// Creates a new hosted process instance from a file system binary
-	std::shared_ptr<Process> CreateProcess(const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+	std::shared_ptr<Process> CreateProcess(uapi::pid_t pid, FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 		const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
 
 	// LoadInitialFileSystem
@@ -138,6 +140,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
+	// MIN_PROCESS_INDEX
+	//
+	// Minimum allowable process index (PID)
+	static const int MIN_PROCESS_INDEX = 300;
+
 	// fs_map_t
 	//
 	// Typedef for a map<> of available file systems, not concurrent
@@ -157,10 +164,16 @@ private:
 	// Member Variables
 
 	property_map_t						m_properties;	// Collection of vm properties
-	std::shared_ptr<Process>			m_initprocess;	// initial process object
 	std::unique_ptr<SystemLog>			m_syslog;		// System Log
 	std::shared_ptr<FileSystem>			m_procfs;		// PROCFS file system instance
 
+	// PROCESSES
+	//
+	IndexPool<int32_t>					m_pidpool;		// Process/thread id pool
+	std::shared_ptr<Process>			m_initprocess;	// initial process object
+
+	// FILE SYSTEMS
+	//
 	std::mutex							m_fslock;		// File system critical section
 	fs_map_t							m_availfs;		// Available file systems
 	FileSystemPtr						m_rootfs;		// Root file system

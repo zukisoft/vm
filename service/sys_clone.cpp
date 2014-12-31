@@ -54,7 +54,8 @@ __int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t 
 		auto parent = context->Process;
 		auto child = context->VirtualMachine->CloneProcess(parent, flags, taskstate, taskstatelen);
 
-		uapi::pid_t newpid = 2; //child->ProcessId;
+		// Acquire the process identifier from the newly created process object instance
+		uapi::pid_t newpid = child->ProcessId;
 
 		// CLONE_PARENT_SETTID
 		//

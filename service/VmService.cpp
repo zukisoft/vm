@@ -202,9 +202,16 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> 
 
 	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
 
-	std::shared_ptr<Process> child = process->Clone(shared_from_this(), host, hostarguments, flags, tss, tsslen);
-	m_processes.insert(child);
-	return child;
+	uapi::pid_t pid = static_cast<uapi::pid_t>(m_pidpool.Allocate());
+
+	try {
+
+		std::shared_ptr<Process> child = process->Clone(shared_from_this(), pid, host, hostarguments, flags, tss, tsslen);
+		m_processes.insert(child);
+		return child;
+	}
+
+	catch(...) { m_pidpool.Release(pid); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -214,13 +221,14 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> 
 //
 // Arguments:
 //
+//	pid				- Process identifier to assign to the process
 //	rootdir			- Initial root directory for the new process
 //	workingdir		- Initial working directory for the new process
 //	path			- Path to the file system object to execute as a process
 //	arguments		- Pointer to an array of command line argument strings
 //	environment		- Pointer to the process environment variables
 
-std::shared_ptr<Process> VmService::CreateProcess(const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+std::shared_ptr<Process> VmService::CreateProcess(uapi::pid_t pid, FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment)
 {
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
@@ -242,12 +250,12 @@ std::shared_ptr<Process> VmService::CreateProcess(const FileSystem::AliasPtr& ro
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			// TODO: clean up the arguments, I hate c_str(). need to work on svctl::parameter
 			case LINUX_ELFCLASS32: 
-				return Process::Create<ProcessClass::x86>(shared_from_this(), rootdir, workingdir, handle, arguments, environment, 
+				return Process::Create<ProcessClass::x86>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment, 
 					((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str());
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
 			case LINUX_ELFCLASS64: 
-				return Process::Create<ProcessClass::x86_64>(shared_from_this(), rootdir, workingdir, handle, arguments, environment, 
+				return Process::Create<ProcessClass::x86_64>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment, 
 					((svctl::tstring)process_host_64bit).c_str(), m_hostarguments64.c_str());
 #endif
 			// Any other ELFCLASS -> ENOEXEC	
@@ -291,7 +299,7 @@ std::shared_ptr<Process> VmService::CreateProcess(const FileSystem::AliasPtr& ro
 		newarguments.push_back(nullptr);
 
 		// Recursively call back into CreateProcess with the interpreter path and arguments
-		return CreateProcess(rootdir, workingdir, interpreter.c_str(), newarguments.data(), environment);
+		return CreateProcess(pid, rootdir, workingdir, interpreter.c_str(), newarguments.data(), environment);
 	}
 
 	// UNSUPPORTED BINARY FORMAT
@@ -875,7 +883,7 @@ void VmService::OnStart(int, LPTSTR*)
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	// TODO: NEED INITIAL ENVIRONMENT
-	m_initprocess = CreateProcess(m_rootfs->Root, m_rootfs->Root, initpath.c_str(), args, nullptr);
+	m_initprocess = CreateProcess(1, m_rootfs->Root, m_rootfs->Root, initpath.c_str(), args, nullptr);
 	
 	// stdout/stderr test
 	m_initprocess->AddHandle(1, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
