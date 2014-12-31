@@ -228,7 +228,7 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> 
 //	arguments		- Pointer to an array of command line argument strings
 //	environment		- Pointer to the process environment variables
 
-std::shared_ptr<Process> VmService::CreateProcess(uapi::pid_t pid, FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+std::shared_ptr<Process> VmService::CreateProcess(uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment)
 {
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT);

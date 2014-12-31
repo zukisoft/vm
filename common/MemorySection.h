@@ -130,11 +130,8 @@ private:
 
 	// Instance Constructors
 	//
-	MemorySection(HANDLE process, HANDLE section, void* address, SIZE_T length) : MemorySection(process, section, address, static_cast<size_t>(length)) {}
 	MemorySection(HANDLE process, HANDLE section, void* address, size_t length) : m_process(process), m_section(section), m_address(address), m_length(length) {}
-
 	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&>(HANDLE&, HANDLE&, void*&, size_t&);
-	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, SIZE_T&>(HANDLE&, HANDLE&, void*&, SIZE_T&);
 
 	// Duplicate
 	//
@@ -170,7 +167,7 @@ private:
 	using NtMapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID*, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG);
 	using NtProtectVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, SIZE_T*, ULONG, PULONG);
 	using NtUnmapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID);
-	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
+	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

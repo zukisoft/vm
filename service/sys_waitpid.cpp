@@ -41,6 +41,10 @@ __int3264 sys_waitpid(const SystemCall::Context* context, uapi::pid_t pid, int* 
 {
 	_ASSERTE(context);
 
+	(pid);
+	(status);
+	(options);
+
 	//
 	// THIS IS AN OBSOLETE SYSTEM CALL; IMPLEMENT VIA SYS_WAIT4()
 	// MIGHT WANT TO DO THIS IN THE HOST PROCESS ANYWAY - WAITING IN THE SERVICE

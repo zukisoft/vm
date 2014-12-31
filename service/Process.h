@@ -247,8 +247,8 @@ private:
 
 	// NTAPI Functions
 	//
-	using NtReadVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, LPCVOID, PVOID, ULONG, PULONG);
-	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
+	using NtReadVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, LPCVOID, PVOID, SIZE_T, PSIZE_T);
+	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions

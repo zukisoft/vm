@@ -131,7 +131,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(void* existing, 
 template <>
 std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(void* entrypoint, void* stackpointer)
 {
-	HeapBuffer<void, uint8_t> blob(sizeof(sys64_task_state_t));
+	HeapBuffer<uint8_t> blob(sizeof(sys64_task_state_t));
 	sys64_task_state_t* state = reinterpret_cast<sys64_task_state_t*>(&blob);
 
 	// Integer Registers
@@ -175,7 +175,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(void* existin
 	if(length != sizeof(sys64_task_state_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys64_task_state_t));
 
 	// Copy the existing task information into a new HeapBuffer<> instance
-	HeapBuffer<void, uint8_t> blob(sizeof(sys64_task_state_t));
+	HeapBuffer<uint8_t> blob(sizeof(sys64_task_state_t));
 	memcpy(blob, existing, length);
 
 	return std::make_unique<TaskState>(std::move(blob));

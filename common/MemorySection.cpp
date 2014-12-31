@@ -190,7 +190,8 @@ std::unique_ptr<MemorySection> MemorySection::Clone(HANDLE process, CloneMode mo
 	catch(...) { NtClose(section); throw; }
 
 	// Construct the cloned MemorySection instance with the new handle, address and length
-	return std::make_unique<MemorySection>(process, section, mapbase, maplength);
+	size_t length = maplength;
+	return std::make_unique<MemorySection>(process, section, mapbase, length);
 }
 
 //-----------------------------------------------------------------------------

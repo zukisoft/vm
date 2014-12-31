@@ -106,7 +106,7 @@ private:
 
 	// NTAPI Functions
 	//
-	using NtWriteVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
+	using NtWriteVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

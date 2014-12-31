@@ -32,7 +32,7 @@ static const NTSTATUS STATUS_SUCCESS = 0;
 
 // NTAPI Functions
 //
-using NtWriteVirtualMemoryFunc = NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
+using NtWriteVirtualMemoryFunc = NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
 
 // NtWriteVirtualMemory
 //
@@ -82,7 +82,7 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 
 	uintptr_t			dest = uintptr_t(destination);		// Easier pointer math as uintptr_t
 	size_t				total = 0;							// Total bytes written
-	ULONG				written;							// Bytes written into target process
+	SIZE_T				written;							// Bytes written into target process
 	NTSTATUS			result;								// Result from NTAPI function call
 	
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)

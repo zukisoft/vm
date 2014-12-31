@@ -498,7 +498,7 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 
 		uintptr_t	dest = uintptr_t(address);			// Easier pointer math as uintptr_t
 		size_t		read;								// Bytes read from the source file
-		ULONG		written;							// Result from NtWriteVirtualMemory
+		SIZE_T		written;							// Result from NtWriteVirtualMemory
 
 		// TODO: Both tempfs and hostfs should be able to handle memory mappings now with
 		// the introduction of sections; this would be much more efficient that way.  Such
@@ -588,7 +588,7 @@ void Process::ProtectMemory(void* address, size_t length, int protect)
 size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 {
 	MEMORY_BASIC_INFORMATION	meminfo;		// Virtual memory information
-	ULONG						read;			// Number of bytes read from process
+	SIZE_T						read;			// Number of bytes read from process
 
 	_ASSERTE(buffer);
 	if((buffer == nullptr) || (length == 0)) return 0;
@@ -742,7 +742,7 @@ void Process::UnmapMemory(void* address, size_t length)
 
 size_t Process::WriteMemory(void* address, const void* buffer, size_t length)
 {
-	ULONG					written;			// Number of bytes written
+	SIZE_T					written;			// Number of bytes written
 
 	_ASSERTE(buffer);
 	if((buffer == nullptr) || (length == 0)) return 0;
