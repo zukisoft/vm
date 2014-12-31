@@ -25,6 +25,23 @@
 
 #pragma warning(push, 4)
 
+// STATUS_SUCCESS
+//
+// NTAPI constant not defined in the standard Win32 user-mode headers
+static const NTSTATUS STATUS_SUCCESS = 0;
+
+// NTAPI Functions
+//
+using NtWriteVirtualMemoryFunc = NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, ULONG, PULONG);
+
+// NtWriteVirtualMemory
+//
+// Writes directly into a process' virtual address space
+NtWriteVirtualMemoryFunc NtWriteVirtualMemory =
+reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
+}());
+
 //-----------------------------------------------------------------------------
 // ::InProcessRead
 //
@@ -63,29 +80,26 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 	// If the process handle is not valid, this is actually an in-process read
 	if(process == INVALID_HANDLE_VALUE) return InProcessRead(handle, offset, destination, count);
 
-	uintptr_t			dest = uintptr_t(destination);			// Easier pointer math as uintptr_t
-	size_t				total = 0;								// Total bytes written
-	SIZE_T				written;								// Result from WriteProcessMemory
+	uintptr_t			dest = uintptr_t(destination);		// Easier pointer math as uintptr_t
+	size_t				total = 0;							// Total bytes written
+	ULONG				written;							// Bytes written into target process
+	NTSTATUS			result;								// Result from NTAPI function call
 	
-	//
-	// TODO: REPLACE WITH NTWRITEVIRTUALMEMORY - CHECK THE NOTE I MADE BELOW AS WELL
-	//
-
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
 	HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);
 
 	// Seek the file handle to the specified offset value, if unable to assume that it's truncated
 	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
 
-	//
-	// TODO: WON'T THIS FAIL IF READ() RETURNS ZERO BEFORE COUNT HAS BEEN CONSUMED?
-	//
-
 	while(count) {
 
-		// Read the next chunk of memory into the heap buffer and write it into the target process
+		// Read the next chunk of memory into the heap buffer, break early if there is no more
 		size_t read = handle->Read(buffer, min(count, buffer.Size));
-		if(!WriteProcessMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written)) throw Win32Exception();
+		if(read == 0) break;
+
+		// Write the data into the target process with NtWriteVirtualMemory
+		result = NtWriteVirtualMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written);
+		if(result != STATUS_SUCCESS) throw StructuredException(result);
 
 		total += written;				// Increment total bytes written
 		count -= read;					// Decrement bytes left to be read

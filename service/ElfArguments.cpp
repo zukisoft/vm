@@ -25,6 +25,14 @@
 
 #pragma warning(push, 4)
 
+// ElfArguments::NtWriteVirtualMemory
+//
+// Writes directly into a process' virtual address space
+ElfArguments::NtWriteVirtualMemoryFunc ElfArguments::NtWriteVirtualMemory =
+reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
+	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
+}());
+
 // Explicit Instantiations
 //
 template void* ElfArguments::GenerateProcessStack<ProcessClass::x86>(HANDLE, void*, size_t);
@@ -238,7 +246,7 @@ void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t leng
 	void* stackpointer = reinterpret_cast<void*>((uintptr_t(base) + length) - stacklen);
 	typename elf::addr_t infoptr = static_cast<elf::addr_t>((uintptr_t(base) + length) - infolen);
 
-	// Use a heap buffer to collect the information so only one call to WriteProcessMemory is needed
+	// Use a heap buffer to collect the information so only one call to NtWriteVirtualMemory is needed
 	HeapBuffer<uint8_t> stackimage(stacklen);
 	memset(stackimage, 0, stackimage.Size);
 
@@ -271,10 +279,13 @@ void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t leng
 	// INFORMATION BLOCK
 	if(m_info.size()) memcpy(&stackimage[stackimage.Size - infolen], m_info.data(), m_info.size());
 
-	// Copy the generated stack image from the local heap buffer into the target process' memory
-	//
-	// TODO: CHANGE TO NTWRITEVIRTUALMEMORY
-	try { if(!WriteProcessMemory(process, stackpointer, stackimage, stackimage.Size, nullptr)) throw Win32Exception(); }
+	try { 
+		
+		// Copy the generated stack image from the local heap buffer into the target process' memory
+		NTSTATUS result = NtWriteVirtualMemory(process, stackpointer, stackimage, stackimage.Size, nullptr);
+		if(result != STATUS_SUCCESS) throw StructuredException(result);
+	}
+	
 	catch(Exception& ex) { throw Exception(E_ELFWRITEARGUMENTS, ex); }
 
 	return stackpointer;				// Return the process stack pointer

@@ -32,6 +32,7 @@
 #include "MemorySection.h"
 #include "ProcessClass.h"
 #include "SystemInformation.h"
+#include "StructuredException.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
