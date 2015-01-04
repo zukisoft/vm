@@ -329,6 +329,9 @@
     <ClInclude Include="elf_traits.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\NtApi.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -683,6 +686,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\common\Bitmap.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\NtApi.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
