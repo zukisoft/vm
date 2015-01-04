@@ -25,20 +25,6 @@
 
 #pragma warning(push, 4)
 
-// Host::NtResumeProcess
-//
-Host::NtResumeProcessFunc Host::NtResumeProcess = 
-reinterpret_cast<NtResumeProcessFunc>([]() -> FARPROC {
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtResumeProcess");
-}());
-
-// Host::NtSuspendProces
-//
-Host::NtSuspendProcessFunc Host::NtSuspendProcess = 
-reinterpret_cast<NtSuspendProcessFunc>([]() -> FARPROC {
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtSuspendProcess");
-}());
-
 //-----------------------------------------------------------------------------
 // Host Destructor
 
@@ -119,7 +105,7 @@ std::unique_ptr<Host> Host::Create(const tchar_t* path, const tchar_t* arguments
 
 void Host::Resume(void)
 {
-	NTSTATUS result = NtResumeProcess(m_procinfo.hProcess);
+	NTSTATUS result = NtApi::NtResumeProcess(m_procinfo.hProcess);
 	if(result != 0) throw StructuredException(result);
 }
 
@@ -134,7 +120,7 @@ void Host::Resume(void)
 
 void Host::Suspend(void)
 {
-	NTSTATUS result = NtSuspendProcess(m_procinfo.hProcess);
+	NTSTATUS result = NtApi::NtSuspendProcess(m_procinfo.hProcess);
 	if(result != 0) throw StructuredException(result);
 }
 

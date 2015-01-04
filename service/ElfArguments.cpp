@@ -25,14 +25,6 @@
 
 #pragma warning(push, 4)
 
-// ElfArguments::NtWriteVirtualMemory
-//
-// Writes directly into a process' virtual address space
-ElfArguments::NtWriteVirtualMemoryFunc ElfArguments::NtWriteVirtualMemory =
-reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
-}());
-
 // Explicit Instantiations
 //
 template void* ElfArguments::GenerateProcessStack<ProcessClass::x86>(HANDLE, void*, size_t);
@@ -282,8 +274,8 @@ void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t leng
 	try { 
 		
 		// Copy the generated stack image from the local heap buffer into the target process' memory
-		NTSTATUS result = NtWriteVirtualMemory(process, stackpointer, stackimage, stackimage.Size, nullptr);
-		if(result != STATUS_SUCCESS) throw StructuredException(result);
+		NTSTATUS result = NtApi::NtWriteVirtualMemory(process, stackpointer, stackimage, stackimage.Size, nullptr);
+		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 	}
 	
 	catch(Exception& ex) { throw Exception(E_ELFWRITEARGUMENTS, ex); }

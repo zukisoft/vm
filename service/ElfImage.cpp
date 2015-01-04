@@ -25,23 +25,6 @@
 
 #pragma warning(push, 4)
 
-// STATUS_SUCCESS
-//
-// NTAPI constant not defined in the standard Win32 user-mode headers
-static const NTSTATUS STATUS_SUCCESS = 0;
-
-// NTAPI Functions
-//
-using NtWriteVirtualMemoryFunc = NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
-
-// NtWriteVirtualMemory
-//
-// Writes directly into a process' virtual address space
-NtWriteVirtualMemoryFunc NtWriteVirtualMemory =
-reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
-}());
-
 //-----------------------------------------------------------------------------
 // ::InProcessRead
 //
@@ -98,8 +81,8 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 		if(read == 0) break;
 
 		// Write the data into the target process with NtWriteVirtualMemory
-		result = NtWriteVirtualMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written);
-		if(result != STATUS_SUCCESS) throw StructuredException(result);
+		result = NtApi::NtWriteVirtualMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written);
+		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 		total += written;				// Increment total bytes written
 		count -= read;					// Decrement bytes left to be read

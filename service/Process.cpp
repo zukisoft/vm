@@ -25,22 +25,6 @@
 
 #pragma warning(push, 4)
 
-// Process::NtReadVirtualMemory
-//
-// Reads directly from a process' virtual address space
-Process::NtReadVirtualMemoryFunc Process::NtReadVirtualMemory =
-reinterpret_cast<NtReadVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtReadVirtualMemory"); 
-}());
-
-// Process::NtWriteVirtualMemory
-//
-// Writes directly into a process' virtual address space
-Process::NtWriteVirtualMemoryFunc Process::NtWriteVirtualMemory =
-reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
-}());
-
 // Process::Create<ProcessClass::x86>
 //
 // Explicit Instantiation of template function
@@ -515,8 +499,8 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 			
 			// Copy the next chunk of bytes from the source file into the process' memory space
 			read = handle->Read(buffer, min(length, buffer.Size));
-			NTSTATUS result = NtWriteVirtualMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written);
-			if(result != STATUS_SUCCESS) throw LinuxException(LINUX_EACCES, StructuredException(result));
+			NTSTATUS result = NtApi::NtWriteVirtualMemory(m_host->ProcessHandle, reinterpret_cast<void*>(dest), buffer, read, &written);
+			if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EACCES, StructuredException(result));
 
 			dest += written;						// Increment destination pointer
 			length -= read;							// Decrement remaining bytes to be copied
@@ -607,8 +591,8 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length)
 	if((protection == PAGE_NOACCESS) || (protection == PAGE_EXECUTE)) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
 
 	// Attempt to read up to the requested length or to the end of the region, whichever is smaller
-	NTSTATUS result = NtReadVirtualMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read);
-	if(result != STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
+	NTSTATUS result = NtApi::NtReadVirtualMemory(m_host->ProcessHandle, address, buffer, min(length, meminfo.RegionSize), &read);
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
 
 	return read;
 }
@@ -748,8 +732,8 @@ size_t Process::WriteMemory(void* address, const void* buffer, size_t length)
 	if((buffer == nullptr) || (length == 0)) return 0;
 
 	// Attempt to write the data to the target process
-	NTSTATUS result = NtWriteVirtualMemory(m_host->ProcessHandle, address, buffer, length, &written);
-	if(result != STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
+	NTSTATUS result = NtApi::NtWriteVirtualMemory(m_host->ProcessHandle, address, buffer, length, &written);
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
 
 	return written;
 }

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include "NtApi.h"
 #include "StructuredException.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
@@ -139,55 +140,12 @@ private:
 	std::unique_ptr<MemorySection> Duplicate(HANDLE process);
 	
 	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	// SECTION_INHERIT
-	//
-	// Section inheritance flags for NtMapViewOfSection
-	using SECTION_INHERIT = int;
-	static const SECTION_INHERIT ViewShare = 1;
-	static const SECTION_INHERIT ViewUnmap = 2;
-
-	// DUPLICATE_SAME_ATTRIBUTES
-	//
-	// NTAPI constant not defined in the standard Win32 user-mode headers
-	static const int DUPLICATE_SAME_ATTRIBUTES = 0x04;
-
-	// STATUS_SUCCESS
-	//
-	// NTAPI constant not defined in the standard Win32 user-mode headers
-	static const NTSTATUS STATUS_SUCCESS = 0;
-
-	// NTAPI Functions
-	//
-	using NtAllocateVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, ULONG_PTR, PSIZE_T, ULONG, ULONG);
-	using NtCloseFunc					= NTSTATUS(NTAPI*)(HANDLE);
-	using NtCreateSectionFunc			= NTSTATUS(NTAPI*)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES, PLARGE_INTEGER, ULONG, ULONG, HANDLE);
-	using NtDuplicateObjectFunc			= NTSTATUS(NTAPI*)(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG);
-	using NtMapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID*, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG);
-	using NtProtectVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID*, SIZE_T*, ULONG, PULONG);
-	using NtUnmapViewOfSectionFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID);
-	using NtWriteVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
-
-	//-------------------------------------------------------------------------
 	// Member Variables
 
 	HANDLE						m_process;			// Process handle (not owned by this class)
 	HANDLE						m_section;			// Section handle (owned by this class)
 	void*						m_address;			// Base address of the mapped section
 	size_t						m_length;			// Length of the mapped section
-
-	// NTAPI
-	//
-	static NtAllocateVirtualMemoryFunc	NtAllocateVirtualMemory;
-	static NtCloseFunc					NtClose;
-	static NtCreateSectionFunc			NtCreateSection;
-	static HANDLE						NtCurrentProcess;
-	static NtDuplicateObjectFunc		NtDuplicateObject;
-	static NtMapViewOfSectionFunc		NtMapViewOfSection;
-	static NtProtectVirtualMemoryFunc	NtProtectVirtualMemory;
-	static NtUnmapViewOfSectionFunc		NtUnmapViewOfSection;
-	static NtWriteVirtualMemoryFunc		NtWriteVirtualMemory;
 };
 
 //-----------------------------------------------------------------------------

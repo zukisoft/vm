@@ -25,75 +25,6 @@
 
 #pragma warning(push, 4)
 
-// MemorySection::NtAllocateVirtualMemory
-//
-// Reserves, commits, or both, a region of pages within the user-mode virtual address space of a specified process
-MemorySection::NtAllocateVirtualMemoryFunc MemorySection::NtAllocateVirtualMemory = 
-reinterpret_cast<NtAllocateVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtAllocateVirtualMemory"); 
-}());
-
-// MemorySection::NtClose
-//
-// Closes an object handle
-MemorySection::NtCloseFunc MemorySection::NtClose =
-reinterpret_cast<NtCloseFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtClose"); 
-}());
-
-// MemorySection::NtCreateSection
-//
-// Creates a section object
-MemorySection::NtCreateSectionFunc MemorySection::NtCreateSection =
-reinterpret_cast<NtCreateSectionFunc>([]() -> FARPROC {
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtCreateSection"); 
-}());
-
-// MemorySection::NtCurrentProcess
-//
-// Pseudo-handle representing the current process
-HANDLE MemorySection::NtCurrentProcess = reinterpret_cast<HANDLE>(static_cast<LONG_PTR>(-1));
-
-// MemorySection::NtDuplicateObject
-//
-// Creates a handle that is a duplicate of the specified source handle
-MemorySection::NtDuplicateObjectFunc MemorySection::NtDuplicateObject =
-reinterpret_cast<NtDuplicateObjectFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtDuplicateObject"); 
-}());
-
-// MemorySection::NtMapViewOfSection
-//
-// Maps a view of a section into the virtual address space of a subject process
-MemorySection::NtMapViewOfSectionFunc MemorySection::NtMapViewOfSection =
-reinterpret_cast<NtMapViewOfSectionFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtMapViewOfSection"); 
-}());
-
-// MemorySection::NtProtectVirtualMemory
-//
-// Changes the protection on a region of committed pages in the virtual address space of a subject process
-MemorySection::NtProtectVirtualMemoryFunc MemorySection::NtProtectVirtualMemory =
-reinterpret_cast<NtProtectVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtProtectVirtualMemory");
-}());
-
-// MemorySection::NtUnmapViewOfSection
-//
-// Unmaps a view of a section from the virtual address space of a subject process
-MemorySection::NtUnmapViewOfSectionFunc MemorySection::NtUnmapViewOfSection =
-reinterpret_cast<NtUnmapViewOfSectionFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtUnmapViewOfSection"); 
-}());
-
-// MemorySection::NtWriteVirtualMemory
-//
-// Writes directly into a process' virtual address space
-MemorySection::NtWriteVirtualMemoryFunc MemorySection::NtWriteVirtualMemory =
-reinterpret_cast<NtWriteVirtualMemoryFunc>([]() -> FARPROC { 
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "NtWriteVirtualMemory"); 
-}());
-
 //-----------------------------------------------------------------------------
 // MemorySection Move Constructor (protected)
 
@@ -113,8 +44,8 @@ MemorySection::MemorySection(std::unique_ptr<MemorySection>&& rhs) : m_process(r
 MemorySection::~MemorySection()
 {
 	// Unmap the section view from the process and close the section handle
-	if(m_address) NtUnmapViewOfSection(m_process, m_address);
-	if(m_section) NtClose(m_section);
+	if(m_address) NtApi::NtUnmapViewOfSection(m_process, m_address);
+	if(m_section) NtApi::NtClose(m_section);
 }
 
 //-----------------------------------------------------------------------------
@@ -144,15 +75,15 @@ std::unique_ptr<MemorySection> MemorySection::Clone(HANDLE process, CloneMode mo
 		STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_READ | SECTION_MAP_EXECUTE : SECTION_ALL_ACCESS;
 
 	// Duplicate the section handle with the same attributes as the original and the calculated access mask
-	result = NtDuplicateObject(NtCurrentProcess, m_section, NtCurrentProcess, &section, mask, 0, DUPLICATE_SAME_ATTRIBUTES);
-	if(result != STATUS_SUCCESS) throw StructuredException(result);
+	result = NtApi::NtDuplicateObject(NtApi::NtCurrentProcess, m_section, NtApi::NtCurrentProcess, &section, mask, 0, NtApi::DUPLICATE_SAME_ATTRIBUTES);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 	try {
 
 		// Attempt to map the original section into the target process, enabling copy-on-write as necessary
 		ULONG prot = (mode == CloneMode::SharedCopyOnWrite) ? PAGE_EXECUTE_WRITECOPY : PAGE_EXECUTE_READWRITE;
-		result = NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, ViewUnmap, 0, prot);
-		if(result != STATUS_SUCCESS) throw StructuredException(result);
+		result = NtApi::NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, NtApi::ViewUnmap, 0, prot);
+		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 		try {
 
@@ -176,18 +107,18 @@ std::unique_ptr<MemorySection> MemorySection::Clone(HANDLE process, CloneMode mo
 					}
 
 					// Apply the original protection flags to the auto-committed region in the cloned mapping
-					result = NtProtectVirtualMemory(process, &meminfo.BaseAddress, &meminfo.RegionSize, meminfo.Protect, &previous);
-					if(result != STATUS_SUCCESS) throw StructuredException(result);
+					result = NtApi::NtProtectVirtualMemory(process, &meminfo.BaseAddress, &meminfo.RegionSize, meminfo.Protect, &previous);
+					if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 				}
 
 				begin += meminfo.RegionSize;				// Move to the next region in the source section
 			}
 		}
 
-		catch(...) { NtUnmapViewOfSection(process, mapbase); throw; }
+		catch(...) { NtApi::NtUnmapViewOfSection(process, mapbase); throw; }
 	}
 
-	catch(...) { NtClose(section); throw; }
+	catch(...) { NtApi::NtClose(section); throw; }
 
 	// Construct the cloned MemorySection instance with the new handle, address and length
 	size_t length = maplength;
@@ -220,8 +151,8 @@ void MemorySection::Commit(void* address, size_t length, uint32_t protect)
 	}
 
 	// The system will automatically align the provided address and length to page boundaries
-	NTSTATUS result = NtAllocateVirtualMemory(m_process, &address, 0, reinterpret_cast<PSIZE_T>(&length), MEM_COMMIT, protect);
-	if(result != STATUS_SUCCESS) throw StructuredException(result);
+	NTSTATUS result = NtApi::NtAllocateVirtualMemory(m_process, &address, 0, reinterpret_cast<PSIZE_T>(&length), MEM_COMMIT, protect);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 }
 
 //-----------------------------------------------------------------------------
@@ -244,8 +175,8 @@ std::unique_ptr<MemorySection> MemorySection::Duplicate(HANDLE process)
 	std::unique_ptr<MemorySection> duplicate = Reserve(process, m_address, m_length);
 
 	// Map the section into the current process as READONLY so that the data can be copied into the new section
-	result = NtMapViewOfSection(m_section, NtCurrentProcess, &localaddress, 0, 0, nullptr, &locallength, ViewUnmap, 0, PAGE_READONLY);
-	if(result != STATUS_SUCCESS) throw StructuredException(result);
+	result = NtApi::NtMapViewOfSection(m_section, NtApi::NtCurrentProcess, &localaddress, 0, 0, nullptr, &locallength, NtApi::ViewUnmap, 0, PAGE_READONLY);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 	try {
 
@@ -266,8 +197,8 @@ std::unique_ptr<MemorySection> MemorySection::Duplicate(HANDLE process)
 
 				// Use NtWriteVirtualMemory to copy the region from the local mapping into the duplicate mapping
 				void* sourceaddress = reinterpret_cast<void*>(uintptr_t(localaddress) + (uintptr_t(meminfo.BaseAddress) - uintptr_t(m_address)));
-				result = NtWriteVirtualMemory(process, meminfo.BaseAddress, sourceaddress, meminfo.RegionSize, nullptr);
-				if(result != STATUS_SUCCESS) throw StructuredException(result);
+				result = NtApi::NtWriteVirtualMemory(process, meminfo.BaseAddress, sourceaddress, meminfo.RegionSize, nullptr);
+				if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 				// Apply the source region protection flags to the destination region
 				duplicate->Protect(meminfo.BaseAddress, meminfo.RegionSize, meminfo.Protect);
@@ -277,9 +208,9 @@ std::unique_ptr<MemorySection> MemorySection::Duplicate(HANDLE process)
 		}
 	}
 
-	catch(...) { NtUnmapViewOfSection(NtCurrentProcess, localaddress); throw; }
+	catch(...) { NtApi::NtUnmapViewOfSection(NtApi::NtCurrentProcess, localaddress); throw; }
 
-	NtUnmapViewOfSection(NtCurrentProcess, localaddress);		// Remove the local process mapping
+	NtApi::NtUnmapViewOfSection(NtApi::NtCurrentProcess, localaddress);		// Remove the local process mapping
 
 	return duplicate;
 }
@@ -311,8 +242,8 @@ uint32_t MemorySection::Protect(void* address, size_t length, uint32_t protect)
 	}
 
 	// The system will automatically align the provided address and length to page boundaries
-	NTSTATUS result = NtProtectVirtualMemory(m_process, &address, reinterpret_cast<PSIZE_T>(&length), protect, &previous);
-	if(result != STATUS_SUCCESS) throw StructuredException(result);
+	NTSTATUS result = NtApi::NtProtectVirtualMemory(m_process, &address, reinterpret_cast<PSIZE_T>(&length), protect, &previous);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 	return previous;
 }
@@ -349,19 +280,19 @@ std::unique_ptr<MemorySection> MemorySection::Reserve(HANDLE process, void* addr
 
 	// Allocate the section with PAGE_EXECUTE_READWRITE to allow the same protection when the section is mapped
 	sectionlength.QuadPart = length;
-	result = NtCreateSection(&section, SECTION_ALL_ACCESS, nullptr, &sectionlength, PAGE_EXECUTE_READWRITE, SEC_RESERVE, nullptr);
-	if(result != STATUS_SUCCESS) throw StructuredException(result);
+	result = NtApi::NtCreateSection(&section, SECTION_ALL_ACCESS, nullptr, &sectionlength, PAGE_EXECUTE_READWRITE, SEC_RESERVE, nullptr);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 	try {
 
 		// Attempt to map the section into the target process' address space with PAGE_EXECUTE_READWRITE base protection
-		result = NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, ViewUnmap, mapflags, PAGE_EXECUTE_READWRITE);
-		if(result != STATUS_SUCCESS) throw StructuredException(result);
+		result = NtApi::NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, NtApi::ViewUnmap, mapflags, PAGE_EXECUTE_READWRITE);
+		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 		_ASSERTE(maplength == length);					// Ensure the entire section was mapped
 	}
 
-	catch(...) { NtClose(section); throw; }
+	catch(...) { NtApi::NtClose(section); throw; }
 
 	// Construct the MemorySection instance with the new section attributes
 	return std::make_unique<MemorySection>(process, section, mapbase, length);

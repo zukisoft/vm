@@ -26,9 +26,9 @@
 
 #include <functional>
 #include <memory>
-#include <winternl.h>
 #include "Exception.h"
 #include "HeapBuffer.h"
+#include "NtApi.h"
 #include "StructuredException.h"
 #include "Win32Exception.h"
 
@@ -106,20 +106,10 @@ private:
 	Host(const PROCESS_INFORMATION& procinfo) : m_procinfo(procinfo) {}
 	friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
 
-	// NTAPI Functions
-	//
-	using NtResumeProcessFunc	= NTSTATUS(NTAPI*)(HANDLE);
-	using NtSuspendProcessFunc	= NTSTATUS(NTAPI*)(HANDLE);
-
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	PROCESS_INFORMATION				m_procinfo;
-
-	// NTAPI
-	//
-	static NtResumeProcessFunc		NtResumeProcess;
-	static NtSuspendProcessFunc		NtSuspendProcess;
 };
 
 //-----------------------------------------------------------------------------

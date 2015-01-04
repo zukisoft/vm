@@ -30,6 +30,7 @@
 #include "Exception.h"
 #include "HeapBuffer.h"
 #include "MemoryRegion.h"
+#include "NtApi.h"
 #include "ProcessClass.h"
 #include "StructuredException.h"
 #include "Win32Exception.h"
@@ -99,15 +100,6 @@ private:
 	ElfArguments(const ElfArguments&)=delete;
 	ElfArguments& operator=(const ElfArguments&)=delete;
 
-	// STATUS_SUCCESS
-	//
-	// NTAPI constant not defined in the standard Win32 user-mode headers
-	static const NTSTATUS STATUS_SUCCESS = 0;
-
-	// NTAPI Functions
-	//
-	using NtWriteVirtualMemoryFunc	= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
-
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
 
@@ -146,10 +138,6 @@ private:
 	std::vector<uint32_t>		m_argv;			// Argument string offsets
 	std::vector<uint32_t>		m_envp;			// Environment var string offsets
 	std::vector<auxvec_t>		m_auxv;			// Auxiliary vectors / offsets
-
-	// NTAPI
-	//
-	static NtWriteVirtualMemoryFunc	NtWriteVirtualMemory;
 };
 
 //-----------------------------------------------------------------------------

@@ -26,8 +26,8 @@
 
 #include <functional>
 #include <Windows.h>
-#include <winternl.h>
 #include "Exception.h"
+#include "NtApi.h"
 #include "generic_text.h"
 
 #pragma warning(push, 4)	
@@ -50,12 +50,12 @@ public:
 	// Instance Constructor (NTSTATUS)
 	//
 	StructuredException(const NTSTATUS& status) : 
-		Exception(HRESULT_FROM_WIN32(RtlNtStatusToDosError(status))) {}
+		Exception(HRESULT_FROM_WIN32(NtApi::RtlNtStatusToDosError(status))) {}
 
 	// Instance Constructor (NTSTATUS + Inner Exception)
 	//
 	StructuredException(const NTSTATUS& status, const Exception& inner) :
-		Exception(HRESULT_FROM_WIN32(RtlNtStatusToDosError(status)), inner) {}
+		Exception(HRESULT_FROM_WIN32(NtApi::RtlNtStatusToDosError(status)), inner) {}
 
 	// Destructor
 	//
@@ -72,19 +72,6 @@ protected:
 	//
 	// Invoked when an HRESULT code cannot be mapped to a message table string
 	virtual std::tstring GetDefaultMessage(const HRESULT& hresult);
-
-private:
-
-	// NTAPI Functions
-	//
-	using RtlNtStatusToDosErrorFunc = ULONG(NTAPI*)(NTSTATUS);
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	// NTAPI
-	//
-	static RtlNtStatusToDosErrorFunc RtlNtStatusToDosError;
 };
 
 //-----------------------------------------------------------------------------

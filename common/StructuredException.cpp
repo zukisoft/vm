@@ -25,13 +25,6 @@
 
 #pragma warning(push, 4)
 
-// StructuredException::RtlNtStatusToDosError
-//
-StructuredException::RtlNtStatusToDosErrorFunc StructuredException::RtlNtStatusToDosError = 
-reinterpret_cast<RtlNtStatusToDosErrorFunc>([]() -> FARPROC {
-	return GetProcAddress(LoadLibrary(_T("ntdll.dll")), "RtlNtStatusToDosError");
-}());
-
 //-----------------------------------------------------------------------------
 // StructuredException::GetDefaultMessage (protected)
 //

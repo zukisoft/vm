@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include "Exception.h"
+#include "NtApi.h"
 
 #pragma warning(push, 4)
 
@@ -162,97 +163,22 @@ public:
 	//
 	// Determines if the bitmap is empty
 	__declspec(property(get=getEmpty)) bool Empty;
-	bool getEmpty(void) { return RtlNumberOfSetBits(&m_bitmap) == 0; }
+	bool getEmpty(void) { return NtApi::RtlNumberOfSetBits(&m_bitmap) == 0; }
 
 	// Full
 	//
 	// Determines if the bitmap is full
 	__declspec(property(get=getFull)) bool Full;
-	bool getFull(void) { return RtlNumberOfClearBits(&m_bitmap) == 0; }
+	bool getFull(void) { return NtApi::RtlNumberOfClearBits(&m_bitmap) == 0; }
 
 private:
 	
 	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	// RTL_BITMAP
-	//
-	// NTAPI structure not defined in the standard Win32 user-mode headers.
-	typedef struct _RTL_BITMAP {
-
-		ULONG	SizeOfBitMap;			// Number of bits in bitmap
-		PULONG	Buffer;					// Pointer to the bitmap itself
-	
-	} RTL_BITMAP, *PRTL_BITMAP;
-
-	// RTL_BITMAP_RUN
-	//
-	// NTAPI structure not defined in the standard Win32 user-mode headers
-	typedef struct _RTL_BITMAP_RUN {
-
-		ULONG	StartingIndex;
-		ULONG	NumberOfBits;
-
-	} RTL_BITMAP_RUN, *PRTL_BITMAP_RUN;
-
-	// NTAPI Functions
-	//
-	using RtlAreBitsClearFunc				= BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlAreBitsSetFunc					= BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlClearAllBitsFunc				= VOID(NTAPI*)(PRTL_BITMAP);
-	using RtlClearBitFunc					= VOID(NTAPI*)(PRTL_BITMAP, ULONG);
-	using RtlClearBitsFunc					= VOID(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlFindClearBitsFunc				= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlFindClearBitsAndSetFunc		= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlFindClearRunsFunc				= ULONG(NTAPI*)(PRTL_BITMAP, PRTL_BITMAP_RUN, ULONG, BOOLEAN);
-	using RtlFindFirstRunClearFunc			= ULONG(NTAPI*)(PRTL_BITMAP, PULONG);
-	using RtlFindLastBackwardRunClearFunc	= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, PULONG);
-	using RtlFindLongestRunClearFunc		= ULONG(NTAPI*)(PRTL_BITMAP, PULONG);
-	using RtlFindNextForwardRunClearFunc	= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, PULONG);
-	using RtlFindSetBitsFunc				= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlFindSetBitsAndClearFunc		= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlInitializeBitMapFunc			= VOID(NTAPI*)(PRTL_BITMAP, PULONG, ULONG);
-	using RtlNumberOfClearBitsFunc			= ULONG(NTAPI*)(PRTL_BITMAP);
-	using RtlNumberOfClearBitsInRangeFunc	= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlNumberOfSetBitsFunc			= ULONG(NTAPI*)(PRTL_BITMAP);
-	using RtlNumberOfSetBitsInRangeFunc		= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlSetAllBitsFunc					= VOID(NTAPI*)(PRTL_BITMAP);
-	using RtlSetBitFunc						= VOID(NTAPI*)(PRTL_BITMAP, ULONG);
-	using RtlSetBitsFunc					= VOID(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlTestBitFunc					= BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG);
-
-	//-------------------------------------------------------------------------
 	// Member Variables
 
-	RTL_BITMAP			m_bitmap;			// Contained RTL bitmap struct
+	NtApi::RTL_BITMAP	m_bitmap;			// Contained RTL bitmap struct
 	uint32_t			m_sethint = 0;		// Automatic hint for setting bits
 	uint32_t			m_clearhint = 0;	// Automatic hint for clearing bits
-
-	// NTAPI
-	//
-	static RtlAreBitsClearFunc				RtlAreBitsClear;
-	static RtlAreBitsSetFunc				RtlAreBitsSet;
-	static RtlClearAllBitsFunc				RtlClearAllBits;
-	static RtlClearBitFunc					RtlClearBit;
-	static RtlClearBitsFunc					RtlClearBits;
-	static RtlFindClearBitsFunc				RtlFindClearBits;
-	static RtlFindClearBitsAndSetFunc		RtlFindClearBitsAndSet;
-	static RtlFindClearRunsFunc				RtlFindClearRuns;
-	static RtlFindFirstRunClearFunc			RtlFindFirstRunClear;
-	static RtlFindLastBackwardRunClearFunc	RtlFindLastBackwardRunClear;
-	static RtlFindLongestRunClearFunc		RtlFindLongestRunClear;
-	static RtlFindNextForwardRunClearFunc	RtlFindNextForwardRunClear;
-	static RtlFindSetBitsFunc				RtlFindSetBits;
-	static RtlFindSetBitsAndClearFunc		RtlFindSetBitsAndClear;
-	static RtlInitializeBitMapFunc			RtlInitializeBitMap;
-	static RtlNumberOfClearBitsFunc			RtlNumberOfClearBits;
-	static RtlNumberOfClearBitsInRangeFunc	RtlNumberOfClearBitsInRange;
-	static RtlNumberOfSetBitsFunc			RtlNumberOfSetBits;
-	static RtlNumberOfSetBitsInRangeFunc	RtlNumberOfSetBitsInRange;
-	static RtlSetAllBitsFunc				RtlSetAllBits;
-	static RtlSetBitFunc					RtlSetBit;
-	static RtlSetBitsFunc					RtlSetBits;
-	static RtlTestBitFunc					RtlTestBit;
 };
 
 //-----------------------------------------------------------------------------

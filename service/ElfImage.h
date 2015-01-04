@@ -30,6 +30,7 @@
 #include "FileSystem.h"
 #include "HeapBuffer.h"
 #include "MemorySection.h"
+#include "NtApi.h"
 #include "ProcessClass.h"
 #include "SystemInformation.h"
 #include "StructuredException.h"
