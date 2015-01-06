@@ -50,7 +50,7 @@ BZip2StreamReader::BZip2StreamReader(const void* base, size_t length)
 	// Initialize the bzlib stream structure
 	memset(&m_stream, 0, sizeof(bz_stream));
 	m_stream.avail_in = static_cast<unsigned int>(length);
-	m_stream.next_in  = reinterpret_cast<char*>(const_cast<void*>(base));;
+	m_stream.next_in  = reinterpret_cast<char*>(const_cast<void*>(base));
 
 	int result = BZ2_bzDecompressInit(&m_stream, 0, 0);
 	if(result != BZ_OK) throw Exception(E_DECOMPRESS_INIT, COMPRESSION_METHOD);
