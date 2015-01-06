@@ -59,7 +59,7 @@ Bitmap::Bitmap(const Bitmap& rhs)
 	if(m_bitmap.Buffer == nullptr) throw Exception(E_OUTOFMEMORY);
 
 	// Copy the bitmap bits from the referenced object and set the size
-	memcpy(&m_bitmap.Buffer, rhs.m_bitmap.Buffer, sizeof(ULONG) * ulongs);
+	memcpy(m_bitmap.Buffer, rhs.m_bitmap.Buffer, sizeof(ULONG) * ulongs);
 	m_bitmap.SizeOfBitMap = rhs.m_bitmap.SizeOfBitMap;
 
 	// Copy the hints from the referenced object
@@ -109,7 +109,7 @@ Bitmap& Bitmap::operator=(const Bitmap& rhs)
 	}
 
 	// Copy the bitmap bits from the referenced object
-	memcpy(&m_bitmap.Buffer, rhs.m_bitmap.Buffer, sizeof(ULONG) * ulongs);
+	memcpy(m_bitmap.Buffer, rhs.m_bitmap.Buffer, sizeof(ULONG) * ulongs);
 
 	// Copy the hints from the referenced object
 	m_clearhint = rhs.m_clearhint;
