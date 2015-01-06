@@ -128,10 +128,10 @@ Bitmap& Bitmap::operator=(const Bitmap& rhs)
 //	startbit		- Bit to start the range check against
 //	count			- Number of bits in the range to verify
 
-bool Bitmap::AreBitsClear(uint32_t startbit, uint32_t count)
+bool Bitmap::AreBitsClear(uint32_t startbit, uint32_t count) const
 {
 	// Verify that the start bit combined with the count does not exceed the length
-	if((startbit + count) >= m_bitmap.SizeOfBitMap) return false;
+	if((startbit + count) > m_bitmap.SizeOfBitMap) return false;
 
 	// Test the requested range of bits in the bitmap
 	return (NtApi::RtlAreBitsClear(&m_bitmap, startbit, count) == TRUE);
@@ -147,10 +147,10 @@ bool Bitmap::AreBitsClear(uint32_t startbit, uint32_t count)
 //	startbit		- Bit to start the range check against
 //	count			- Number of bits in the range to verify
 
-bool Bitmap::AreBitsSet(uint32_t startbit, uint32_t count)
+bool Bitmap::AreBitsSet(uint32_t startbit, uint32_t count) const
 {
 	// Verify that the start bit combined with the count does not exceed the length
-	if((startbit + count) >= m_bitmap.SizeOfBitMap) return false;
+	if((startbit + count) > m_bitmap.SizeOfBitMap) return false;
 
 	// Test the requested range of bits in the bitmap
 	return (NtApi::RtlAreBitsSet(&m_bitmap, startbit, count) == TRUE);
@@ -184,7 +184,7 @@ void Bitmap::Clear(void)
 void Bitmap::Clear(uint32_t bit)
 {
 	// Verify the position is in bounds for the bitmap
-	if(bit > m_bitmap.SizeOfBitMap) return;
+	if(bit >= m_bitmap.SizeOfBitMap) return;
 
 	// Clear the bit and generate a new automatic hint
 	NtApi::RtlClearBit(&m_bitmap, bit);
@@ -204,7 +204,7 @@ void Bitmap::Clear(uint32_t bit)
 void Bitmap::Clear(uint32_t startbit, uint32_t count)
 {
 	// Verify the starting bit is in range and don't allow count to overrun
-	if(startbit > m_bitmap.SizeOfBitMap) return;
+	if(startbit >= m_bitmap.SizeOfBitMap) return;
 	count = min(count, (m_bitmap.SizeOfBitMap - startbit));
 
 	// Clear the range of bits and generate a new automatic hint
@@ -221,7 +221,7 @@ void Bitmap::Clear(uint32_t startbit, uint32_t count)
 //
 //	NONE
 
-uint32_t Bitmap::FindClear(void) 
+uint32_t Bitmap::FindClear(void) const
 { 
 	// Find a single clear bit using the automatic hint
 	return FindClear(1, m_clearhint); 
@@ -236,7 +236,7 @@ uint32_t Bitmap::FindClear(void)
 //
 //	quantity	- Number of contiguous clear bits to locate
 
-uint32_t Bitmap::FindClear(uint32_t quantity)
+uint32_t Bitmap::FindClear(uint32_t quantity) const
 { 
 	// Find a range of clear bits using the automatic hint
 	return FindClear(quantity, m_clearhint);
@@ -252,7 +252,7 @@ uint32_t Bitmap::FindClear(uint32_t quantity)
 //	quantity	- Number of contiguous clear bits to locate
 //	hint		- Hint on where to start looking in the bitmap
 
-uint32_t Bitmap::FindClear(uint32_t quantity, uint32_t hint)
+uint32_t Bitmap::FindClear(uint32_t quantity, uint32_t hint) const
 {
 	// Attempt to locate a range of clear bits with the specified quantity
 	return NtApi::RtlFindClearBits(&m_bitmap, quantity, hint);
@@ -318,7 +318,7 @@ uint32_t Bitmap::FindClearAndSet(uint32_t quantity, uint32_t hint)
 //
 //	NONE
 
-uint32_t Bitmap::FindSet(void) 
+uint32_t Bitmap::FindSet(void) const
 { 
 	// Find a single set bit using the automatic hint
 	return FindSet(1, m_sethint); 
@@ -333,7 +333,7 @@ uint32_t Bitmap::FindSet(void)
 //
 //	quantity	- Number of contiguous set bits to locate
 
-uint32_t Bitmap::FindSet(uint32_t quantity)
+uint32_t Bitmap::FindSet(uint32_t quantity) const
 { 
 	// Find a range of set bits using the automatic hint
 	return FindSet(quantity, m_sethint);
@@ -349,7 +349,7 @@ uint32_t Bitmap::FindSet(uint32_t quantity)
 //	quantity	- Number of contiguous set bits to locate
 //	hint		- Hint on where to start looking in the bitmap
 
-uint32_t Bitmap::FindSet(uint32_t quantity, uint32_t hint)
+uint32_t Bitmap::FindSet(uint32_t quantity, uint32_t hint) const
 {
 	// Attempt to locate a range of set bits with the specified quantity
 	return NtApi::RtlFindSetBits(&m_bitmap, quantity, hint);
@@ -434,7 +434,7 @@ void Bitmap::Set(void)
 void Bitmap::Set(uint32_t bit)
 {
 	// Verify the position is in bounds for the bitmap
-	if(bit > m_bitmap.SizeOfBitMap) return;
+	if(bit >= m_bitmap.SizeOfBitMap) return;
 
 	// Set the bit and generate a new automatic hint
 	NtApi::RtlSetBit(&m_bitmap, bit);
@@ -454,7 +454,7 @@ void Bitmap::Set(uint32_t bit)
 void Bitmap::Set(uint32_t startbit, uint32_t count)
 {
 	// Verify the starting bit is in range and don't allow count to overrun
-	if(startbit > m_bitmap.SizeOfBitMap) return;
+	if(startbit >= m_bitmap.SizeOfBitMap) return;
 	count = min(count, (m_bitmap.SizeOfBitMap - startbit));
 
 	// Set the range of bits and generate a new automatic hint

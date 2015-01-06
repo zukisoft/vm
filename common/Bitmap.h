@@ -61,12 +61,12 @@ public:
 	// AreBitsClear
 	//
 	// Determines if a range of bits is clear
-	bool AreBitsClear(uint32_t startbit, uint32_t count);
+	bool AreBitsClear(uint32_t startbit, uint32_t count) const;
 
 	// AreBitsSet
 	//
 	// Determines if a range of bits is set
-	bool AreBitsSet(uint32_t startbit, uint32_t count);
+	bool AreBitsSet(uint32_t startbit, uint32_t count) const;
 
 	// Clear
 	//
@@ -86,17 +86,17 @@ public:
 	// FindClear
 	//
 	// Finds a single clear bit in the bitmap
-	uint32_t FindClear(void);
+	uint32_t FindClear(void) const;
 
 	// FindClear
 	//
 	// Finds a range of clear bits in the bitmap
-	uint32_t FindClear(uint32_t quantity);
+	uint32_t FindClear(uint32_t quantity) const;
 
 	// FindClear
 	//
 	// Finds a range of clear bits in the bitmap
-	uint32_t FindClear(uint32_t quantity, uint32_t hint);
+	uint32_t FindClear(uint32_t quantity, uint32_t hint) const;
 
 	// FindClearAndSet
 	//
@@ -116,17 +116,17 @@ public:
 	// FindSet
 	//
 	// Finds a single set bit in the bitmap
-	uint32_t FindSet(void);
+	uint32_t FindSet(void) const;
 
 	// FindSet
 	//
 	// Finds a range of set bits in the bitmap
-	uint32_t FindSet(uint32_t quantity);
+	uint32_t FindSet(uint32_t quantity) const;
 
 	// FindSet
 	//
 	// Finds a range of set bits in the bitmap
-	uint32_t FindSet(uint32_t quantity, uint32_t hint);
+	uint32_t FindSet(uint32_t quantity, uint32_t hint) const;
 
 	// FindSetAndClear
 	//
@@ -173,13 +173,13 @@ public:
 	//
 	// Determines if the bitmap is empty
 	__declspec(property(get=getEmpty)) bool Empty;
-	bool getEmpty(void) { return NtApi::RtlNumberOfSetBits(&m_bitmap) == 0; }
+	bool getEmpty(void) const { return NtApi::RtlNumberOfSetBits(&m_bitmap) == 0; }
 
 	// Full
 	//
 	// Determines if the bitmap is full
 	__declspec(property(get=getFull)) bool Full;
-	bool getFull(void) { return NtApi::RtlNumberOfClearBits(&m_bitmap) == 0; }
+	bool getFull(void) const { return NtApi::RtlNumberOfClearBits(&m_bitmap) == 0; }
 
 private:
 	

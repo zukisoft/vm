@@ -62,6 +62,11 @@ public:
 	
 	} RTL_BITMAP, *PRTL_BITMAP;
 
+	// PCTRL_BITMAP
+	//
+	// Const pointer to an RTL_BITMAP structure
+	using PCRTL_BITMAP = const RTL_BITMAP*;
+
 	// RTL_BITMAP_RUN
 	//
 	// NTAPI structure not defined in the standard Win32 user-mode headers
@@ -100,29 +105,29 @@ public:
 	using NtUnlockVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG);
 	using NtUnmapViewOfSectionFunc			= NTSTATUS(NTAPI*)(HANDLE, LPCVOID);
 	using NtWriteVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
-	using RtlAreBitsClearFunc				= BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlAreBitsSetFunc					= BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
+	using RtlAreBitsClearFunc				= BOOLEAN(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
+	using RtlAreBitsSetFunc					= BOOLEAN(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
 	using RtlClearAllBitsFunc				= VOID(NTAPI*)(PRTL_BITMAP);
 	using RtlClearBitFunc					= VOID(NTAPI*)(PRTL_BITMAP, ULONG);
 	using RtlClearBitsFunc					= VOID(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlFindClearBitsFunc				= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
+	using RtlFindClearBitsFunc				= ULONG(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
 	using RtlFindClearBitsAndSetFunc		= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlFindClearRunsFunc				= ULONG(NTAPI*)(PRTL_BITMAP, PRTL_BITMAP_RUN, ULONG, BOOLEAN);
-	using RtlFindLastBackwardRunClearFunc	= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, PULONG);
-	using RtlFindLongestRunClearFunc		= ULONG(NTAPI*)(PRTL_BITMAP, PULONG);
-	using RtlFindNextForwardRunClearFunc	= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, PULONG);
-	using RtlFindSetBitsFunc				= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
+	using RtlFindClearRunsFunc				= ULONG(NTAPI*)(PCRTL_BITMAP, PRTL_BITMAP_RUN, ULONG, BOOLEAN);
+	using RtlFindLastBackwardRunClearFunc	= ULONG(NTAPI*)(PCRTL_BITMAP, ULONG, PULONG);
+	using RtlFindLongestRunClearFunc		= ULONG(NTAPI*)(PCRTL_BITMAP, PULONG);
+	using RtlFindNextForwardRunClearFunc	= ULONG(NTAPI*)(PCRTL_BITMAP, ULONG, PULONG);
+	using RtlFindSetBitsFunc				= ULONG(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
 	using RtlFindSetBitsAndClearFunc		= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
 	using RtlInitializeBitMapFunc			= VOID(NTAPI*)(PRTL_BITMAP, PULONG, ULONG);
 	using RtlNtStatusToDosErrorFunc			= ULONG(NTAPI*)(NTSTATUS);
-	using RtlNumberOfClearBitsFunc			= ULONG(NTAPI*)(PRTL_BITMAP);
-	using RtlNumberOfClearBitsInRangeFunc	= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlNumberOfSetBitsFunc			= ULONG(NTAPI*)(PRTL_BITMAP);
-	using RtlNumberOfSetBitsInRangeFunc		= ULONG(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
+	using RtlNumberOfClearBitsFunc			= ULONG(NTAPI*)(PCRTL_BITMAP);
+	using RtlNumberOfClearBitsInRangeFunc	= ULONG(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
+	using RtlNumberOfSetBitsFunc			= ULONG(NTAPI*)(PCRTL_BITMAP);
+	using RtlNumberOfSetBitsInRangeFunc		= ULONG(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
 	using RtlSetAllBitsFunc					= VOID(NTAPI*)(PRTL_BITMAP);
 	using RtlSetBitFunc						= VOID(NTAPI*)(PRTL_BITMAP, ULONG);
 	using RtlSetBitsFunc					= VOID(NTAPI*)(PRTL_BITMAP, ULONG, ULONG);
-	using RtlTestBitFunc					= BOOLEAN(NTAPI*)(PRTL_BITMAP, ULONG);
+	using RtlTestBitFunc					= BOOLEAN(NTAPI*)(PCRTL_BITMAP, ULONG);
 
 	//-------------------------------------------------------------------------
 	// Fields
