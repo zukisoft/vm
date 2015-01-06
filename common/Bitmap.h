@@ -58,6 +58,16 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// AreBitsClear
+	//
+	// Determines if a range of bits is clear
+	bool AreBitsClear(uint32_t startbit, uint32_t count);
+
+	// AreBitsSet
+	//
+	// Determines if a range of bits is set
+	bool AreBitsSet(uint32_t startbit, uint32_t count);
+
 	// Clear
 	//
 	// Clears all bits in the bitmap

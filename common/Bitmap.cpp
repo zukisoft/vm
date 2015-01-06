@@ -119,6 +119,44 @@ Bitmap& Bitmap::operator=(const Bitmap& rhs)
 }
 
 //-----------------------------------------------------------------------------
+// Bitmap::AreBitsClear
+//
+// Determines if all bits in a range are clear
+//
+// Arguments:
+//
+//	startbit		- Bit to start the range check against
+//	count			- Number of bits in the range to verify
+
+bool Bitmap::AreBitsClear(uint32_t startbit, uint32_t count)
+{
+	// Verify that the start bit combined with the count does not exceed the length
+	if((startbit + count) >= m_bitmap.SizeOfBitMap) return false;
+
+	// Test the requested range of bits in the bitmap
+	return (NtApi::RtlAreBitsClear(&m_bitmap, startbit, count) == TRUE);
+}
+
+//-----------------------------------------------------------------------------
+// Bitmap::AreBitsSet
+//
+// Determines if all bits in a range are set
+//
+// Arguments:
+//
+//	startbit		- Bit to start the range check against
+//	count			- Number of bits in the range to verify
+
+bool Bitmap::AreBitsSet(uint32_t startbit, uint32_t count)
+{
+	// Verify that the start bit combined with the count does not exceed the length
+	if((startbit + count) >= m_bitmap.SizeOfBitMap) return false;
+
+	// Test the requested range of bits in the bitmap
+	return (NtApi::RtlAreBitsSet(&m_bitmap, startbit, count) == TRUE);
+}
+
+//-----------------------------------------------------------------------------
 // Bitmap::Clear
 //
 // Clears all bits in the bitmap
