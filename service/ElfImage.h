@@ -29,9 +29,9 @@
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
-#include "MemorySection.h"
 #include "NtApi.h"
 #include "ProcessClass.h"
+#include "ProcessSection.h"
 #include "SystemInformation.h"
 #include "StructuredException.h"
 #include "Win32Exception.h"
@@ -44,7 +44,7 @@
 //
 // Loads an ELF binary image into a virtual memory section
 
-class ElfImage : public MemorySection
+class ElfImage : public ProcessSection
 {
 public:
 
@@ -111,8 +111,8 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImage(std::unique_ptr<MemorySection>&& section, Metadata&& metadata) : MemorySection(std::move(section)), m_metadata(std::move(metadata)) {}
-	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, std::unique_ptr<MemorySection>, Metadata>(std::unique_ptr<MemorySection>&&, Metadata&&);
+	ElfImage(std::unique_ptr<ProcessSection>&& section, Metadata&& metadata) : ProcessSection(std::move(section)), m_metadata(std::move(metadata)) {}
+	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, std::unique_ptr<ProcessSection>, Metadata>(std::unique_ptr<ProcessSection>&&, Metadata&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations

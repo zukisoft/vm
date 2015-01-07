@@ -165,7 +165,7 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 
 	Metadata						metadata;		// Metadata to return about the loaded image
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
-	std::unique_ptr<MemorySection>	section;		// Allocated virtual memory section
+	std::unique_ptr<ProcessSection>	section;		// Allocated virtual memory section
 
 	// Acquire a copy of the ELF header from the binary file and validate it
 	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
@@ -207,9 +207,9 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so
 		// reserve them at the highest available virtual address to allow for as much heap space as possible.
 		// Note that the section length is aligned to the allocation granularity of the system to prevent holes
-		if(elfheader.e_type == LINUX_ET_EXEC) 
-			section = MemorySection::Reserve(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, SystemInformation::AllocationGranularity);
-		else section = MemorySection::Reserve(process, maxvaddr - minvaddr, SystemInformation::AllocationGranularity, MEM_TOP_DOWN);
+		if(elfheader.e_type == LINUX_ET_EXEC)
+			section = ProcessSection::Create(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, ProcessSection::Mode::Private);
+		else section = ProcessSection::Create(process, maxvaddr - minvaddr, ProcessSection::Mode::Private, MEM_TOP_DOWN);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
@@ -235,7 +235,7 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 
 			// Get the base address of the loadable segment and commit the virtual memory
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { section->Commit(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
+			try { section->Allocate(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image

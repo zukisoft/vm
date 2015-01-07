@@ -45,11 +45,11 @@ public:
 
 	// Destructor
 	//
-	~ProcessSection();
+	virtual ~ProcessSection();
 
 	// less-than comparison operator
 	//
-	bool operator <(const ProcessSection& rhs) const { return BaseAddress < rhs.BaseAddress; }
+	bool operator <(const ProcessSection& rhs) const { return m_address < rhs.m_address; }
 
 	//-------------------------------------------------------------------------
 	// Type Declarations
@@ -70,7 +70,7 @@ public:
 	// Allocate
 	//
 	// Allocates pages within the virtual memory section
-	void Allocate(void* address, size_t length, uint32_t protection);
+	void* Allocate(void* address, size_t length, uint32_t protection);
 
 	// ChangeMode
 	//
@@ -84,6 +84,7 @@ public:
 	static std::unique_ptr<ProcessSection> Create(HANDLE process, size_t length, Mode mode) { return Create(process, nullptr, length, mode, 0); }
 	static std::unique_ptr<ProcessSection> Create(HANDLE process, size_t length, uint32_t flags) { return Create(process, nullptr, length, Mode::Private, flags); }
 	static std::unique_ptr<ProcessSection> Create(HANDLE process, size_t length, Mode mode, uint32_t flags) { return Create(process, nullptr, length, mode, flags); }
+	static std::unique_ptr<ProcessSection> Create(HANDLE process, void* address, size_t length) { return Create(process, address, length, Mode::Private, 0); }
 	static std::unique_ptr<ProcessSection> Create(HANDLE process, void* address, size_t length, Mode mode) { return Create(process, address, length, mode, 0); }
 	static std::unique_ptr<ProcessSection> Create(HANDLE process, void* address, size_t length, Mode mode, uint32_t flags);
 
@@ -103,26 +104,32 @@ public:
 	void Release(void* address, size_t length);
 
 	//-------------------------------------------------------------------------
-	// Fields
+	// Properties
 
 	// BaseAddress
 	//
 	// The base address of the mapped section
-	void* const	BaseAddress;
-
-	// Length
-	//
-	// The length of the mapped section
-	const size_t Length;
-
-	//-------------------------------------------------------------------------
-	// Properties
+	__declspec(property(get=getBaseAddress)) void* const BaseAddress;
+	void* const getBaseAddress(void) const { return m_address; }
 
 	// Empty
 	//
 	// Determines if the entire section is empty
 	__declspec(property(get=getEmpty)) bool Empty;
-	bool getEmpty(void) { return m_allocmap.Empty; }
+	bool getEmpty(void) const { return m_allocmap.Empty; }
+
+	// Length
+	//
+	// Length of the mapped Section
+	__declspec(property(get=getLength)) size_t Length;
+	size_t getLength(void) const { return m_length; }
+
+protected:
+	
+	// Move Constructor
+	//
+	// TODO: Try to get rid of this by refactoring Process; don't miss the virtual destructor
+	ProcessSection(std::unique_ptr<ProcessSection>&& rhs);
 
 private:
 
@@ -153,10 +160,12 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const HANDLE			m_process;		// The target process handle
-	const HANDLE			m_section;		// The section object handle
-	Mode					m_mode;			// The current section mode
-	Bitmap					m_allocmap;		// Page allocation bitmap
+	HANDLE					m_process;			// The target process handle
+	HANDLE					m_section;			// The section object handle
+	void*					m_address;			// Mapped section base address
+	size_t					m_length;			// Length of the mapped section
+	Mode					m_mode;				// The current section mode
+	Bitmap					m_allocmap;			// Page allocation bitmap
 };
 
 //-----------------------------------------------------------------------------

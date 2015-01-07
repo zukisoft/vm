@@ -41,9 +41,9 @@
 #include "Host.h"
 #include "IndexPool.h"
 #include "LinuxException.h"
-#include "MemorySection.h"
 #include "NtApi.h"
 #include "ProcessClass.h"
+#include "ProcessSection.h"
 #include "Random.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
@@ -211,7 +211,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		std::unique_ptr<TaskState>&& taskstate, std::vector<std::unique_ptr<MemorySection>>&& sections, void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, std::vector<std::unique_ptr<ProcessSection>>&& sections, void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -227,19 +227,10 @@ private:
 	// Collection of file system handles, keyed on the index (file descriptor)
 	using handle_map_t = std::unordered_map<int, FileSystem::HandlePtr>;
 
-	// section_map_hash_t
+	// section_vector_t
 	//
-	// Hash function for the section_map_t collection
-	struct section_map_hash_t 
-	{ 
-		// Shift out the lower 16 bits of the key (base address), they should always be zero due to allocation granularity
-		size_t operator() (void* const element) const { return uintptr_t(element) >> 16; }
-	};
-
-	// section_map_t
-	//
-	// Collection of std::unique_ptr<MemorySection> objects
-	using section_map_t = std::unordered_map<void*, std::unique_ptr<MemorySection>, section_map_hash_t>;
+	// Collection of allocated memory section instances
+	using section_vector_t = std::vector<std::unique_ptr<ProcessSection>>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -273,11 +264,11 @@ private:
 	uapi::pid_t					m_pid = 1;
 	void*					m_tidaddress = nullptr;
 
-	// MEMORY MANAGEMENT
+	// VIRTUAL MEMORY MANAGEMENT
 	//
-	void*							m_break;		// Current program break
-	Concurrency::reader_writer_lock	m_sectionlock;	// Section collection lock
-	section_map_t					m_sections;		// Allocated memory sections
+	void*								m_programbreak;		// Current program break
+	Concurrency::reader_writer_lock		m_sectionlock;		// Section collection lock	
+	section_vector_t					m_sections;			// Collection of sections
 
 	// LDT section?
 

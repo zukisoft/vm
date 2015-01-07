@@ -65,7 +65,7 @@ static inline uint32_t AdjustProtectionForMode(uint32_t protection, ProcessSecti
 //	mode			- Initial section protection behavior mode
 
 ProcessSection::ProcessSection(HANDLE process, HANDLE section, void* baseaddress, size_t length, Mode mode) :
-	m_process(process), m_section(section), BaseAddress(baseaddress), Length(length), m_mode(mode), m_allocmap(length / SystemInformation::PageSize)
+	m_process(process), m_section(section), m_address(baseaddress), m_length(length), m_mode(mode), m_allocmap(length / SystemInformation::PageSize)
 {
 	// The length of the section should align to the system allocation granularity
 	_ASSERTE((length % SystemInformation::AllocationGranularity) == 0);
@@ -84,10 +84,20 @@ ProcessSection::ProcessSection(HANDLE process, HANDLE section, void* baseaddress
 //	bitmap			- Reference to an existing allocation bitmap to copy
 
 ProcessSection::ProcessSection(HANDLE process, HANDLE section, void* baseaddress, size_t length, Mode mode, const Bitmap& bitmap) :
-	m_process(process), m_section(section), BaseAddress(baseaddress), Length(length), m_mode(mode), m_allocmap(bitmap)
+	m_process(process), m_section(section), m_address(baseaddress), m_length(length), m_mode(mode), m_allocmap(bitmap)
 {
 	// The length of the section should align to the system allocation granularity
 	_ASSERTE((length % SystemInformation::AllocationGranularity) == 0);
+}
+
+ProcessSection::ProcessSection(std::unique_ptr<ProcessSection>&& rhs) : m_process(rhs->m_process), m_section(rhs->m_section),
+	m_address(rhs->m_address), m_length(rhs->m_length), m_mode(rhs->m_mode), m_allocmap(std::move(rhs->m_allocmap))
+{
+	// Nullify the member variables of the source instance
+	rhs->m_process = nullptr;
+	rhs->m_section = nullptr;
+	rhs->m_address = nullptr;
+	rhs->m_length = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -96,7 +106,7 @@ ProcessSection::ProcessSection(HANDLE process, HANDLE section, void* baseaddress
 ProcessSection::~ProcessSection()
 {
 	// Unmap the view from the process address space and close the section handle
-	if(BaseAddress) NtApi::NtUnmapViewOfSection(m_process, BaseAddress);
+	if(m_address) NtApi::NtUnmapViewOfSection(m_process, m_address);
 	if(m_section) NtApi::NtClose(m_section);
 }
 
@@ -111,17 +121,11 @@ ProcessSection::~ProcessSection()
 //	length			- Length of the region to be committed
 //	protection		- Protection flags to assign to the committed pages
 
-void ProcessSection::Allocate(void* address, size_t length, uint32_t protection)
+void* ProcessSection::Allocate(void* address, size_t length, uint32_t protection)
 {
 	// Verify that the requested range falls within this section's virtual address space
-	if(address < BaseAddress) throw Win32Exception(ERROR_INVALID_ADDRESS);
-	if(uintptr_t(address) + length >= uintptr_t(BaseAddress) + Length) throw Win32Exception(ERROR_INVALID_ADDRESS);
-
-	// Verify that the entire range is free by checking the allocation bitmap
-	size_t delta = uintptr_t(address) - uintptr_t(BaseAddress);
-	size_t startbit = align::down(delta, SystemInformation::PageSize) / SystemInformation::PageSize;
-	size_t bitcount = align::up(length + delta, SystemInformation::PageSize) / SystemInformation::PageSize;
-	if(!m_allocmap.AreBitsClear(startbit, bitcount)) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	if(address < m_address) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	if(uintptr_t(address) + length > uintptr_t(m_address) + m_length) throw Win32Exception(ERROR_INVALID_ADDRESS);
 
 	// Make any necessary changes to the protection flags based on the section mode
 	protection = AdjustProtectionForMode(protection, m_mode);
@@ -130,8 +134,10 @@ void ProcessSection::Allocate(void* address, size_t length, uint32_t protection)
 	NTSTATUS result = NtApi::NtAllocateVirtualMemory(m_process, &address, 0, reinterpret_cast<PSIZE_T>(&length), MEM_COMMIT, protection);
 	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
-	// Set the corresponding bits in the allocation bitmap
-	m_allocmap.Set((uintptr_t(address) - uintptr_t(BaseAddress)) / SystemInformation::PageSize, length / SystemInformation::PageSize);
+	// Set the corresponding pages bits in the allocation bitmap
+	m_allocmap.Set((uintptr_t(address) - uintptr_t(m_address)) / SystemInformation::PageSize, length / SystemInformation::PageSize);
+
+	return address;				// Return the requested base address for convenience
 }
 
 //-----------------------------------------------------------------------------
@@ -151,8 +157,8 @@ void ProcessSection::ChangeMode(Mode mode)
 	
 	if(mode == m_mode) return;							// No changes
 
-	uintptr_t begin = uintptr_t(BaseAddress);			// Starting address
-	uintptr_t end = begin + Length;						// Ending address
+	uintptr_t begin = uintptr_t(m_address);				// Starting address
+	uintptr_t end = begin + m_length;					// Ending address
 
 	// Use of the allocation bitmap is not necessary here nor would it be of much value since
 	// it does not indicate what the protection ranges are.  Use VirtualQueryEx() instead
@@ -183,7 +189,7 @@ void ProcessSection::ChangeMode(Mode mode)
 std::unique_ptr<ProcessSection> ProcessSection::Clone(const std::unique_ptr<ProcessSection>& rhs, HANDLE process, Mode mode)
 {
 	HANDLE						section;						// Duplicated section handle
-	void*						mapbase = rhs->BaseAddress;		// Same mapping address
+	void*						mapbase = rhs->m_address;		// Same mapping address
 	SIZE_T						maplength = 0;					// Same mapping length
 	MEMORY_BASIC_INFORMATION	meminfo;						// Virtual memory region information
 	ULONG						previous;						// Previously set protection flags
@@ -209,8 +215,8 @@ std::unique_ptr<ProcessSection> ProcessSection::Clone(const std::unique_ptr<Proc
 
 		try {
 
-			uintptr_t begin = uintptr_t(rhs->BaseAddress);
-			uintptr_t end = begin + rhs->Length;
+			uintptr_t begin = uintptr_t(rhs->m_address);
+			uintptr_t end = begin + rhs->m_length;
 
 			// Iterate over the source section to apply the same protection flags to the cloned section
 			while(begin < end) {
@@ -306,7 +312,7 @@ std::unique_ptr<ProcessSection> ProcessSection::Duplicate(const std::unique_ptr<
 	NTSTATUS					result;						// Result from function call
 
 	// Create a new section reservation with the same address and length as the original
-	std::unique_ptr<ProcessSection> duplicate = Create(process, rhs->BaseAddress, rhs->Length, Mode::Private);
+	std::unique_ptr<ProcessSection> duplicate = Create(process, rhs->m_address, rhs->m_length, Mode::Private);
 
 	// Map the section into the current process as READONLY so that the data can be copied into the new section
 	result = NtApi::NtMapViewOfSection(rhs->m_section, NtApi::NtCurrentProcess, &localaddress, 0, 0, nullptr, &locallength, NtApi::ViewUnmap, 0, PAGE_READONLY);
@@ -314,8 +320,8 @@ std::unique_ptr<ProcessSection> ProcessSection::Duplicate(const std::unique_ptr<
 
 	try {
 
-		uintptr_t begin = uintptr_t(rhs->BaseAddress);
-		uintptr_t end = begin + rhs->Length;
+		uintptr_t begin = uintptr_t(rhs->m_address);
+		uintptr_t end = begin + rhs->m_length;
 
 		// Iterate over the source section to apply the same status and protection flags to the new section
 		while(begin < end) {
@@ -330,7 +336,7 @@ std::unique_ptr<ProcessSection> ProcessSection::Duplicate(const std::unique_ptr<
 				duplicate->Allocate(meminfo.BaseAddress, meminfo.RegionSize, PAGE_READWRITE);
 
 				// Use NtWriteVirtualMemory to copy the region from the local mapping into the duplicate mapping
-				void* sourceaddress = reinterpret_cast<void*>(uintptr_t(localaddress) + (uintptr_t(meminfo.BaseAddress) - uintptr_t(rhs->BaseAddress)));
+				void* sourceaddress = reinterpret_cast<void*>(uintptr_t(localaddress) + (uintptr_t(meminfo.BaseAddress) - uintptr_t(rhs->m_address)));
 				result = NtApi::NtWriteVirtualMemory(process, meminfo.BaseAddress, sourceaddress, meminfo.RegionSize, nullptr);
 				if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
@@ -379,14 +385,13 @@ void ProcessSection::Protect(void* address, size_t length, uint32_t protection)
 	ULONG				previous;					// Previously set protection flags
 
 	// Verify that the requested range falls within this section's virtual address space
-	if(address < BaseAddress) throw Win32Exception(ERROR_INVALID_ADDRESS);
-	if(uintptr_t(address) + length >= uintptr_t(BaseAddress) + Length) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	if(address < m_address) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	if(uintptr_t(address) + length > uintptr_t(m_address) + m_length) throw Win32Exception(ERROR_INVALID_ADDRESS);
 
-	// Verify that the entire range is allocated by checking the allocation bitmap
-	size_t delta = uintptr_t(address) - uintptr_t(BaseAddress);
-	size_t startbit = align::down(delta, SystemInformation::PageSize) / SystemInformation::PageSize;
-	size_t bitcount = align::up(length + delta, SystemInformation::PageSize) / SystemInformation::PageSize;
-	if(!m_allocmap.AreBitsSet(startbit, bitcount)) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	// Verify that the entire range is allocated/committed by checking the allocation bitmap
+	size_t startbit = align::down(uintptr_t(address) - uintptr_t(m_address), SystemInformation::PageSize) / SystemInformation::PageSize;
+	size_t endbit = (align::up(uintptr_t(address) + length, SystemInformation::PageSize) - uintptr_t(m_address)) / SystemInformation::PageSize;
+	if(!m_allocmap.AreBitsSet(startbit, endbit - startbit)) throw Win32Exception(ERROR_INVALID_ADDRESS);
 
 	// Make any necessary changes to the protection flags based on the section mode
 	protection = AdjustProtectionForMode(protection, m_mode);
@@ -411,8 +416,8 @@ void ProcessSection::Release(void* address, size_t length)
 	ULONG				previous;					// Previously set page protection flags
 
 	// Verify that the requested range falls within this section's virtual address space
-	if(address < BaseAddress) throw Win32Exception(ERROR_INVALID_ADDRESS);
-	if(uintptr_t(address) + length >= uintptr_t(BaseAddress) + Length) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	if(address < m_address) throw Win32Exception(ERROR_INVALID_ADDRESS);
+	if(uintptr_t(address) + length > uintptr_t(m_address) + m_length) throw Win32Exception(ERROR_INVALID_ADDRESS);
 
 	// NOTE: Do not check the bitmap for allocation here; it will not be considered an error to release
 	// memory that is not allocated.
@@ -430,7 +435,7 @@ void ProcessSection::Release(void* address, size_t length)
 	NtApi::NtUnlockVirtualMemory(m_process, &address, reinterpret_cast<PSIZE_T>(&length), NtApi::MAP_PROCESS);
 
 	// Clear the corresponding page bits in the allocation bitmap
-	m_allocmap.Clear((uintptr_t(address) - uintptr_t(BaseAddress)) / SystemInformation::PageSize, length / SystemInformation::PageSize);
+	m_allocmap.Clear((uintptr_t(address) - uintptr_t(m_address)) / SystemInformation::PageSize, length / SystemInformation::PageSize);
 }
 
 //-----------------------------------------------------------------------------
