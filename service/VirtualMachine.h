@@ -74,6 +74,12 @@ public:
 		OperatingSystemRelease,
 		OperatingSystemType,
 		OperatingSystemVersion,
+
+		HostProcessArguments,		// Arguments to be passed to a hosted process
+		HostProcessBinary32,		// Path to the 32-bit host process executable
+#ifdef _M_X64
+		HostProcessBinary64,		// Path to the 64-bit host process executable
+#endif
 	};
 
 	//-------------------------------------------------------------------------
@@ -142,30 +148,21 @@ public:
 	// PROPERTY MANAGEMENT
 	//
 
-	// GetProperty (std::string)
+	// GetProperty
 	//
-	// Retrieves a property as a std::string instance
-	virtual std::string GetProperty(VirtualMachine::Properties id) = 0;
+	// Retrieves a virtual machine property value
+	virtual const std::tstring& GetProperty(VirtualMachine::Properties id) = 0;
+	virtual size_t GetProperty(VirtualMachine::Properties id, char_t* value, size_t length) = 0;
+	virtual size_t GetProperty(VirtualMachine::Properties id, wchar_t* value, size_t length) = 0;
 
-	// GetProperty (char_t*)
+	// SetProperty
 	//
-	// Retrieves a property by writing it into a character buffer
-	virtual size_t GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length) = 0;
-
-	// SetProperty (std::string)
-	//
-	// Sets the value of a property from an std::string
-	virtual void SetProperty(VirtualMachine::Properties id, std::string value) = 0;
-
-	// SetProperty (char_t*)
-	//
-	// Sets the value of a property from a null-terminated character buffer
-	virtual void SetProperty(VirtualMachine::Properties id, const uapi::char_t* value) = 0;
-
-	// SetProperty (char_t*)
-	//
-	// Sets the value of a property from a fixed-length character buffer
-	virtual void SetProperty(VirtualMachine::Properties id, const uapi::char_t* value, size_t length) = 0;
+	// Sets a virtual machine property value
+	virtual void SetProperty(VirtualMachine::Properties id, const std::tstring& value) = 0;
+	virtual void SetProperty(VirtualMachine::Properties id, const char_t* value) = 0;
+	virtual void SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length) = 0;
+	virtual void SetProperty(VirtualMachine::Properties id, const wchar_t* value) = 0;
+	virtual void SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length) = 0;
 
 	//-------------------------------------------------------------------------
 	// Properties

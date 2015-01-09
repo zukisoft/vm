@@ -90,11 +90,14 @@ public:
 	virtual size_t								ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::char_t* buffer, size_t length);
 	virtual std::shared_ptr<FileSystem::Alias>	ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags);
 
-	virtual std::string		GetProperty(VirtualMachine::Properties id);
-	virtual size_t			GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length);
-	virtual void			SetProperty(VirtualMachine::Properties id, std::string value);
-	virtual void			SetProperty(VirtualMachine::Properties id, const uapi::char_t* value);
-	virtual void			SetProperty(VirtualMachine::Properties id, const uapi::char_t* value, size_t length);
+	virtual const std::tstring&	GetProperty(VirtualMachine::Properties id);
+	virtual size_t				GetProperty(VirtualMachine::Properties id, char_t* value, size_t length);
+	virtual size_t				GetProperty(VirtualMachine::Properties id, wchar_t* value, size_t length);
+	virtual void				SetProperty(VirtualMachine::Properties id, const std::tstring& value);
+	virtual void				SetProperty(VirtualMachine::Properties id, const char_t* value);
+	virtual void				SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length);
+	virtual void				SetProperty(VirtualMachine::Properties id, const wchar_t* value);
+	virtual void				SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length);
 
 private:
 
@@ -158,7 +161,7 @@ private:
 	// property_map_t
 	//
 	// Typedef for a concurrent map<> of property strings
-	using property_map_t = Concurrency::concurrent_unordered_map<VirtualMachine::Properties, std::string>;
+	using property_map_t = Concurrency::concurrent_unordered_map<VirtualMachine::Properties, std::tstring>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -181,9 +184,6 @@ private:
 
 	// temp
 	std::set<std::shared_ptr<Process>> m_processes;
-
-	std::tstring m_hostarguments32;
-	std::tstring m_hostarguments64;
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERVICEPARAMETERS CLASS

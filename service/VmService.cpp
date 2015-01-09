@@ -183,21 +183,12 @@ std::shared_ptr<FileSystem::Handle> VmService::CreateFile(const std::shared_ptr<
 
 std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* tss, size_t tsslen)
 {
-	std::tstring hoststr;
-	const tchar_t* host;
-	const tchar_t* hostarguments;
+	VirtualMachine::Properties hostprop;
 
-	if(process->Class == ProcessClass::x86) {
-		hoststr = process_host_32bit;
-		host = hoststr.c_str();
-		hostarguments = m_hostarguments32.c_str();
-	}
+	if(process->Class == ProcessClass::x86) hostprop = Properties::HostProcessBinary32;
 
 #ifdef _M_X64
-	else if(process->Class == ProcessClass::x86_64) {
-		host = ((svctl::tstring)process_host_64bit).c_str();
-		hostarguments = m_hostarguments64.c_str();
-	}
+	else if(process->Class == ProcessClass::x86_64) hostprop = Properties::HostProcessBinary64;
 #endif
 
 	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
@@ -206,7 +197,8 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> 
 
 	try {
 
-		std::shared_ptr<Process> child = process->Clone(shared_from_this(), pid, host, hostarguments, flags, tss, tsslen);
+		std::shared_ptr<Process> child = process->Clone(shared_from_this(), pid, GetProperty(hostprop).c_str(), GetProperty(Properties::HostProcessArguments).c_str(), 
+			flags, tss, tsslen);
 		m_processes.insert(child);
 		return child;
 	}
@@ -250,13 +242,13 @@ std::shared_ptr<Process> VmService::CreateProcess(uapi::pid_t pid, const FileSys
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			// TODO: clean up the arguments, I hate c_str(). need to work on svctl::parameter
 			case LINUX_ELFCLASS32: 
-				return Process::Create<ProcessClass::x86>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment, 
-					((svctl::tstring)process_host_32bit).c_str(), m_hostarguments32.c_str());
+				return Process::Create<ProcessClass::x86>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment,
+					GetProperty(Properties::HostProcessBinary32).c_str(), GetProperty(Properties::HostProcessArguments).c_str());
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
 			case LINUX_ELFCLASS64: 
 				return Process::Create<ProcessClass::x86_64>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment, 
-					((svctl::tstring)process_host_64bit).c_str(), m_hostarguments64.c_str());
+					GetProperty(Properties::HostProcessBinary64).c_str(), GetProperty(Properties::HostProcessArguments).c_str());
 #endif
 			// Any other ELFCLASS -> ENOEXEC	
 			default: throw LinuxException(LINUX_ENOEXEC);
@@ -424,9 +416,9 @@ FileSystemPtr VmService::MountProcFileSystem(const char_t* name, uint32_t flags,
 //
 //	id			- Property identifier
 
-std::string VmService::GetProperty(VirtualMachine::Properties id)
+const std::tstring& VmService::GetProperty(VirtualMachine::Properties id)
 {
-	return std::string(m_properties[id]);
+	return m_properties[id];
 }
 
 //-----------------------------------------------------------------------------
@@ -440,12 +432,39 @@ std::string VmService::GetProperty(VirtualMachine::Properties id)
 //	value		- Destination buffer to receive the value
 //	length		- Length of the destination buffer
 
-size_t VmService::GetProperty(VirtualMachine::Properties id, uapi::char_t* value, size_t length)
+size_t VmService::GetProperty(VirtualMachine::Properties id, char_t* value, size_t length)
 {
-	std::string found = m_properties[id];
+	const std::tstring& found = m_properties[id];
 
+#ifndef _UNICODE
 	strncpy_s(value, length, found.c_str(), _TRUNCATE);
 	return strlen(value) + 1;
+#else
+	return WideCharToMultiByte(CP_UTF8, 0, found.data(), found.size(), value, length, nullptr, nullptr);
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// VmService::GetProperty
+//
+// Retrieves a property into a character buffer
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Destination buffer to receive the value
+//	length		- Length of the destination buffer, in characters
+
+size_t VmService::GetProperty(VirtualMachine::Properties id, wchar_t* value, size_t length)
+{
+	const std::tstring& found = m_properties[id];
+
+#ifndef _UNICODE
+	return MultiByteToWideChar(CP_ACP, 0, found.data(), found.size(), value, length);
+#else
+	wcsncpy_s(value, length, found.c_str(), _TRUNCATE);
+	return wcslen(value) + 1;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -649,7 +668,7 @@ std::shared_ptr<FileSystem::Alias> VmService::ResolvePath(const std::shared_ptr<
 //	id			- Property identifier
 //	value		- Value to set/replace the existing value
 
-void VmService::SetProperty(VirtualMachine::Properties id, std::string value)
+void VmService::SetProperty(VirtualMachine::Properties id, const std::tstring& value)
 {
 	m_properties[id] = value;
 }
@@ -664,9 +683,9 @@ void VmService::SetProperty(VirtualMachine::Properties id, std::string value)
 //	id			- Property identifier
 //	value		- Value to set/replace the existing value
 
-void VmService::SetProperty(VirtualMachine::Properties id, const uapi::char_t* value)
+void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value)
 {
-	m_properties[id] = std::move(std::string(value));
+	m_properties[id] = std::move(std::to_tstring(value));
 }
 
 //-----------------------------------------------------------------------------
@@ -680,9 +699,44 @@ void VmService::SetProperty(VirtualMachine::Properties id, const uapi::char_t* v
 //	value		- Value to set/replace the existing value
 //	length		- Length of the value character buffer, in bytes/chars
 
-void VmService::SetProperty(VirtualMachine::Properties id, const uapi::char_t* value, size_t length)
+void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length)
 {
-	m_properties[id] = std::move(std::string(value, length));
+	_ASSERTE(false);
+	(id); (value); (length);
+	//m_properties[id] = std::move(std::to_tstring(value, length));
+}
+
+//-----------------------------------------------------------------------------
+// VmService::SetProperty
+//
+// Sets the value of a property via a null-terminated character buffer
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Value to set/replace the existing value
+
+void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value)
+{
+	m_properties[id] = std::move(std::to_tstring(value));
+}
+
+//-----------------------------------------------------------------------------
+// VmService::SetProperty
+//
+// Sets the value of a property via an std::string instance
+//
+// Arguments:
+//
+//	id			- Property identifier
+//	value		- Value to set/replace the existing value
+//	length		- Length of the value character buffer, in bytes/chars
+
+void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length)
+{
+	_ASSERTE(false);
+	(id); (value); (length);
+	//m_properties[id] = std::move(std::to_tstring(value, length));
 }
 
 void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& target, const tchar_t* archivefile)
@@ -787,6 +841,11 @@ void VmService::OnStart(int, LPTSTR*)
 		SetProperty(Properties::OperatingSystemType, "Linux");
 		SetProperty(Properties::OperatingSystemVersion, "OS VERSION");
 
+		SetProperty(Properties::HostProcessBinary32, process_host_32bit);
+#ifdef _M_X64
+		SetProperty(Properties::HostProcessBinary64, process_host_64bit);
+#endif
+
 		//
 		// SYSTEM LOG
 		//
@@ -855,21 +914,13 @@ void VmService::OnStart(int, LPTSTR*)
 		// both just come back to this single service instance via the entry point vectors
 		syscall32_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 		syscall32_listener::AddObject(this->InstanceID);
-		m_hostarguments32 = syscall32_listener::GetBindingString(this->InstanceID).c_str();
-		// m_syslog->Push(something)
-		_RPTW1(_CRT_WARN, L"BINDSTR32: %s", m_hostarguments32.c_str());
 
-		// THE BINDING STRINGS ARE EXACTLY THE SAME, WHY DO I HAVE TWO OF THEM
-		// collapse ProcessManager->HostArguments32 and 64 into just one property, the binding
-		// string is identical, it's the interface that differs, which is controlled by the stubs
+		SetProperty(Properties::HostProcessArguments, syscall32_listener::GetBindingString(this->InstanceID));
 
 #ifdef _M_X64
 		// x64 builds also register the 64-bit system calls interface
 		syscall64_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 		syscall64_listener::AddObject(this->InstanceID);
-		m_hostarguments64 = syscall64_listener::GetBindingString(this->InstanceID).c_str();
-		// m_syslog->Push(something)
-		_RPTW1(_CRT_WARN, L"BINDSTR64: %s", m_hostarguments64.c_str());
 #endif
 	} 
 
