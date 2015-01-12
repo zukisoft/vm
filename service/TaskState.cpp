@@ -44,7 +44,7 @@
 //	taskstate		- Output buffer to receive the task state information
 //	length			- Length of the output buffer, in bytes
 
-void TaskState::CopyTo(void* taskstate, size_t length)
+void TaskState::CopyTo(void* taskstate, size_t length) const
 {
 	if(taskstate == nullptr) throw Exception(E_POINTER);
 	if(length != m_blob.Size) throw Exception(E_TASKSTATEINVALIDLENGTH, length, m_blob.Size);
@@ -65,7 +65,7 @@ void TaskState::CopyTo(void* taskstate, size_t length)
 //	stackpointer	- Address of the process/thread stack pointer
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(void* entrypoint, void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* entrypoint, const void* stackpointer)
 {
 	HeapBuffer<uint8_t> blob(sizeof(sys32_task_state_t));
 	sys32_task_state_t* state = reinterpret_cast<sys32_task_state_t*>(&blob);
@@ -103,7 +103,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(void* entrypoint
 //	length			- Length of the existing task state blob
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* existing, size_t length)
 {
 	if(existing == nullptr) throw Exception(E_POINTER);
 	if(length != sizeof(sys32_task_state_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys32_task_state_t));
@@ -129,7 +129,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(void* existing, 
 //	stackpointer	- Address of the process/thread stack pointer
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(void* entrypoint, void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* entrypoint, const void* stackpointer)
 {
 	HeapBuffer<uint8_t> blob(sizeof(sys64_task_state_t));
 	sys64_task_state_t* state = reinterpret_cast<sys64_task_state_t*>(&blob);
@@ -169,7 +169,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(void* entrypo
 //	length			- Length of the existing task state blob
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* existing, size_t length)
 {
 	if(existing == nullptr) throw Exception(E_POINTER);
 	if(length != sizeof(sys64_task_state_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys64_task_state_t));
@@ -194,7 +194,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(void* existin
 //	entrypoint		- Entry point for the new process or thread
 //	stackpointer	- Stack pointer for the new process or thread
 
-std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, void* entrypoint, void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, const void* entrypoint, const void* stackpointer)
 {
 	// Select the correct internal function based on the process class
 	switch(_class) {
@@ -222,7 +222,7 @@ std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, void* entrypoi
 //	existing		- Pointer to the existing blob of task state
 //	length			- Length of the existing blob of task state
 
-std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, const void* existing, size_t length)
 {
 	// Select the correct internal function based on the process class
 	switch(_class) {

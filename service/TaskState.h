@@ -48,17 +48,17 @@ public:
 	// CopyTo
 	//
 	// Copies the task state blob, the size must match exactly
-	void CopyTo(void* taskstate, size_t length);
+	void CopyTo(void* taskstate, size_t length) const;
 
 	// Create (static)
 	//
 	// Creates a new TaskState blob for the specified process class
-	static std::unique_ptr<TaskState> Create(ProcessClass _class, void* entrypoint, void* stackpointer);
+	static std::unique_ptr<TaskState> Create(ProcessClass _class, const void* entrypoint, const void* stackpointer);
 
 	// Create (static)
 	//
 	// Creates a new TaskState blob from an existing task state blob
-	static std::unique_ptr<TaskState> Create(ProcessClass _class, void* existing, size_t length);
+	static std::unique_ptr<TaskState> Create(ProcessClass _class, const void* existing, size_t length);
 
 private:
 
@@ -77,13 +77,13 @@ private:
 	//
 	// Creates a new TaskState blob with the provided entry and stack pointers
 	template <ProcessClass _class> 
-	static std::unique_ptr<TaskState> Create(void* entrypoint, void* stackpointer);
+	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
 
 	// Create (static)
 	//
 	// Creates a new TaskState blob from an existing task state blob
 	template <ProcessClass _class> 
-	static std::unique_ptr<TaskState> Create(void* existing, size_t length);
+	static std::unique_ptr<TaskState> Create(const void* existing, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
