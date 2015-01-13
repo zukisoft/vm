@@ -61,32 +61,35 @@ namespace std {
 
 	// std::to_string (conversion)
 	//
-	inline string to_string(const wchar_t* psz)
+	inline string to_string(const wchar_t* psz, int cch)
 	{
 		if(psz == nullptr) return string();
 
 		// Create an std::vector big enough to hold the converted string data and convert it
-		vector<char_t> convert(WideCharToMultiByte(CP_UTF8, 0, psz, -1, nullptr, 0, nullptr, nullptr));
-		WideCharToMultiByte(CP_UTF8, 0, psz, -1, convert.data(), static_cast<int>(convert.size()), nullptr, nullptr);
+		vector<char_t> convert(WideCharToMultiByte(CP_UTF8, 0, psz, cch, nullptr, 0, nullptr, nullptr));
+		WideCharToMultiByte(CP_UTF8, 0, psz, cch, convert.data(), static_cast<int>(convert.size()), nullptr, nullptr);
 
 		// Construct an std::string around the converted character data
 		return string(convert.data(), convert.size());
 	}
 
+
 	// std::to_string overloads
 	//
+	inline string to_string(const wchar_t* psz) { return to_string(psz, -1); }
+	inline string to_string(const char_t* psz, int cch) { return string(psz, cch); }
 	inline string to_string(const char_t* psz) { return string(psz); }
-	inline string to_string(const wstring& str) { return to_string(str.c_str()); }
+	inline string to_string(const wstring& str) { return to_string(str.data(), str.size()); }
 
 	// std::to_wstring (conversion)
 	//
-	inline wstring to_wstring(const char_t* psz)
+	inline wstring to_wstring(const char_t* psz, int cch)
 	{
 		if(psz == nullptr) return wstring();
 
 		// Create an std::vector big enough to hold the converted string data and convert it
-		vector<wchar_t> convert(MultiByteToWideChar(CP_UTF8, 0, psz, -1, nullptr, 0));
-		MultiByteToWideChar(CP_UTF8, 0, psz, -1, convert.data(), static_cast<int>(convert.size()));
+		vector<wchar_t> convert(MultiByteToWideChar(CP_UTF8, 0, psz, cch, nullptr, 0));
+		MultiByteToWideChar(CP_UTF8, 0, psz, cch, convert.data(), static_cast<int>(convert.size()));
 
 		// Construct an std::wstring around the converted character data
 		return wstring(convert.data(), convert.size());
@@ -94,8 +97,10 @@ namespace std {
 
 	// std::to_wstring overloads
 	//
+	inline wstring to_wstring(const char_t* psz) { return to_wstring(psz, -1); }
+	inline wstring to_wstring(const wchar_t* psz, int cch) { return wstring(psz, cch); }
 	inline wstring to_wstring(const wchar_t* psz) { return wstring(psz); }
-	inline wstring to_wstring(const string& str) { return to_wstring(str.c_str()); }
+	inline wstring to_wstring(const string& str) { return to_wstring(str.data(), str.size()); }
 
 	// std::to_tstring
 	//
@@ -106,6 +111,18 @@ namespace std {
 		return to_wstring(value);
 #else
 		return to_string(value);
+#endif
+	}
+
+	// std::to_tstring
+	//
+	// Generic text wrapper around std::to_[w]string
+	template <typename _type> inline tstring to_tstring(_type value, int cch)
+	{
+#ifdef _UNICODE
+		return to_wstring(value, cch);
+#else
+		return to_string(value, cch);
 #endif
 	}
 

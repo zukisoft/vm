@@ -74,7 +74,9 @@ public:
 
 	// VirtualMachine Implementation
 	//
-	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* taskstate, size_t taskstatelen);
+	virtual uapi::pid_t							AllocatePID(void);
+	virtual void								ReleasePID(uapi::pid_t pid);
+	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen);
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 
 	// updated file system api
@@ -89,6 +91,8 @@ public:
 	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
 	virtual size_t								ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::char_t* buffer, size_t length);
 	virtual std::shared_ptr<FileSystem::Alias>	ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags);
+
+	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) { return m_rootfs; }
 
 	virtual const std::tstring&	GetProperty(VirtualMachine::Properties id);
 	virtual size_t				GetProperty(VirtualMachine::Properties id, char_t* value, size_t length);

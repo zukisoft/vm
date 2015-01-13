@@ -79,8 +79,7 @@ public:
 	// Clone
 	//
 	// Clones the process into a new child process
-	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const tchar_t* hostpath, const tchar_t* hostargs, 
-		uint32_t flags, void* taskstate, size_t taskstatelen);
+	std::shared_ptr<Process> Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t flags, void* taskstate, size_t taskstatelen);
 
 	// Create (static)
 	//
@@ -126,22 +125,22 @@ public:
 	// Resume
 	//
 	// Resumes the process from a suspended state
-	void Resume(void) { _ASSERTE(m_host); m_host->Resume(); }
+	void Resume(void);
 
 	// SetProgramBreak
 	//
 	// Sets the program break address to increase or decrease data segment length
 	void* SetProgramBreak(void* address);
 
+	// Spawn (static)
+	//
+	// Creates a new process instance
+	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp);
+
 	// Suspend
 	//
 	// Suspends the process
-	void Suspend(void) { _ASSERTE(m_host); m_host->Suspend(); }
-
-	// Terminate
-	//
-	// Terminates the process
-	void Terminate(int exitcode) { _ASSERTE(m_host); m_host->Terminate(-exitcode); }
+	void Suspend(void);
 
 	// UnmapMemory
 	//
@@ -172,9 +171,16 @@ public:
 	// HostProcessId
 	//
 	// Gets the host process identifier
+	// TODO: I don't like having this, get rid of it
 	__declspec(property(get=getHostProcessId)) DWORD HostProcessId;
 	DWORD getHostProcessId(void) const { return m_host->ProcessId; }
 
+	// ParentProcessId
+	//
+	// Gets the process identifier of the parent process
+	__declspec(property(get=getParentProcessId)) uapi::pid_t ParentProcessId;
+	uapi::pid_t getParentProcessId(void) const;
+	
 	// ProcessId
 	//
 	// Gets the virtual machine process identifier
@@ -252,6 +258,11 @@ private:
 	// Decommits and releases memory from the process virtual address space
 	void ReleaseMemory(void* address, size_t length);
 
+	// Terminate
+	//
+	// Terminates the process
+	void Terminate(int exitcode) { m_host->Terminate(exitcode); }
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
@@ -261,7 +272,9 @@ private:
 	const ProcessClass			m_class;
 	////
 
-	uapi::pid_t					m_pid = 1;
+	const uapi::pid_t					m_pid;				// Process identifier
+	std::weak_ptr<Process>				m_parent;			// Parent process
+
 	void*					m_tidaddress = nullptr;
 
 	// VIRTUAL MEMORY MANAGEMENT

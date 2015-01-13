@@ -70,6 +70,20 @@ void VmService::CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root,
 }
 
 //-----------------------------------------------------------------------------
+// VmService::AllocatePID
+//
+// Allocates a new process/thread identifier
+//
+// Arguments:
+//
+//	NONE
+
+uapi::pid_t VmService::AllocatePID(void)
+{
+	return static_cast<uapi::pid_t>(m_pidpool.Allocate());
+}
+
+//-----------------------------------------------------------------------------
 // VmService::CreateCharacterDevice
 //
 // Creates a file system character device object
@@ -181,7 +195,7 @@ std::shared_ptr<FileSystem::Handle> VmService::CreateFile(const std::shared_ptr<
 //
 //	TODO: Document when done
 
-std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* tss, size_t tsslen)
+std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* tss, size_t tsslen)
 {
 	VirtualMachine::Properties hostprop;
 
@@ -193,17 +207,10 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process> 
 
 	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
 
-	uapi::pid_t pid = static_cast<uapi::pid_t>(m_pidpool.Allocate());
 
-	try {
-
-		std::shared_ptr<Process> child = process->Clone(shared_from_this(), pid, GetProperty(hostprop).c_str(), GetProperty(Properties::HostProcessArguments).c_str(), 
-			flags, tss, tsslen);
-		m_processes.insert(child);
-		return child;
-	}
-
-	catch(...) { m_pidpool.Release(pid); throw; }
+	std::shared_ptr<Process> child = process->Clone(shared_from_this(), flags, tss, tsslen);
+	m_processes.insert(child);
+	return child;
 }
 
 //-----------------------------------------------------------------------------
@@ -625,6 +632,20 @@ size_t VmService::ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& roo
 }
 
 //-----------------------------------------------------------------------------
+// VmService::ReleasePID
+//
+// Releases a process/thread identifier allocated with AllocatePID
+//
+// Arguments:
+//
+//	pid			- PID to be released
+
+void VmService::ReleasePID(uapi::pid_t pid)
+{
+	m_pidpool.Release(static_cast<int>(pid));
+}
+
+//-----------------------------------------------------------------------------
 // VmService::ResolvePath
 //
 // Resolves a file system path to an alias instance
@@ -701,9 +722,7 @@ void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value)
 
 void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length)
 {
-	_ASSERTE(false);
-	(id); (value); (length);
-	//m_properties[id] = std::move(std::to_tstring(value, length));
+	m_properties[id] = std::move(std::to_tstring(value, static_cast<int>(length)));
 }
 
 //-----------------------------------------------------------------------------
@@ -734,9 +753,7 @@ void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value)
 
 void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length)
 {
-	_ASSERTE(false);
-	(id); (value); (length);
-	//m_properties[id] = std::move(std::to_tstring(value, length));
+	m_properties[id] = std::move(std::to_tstring(value, static_cast<int>(length)));
 }
 
 void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& target, const tchar_t* archivefile)

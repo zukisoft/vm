@@ -81,11 +81,19 @@ public:
 		HostProcessBinary64,		// Path to the 64-bit host process executable
 #endif
 	};
+	
+	// PROCESSID_INIT
+	//
+	// Defines the process identifier to assign to the init proces
+	static const uapi::pid_t PROCESSID_INIT = 1;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process> process, uint32_t flags, void* taskstate, size_t taskstatelen) = 0;
+	virtual uapi::pid_t AllocatePID(void) = 0;
+	virtual void ReleasePID(uapi::pid_t pid) = 0;
+
+	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen) = 0;
 
 	// CreateDeviceId (static)
 	//
@@ -172,6 +180,9 @@ public:
 	// Gets the unique identifier for this virtual machine instance
 	__declspec(property(get=getInstanceID)) const uuid_t& InstanceID;
 	const uuid_t& getInstanceID(void) const { return m_instanceid; }
+
+	__declspec(property(get=getRootFileSystem)) std::shared_ptr<FileSystem> RootFileSystem;
+	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) = 0;
 
 protected:
 

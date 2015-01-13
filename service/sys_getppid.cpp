@@ -41,11 +41,7 @@ __int3264 sys_getppid(const SystemCall::Context* context)
 	try { 
 
 		SystemCall::Impersonation impersonation;
-
-		// This needs to reset to process id 1 if the parent process has
-		// ended, that will need to be taken care of in VmService.  So, when
-		// a process ends, reassign all child process parents to PID 1 (init)
-		return 1; /// TODO!! context->Process->ProcessId;
+		return context->Process->ParentProcessId;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

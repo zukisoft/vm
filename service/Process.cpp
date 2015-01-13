@@ -220,21 +220,26 @@ template <> inline void Process::CheckHostProcessClass<ProcessClass::x86_64>(HAN
 // Arguments:
 //
 // TODO
-std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const tchar_t* hostpath, const tchar_t* hostargs, 
-	uint32_t flags, void* taskstate, size_t taskstatelen)
+std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t flags, void* taskstate, size_t taskstatelen)
 {
 	(vm);
 	(flags);
+
+	// need parent
+
 
 	std::unique_ptr<TaskState> ts = TaskState::Create(m_class, taskstate, taskstatelen);
 
 	std::vector<std::unique_ptr<ProcessSection>>	sections;
 	std::shared_ptr<Process> child;
 
+	uapi::pid_t pid = 0;
+
 	Suspend();										// Suspend the parent process
 
 	// Create the new host process
-	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
+	std::unique_ptr<Host> host = Host::Create(vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32).c_str(), 
+		vm->GetProperty(VirtualMachine::Properties::HostProcessArguments).c_str(), nullptr, 0);
 
 	try {
 
@@ -246,13 +251,20 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 			(*iterator)->ChangeMode(ProcessSection::Mode::CopyOnWrite);
 		}
 
-		 child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), std::move(sections), m_programbreak);
+		try {
+			
+			pid = vm->AllocatePID();
+			child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), std::move(sections), m_programbreak);
+		}
+
+		catch(...) { vm->ReleasePID(pid); throw; }
 
 		// TEST: CLONE ALL OF THE HANDLES - this isn't how it needs to be done, just trying it out
 		for(auto iterator : m_handles) 
 			child->AddHandle(iterator.first, iterator.second);
 	}
 
+	// todo: Terminate expects a LINUX error code, not a Windows one!
 	catch(std::exception& ex) { host->Terminate(E_FAIL); throw; (ex); /* TODO */ }
 
 	Resume();
@@ -357,7 +369,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 			stack->Length - (SystemInformation::PageSize * 2));
 
 		// Load the remainder of the StartupInfo structure with the necessary information to get the ELF binary running
-		void* entry_point = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
+		const void* entry_point = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
 		void* program_break = executable->ProgramBreak;
 
 		// TESTING NEW STARTUP INFORMATION
@@ -376,6 +388,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
 	// TODO: should be LinuxException wrapping the underlying one?  Only case right now where
 	// that wouldn't be true is interpreter's OpenExec() call which should already throw LinuxExceptions
+	// TODO: exit code should be a LINUX exit code, not a Windows one
 	catch(...) { host->Terminate(E_FAIL); throw; }
 }
 
@@ -486,6 +499,17 @@ void* Process::MapMemory(void* address, size_t length, int prot, int flags, int 
 }
 
 //-----------------------------------------------------------------------------
+// Process::getParentProcessId
+
+uapi::pid_t Process::getParentProcessId(void) const
+{
+	// If the parent process is still alive, return that identifier, otherwise
+	// the parent process becomes the init process (id 1)
+	std::shared_ptr<Process> parent = m_parent.lock();
+	return (parent) ? parent->ProcessId : VirtualMachine::PROCESSID_INIT;
+}
+
+//-----------------------------------------------------------------------------
 // Process::ProtectMemory
 //
 // Assigns protection flags for an allocated region of memory
@@ -515,13 +539,6 @@ void Process::ProtectMemory(void* address, size_t length, int protect)
 		// Query the information about the current region to be protected
 		if(!VirtualQueryEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)))
 			throw LinuxException(LINUX_EACCES, Win32Exception());
-
-		// If this region was allocated for copy-on-write, the input flags may need to be adjusted
-		if((meminfo.AllocationProtect == PAGE_WRITECOPY) || (meminfo.AllocationProtect == PAGE_EXECUTE_WRITECOPY)) {
-
-			if(protect == PAGE_READWRITE) protect = PAGE_WRITECOPY;
-			else if(protect == PAGE_EXECUTE_READWRITE) protect = PAGE_EXECUTE_WRITECOPY;
-		}
 
 		// Attempt to assign the protection flags for the current region of memory
 		if(!VirtualProtectEx(m_host->ProcessHandle, reinterpret_cast<void*>(begin), min(end - begin, meminfo.RegionSize), 
@@ -611,6 +628,21 @@ void Process::ReleaseMemory(void* address, size_t length)
 }
 
 //-----------------------------------------------------------------------------
+// Process::Resume
+//
+// Resumes the process from a suspended state
+//
+// Arguments:
+//
+//	NONE
+
+void Process::Resume(void)
+{
+	NTSTATUS result = NtApi::NtResumeProcess(m_host->ProcessHandle);
+	if(result != 0) throw StructuredException(result);
+}
+
+//-----------------------------------------------------------------------------
 // Process::RemoveHandle
 //
 // Removes a file system handle from the process
@@ -668,6 +700,47 @@ void* Process::SetProgramBreak(void* address)
 	// Store and return the requested address, not the page-aligned address
 	m_programbreak = address;
 	return m_programbreak;
+}
+
+//-----------------------------------------------------------------------------
+// Process::Spawn (static)
+//
+// Creates a new process
+//
+// Arguments:
+//
+//	vm			- VirtualMachine instance
+//	pid			- Optional PID to assign to the new process or -1
+//	filename	- Path to the executable to create the process from
+//	argv		- Arguments to pass to the new process
+//	envp		- Environment for the new process
+
+std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const uapi::char_t* filename,
+	const uapi::char_t** argv, const uapi::char_t** envp)
+{
+	// When creating a process directly via this function, the root and working directory are the filesystem root
+	std::shared_ptr<FileSystem> rootfs = vm->RootFileSystem;
+
+	// Attempt to open a handle to the specified executable, relative to the file system root node
+	std::shared_ptr<FileSystem::Handle> handle = vm->OpenExecutable(rootfs->Root, rootfs->Root, filename);
+
+
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// Process::Suspend
+//
+// Suspends the process
+//
+// Arguments:
+//
+//	NONE
+
+void Process::Suspend(void)
+{
+	NTSTATUS result = NtApi::NtSuspendProcess(m_host->ProcessHandle);
+	if(result != 0) throw StructuredException(result);
 }
 
 //-----------------------------------------------------------------------------
