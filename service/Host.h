@@ -24,12 +24,14 @@
 #define __HOST_H_
 #pragma once
 
-#include <functional>
 #include <memory>
-#include "Exception.h"
+#include <vector>
+#include <concrt.h>
 #include "HeapBuffer.h"
 #include "NtApi.h"
+#include "ProcessSection.h"
 #include "StructuredException.h"
+#include "SystemInformation.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -38,7 +40,8 @@
 //-----------------------------------------------------------------------------
 // Class Host
 //
-// Manages the Windows-based host process that is manipulated to run ELF binaries
+// Manages the native operating system process associated with a virtual machine
+// process instance
 
 class Host
 {
@@ -48,11 +51,32 @@ public:
 	//
 	~Host();
 
+	// AllocateMemory
+	//
+	// Allocates virtual memory in the native process
+	const void* AllocateMemory(size_t length, DWORD protection) { return AllocateMemory(nullptr, length, protection); }
+	const void* AllocateMemory(const void* address, size_t length, DWORD protection);
+
 	// Create (static)
 	//
 	// Creates a new Host instance, optionally with an array of inheritable handles
 	static std::unique_ptr<Host> Create(const tchar_t* path, const tchar_t* arguments) { return Create(path, arguments, nullptr, 0); }
 	static std::unique_ptr<Host> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
+	
+	// ProtectMemory
+	//
+	// Sets the memory protection flags for a virtual memory region
+	void ProtectMemory(const void* address, size_t length, DWORD protection);
+
+	// ReadMemory
+	//
+	// Reads directly from the native process virtual memory
+	size_t ReadMemory(const void* address, void* buffer, size_t length);
+
+	// ReleaseMemory
+	//
+	// Releases virtual memory from the native process
+	void ReleaseMemory(const void* address, size_t length);
 
 	// Resume
 	//
@@ -68,6 +92,11 @@ public:
 	//
 	// Terminates the process
 	void Terminate(HRESULT exitcode);
+
+	// WriteMemory
+	//
+	// Writes directly into the native process virtual memory
+	size_t WriteMemory(const void* address, const void* buffer, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -107,9 +136,24 @@ private:
 	friend std::unique_ptr<Host> std::make_unique<Host, PROCESS_INFORMATION&>(PROCESS_INFORMATION&);
 
 	//-------------------------------------------------------------------------
+	// Private Type Declarations
+
+	// section_lock_t
+	//
+	// Memory section collection synchronization object
+	using section_lock_t = Concurrency::reader_writer_lock;
+	
+	// section_vector_t
+	//
+	// Collection of allocated memory section instances
+	using section_vector_t = std::vector<std::unique_ptr<ProcessSection>>;
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
-	PROCESS_INFORMATION				m_procinfo;
+	PROCESS_INFORMATION			m_procinfo;			// Native process information
+	section_lock_t				m_sectionlock;		// Section collection lock
+	section_vector_t			m_sections;			// Memory section collection
 };
 
 //-----------------------------------------------------------------------------

@@ -35,10 +35,87 @@ Host::~Host()
 	CloseHandle(m_procinfo.hProcess);
 }
 
+//------------------------------------------------------------------------------
+// Host::AllocateMemory
+//
+// Allocates memory in the native operating system process
+//
+// Arguments:
+//
+//	address			- Optional base address or nullptr if it doesn't matter
+//	length			- Required allocation length
+//	protection		- Native memory protection flags for the new region
+
+const void* Host::AllocateMemory(const void* address, size_t length, DWORD protection)
+{
+	MEMORY_BASIC_INFORMATION					meminfo;		// Virtual memory information
+
+	// Allocations cannot be zero-length
+	if(length == 0) throw Win32Exception(ERROR_INVALID_PARAMETER);
+
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock writer(m_sectionlock);
+
+	// No specific address was requested, let the operating system decide where it should go
+	if(address == nullptr) {
+
+		std::unique_ptr<ProcessSection> section = ProcessSection::Create(m_procinfo.hProcess, align::up(length, SystemInformation::AllocationGranularity));
+		address = section->Allocate(section->BaseAddress, length, protection);
+		m_sections.push_back(std::move(section));
+		return address;
+	}
+
+	// A specific address was requested, first scan over the virtual address space and fill in any holes
+	// with new meory sections to ensure a contiguous region
+	uintptr_t fillbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
+	uintptr_t fillend = align::up((uintptr_t(address) + length), SystemInformation::AllocationGranularity);
+
+	while(fillbegin < fillend) {
+
+		// Query the information about the virtual memory beginning at the current address
+		if(!VirtualQueryEx(m_procinfo.hProcess, reinterpret_cast<void*>(fillbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+
+		// If the region is free (MEM_FREE), create a new memory section in the free space
+		if(meminfo.State == MEM_FREE) {
+
+			size_t filllength = min(meminfo.RegionSize, align::up(fillend - fillbegin, SystemInformation::AllocationGranularity));
+			m_sections.emplace_back(ProcessSection::Create(m_procinfo.hProcess, meminfo.BaseAddress, filllength));
+		}
+
+		fillbegin += meminfo.RegionSize;
+	}
+
+	// The entire required virtual address space is now available for the allocation operation
+	uintptr_t allocbegin = uintptr_t(address);
+	uintptr_t allocend = allocbegin + length;
+
+	while(allocbegin < allocend) {
+
+		// Locate the section object that matches the current allocation base address
+		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<ProcessSection>& section) -> bool {
+			return ((allocbegin >= uintptr_t(section->BaseAddress)) && (allocbegin < (uintptr_t(section->BaseAddress) + section->Length)));
+		});
+
+		// No matching section object exists, throw ERROR_INVALID_ADDRESS
+		if(found == m_sections.end()) throw Win32Exception(ERROR_INVALID_ADDRESS);
+
+		// Cast out the std::unique_ptr<ProcessSection>& for clarity below
+		const auto& section = *found;
+
+		// Determine the length of the allocation to request from this section and request it
+		size_t alloclen = min(section->Length - (allocbegin - uintptr_t(section->BaseAddress)), allocend - allocbegin);
+		section->Allocate(reinterpret_cast<void*>(allocbegin), alloclen, protection);
+
+		allocbegin += alloclen;
+	}
+
+	return address;					// Return the originally requested address
+}
+
 //-----------------------------------------------------------------------------
 // Host::Create (static)
 //
-// Creates a new Host instance for a regular child process
+// Creates a new native operating system process instance
 //
 // Arguments:
 //
@@ -95,9 +172,120 @@ std::unique_ptr<Host> Host::Create(const tchar_t* path, const tchar_t* arguments
 }
 
 //-----------------------------------------------------------------------------
+// Host::ProtectMemory
+//
+// Assigns memory protection flags for an allocated region of memory
+//
+// Arguments:
+//
+//	address		- Base address of the region to be protected
+//	length		- Length of the region to be protected
+//	prot		- New native memory protection flags for the region
+
+void Host::ProtectMemory(const void* address, size_t length, DWORD protection)
+{
+	// Determine the starting and ending points for the operation
+	uintptr_t begin = uintptr_t(address);
+	uintptr_t end = begin + length;
+
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock_read reader(m_sectionlock);
+
+	while(begin < end) {
+
+		// Locate the section object that matches the current base address
+		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<ProcessSection>& section) -> bool {
+			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
+		});
+
+		// No matching section object exists, throw ERROR_INVALID_ADDRESS
+		if(found == m_sections.end()) throw Win32Exception(ERROR_INVALID_ADDRESS);
+
+		// Cast out the std::unique_ptr<ProcessSection>& for clarity below
+		const auto& section = *found;
+
+		// Determine the length of the allocation to request from this section and request it
+		size_t protectlen = min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
+		section->Protect(reinterpret_cast<void*>(begin), protectlen, protection);
+
+		begin += protectlen;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Host::ReadMemory
+//
+// Reads from the native operating system process virtual memory
+//
+// Arguments:
+//
+//	address		- Address in the client process from which to read
+//	buffer		- Local output buffer
+//	length		- Size of the local output buffer, maximum bytes to read
+
+size_t Host::ReadMemory(const void* address, void* buffer, size_t length)
+{
+	SIZE_T						read;			// Number of bytes read
+
+	_ASSERTE(buffer);
+	if((buffer == nullptr) || (length == 0)) return 0;
+
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock_read reader(m_sectionlock);
+
+	// Attempt to read the requested data from the native process
+	NTSTATUS result = NtApi::NtReadVirtualMemory(m_procinfo.hProcess, address, buffer, length, &read);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+
+	return static_cast<size_t>(read);
+}
+
+//-----------------------------------------------------------------------------
+// Host::ReleaseMemory
+//
+// Releases memory from the native process address space
+//
+// Arguments:
+//
+//	address		- Base address of the memory region to be released
+//	length		- Number of bytes to be released
+
+void Host::ReleaseMemory(const void* address, size_t length)
+{
+	uintptr_t begin = uintptr_t(address);			// Start address as uintptr_t
+	uintptr_t end = begin + length;					// End address as uintptr_t
+
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock writer(m_sectionlock);
+
+	while(begin < end) {
+
+		// Locate the section object that matches the specified base address
+		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<ProcessSection>& section) -> bool {
+			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
+		});
+
+		// No matching section object exists, treat this as a no-op -- don't throw an exception
+		if(found == m_sections.end()) return;
+
+		// Cast out the std::unique_ptr<ProcessSection>& for clarity below
+		const auto& section = *found;
+
+		// Determine how much to release from this section and release it
+		size_t freelength = min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
+		section->Release(reinterpret_cast<void*>(begin), freelength);
+
+		// If the section is empty after the release, remove it from the process
+		if(section->Empty) m_sections.erase(found);
+
+		begin += freelength;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Host::Resume
 //
-// Resumes a suspended host process
+// Resumes the native operating system process
 //
 // Arguments:
 //
@@ -112,7 +300,7 @@ void Host::Resume(void)
 //-----------------------------------------------------------------------------
 // Host::Suspend
 //
-// Suspends the hosted process
+// Suspends the native operating system process
 //
 // Arguments:
 //
@@ -127,7 +315,7 @@ void Host::Suspend(void)
 //-----------------------------------------------------------------------------
 // Host::Terminate
 //
-// Terminates the hosted process
+// Terminates the native operating system process
 //
 // Arguments:
 //
@@ -136,6 +324,34 @@ void Host::Suspend(void)
 void Host::Terminate(HRESULT exitcode)
 {
 	if(!TerminateProcess(m_procinfo.hProcess, static_cast<UINT>(exitcode))) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
+// Host::WriteMemory
+//
+// Writes into the native operating system process virtual memory
+//
+// Arguments:
+//
+//	address		- Address in the client process from which to read
+//	buffer		- Local output buffer
+//	length		- Size of the local output buffer, maximum bytes to read
+
+size_t Host::WriteMemory(const void* address, const void* buffer, size_t length)
+{
+	SIZE_T					written;			// Number of bytes written
+
+	_ASSERTE(buffer);
+	if((buffer == nullptr) || (length == 0)) return 0;
+
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock_read reader(m_sectionlock);
+
+	// Attempt to write the requested data into the native process
+	NTSTATUS result = NtApi::NtWriteVirtualMemory(m_procinfo.hProcess, address, buffer, length, &written);
+	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+
+	return written;
 }
 
 //-----------------------------------------------------------------------------

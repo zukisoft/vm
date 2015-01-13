@@ -104,7 +104,7 @@ public:
 	using NtSuspendProcessFunc				= NTSTATUS(NTAPI*)(HANDLE);
 	using NtUnlockVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG);
 	using NtUnmapViewOfSectionFunc			= NTSTATUS(NTAPI*)(HANDLE, LPCVOID);
-	using NtWriteVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID, LPCVOID, SIZE_T, PSIZE_T);
+	using NtWriteVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, LPCVOID, LPCVOID, SIZE_T, PSIZE_T);
 	using RtlAreBitsClearFunc				= BOOLEAN(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
 	using RtlAreBitsSetFunc					= BOOLEAN(NTAPI*)(PCRTL_BITMAP, ULONG, ULONG);
 	using RtlClearAllBitsFunc				= VOID(NTAPI*)(PRTL_BITMAP);
