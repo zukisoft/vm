@@ -50,47 +50,7 @@ Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t 
 	std::unique_ptr<TaskState>&& taskstate, const void* programbreak) : 
 	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_programbreak(programbreak)
 {
-}
-
-//-----------------------------------------------------------------------------
-// Process::AddHandle
-//
-// Adds a file system handle to the process
-//
-// Arguments:
-//
-//	handle		- Handle instance to be added to the process
-
-int Process::AddHandle(const FileSystem::HandlePtr& handle)
-{
-	Concurrency::reader_writer_lock::scoped_lock writer(m_handlelock);
-
-	// Allocate a new index (file descriptor) for the handle and insert it
-	int index = m_indexpool.Allocate();
-	if(m_handles.insert(std::make_pair(index, handle)).second) return index;
-
-	// Insertion failed, release the index back to the pool and throw
-	m_indexpool.Release(index);
-	throw LinuxException(LINUX_EBADF);
-}
-
-//-----------------------------------------------------------------------------
-// Process::AddHandle
-//
-// Adds a file system handle to the process with a specific file descriptor index
-//
-// Arguments:
-//
-//	fd			- Specific file descriptor index to use
-//	handle		- Handle instance to be added to the process
-
-int Process::AddHandle(int fd, const FileSystem::HandlePtr& handle)
-{
-	Concurrency::reader_writer_lock::scoped_lock writer(m_handlelock);
-
-	// Attempt to insert the handle using the specified index
-	if(m_handles.insert(std::make_pair(fd, handle)).second) return fd;
-	throw LinuxException(LINUX_EBADF);
+	m_handles = ProcessHandles::Create();
 }
 
 //-----------------------------------------------------------------------------
@@ -144,49 +104,53 @@ template <> inline void Process::CheckHostProcessClass<ProcessClass::x86_64>(HAN
 // TODO
 std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& vm, uint32_t flags, void* taskstate, size_t taskstatelen)
 {
-	(vm);
-	(flags);
-
-	// need parent
+	// need parent process to set that up, see CLONE_PARENT flag as well
 
 
 	std::unique_ptr<TaskState> ts = TaskState::Create(m_class, taskstate, taskstatelen);
-
 	std::shared_ptr<Process> child;
-
 	uapi::pid_t pid = 0;
 
-	Suspend();										// Suspend the parent process
-
-	// Create the new host process
-	std::unique_ptr<Host> host = Host::Create(vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32).c_str(), 
-		vm->GetProperty(VirtualMachine::Properties::HostProcessArguments).c_str(), nullptr, 0);
+	m_host->Suspend();										// Suspend the parent process
 
 	try {
-
-		host->CloneMemory(m_host);					// Clone the address space of the existing process
-
-		// TODO: If CLONE_VM then the memory gets shared, not cloned
-
-		pid = vm->AllocatePID();					// Allocate a new process identifier for the child
+		
+		// Create the new host process
+		std::unique_ptr<Host> host = Host::Create(vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32).c_str(), 
+			vm->GetProperty(VirtualMachine::Properties::HostProcessArguments).c_str(), nullptr, 0);
 
 		try {
+
+			host->CloneMemory(m_host);					// Clone the address space of the existing process
+			// TODO: If CLONE_VM then the memory gets shared, not cloned
+
+			pid = vm->AllocatePID();					// Allocate a new process identifier for the child
+
+			try {
+
+				// TODO: DEAL WITH CLOSE-ON-EXEC HANDLES HERE *BEFORE* THE COLLECTION IS CLONED OR SHARED
+				//m_handles->DoCloseOnExecute();
+
+				// Create the file system handle collection for the child process, which can be the same collection
+				// if CLONE_FILES was set, or a set of duplicate file descriptors that refer to the same handles
+				std::shared_ptr<ProcessHandles> childhandles = (flags & LINUX_CLONE_FILES) ? m_handles : ProcessHandles::Duplicate(m_handles);
 		
-			child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_programbreak);
+				// TODO: Need to add handles to the constructor now
+				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_programbreak);
+			}
+
+			catch(...) { vm->ReleasePID(pid); throw; }
 		}
 
-		catch(...) { vm->ReleasePID(pid); throw; }
-
-		// TEST: CLONE ALL OF THE HANDLES - this isn't how it needs to be done, just trying it out
-		for(auto iterator : m_handles) 
-			child->AddHandle(iterator.first, iterator.second);
+		// todo: Terminate expects a LINUX error code, not a Windows one!
+		catch(std::exception& ex) { host->Terminate(E_FAIL); throw; (ex); /* TODO */ }
 	}
 
-	// todo: Terminate expects a LINUX error code, not a Windows one!
-	catch(std::exception& ex) { host->Terminate(E_FAIL); throw; (ex); /* TODO */ }
+	// Ensure that the parent process is resumed in the event of an exception
+	catch(...) { m_host->Resume(); throw; }
 
-	Resume();
-	child->Resume();
+	m_host->Resume();						// Resume execution of the parent process
+	child->Start();							// Start execution of the child process
 
 	return child;
 }
@@ -305,23 +269,6 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 }
 
 //-----------------------------------------------------------------------------
-// Process::GetHandle
-//
-// Accesses a file system handle referenced by the process
-//
-// Arguments:
-//
-//	index		- Index (file descriptor) of the target handle
-
-FileSystem::HandlePtr Process::GetHandle(int index)
-{
-	Concurrency::reader_writer_lock::scoped_lock_read reader(m_handlelock);
-
-	try { return m_handles.at(index); }
-	catch(...) { throw LinuxException(LINUX_EBADF); }
-}
-
-//-----------------------------------------------------------------------------
 // Process::GetInitialTaskState
 //
 // Gets a copy of the original task state information for the process, the
@@ -422,38 +369,6 @@ uapi::pid_t Process::getParentProcessId(void) const
 }
 
 //-----------------------------------------------------------------------------
-// Process::Resume
-//
-// Resumes the process from a suspended state
-//
-// Arguments:
-//
-//	NONE
-
-void Process::Resume(void)
-{
-	return m_host->Resume();
-}
-
-//-----------------------------------------------------------------------------
-// Process::RemoveHandle
-//
-// Removes a file system handle from the process
-//
-// Arguments:
-//
-//	index		- Index (file descriptor) of the target handle
-
-void Process::RemoveHandle(int index)
-{
-	Concurrency::reader_writer_lock::scoped_lock writer(m_handlelock);
-
-	// Remove the index from the handle collection and return it to the pool
-	if(m_handles.erase(index) == 0) throw LinuxException(LINUX_EBADF);
-	m_indexpool.Release(index);
-}
-
-//-----------------------------------------------------------------------------
 // Process::SetProgramBreak
 //
 // Adjusts the program break address by increasing or decreasing the number
@@ -522,17 +437,17 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 }
 
 //-----------------------------------------------------------------------------
-// Process::Suspend
+// Process::Start
 //
-// Suspends the process
+// Starts the process
 //
 // Arguments:
 //
 //	NONE
 
-void Process::Suspend(void)
+void Process::Start(void)
 {
-	return m_host->Suspend();
+	return m_host->Resume();
 }
 
 //-----------------------------------------------------------------------------

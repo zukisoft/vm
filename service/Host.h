@@ -51,6 +51,9 @@ public:
 	//
 	~Host();
 
+	//-------------------------------------------------------------------------
+	// Member Functions
+
 	// AllocateMemory
 	//
 	// Allocates virtual memory in the native process

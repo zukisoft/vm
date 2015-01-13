@@ -957,7 +957,7 @@ void VmService::OnStart(int, LPTSTR*)
 	m_initprocess->AddHandle(1, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
 	m_initprocess->AddHandle(2, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
 
-	m_initprocess->Resume();
+	m_initprocess->Start();
 
 	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?
 	// TODO: MONITOR INIT PROCESS - PANIC WHEN IT TERMINATES

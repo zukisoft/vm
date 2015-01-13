@@ -24,9 +24,7 @@
 #define __PROCESS_H_
 #pragma once
 
-#include <concrt.h>
 #include <memory>
-#include <unordered_map>
 #include <linux/elf.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
@@ -37,10 +35,10 @@
 #include "Exception.h"
 #include "HeapBuffer.h"
 #include "Host.h"
-#include "IndexPool.h"
 #include "LinuxException.h"
 #include "NtApi.h"
 #include "ProcessClass.h"
+#include "ProcessHandles.h"
 #include "Random.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
@@ -71,8 +69,8 @@ public:
 	// AddHandle
 	//
 	// Adds a file system handle to the process
-	int AddHandle(const FileSystem::HandlePtr& handle);
-	int AddHandle(int fd, const FileSystem::HandlePtr& handle);
+	int AddHandle(const FileSystem::HandlePtr& handle) { return m_handles->Add(handle); }
+	int AddHandle(int fd, const FileSystem::HandlePtr& handle) { return m_handles->Add(fd, handle); }
 
 	// Clone
 	//
@@ -89,7 +87,7 @@ public:
 	// GetHandle
 	//
 	// Accesses a file system handle referenced by the process
-	FileSystem::HandlePtr GetHandle(int index);
+	FileSystem::HandlePtr GetHandle(int index) { return m_handles->operator[](index); }
 
 	// GetInitialTaskState
 	//
@@ -118,12 +116,7 @@ public:
 	// RemoveHandle
 	//
 	// Removes a file system handle from the process
-	void RemoveHandle(int index);
-
-	// Resume
-	//
-	// Resumes the process from a suspended state
-	void Resume(void);
+	void RemoveHandle(int index) { m_handles->Remove(index); }
 
 	// SetProgramBreak
 	//
@@ -135,10 +128,10 @@ public:
 	// Creates a new process instance
 	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp);
 
-	// Suspend
+	// Start
 	//
-	// Suspends the process
-	void Suspend(void);
+	// Launches the process
+	void Start(void);
 
 	// UnmapMemory
 	//
@@ -219,19 +212,6 @@ private:
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
-	// Private Type Declarations
-
-	// MIN_HANDLE_INDEX
-	//
-	// Minimum allowable file system handle index (file descriptor)
-	static const int MIN_HANDLE_INDEX = 3;
-
-	// handle_map_t
-	//
-	// Collection of file system handles, keyed on the index (file descriptor)
-	using handle_map_t = std::unordered_map<int, FileSystem::HandlePtr>;
-
-	//-------------------------------------------------------------------------
 	// Private Member Functions
 
 	// CheckHostProcessClass (static)
@@ -239,11 +219,6 @@ private:
 	// Verifies that the created host process type matches what is expected
 	template <ProcessClass _class>
 	static void CheckHostProcessClass(HANDLE process);
-
-	// Terminate
-	//
-	// Terminates the process
-	void Terminate(int exitcode) { m_host->Terminate(exitcode); }
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -259,24 +234,16 @@ private:
 
 	void*					m_tidaddress = nullptr;
 
-	// VIRTUAL MEMORY MANAGEMENT
+	// VIRTUAL MEMORY
 	//
 	const void*						m_programbreak;		// Current program break
 
-
-	// LDT section?
-
-	// HANDLE MANAGEMENT
+	// FILE SYSTEM
 	//
-	Concurrency::reader_writer_lock	m_handlelock;	// Handle collection lock
-	handle_map_t					m_handles;		// Process file system handles
-	IndexPool<int>					m_indexpool { MIN_HANDLE_INDEX };
-
-	// FILE SYSTEM MANAGEMENT
-	//
-	FileSystem::AliasPtr		m_rootdir;			// Process root directory
-	FileSystem::AliasPtr		m_workingdir;		// Process working directory
-	std::atomic<uapi::mode_t>	m_umask = 0022;		// Default UMASK value
+	std::shared_ptr<ProcessHandles>		m_handles;			// File system handles
+	std::shared_ptr<FileSystem::Alias>	m_rootdir;			// Process root directory
+	std::shared_ptr<FileSystem::Alias>	m_workingdir;		// Process working directory
+	std::atomic<uapi::mode_t>			m_umask = 0022;		// Default UMASK value
 };
 
 //-----------------------------------------------------------------------------
