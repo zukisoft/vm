@@ -58,15 +58,10 @@ inline size_t InProcessRead(const FileSystem::HandlePtr& handle, size_t offset, 
 //	destination	- Destination buffer
 //	count		- Number of bytes to be read
 
-inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE process, size_t offset, void* destination, size_t count)
+inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host, size_t offset, void* destination, size_t count)
 {
-	// If the process handle is not valid, this is actually an in-process read
-	if(process == INVALID_HANDLE_VALUE) return InProcessRead(handle, offset, destination, count);
-
 	uintptr_t			dest = uintptr_t(destination);		// Easier pointer math as uintptr_t
 	size_t				total = 0;							// Total bytes written
-	SIZE_T				written;							// Bytes written into target process
-	NTSTATUS			result;								// Result from NTAPI function call
 	
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
 	HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);
@@ -80,11 +75,9 @@ inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, HANDLE proce
 		size_t read = handle->Read(buffer, min(count, buffer.Size));
 		if(read == 0) break;
 
-		// Write the data into the target process with NtWriteVirtualMemory
-		result = NtApi::NtWriteVirtualMemory(process, reinterpret_cast<void*>(dest + total), buffer, read, &written);
-		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+		// Write the data into the target native operating system process
+		total += host->WriteMemory(reinterpret_cast<void*>(dest + total), buffer, read);
 
-		total += written;				// Increment total bytes written
 		count -= read;					// Decrement bytes left to be read
 	};
 
@@ -124,11 +117,12 @@ DWORD ElfImage::FlagsToProtection(uint32_t flags)
 // Arguments:
 //
 //	handle		- FileSystem object handle instance for the binary image
+//	host		- Native operating system process to load the ELF image into
 
-template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86>(const FileSystem::HandlePtr& handle, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86>(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host)
 {
 	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
-	return LoadBinary<ProcessClass::x86>(handle, process);
+	return LoadBinary<ProcessClass::x86>(handle, host);
 }
 
 //-----------------------------------------------------------------------------
@@ -139,12 +133,13 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86>(const Fi
 // Arguments:
 //
 //	handle		- FileSystem object handle instance for the binary image
+//	host		- Native operating system process to load the ELF image into
 
 #ifdef _M_X64
-template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86_64>(const FileSystem::HandlePtr& handle, HANDLE process)
+template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86_64>(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host)
 {
 	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
-	return LoadBinary<ProcessClass::x86_64>(handle, process);
+	return LoadBinary<ProcessClass::x86_64>(handle, host);
 }
 #endif
 
@@ -156,16 +151,15 @@ template <> std::unique_ptr<ElfImage> ElfImage::Load<ProcessClass::x86_64>(const
 // Arguments:
 //
 //	handle		- FileSystem object handle instance for the binary image
-//	process		- Handle to the process in which to load the image
+//	host		- Native operating system process to load the ELF image into
 
 template <ProcessClass _class>
-std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process)
+std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host)
 {
 	using elf = elf_traits<_class>;
 
 	Metadata						metadata;		// Metadata to return about the loaded image
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
-	std::unique_ptr<ProcessSection>	section;		// Allocated virtual memory section
 
 	// Acquire a copy of the ELF header from the binary file and validate it
 	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
@@ -207,14 +201,13 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so
 		// reserve them at the highest available virtual address to allow for as much heap space as possible.
 		// Note that the section length is aligned to the allocation granularity of the system to prevent holes
-		if(elfheader.e_type == LINUX_ET_EXEC)
-			section = ProcessSection::Create(process, reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, ProcessSection::Mode::Private);
-		else section = ProcessSection::Create(process, maxvaddr - minvaddr, ProcessSection::Mode::Private, MEM_TOP_DOWN);
+		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = host->AllocateMemory(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, PAGE_NOACCESS);
+		else metadata.BaseAddress = host->AllocateMemory(maxvaddr - minvaddr, PAGE_NOACCESS);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
-	intptr_t vaddrdelta = (elfheader.e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(section->BaseAddress) - minvaddr;
+	intptr_t vaddrdelta = (elfheader.e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(metadata.BaseAddress) - minvaddr;
 
 	// PROGRAM HEADERS PASS TWO - LOAD, COMMIT AND PROTECT SEGMENTS
 	for(size_t index = 0; index < progheaders.Count; index++) {
@@ -233,23 +226,23 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 		// PT_LOAD - only load segments that have a non-zero memory footprint defined
 		else if((progheader.p_type == LINUX_PT_LOAD) && (progheader.p_memsz)) {
 
-			// Get the base address of the loadable segment and commit the virtual memory
+			// Get the base address of the loadable segment and set it as PAGE_READWRITE to load it
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { section->Allocate(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(progheader.p_filesz) {
 
 				// Read the data from the input stream into the target process address space at segbase
-				try { read = OutOfProcessRead(handle, process, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
+				try { read = OutOfProcessRead(handle, host, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
 				catch(Exception& ex) { throw Exception(E_ELFWRITESEGMENT, ex); }
 
 				if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 			}
 
-			// Attempt to apply the proper virtual memory protection flags to the segment
-			try { section->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
+			// Attempt to apply the proper virtual memory protection flags to the segment now that it's been written
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
 			catch(Exception& ex) { throw Exception(E_ELFPROTECTSEGMENT, ex); }
 		}
 
@@ -269,9 +262,6 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 		}
 	}
 
-	// Base address of the image is the original minimum virtual address, adjusted for load delta
-	metadata.BaseAddress = reinterpret_cast<void*>(minvaddr + vaddrdelta);
-
 	// The initial program break address is the page just beyond the committed image
 	metadata.ProgramBreak = align::up(reinterpret_cast<void*>(maxvaddr + vaddrdelta), SystemInformation::PageSize);
 
@@ -279,7 +269,7 @@ std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& hand
 	metadata.EntryPoint = (elfheader.e_entry) ? reinterpret_cast<void*>(elfheader.e_entry + vaddrdelta) : nullptr;
 
 	// Construct and return a new ElfImage instance from the section and metadata
-	return std::make_unique<ElfImage>(std::move(section), std::move(metadata));
+	return std::make_unique<ElfImage>(std::move(metadata));
 }
 
 //-----------------------------------------------------------------------------

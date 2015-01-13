@@ -30,7 +30,6 @@
 
 Host::~Host()
 {
-	// Close the process handles created along with the host process
 	CloseHandle(m_procinfo.hThread);
 	CloseHandle(m_procinfo.hProcess);
 }
@@ -59,7 +58,7 @@ const void* Host::AllocateMemory(const void* address, size_t length, DWORD prote
 	// No specific address was requested, let the operating system decide where it should go
 	if(address == nullptr) {
 
-		std::unique_ptr<ProcessSection> section = ProcessSection::Create(m_procinfo.hProcess, align::up(length, SystemInformation::AllocationGranularity));
+		std::unique_ptr<MemorySection> section = MemorySection::Create(m_procinfo.hProcess, align::up(length, SystemInformation::AllocationGranularity));
 		address = section->Allocate(section->BaseAddress, length, protection);
 		m_sections.push_back(std::move(section));
 		return address;
@@ -79,7 +78,7 @@ const void* Host::AllocateMemory(const void* address, size_t length, DWORD prote
 		if(meminfo.State == MEM_FREE) {
 
 			size_t filllength = min(meminfo.RegionSize, align::up(fillend - fillbegin, SystemInformation::AllocationGranularity));
-			m_sections.emplace_back(ProcessSection::Create(m_procinfo.hProcess, meminfo.BaseAddress, filllength));
+			m_sections.emplace_back(MemorySection::Create(m_procinfo.hProcess, meminfo.BaseAddress, filllength));
 		}
 
 		fillbegin += meminfo.RegionSize;
@@ -92,14 +91,14 @@ const void* Host::AllocateMemory(const void* address, size_t length, DWORD prote
 	while(allocbegin < allocend) {
 
 		// Locate the section object that matches the current allocation base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<ProcessSection>& section) -> bool {
+		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
 			return ((allocbegin >= uintptr_t(section->BaseAddress)) && (allocbegin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
 		// No matching section object exists, throw ERROR_INVALID_ADDRESS
 		if(found == m_sections.end()) throw Win32Exception(ERROR_INVALID_ADDRESS);
 
-		// Cast out the std::unique_ptr<ProcessSection>& for clarity below
+		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
@@ -110,6 +109,53 @@ const void* Host::AllocateMemory(const void* address, size_t length, DWORD prote
 	}
 
 	return address;					// Return the originally requested address
+}
+
+//-----------------------------------------------------------------------------
+// Host::ClearMemory
+//
+// Removes all allocated virtual memory from the native process
+//
+// Arguments:
+//
+//	NONE
+
+void Host::ClearMemory(void)
+{
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock writer(m_sectionlock);
+
+	// Clearing the vector<> will release all of the section instances
+	m_sections.clear();
+}
+
+//-----------------------------------------------------------------------------
+// Host::CloneMemory
+//
+// Clones the virtual memory from an existing Host instance
+//
+// Arguments:
+//
+//	existing		- Reference to an existing host instance
+
+void Host::CloneMemory(const std::unique_ptr<Host>& existing)
+{
+	// Prevent changes to the existing process memory layout
+	section_lock_t::scoped_lock_read reader(existing->m_sectionlock);
+
+	// Prevent changes to the process memory layout while this is operating
+	section_lock_t::scoped_lock writer(m_sectionlock);
+
+	// Iterate over the existing sections and clone them into this native process
+	for(auto iterator = existing->m_sections.begin(); iterator != existing->m_sections.end(); iterator++) {
+
+		// Clone the existing memory section with copy-on-write access to it
+		m_sections.push_back(MemorySection::FromSection(*iterator, m_procinfo.hProcess, MemorySection::Mode::CopyOnWrite));
+
+		// TODO: DO I WANT TO DO THIS HERE OR HAVE A SEPARATE FUNCTION CALL
+		// doing it here is the safest way, but may not be flexible enough in the long run
+		(*iterator)->ChangeMode(MemorySection::Mode::CopyOnWrite);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -194,14 +240,14 @@ void Host::ProtectMemory(const void* address, size_t length, DWORD protection)
 	while(begin < end) {
 
 		// Locate the section object that matches the current base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<ProcessSection>& section) -> bool {
+		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
 			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
 		// No matching section object exists, throw ERROR_INVALID_ADDRESS
 		if(found == m_sections.end()) throw Win32Exception(ERROR_INVALID_ADDRESS);
 
-		// Cast out the std::unique_ptr<ProcessSection>& for clarity below
+		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
@@ -261,14 +307,14 @@ void Host::ReleaseMemory(const void* address, size_t length)
 	while(begin < end) {
 
 		// Locate the section object that matches the specified base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<ProcessSection>& section) -> bool {
+		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
 			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
 		// No matching section object exists, treat this as a no-op -- don't throw an exception
 		if(found == m_sections.end()) return;
 
-		// Cast out the std::unique_ptr<ProcessSection>& for clarity below
+		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
 
 		// Determine how much to release from this section and release it

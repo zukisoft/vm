@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include "Bitmap.h"
 #include "NtApi.h"
 #include "StructuredException.h"
 #include "SystemInformation.h"
@@ -36,7 +37,7 @@
 //-----------------------------------------------------------------------------
 // MemorySection
 //
-// Implements a virtual memory section that can be cloned between processes
+// Implements a mapped virtual memory section
 
 class MemorySection
 {
@@ -44,85 +45,80 @@ public:
 
 	// Destructor
 	//
-	virtual ~MemorySection();
+	~MemorySection();
 
 	//-------------------------------------------------------------------------
 	// Type Declarations
 
-	// CloneMode
+	// Mode
 	//
-	// Indicates the mode used when cloning this section into another process
-	enum class CloneMode {
+	// Defines the protection behavior of the section
+	enum class Mode {
 
-		Shared,					// Clone as a shared memory section
-		SharedCopyOnWrite,		// Clone as a copy-on-write shared memory section
-		Duplicate				// Clone as a duplicate memory section
+		Private			= 0,		// Mapping is private to the process
+		Shared,						// Mapping is shared with another process
+		CopyOnWrite,				// Mapping is set for copy-on-write access
 	};
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Clone
+	// Allocate
 	//
-	// Clones this section into another process
-	std::unique_ptr<MemorySection> Clone(HANDLE process, CloneMode mode);
+	// Allocates pages within the virtual memory section
+	void* Allocate(void* address, size_t length, uint32_t protection);
 
-	// Commit
+	// ChangeMode
 	//
-	// Commits page(s) within the section
-	void Commit(void* address, size_t length, uint32_t protect);
+	// Alters the protection behavior mode of the section
+	void ChangeMode(Mode mode);
 
+	// Create (static)
+	//
+	// Creates a new virtual memory section and mapping
+	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length) { return Create(process, nullptr, length, Mode::Private, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length, Mode mode) { return Create(process, nullptr, length, mode, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length, uint32_t flags) { return Create(process, nullptr, length, Mode::Private, flags); }
+	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length, Mode mode, uint32_t flags) { return Create(process, nullptr, length, mode, flags); }
+	static std::unique_ptr<MemorySection> Create(HANDLE process, void* address, size_t length) { return Create(process, address, length, Mode::Private, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE process, void* address, size_t length, Mode mode) { return Create(process, address, length, mode, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE process, void* address, size_t length, Mode mode, uint32_t flags);
+
+	// FromSection (static)
+	//
+	// Creates a duplicate of this memory section for another process
+	static std::unique_ptr<MemorySection> FromSection(const std::unique_ptr<MemorySection>& section, HANDLE process, Mode mode);
+	
 	// Protect
 	//
-	// Applies protection flags to page(s) within the section
-	uint32_t Protect(void* address, size_t length, uint32_t protect);	
-	
-	// Reserve (static)
+	// Changes the protection flags for pages within the virtual memory section
+	void Protect(void* address, size_t length, uint32_t protection);
+
+	// Release
 	//
-	// Creates and reserves a new section
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length) 
-		{ return Reserve(process, nullptr, length, 0, 0); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, size_t granularity) 
-		{ return Reserve(process, nullptr, length, granularity, 0); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, int mapflags) 
-		{ return Reserve(process, nullptr, length, 0, mapflags); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, size_t length, size_t granularity, int mapflags) 
-		{ return Reserve(process, nullptr, length, granularity, mapflags); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length) 
-		{ return Reserve(process, address, length, 0, 0); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, size_t granularity) 
-		{ return Reserve(process, address, length, granularity, 0); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, int mapflags)
-		{ return Reserve(process, address, length, 0, mapflags); }
-
-	static std::unique_ptr<MemorySection> Reserve(HANDLE process, void* address, size_t length, size_t granularity, int mapflags);
+	// Releases pages within the virtual memory section
+	void Release(void* address, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Properties
 
 	// BaseAddress
 	//
-	// Gets the base address for the mapped section
-	__declspec(property(get=getBaseAddress)) void* BaseAddress;
-	void* getBaseAddress(void) const { return m_address; }
+	// The base address of the mapped section
+	__declspec(property(get=getBaseAddress)) void* const BaseAddress;
+	void* const getBaseAddress(void) const { return m_address; }
+
+	// Empty
+	//
+	// Determines if the entire section is empty
+	__declspec(property(get=getEmpty)) bool Empty;
+	bool getEmpty(void) const { return m_allocmap.Empty; }
 
 	// Length
 	//
-	// Gets the length of the mapped section
+	// Length of the mapped Section
 	__declspec(property(get=getLength)) size_t Length;
 	size_t getLength(void) const { return m_length; }
-
-protected:
-	
-	// Move Constructor
-	//
-	MemorySection(std::unique_ptr<MemorySection>&& rhs);
 
 private:
 
@@ -131,21 +127,34 @@ private:
 
 	// Instance Constructors
 	//
-	MemorySection(HANDLE process, HANDLE section, void* address, size_t length) : m_process(process), m_section(section), m_address(address), m_length(length) {}
-	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&>(HANDLE&, HANDLE&, void*&, size_t&);
+	MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, Mode mode);
+	MemorySection(HANDLE process, HANDLE section, void* const baseaddress, size_t length, Mode mode, const Bitmap& bitmap);
+
+	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&, Mode&>(HANDLE&, HANDLE&, void*&, size_t&, Mode&);
+	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&, Mode&, Bitmap&>(HANDLE&, HANDLE&, void*&, size_t&, Mode&, Bitmap&);
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// Clone
+	//
+	// Clones this process memory section into another process
+	static std::unique_ptr<MemorySection> Clone(const std::unique_ptr<MemorySection>& rhs, HANDLE process, Mode mode);
 
 	// Duplicate
 	//
-	// Duplicates the section into another process
-	std::unique_ptr<MemorySection> Duplicate(HANDLE process);
-	
+	// Creates a duplicate (Mode::Private) of this process memory section
+	static std::unique_ptr<MemorySection> Duplicate(const std::unique_ptr<MemorySection>& rhs, HANDLE process);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HANDLE						m_process;			// Process handle (not owned by this class)
-	HANDLE						m_section;			// Section handle (owned by this class)
-	void*						m_address;			// Base address of the mapped section
-	size_t						m_length;			// Length of the mapped section
+	HANDLE					m_process;			// The target process handle
+	HANDLE					m_section;			// The section object handle
+	void*					m_address;			// Mapped section base address
+	size_t					m_length;			// Length of the mapped section
+	Mode					m_mode;				// The current section mode
+	Bitmap					m_allocmap;			// Page allocation bitmap
 };
 
 //-----------------------------------------------------------------------------

@@ -29,9 +29,9 @@
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
+#include "Host.h"
 #include "NtApi.h"
 #include "ProcessClass.h"
-#include "ProcessSection.h"
 #include "SystemInformation.h"
 #include "StructuredException.h"
 #include "Win32Exception.h"
@@ -42,9 +42,9 @@
 //-----------------------------------------------------------------------------
 // ElfImage
 //
-// Loads an ELF binary image into a virtual memory section
+// Loads an ELF binary image into a native operating system host process
 
-class ElfImage : public ProcessSection
+class ElfImage
 {
 public:
 
@@ -59,7 +59,7 @@ public:
 	//
 	// Loads an ELF image into memory from a StreamReader instance
 	template <ProcessClass _class>
-	static std::unique_ptr<ElfImage> Load(const FileSystem::HandlePtr& handle, HANDLE process = INVALID_HANDLE_VALUE);
+	static std::unique_ptr<ElfImage> Load(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -68,13 +68,13 @@ public:
 	//
 	// Gets the virtual memory base address of the loaded image
 	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-	void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
+	const void* getBaseAddress(void) const { return m_metadata.BaseAddress; }
 
 	// EntryPoint
 	//
 	// Gets the entry point for the image
 	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
-	void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
+	const void* getEntryPoint(void) const { return m_metadata.EntryPoint; }
 
 	// Interpreter
 	//
@@ -86,7 +86,7 @@ public:
 	//
 	// Pointer to the initial program break address
 	__declspec(property(get=getProgramBreak)) const void* ProgramBreak;
-	void* getProgramBreak(void) const { return m_metadata.ProgramBreak; }
+	const void* getProgramBreak(void) const { return m_metadata.ProgramBreak; }
 
 	// NumProgramHeaders
 	//
@@ -98,7 +98,7 @@ public:
 	//
 	// Pointer to program headers that were defined as part of the loaded image
 	__declspec(property(get=getProgramHeaders)) const void* ProgramHeaders;
-	void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
+	const void* getProgramHeaders(void) const { return m_metadata.ProgramHeaders; }
 
 private:
 
@@ -111,8 +111,8 @@ private:
 
 	// Instance Constructor
 	//
-	ElfImage(std::unique_ptr<ProcessSection>&& section, Metadata&& metadata) : ProcessSection(std::move(section)), m_metadata(std::move(metadata)) {}
-	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, std::unique_ptr<ProcessSection>, Metadata>(std::unique_ptr<ProcessSection>&&, Metadata&&);
+	ElfImage(Metadata&& metadata) : m_metadata(std::move(metadata)) {}
+	friend std::unique_ptr<ElfImage> std::make_unique<ElfImage, Metadata>(Metadata&&);
 
 	//-------------------------------------------------------------------------
 	// Private Type Declarations
@@ -122,11 +122,11 @@ private:
 	// Provides information about an image that has been loaded by LoadBinary<>
 	struct Metadata
 	{
-		void*					BaseAddress = nullptr;
-		void*					ProgramBreak = nullptr;
-		void*					ProgramHeaders = nullptr;
+		const void*				BaseAddress = nullptr;
+		const void*				ProgramBreak = nullptr;
+		const void*				ProgramHeaders = nullptr;
 		size_t					NumProgramHeaders = 0;
-		void*					EntryPoint = nullptr;
+		const void*				EntryPoint = nullptr;
 		std::string				Interpreter;
 	};
 
@@ -142,7 +142,7 @@ private:
 	//
 	// Loads an ELF binary image into virtual memory
 	template <ProcessClass _class>
-	static std::unique_ptr<ElfImage> LoadBinary(const FileSystem::HandlePtr& handle, HANDLE process);
+	static std::unique_ptr<ElfImage> LoadBinary(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host);
 
 	// ValidateHeader
 	//

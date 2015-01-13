@@ -29,7 +29,7 @@
 #include <concrt.h>
 #include "HeapBuffer.h"
 #include "NtApi.h"
-#include "ProcessSection.h"
+#include "MemorySection.h"
 #include "StructuredException.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
@@ -56,6 +56,16 @@ public:
 	// Allocates virtual memory in the native process
 	const void* AllocateMemory(size_t length, DWORD protection) { return AllocateMemory(nullptr, length, protection); }
 	const void* AllocateMemory(const void* address, size_t length, DWORD protection);
+
+	// ClearMemory
+	//
+	// Removes all virtual memory allocations from the native process
+	void ClearMemory(void);
+
+	// CloneMemory
+	//
+	// Clones the virtual memory from an existing process
+	void CloneMemory(const std::unique_ptr<Host>& existing /*, TODO: mode flag */);
 
 	// Create (static)
 	//
@@ -146,7 +156,7 @@ private:
 	// section_vector_t
 	//
 	// Collection of allocated memory section instances
-	using section_vector_t = std::vector<std::unique_ptr<ProcessSection>>;
+	using section_vector_t = std::vector<std::unique_ptr<MemorySection>>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

@@ -24,11 +24,9 @@
 #define __PROCESS_H_
 #pragma once
 
-#include <array>
 #include <concrt.h>
 #include <memory>
 #include <unordered_map>
-#include <vector>
 #include <linux/elf.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
@@ -43,11 +41,11 @@
 #include "LinuxException.h"
 #include "NtApi.h"
 #include "ProcessClass.h"
-#include "ProcessSection.h"
 #include "Random.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
+// todo: the above includes need to be scrubbed
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -102,20 +100,20 @@ public:
 	// MapMemory
 	//
 	// Creates a memory mapping for the process
-	void* MapMemory(size_t length, int prot, int flags) { return MapMemory(nullptr, length, prot, flags, -1, 0); }
-	void* MapMemory(void* address, size_t length, int prot, int flags) { return MapMemory(address, length, prot, flags, -1, 0); }
-	void* MapMemory(void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset);
+	const void* MapMemory(size_t length, int prot, int flags) { return MapMemory(nullptr, length, prot, flags, -1, 0); }
+	const void* MapMemory(const void* address, size_t length, int prot, int flags) { return MapMemory(address, length, prot, flags, -1, 0); }
+	const void* MapMemory(const void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset);
 	// TODO: will need overloads for shared memory when I get there
 
 	// ProtectMemory
 	//
 	// Sets memory protection flags for a region
-	void ProtectMemory(void* address, size_t length, int prot);
+	void ProtectMemory(const void* address, size_t length, int prot) { return m_host->ProtectMemory(address, length, uapi::LinuxProtToWindowsPageFlags(prot)); }
 
 	// ReadMemory
 	//
 	// Reads directly from the process memory space, will abort on a fault
-	size_t ReadMemory(const void* address, void* buffer, size_t length);
+	size_t ReadMemory(const void* address, void* buffer, size_t length) { return m_host->ReadMemory(address, buffer, length); }
 
 	// RemoveHandle
 	//
@@ -130,7 +128,7 @@ public:
 	// SetProgramBreak
 	//
 	// Sets the program break address to increase or decrease data segment length
-	void* SetProgramBreak(void* address);
+	const void* SetProgramBreak(const void* address);
 
 	// Spawn (static)
 	//
@@ -150,7 +148,7 @@ public:
 	// WriteMemory
 	//
 	// Writes directly into the process memory space, will abort on a fault
-	size_t WriteMemory(void* address, const void* buffer, size_t length);
+	size_t WriteMemory(const void* address, const void* buffer, size_t length) { return m_host->WriteMemory(address, buffer, length); }
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -217,7 +215,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		std::unique_ptr<TaskState>&& taskstate, std::vector<std::unique_ptr<ProcessSection>>&& sections, void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -233,30 +231,14 @@ private:
 	// Collection of file system handles, keyed on the index (file descriptor)
 	using handle_map_t = std::unordered_map<int, FileSystem::HandlePtr>;
 
-	// section_vector_t
-	//
-	// Collection of allocated memory section instances
-	using section_vector_t = std::vector<std::unique_ptr<ProcessSection>>;
-
 	//-------------------------------------------------------------------------
 	// Private Member Functions
-
-	// AllocateMemory
-	//
-	// Allocates and commits memory in the process virtual address space
-	void* AllocateMemory(size_t length, uint32_t protection) { return AllocateMemory(nullptr, length, protection); }
-	void* AllocateMemory(void* address, size_t length, uint32_t protection);
 
 	// CheckHostProcessClass (static)
 	//
 	// Verifies that the created host process type matches what is expected
 	template <ProcessClass _class>
 	static void CheckHostProcessClass(HANDLE process);
-
-	// ReleaseMemory
-	//
-	// Decommits and releases memory from the process virtual address space
-	void ReleaseMemory(void* address, size_t length);
 
 	// Terminate
 	//
@@ -279,9 +261,8 @@ private:
 
 	// VIRTUAL MEMORY MANAGEMENT
 	//
-	void*								m_programbreak;		// Current program break
-	Concurrency::reader_writer_lock		m_sectionlock;		// Section collection lock	
-	section_vector_t					m_sections;			// Collection of sections
+	const void*						m_programbreak;		// Current program break
+
 
 	// LDT section?
 
