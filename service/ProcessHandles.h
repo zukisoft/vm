@@ -104,9 +104,10 @@ private:
 	using handle_map_t = std::unordered_map<int, std::shared_ptr<FileSystem::Handle>>;
 
 	//-------------------------------------------------------------------------
-	// Instance Constructor
+	// Instance Constructors
 	//
-	ProcessHandles(handle_map_t&& handles) : m_fdpool(MIN_FD_INDEX), m_handles(std::move(handles)) {}
+	ProcessHandles() : m_fdpool(MIN_FD_INDEX) {}
+	ProcessHandles(handle_map_t&& handles, IndexPool<int>&& fdpool) : m_handles(std::move(handles)), m_fdpool(std::move(fdpool)) {}
 	friend class std::_Ref_count_obj<ProcessHandles>;
 
 	//-------------------------------------------------------------------------

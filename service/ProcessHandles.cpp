@@ -78,7 +78,7 @@ int ProcessHandles::Add(int fd, const FileSystem::HandlePtr& handle)
 std::shared_ptr<ProcessHandles> ProcessHandles::Create(void)
 {
 	// Create the ProcessHandles instance with a new empty collection
-	return std::make_shared<ProcessHandles>(std::move(handle_map_t()));
+	return std::make_shared<ProcessHandles>();
 }
 
 //-----------------------------------------------------------------------------
@@ -92,14 +92,15 @@ std::shared_ptr<ProcessHandles> ProcessHandles::Create(void)
 
 std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(const std::shared_ptr<ProcessHandles>& existing)
 {
-	handle_map_t			handles;			// New collection for the duplicate handles
+	handle_map_t		handles;						// New collection for the duplicate handles
+	IndexPool<int>		fdpool(existing->m_fdpool);		// Index pool for the new collection
 
 	// Iterate over the existing collection and duplicate each handle with the same flags
 	for(auto iterator : existing->m_handles)
 		if(!handles.insert(std::make_pair(iterator.first, iterator.second->Duplicate(iterator.second->Flags))).second) throw LinuxException(LINUX_EBADF);
 
 	// Create the ProcessHandles instance with the duplicated collection
-	return std::make_shared<ProcessHandles>(std::move(handles));
+	return std::make_shared<ProcessHandles>(std::move(handles), std::move(fdpool));
 }
 
 //-----------------------------------------------------------------------------

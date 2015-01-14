@@ -57,6 +57,14 @@ public:
 	IndexPool() : IndexPool(0) {}
 	IndexPool(_index_t reserved) : m_next(reserved) {}
 
+	// Copy Constructor
+	//
+	IndexPool(const IndexPool& rhs) : m_next(rhs.m_next.load()), m_spent(rhs.m_spent) {}
+
+	// Move Constructor
+	//
+	IndexPool(IndexPool&& rhs) : m_next(rhs.m_next.load()), m_spent(std::move(rhs.m_spent)) { rhs.m_next = 0; }
+
 	// Destructor
 	//
 	~IndexPool()=default;
@@ -91,7 +99,6 @@ public:
 
 private:
 
-	IndexPool(const IndexPool&)=delete;
 	IndexPool& operator=(const IndexPool&)=delete;
 
 	// _queue_t
