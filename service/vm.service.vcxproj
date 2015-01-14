@@ -316,6 +316,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\ldt.h" />
     <ClInclude Include="..\common\linux\major.h" />
     <ClInclude Include="..\common\linux\mman.h" />
+    <ClInclude Include="..\common\linux\resource.h" />
     <ClInclude Include="..\common\linux\sched.h" />
     <ClInclude Include="..\common\linux\signal.h" />
     <ClInclude Include="..\common\linux\stat.h" />
@@ -677,6 +678,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_readlink.cpp" />
     <ClCompile Include="sys_set_tid_address.cpp" />
     <ClCompile Include="sys_newuname.cpp" />
+    <ClCompile Include="sys_wait4.cpp" />
     <ClCompile Include="sys_waitpid.cpp" />
     <ClCompile Include="sys_write.cpp" />
     <ClCompile Include="sys_writev.cpp" />

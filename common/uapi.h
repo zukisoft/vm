@@ -26,6 +26,7 @@
 
 #include <linux/types.h>
 #include <linux/fcntl.h>
+#include <linux/resource.h>
 #include <linux/sched.h>
 #include <linux/signal.h>
 #include <linux/stat.h>

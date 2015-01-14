@@ -46,10 +46,17 @@ typedef struct {
 
 typedef struct {
 
-	__kernel_time_t			tv_sec;				/* seconds */
-	__kernel_suseconds_t	tv_usec;			/* microseconds */
+	__int32					tv_sec;				/* seconds */
+	__int32					tv_usec;			/* microseconds */
 
-} linux_timeval;
+} linux_timeval32;
+
+typedef struct {
+
+	__int64					tv_sec;				/* seconds */
+	__int64					tv_usec;			/* microseconds */
+
+} linux_timeval64;
 
 typedef struct {
 
@@ -78,10 +85,17 @@ typedef struct {
 
 typedef struct {
 
-	linux_timeval			it_interval;		/* timer interval */
-	linux_timeval			it_value;			/* current value */
+	linux_timeval32			it_interval;		/* timer interval */
+	linux_timeval32			it_value;			/* current value */
 
-} linux_itimerval;
+} linux_itimerval32;
+
+typedef struct {
+
+	linux_timeval64			it_interval;		/* timer interval */
+	linux_timeval64			it_value;			/* current value */
+
+} linux_itimerval64;
 
 #define LINUX_CLOCK_REALTIME				0
 #define LINUX_CLOCK_MONOTONIC				1
@@ -106,10 +120,10 @@ typedef struct {
 namespace uapi {
 
 	typedef linux_timespec64		timespec;
-	typedef linux_timeval			timeval;
+	typedef linux_timeval64			timeval;
 	typedef linux_timezone			timezone;
 	typedef linux_itimerspec64		itimerspec;
-	typedef linux_itimerval			itimerval;
+	typedef linux_itimerval64		itimerval;
 
 	// Converts Windows FILEFILE to Linux timespec
 	//

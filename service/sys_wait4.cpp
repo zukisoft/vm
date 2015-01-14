@@ -25,12 +25,8 @@
 
 #pragma warning(push, 4)
 
-// sys_wait4.cpp
-//
-__int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage);
-
 //-----------------------------------------------------------------------------
-// sys_waitpid
+// sys_wait4
 //
 // Waits for a process to change state
 //
@@ -40,19 +36,54 @@ __int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* st
 //	pid			- PID to wait upon
 //	status		- Optionally receives PID status information
 //	options		- Wait operation options
+//	rusage		- Optionally receives child accounting information
 
-__int3264 sys_waitpid(const SystemCall::Context* context, uapi::pid_t pid, int* status, int options)
+__int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
 {
-	// sys_waitpid is equivalent to sys_wait4(pid, status, options, nullptr)
-	return sys_wait4(context, pid, status, options, nullptr);
+	_ASSERTE(context);
+
+	(pid);
+	(status);
+	(options);
+	(rusage);
+
+	try { 
+
+		SystemCall::Impersonation impersonation;
+		return -38;
+	}
+
+	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 }
 
-// sys32_waitpid
+// sys32_wait4
 //
-sys32_long_t sys32_waitpid(sys32_context_t context, sys32_pid_t pid, sys32_int_t* status, sys32_int_t options)
+sys32_long_t sys32_wait4(sys32_context_t context, sys32_pid_t pid, sys32_int_t* status, sys32_int_t options, linux_rusage32* rusage)
 {
-	return static_cast<sys32_long_t>(sys_waitpid(reinterpret_cast<SystemCall::Context*>(context), pid, status, options));
+	uapi::rusage			usage;				// Child accounting information
+
+	// Invoke the generic version of the system call using the local structure
+	sys32_long_t result = static_cast<sys32_long_t>(sys_wait4(reinterpret_cast<SystemCall::Context*>(context), pid, status, options, &usage));
+
+	// If sys_wait4 was successful, convert the data from the generic structure into the compatible one
+	if((result >= 0) && (rusage != nullptr)) {
+
+		// TODO - convert stuff here; just zero it out for now I don't even know if
+		// the rusage structures are the right size yet
+		memset(rusage, 0, sizeof(linux_rusage32));
+	}
+
+	return result;
 }
+
+#ifdef _M_X64
+// sys64_wait4
+//
+sys64_long_t sys64_wait4(sys64_context_t context, sys64_pid_t pid, sys64_int_t* status, sys64_int_t options, linux_rusage64* rusage)
+{
+	return sys_wait4(reinterpret_cast<SystemCall::Context*>(context), pid, status, options, rusage);
+}
+#endif
 
 //---------------------------------------------------------------------------
 

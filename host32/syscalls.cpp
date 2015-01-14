@@ -218,7 +218,7 @@ syscall_t g_syscalls[512] = {
 /* 111 */	sys_noentry,
 /* 112 */	sys_noentry,
 /* 113 */	sys_noentry,
-/* 114 */	sys_noentry,
+/* 114 */	REMOTE_SYSCALL_4(sys32_wait4, sys32_pid_t, sys32_int_t*, sys32_int_t, linux_rusage32*),
 /* 115 */	sys_noentry,
 /* 116 */	sys_noentry,
 /* 117 */	sys_noentry,
