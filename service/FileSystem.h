@@ -305,9 +305,16 @@ struct __declspec(novtable) FileSystem
 		__declspec(property(get=getAlias)) AliasPtr Alias;
 		virtual AliasPtr getAlias(void) = 0;
 
+		// CloseOnExec
+		//
+		// Gets/sets the flag to close this handle during an execute operation
+		__declspec(property(get=getCloseOnExec, put=putCloseOnExec)) bool CloseOnExec;
+		virtual bool getCloseOnExec(void) = 0;
+		virtual void putCloseOnExec(bool value) = 0;
+
 		// Flags
 		//
-		// Gets a copy of the original flags used to open the handle
+		// Gets a copy of the current handle flags
 		__declspec(property(get=getFlags)) int Flags;
 		virtual int getFlags(void) = 0;
 

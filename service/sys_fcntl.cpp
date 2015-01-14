@@ -67,13 +67,14 @@ __int3264 sys_fcntl(const SystemCall::Context* context, int fd, int cmd, void* a
 			// FILE DESCRIPTOR FLAGS
 			//
 
-			// F_GETFD - Get the file descriptor flags
-			// case LINUX_F_GETFD:
-				// only return LINUX_FD_CLOEXEC (1)
+			// F_GETFD - Get the file descriptor flags (only close-on-exec is supported)
+			case LINUX_F_GETFD:
+				return handle->CloseOnExec ? LINUX_FD_CLOEXEC : 0;
 
-			// F_SETFD - Set the file descriptor flags
-			//case LINUX_F_SETFD:
-				// arg must be LINUX_FD_CLOEXEC (1)
+			// F_SETFD - Set the file descriptor flags (only close-on-exec is supported)
+			case LINUX_F_SETFD:
+				handle->CloseOnExec = (reinterpret_cast<__int3264>(arg) == LINUX_FD_CLOEXEC);
+				return 0;
 
 			//
 			// FILE STATUS FLAGS
