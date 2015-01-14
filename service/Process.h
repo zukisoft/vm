@@ -43,7 +43,6 @@
 #include "SystemInformation.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
-// todo: the above includes need to be scrubbed
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -208,7 +207,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		std::unique_ptr<TaskState>&& taskstate, const void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------

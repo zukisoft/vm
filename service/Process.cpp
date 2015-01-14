@@ -47,10 +47,10 @@ template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const st
 //	TODO: DOCUMENT THEM
 
 Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-	std::unique_ptr<TaskState>&& taskstate, const void* programbreak) : 
-	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), m_programbreak(programbreak)
+	std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const void* programbreak) : 
+	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
+	m_handles(handles), m_programbreak(programbreak)
 {
-	m_handles = ProcessHandles::Create();
 }
 
 //-----------------------------------------------------------------------------
@@ -128,15 +128,11 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 
 			try {
 
-				// TODO: DEAL WITH CLOSE-ON-EXEC HANDLES HERE *BEFORE* THE COLLECTION IS CLONED OR SHARED
-				//m_handles->DoCloseOnExecute();
-
 				// Create the file system handle collection for the child process, which can be the same collection
 				// if CLONE_FILES was set, or a set of duplicate file descriptors that refer to the same handles
 				std::shared_ptr<ProcessHandles> childhandles = (flags & LINUX_CLONE_FILES) ? m_handles : ProcessHandles::Duplicate(m_handles);
 		
-				// TODO: Need to add handles to the constructor now
-				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_programbreak);
+				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), childhandles, m_programbreak);
 			}
 
 			catch(...) { vm->ReleasePID(pid); throw; }
@@ -256,9 +252,10 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 		// TESTING NEW STARTUP INFORMATION
 		std::unique_ptr<TaskState> ts = TaskState::Create(_class, entry_point, stack_pointer);
+		std::shared_ptr<ProcessHandles> handles = ProcessHandles::Create();
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), program_break);
+		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), handles, program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
