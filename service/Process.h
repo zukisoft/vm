@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <linux/elf.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
@@ -60,7 +61,11 @@ public:
 
 	// Destructor
 	//
-	~Process()=default;
+	~Process()
+	{
+		_RPTF1(_CRT_WARN, "Process::~Process(%d)", m_pid);
+		//OutputDebugString(L"----------> PROCESS::~PROCESS\r\n");
+	}
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -136,6 +141,11 @@ public:
 	//
 	// Releases a memory mapping from the process
 	void UnmapMemory(void* address, size_t length);
+
+	// WaitChild
+	//
+	// TESTING
+	uapi::pid_t WaitChild_TEST(uapi::pid_t pid, int* status);
 
 	// WriteMemory
 	//
@@ -230,6 +240,10 @@ private:
 
 	const uapi::pid_t					m_pid;				// Process identifier
 	std::weak_ptr<Process>				m_parent;			// Parent process
+
+	// TESTING CHILDREN
+	// NEEDS SYNCHRONIZATION OBJECT
+	std::unordered_map<int, std::weak_ptr<Process>> m_children;
 
 	void*					m_tidaddress = nullptr;
 

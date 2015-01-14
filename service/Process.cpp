@@ -145,6 +145,9 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 	// Ensure that the parent process is resumed in the event of an exception
 	catch(...) { m_host->Resume(); throw; }
 
+	// TESTING CHILDREN
+	m_children.insert(std::make_pair(pid, child));
+
 	m_host->Resume();						// Resume execution of the parent process
 	child->Start();							// Start execution of the child process
 
@@ -235,7 +238,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 		// Allocate the stack for the process, using the currently set initial stack size for the Virtual Machine
 		//// TODO: NEED TO GET STACK LENGTH FROM RESOURCE LIMITS SET FOR VIRTUAL MACHINE
-		size_t stacklen = 1 MiB;
+		size_t stacklen = 2 MiB;
 		const void* stack = host->AllocateMemory(stacklen, PAGE_READWRITE);
 
 		// Place guard pages at the beginning and the end of the stack
@@ -460,6 +463,35 @@ void Process::Start(void)
 void Process::UnmapMemory(void* address, size_t length)
 {
 	m_host->ReleaseMemory(address, length);
+}
+
+uapi::pid_t Process::WaitChild_TEST(uapi::pid_t pid, int* status)
+{
+	// JUST A TEST - THIS IS GARBAGE
+
+	(pid);
+	uapi::pid_t waitpid = 0;
+	std::vector<HANDLE> handles;
+	for(auto iterator : m_children) {
+
+		std::shared_ptr<Process> child = iterator.second.lock();
+		if(child) waitpid = child->ProcessId;
+		if(child) handles.push_back(child->m_host->ProcessHandle);
+	}
+
+	if(handles.size() == 0) { 
+		return -LINUX_ECHILD; 
+	}
+
+	WaitForMultipleObjects(handles.size(), handles.data(), FALSE, INFINITE);
+	int x = 123; (x);
+
+	// reproduce status for WIFxxx macros here
+	// 0x0000 = terminated normally
+
+	if(status) *status = 0;
+
+	return waitpid;
 }
 
 //-----------------------------------------------------------------------------

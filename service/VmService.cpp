@@ -209,8 +209,13 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 
 
 	std::shared_ptr<Process> child = process->Clone(shared_from_this(), flags, tss, tsslen);
-	m_processes.insert(child);
+	m_processes.insert(std::make_pair(child->ProcessId, child));
 	return child;
+}
+
+void VmService::CloseProcess(const std::shared_ptr<Process>& process)
+{
+	m_processes.erase(process->ProcessId);
 }
 
 //-----------------------------------------------------------------------------
@@ -342,7 +347,7 @@ std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
 {
 	if(hostpid == m_initprocess->HostProcessId) return m_initprocess;
 	for(auto iterator : m_processes)
-		if(hostpid == iterator->HostProcessId) return iterator;
+		if(hostpid == iterator.second->HostProcessId) return iterator.second;
 
 	return nullptr;
 }

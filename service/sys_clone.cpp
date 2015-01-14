@@ -100,7 +100,6 @@ sys64_long_t sys64_clone(sys64_context_t context, sys64_task_state_t* taskstate,
 	return sys_clone(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys64_task_state_t), static_cast<uint32_t>(clone_flags),
 		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr));
 }
-
 #endif
 
 //---------------------------------------------------------------------------

@@ -145,7 +145,7 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
 
 	int syscall = static_cast<int>(context->Eax);
-	_RPT1(_CRT_WARN, "System call %d\r\n", syscall);
+	_RPT2(_CRT_WARN, "0x%04X: System call %d\r\n", GetCurrentProcessId(), syscall);
 
 	// The system call number is stored in the EAX register on entry and
 	// the return value from the function is stored in EAX on exit

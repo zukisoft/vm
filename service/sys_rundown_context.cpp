@@ -39,6 +39,10 @@ void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t cont
 {
 	if(context == nullptr) return;
 
+	// TODO: CLEAN ME UP - TESTING CLOSEPROCESS - same pointer needed below
+	SystemCall::Context* syscallcontext = reinterpret_cast<SystemCall::Context*>(context);
+	syscallcontext->VirtualMachine->CloseProcess(syscallcontext->Process);
+
 	// Cast the context handle back into a Context handle and destroy it
 	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(context));
 }

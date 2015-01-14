@@ -77,6 +77,7 @@ public:
 	virtual uapi::pid_t							AllocatePID(void);
 	virtual void								ReleasePID(uapi::pid_t pid);
 	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen);
+	virtual void								CloseProcess(const std::shared_ptr<Process>& process);
 	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
 
 	// updated file system api
@@ -162,6 +163,11 @@ private:
 	// Typedef for a concurrent map<> of mounted file systems and the alias they are mounted in
 	using mount_map_t = Concurrency::concurrent_unordered_map<FileSystem::AliasPtr, FileSystemPtr>;
 
+	// process_map_t
+	//
+	// 
+	using process_map_t = std::map<uapi::pid_t, std::shared_ptr<Process>>;
+
 	// property_map_t
 	//
 	// Typedef for a concurrent map<> of property strings
@@ -186,8 +192,7 @@ private:
 	FileSystemPtr						m_rootfs;		// Root file system
 	mount_map_t							m_mounts;		// Collection of mounted file systems
 
-	// temp
-	std::set<std::shared_ptr<Process>> m_processes;
+	process_map_t						m_processes;
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERVICEPARAMETERS CLASS

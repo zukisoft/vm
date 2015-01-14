@@ -38,6 +38,10 @@ HRESULT sys32_release_context(sys32_context_exclusive_t* context)
 {
 	if((context == nullptr) || (*context == nullptr)) return E_POINTER;
 
+	// TODO: CLEAN ME UP - TESTING CLOSEPROCESS - same pointer needed below
+	SystemCall::Context* syscallcontext = reinterpret_cast<SystemCall::Context*>(context);
+	syscallcontext->VirtualMachine->CloseProcess(syscallcontext->Process);
+
 	// Cast the context handle back into a Context handle and destroy it
 	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(*context));
 

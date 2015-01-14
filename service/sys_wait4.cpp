@@ -40,9 +40,10 @@
 
 __int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
 {
+	int					exitstatus;
+
 	_ASSERTE(context);
 
-	(pid);
 	(status);
 	(options);
 	(rusage);
@@ -50,7 +51,9 @@ __int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* st
 	try { 
 
 		SystemCall::Impersonation impersonation;
-		return -38;
+		__int3264 result = static_cast<uapi::pid_t>(context->Process->WaitChild_TEST(pid, &exitstatus));
+		if(status) *status = exitstatus;
+		return result;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
