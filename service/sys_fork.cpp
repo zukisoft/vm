@@ -20,37 +20,48 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
+#include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// syscall_t
+// sys_clone.cpp
 //
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
-
-// g_syscalls
-//
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
-
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
-
-/* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
-/* 090 */ extern uapi::long_t sys_old_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
-/* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
-/* 192 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
+__int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid);
 
 //-----------------------------------------------------------------------------
+// sys_fork
+//
+// Creates a child process
+//
+// Arguments:
+//
+//	context			- SystemCall context object
+//	taskstate		- Child task startup information
+//	taskstatelen	- Length of the child task startup information
+
+__int3264 sys_fork(const SystemCall::Context* context, void* taskstate, size_t taskstatelen)
+{
+	// sys_fork is equivalent to sys_clone(SIGCHLD)
+	return sys_clone(context, taskstate, taskstatelen, LINUX_SIGCHLD, nullptr, nullptr);
+}
+
+// sys32_fork
+//
+sys32_long_t sys32_fork(sys32_context_t context, sys32_task_state_t* taskstate)
+{
+	return static_cast<sys32_long_t>(sys_fork(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys32_task_state_t)));
+}
+
+#ifdef _M_X64
+// sys64_fork
+//
+sys64_long_t sys64_fork(sys64_context_t context, sys64_task_state_t* taskstate)
+{
+	return sys_fork(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys64_task_state_t));
+}
+#endif
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __SYSCALLS_H_

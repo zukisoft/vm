@@ -106,7 +106,7 @@ syscall_t g_syscalls[512] = {
 
 /* 000 */	sys_noentry,
 /* 001 */	sys_noentry,
-/* 002 */	sys_noentry,
+/* 002 */	CONTEXT_SYSCALL(sys_fork),
 /* 003 */	REMOTE_SYSCALL_3(sys32_read, sys32_int_t, sys32_uchar_t*, sys32_size_t),
 /* 004 */	REMOTE_SYSCALL_3(sys32_write, sys32_int_t, const sys32_uchar_t*, sys32_size_t),
 /* 005 */	REMOTE_SYSCALL_3(sys32_open, const sys32_char_t*, sys32_int_t, sys32_mode_t),
@@ -294,7 +294,7 @@ syscall_t g_syscalls[512] = {
 /* 187 */	sys_noentry,
 /* 188 */	sys_noentry,
 /* 189 */	sys_noentry,
-/* 190 */	sys_noentry,
+/* 190 */	CONTEXT_SYSCALL(sys_vfork),
 /* 191 */	sys_noentry,
 /* 192 */	LOCAL_SYSCALL_6(sys_mmap, void*, uapi::size_t, int, int, int, uapi::off_t),
 /* 193 */	sys_noentry,
