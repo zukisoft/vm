@@ -118,6 +118,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="syscalls.cpp" />
     <ClCompile Include="sys_clone.cpp" />
+    <ClCompile Include="sys_exit.cpp" />
+    <ClCompile Include="sys_exit_group.cpp" />
     <ClCompile Include="sys_fork.cpp" />
     <ClCompile Include="sys_old_mmap.cpp" />
     <ClCompile Include="sys_mmap.cpp" />

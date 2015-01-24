@@ -20,39 +20,32 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
+#include "stdafx.h"
 
 #pragma warning(push, 4)
 
-// syscall_t
+// g_rpccontext (main.cpp)
 //
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
+// RPC context handle
+extern sys32_context_t g_rpccontext;
 
-// g_syscalls
+//-----------------------------------------------------------------------------
+// sys_exit_group
 //
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
+// Terminates all threads in the calling process thread group
+//
+// Arguments:
+//
+//	status			- Exit code
 
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
-
-/* 001 */ extern uapi::long_t sys_exit(int status);
-/* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
-/* 090 */ extern uapi::long_t sys_old_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
-/* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
-/* 192 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
-/* 252 */ extern uapi::long_t sys_exit_group(int status);
+uapi::long_t sys_exit_group(int status)
+{
+	(status);
+	return -38;
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __SYSCALLS_H_
+

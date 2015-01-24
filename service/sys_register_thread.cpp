@@ -20,39 +20,30 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
+#include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// syscall_t
-//
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
-
-// g_syscalls
-//
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
-
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
-
-/* 001 */ extern uapi::long_t sys_exit(int status);
-/* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
-/* 090 */ extern uapi::long_t sys_old_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
-/* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
-/* 192 */ extern uapi::long_t sys_mmap(void*, uapi::size_t, int, int, int, uapi::off_t);
-/* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
-/* 252 */ extern uapi::long_t sys_exit_group(int status);
-
 //-----------------------------------------------------------------------------
+// sys32_register_thread
+//
+// Registers a hosted thread with the Process container
+//
+// Arguments:
+//
+//	rpchandle		- RPC binding handle
+//	nativetid		- Native thread id to be registered for the process
+//	tid				- Receives the virtual machine thread ID
+
+HRESULT sys32_register_thread(handle_t rpchandle, sys32_uint_t nativetid, sys32_pid_t* tid)
+{
+	(rpchandle);
+	(nativetid);
+	*tid = 0;
+	return S_OK;
+}
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __SYSCALLS_H_

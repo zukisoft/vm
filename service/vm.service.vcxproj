@@ -665,6 +665,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_openat.cpp" />
     <ClCompile Include="sys_prctl.cpp" />
     <ClCompile Include="sys_read.cpp" />
+    <ClCompile Include="sys_register_thread.cpp" />
     <ClCompile Include="sys_release_context.cpp" />
     <ClCompile Include="sys_rundown_context.cpp" />
     <ClCompile Include="sys_setdomainname.cpp" />
@@ -679,6 +680,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_readlink.cpp" />
     <ClCompile Include="sys_set_tid_address.cpp" />
     <ClCompile Include="sys_newuname.cpp" />
+    <ClCompile Include="sys_unregister_thread.cpp" />
     <ClCompile Include="sys_vfork.cpp" />
     <ClCompile Include="sys_wait4.cpp" />
     <ClCompile Include="sys_waitpid.cpp" />

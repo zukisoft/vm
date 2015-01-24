@@ -21,8 +21,8 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemInformation.h"
 #include <process.h>
+#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4731)	// frame pointer modified by inline assembly code
@@ -36,6 +36,11 @@ sys32_context_t g_rpccontext;
 //
 // Vectored Exception handler used to provide emulation
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
+
+// t_hostedthread
+//
+// Used to determine if the current thread is a hosted/emulated thread
+__declspec(thread) bool t_hostedthread;
 
 // t_gs (emulator.cpp)
 //
@@ -58,6 +63,15 @@ extern __declspec(thread) sys32_ldt_t t_ldt;
 
 unsigned __stdcall ThreadMain(void* arg)
 {
+	uapi::pid_t				tid;				// Thread id from the RPC service
+
+	// This is a hosted thread
+	t_hostedthread = true;
+
+	// First register the thread with the RPC service
+	HRESULT result = sys32_register_thread(g_rpccontext, GetCurrentThreadId(), &tid);
+	if(FAILED(result)) { /* TODO: HANDLE BAD THING */ }
+
 	// Cast out the task state structure passed into the thread entry point
 	sys32_task_state_t* taskstate = reinterpret_cast<sys32_task_state_t*>(arg);
 
@@ -107,8 +121,13 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
 	zero_init<sys32_task_state_t>	taskstate;		// State information from the service
 	RPC_BINDING_HANDLE				binding;		// RPC binding from command line
+	MSG								message;		// Thread message queue message
 	RPC_STATUS						rpcresult;		// Result from RPC function call
+	DWORD							exitcode;		// Exit code from the main thread
 	HRESULT							hresult;		// Result from system call API function
+
+	// This is not a hosted thread
+	t_hostedthread = false;
 
 	// EXPECTED ARGUMENTS:
 	//
@@ -119,6 +138,9 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	// The only argument passed into the host process is the RPC binding string necessary to connect to the server
 	rpcresult = RpcBindingFromStringBinding(reinterpret_cast<rpc_tchar_t*>(__targv[1]), &binding);
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
+
+	// Establish a thread message queue prior to contacting the RPC server
+	PeekMessage(&message, nullptr, WM_USER, WM_USER, PM_NOREMOVE);
 
 	// Attempt to acquire the host runtime context handle from the server
 	hresult = sys32_acquire_context(binding, &taskstate, &g_rpccontext);
@@ -132,15 +154,25 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
 
 	ResumeThread(thread);						// Launch the hosted process
-	CloseHandle(thread);						// Finished with the thread handle
 
 	// TODO: TEMPORARY - This thread will need to wait for signals and also shouldn't
 	// die until every hosted thread has called exit() or some reasonable equivalent
-	HANDLE delay = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	WaitForSingleObject(delay, INFINITE);
+	while(MsgWaitForMultipleObjects(1, &thread, FALSE, INFINITE, QS_ALLPOSTMESSAGE) == (WAIT_OBJECT_0 + 1)) {
+
+		// TODO: Thread message received - process it
+		while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE));
+	}
+
+	///WaitForSingleObject(thread, INFINITE);
+
+	GetExitCodeThread(thread, &exitcode);		// Get the exit code from the thread
+	CloseHandle(thread);						// Finished with the thread handle
 
 	// All hosted threads have terminated, release the RPC context
-	return static_cast<int>(sys32_release_context(&g_rpccontext));
+	sys32_release_context(&g_rpccontext);
+
+	// Return the exit code from the main thread as the result from this process
+	return static_cast<int>(exitcode);
 }
 
 //-----------------------------------------------------------------------------

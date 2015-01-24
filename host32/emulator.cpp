@@ -39,6 +39,11 @@ __declspec(thread) uint32_t t_gs = 0;
 // Thread-local LDT
 __declspec(thread) sys32_ldt_t t_ldt;
 
+// t_hostedthread (main.cpp)
+//
+// Used to determine if the current thread is a hosted/emulated thread
+extern __declspec(thread) bool t_hostedthread;
+
 // AllocateLDTEntry
 //
 // Allocates an emulated LDT entry
@@ -131,6 +136,7 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 	__try { return static_cast<DWORD>(func(context)); }
 	__except(EXCEPTION_EXECUTE_HANDLER) { 
 		
+		// todo: this _RPTF2() needs to be removed
 		_RPTF2(_CRT_ASSERT, "System call %d: Unhandled exception 0x%08X\r\n", 123, GetExceptionCode());
 		return -LINUX_EFAULT; 
 	}
@@ -145,6 +151,7 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> bool {
 
 	int syscall = static_cast<int>(context->Eax);
+	// todo: this _RPT2 needs to be removed
 	_RPT2(_CRT_WARN, "0x%04X: System call %d\r\n", GetCurrentProcessId(), syscall);
 
 	// The system call number is stored in the EAX register on entry and
@@ -154,6 +161,7 @@ emulator::instruction INT_80(0xCD, 0x80, [](emulator::context_t* context) -> boo
 	// TODO: remove this at some point, it's only going to be useful until
 	// the applications can just report it on their own
 	if(static_cast<int>(context->Eax) < 0) {
+		// todo: this _RPT2 needs to be removed
 		_RPT2(_CRT_WARN, "System call %d: result = %d\r\n", syscall, context->Eax);
 	}
 
@@ -303,6 +311,9 @@ emulator::instruction MOV_GSRM32_IMM32(0x65, 0xC7, [](emulator::context_t* conte
 
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 {
+	// The exception handler is intended to service hosted threads only, never native ones
+	if(!t_hostedthread) return EXCEPTION_CONTINUE_SEARCH;
+
 	// All the exceptions that are handled here in the emulator are access violations
 	if(exception->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
 
@@ -326,6 +337,7 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 		if((*reinterpret_cast<uint8_t*>(exception->ContextRecord->Eip) == 0x65) || (*reinterpret_cast<uint16_t*>(exception->ContextRecord->Eip) == 0x6566)) {
 			
 			uint8_t* bytes = reinterpret_cast<uint8_t*>(exception->ContextRecord->Eip);
+			// TODO: This _RPTF4() needs to be removed; it won't work right
 			_RPTF4(_CRT_ASSERT, "Unhandled GS segment override prefix instruction: 0x%02X 0x%02X 0x%02X 0x%02X\r\n", bytes[0], bytes[1], bytes[2], bytes[3]);
 		}
 #endif
@@ -346,11 +358,17 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 	//
 	else if(exception->ExceptionRecord->ExceptionCode == STATUS_PRIVILEGED_INSTRUCTION) {
 
+		// TODO: If this is an emulated thread, need to call exit() rather than just dying
+		// to properly unregister it from the service
+
 		// TODO: This happens when HLT is called; should likely be removed once proper exiting
 		// of the hosted application has been established
-		ExitProcess(0xC0000096);
+		ExitThread(0xC0000096);
 	}
 
+	// TODO: This should kill a virtual machine thread as an unhandled exception,
+	// which would also deal with the STATUS_PRIVILEGED_INSTRUCTION above although
+	// the result code may be different - see how GLIB deals with unhandled exceptions
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 

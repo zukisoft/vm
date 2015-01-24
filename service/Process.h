@@ -146,6 +146,11 @@ public:
 	//
 	// TESTING
 	uapi::pid_t WaitChild_TEST(uapi::pid_t pid, int* status);
+	void TestPostMessage(void) { 
+		BOOL bresult = PostThreadMessage(m_host->ThreadId, 0x1234, 0, 0); 
+		DWORD dw = GetLastError(); 
+		(dw);
+	}
 
 	// WriteMemory
 	//
@@ -208,6 +213,12 @@ public:
 	__declspec(property(get=getWorkingDirectory, put=putWorkingDirectory)) FileSystem::AliasPtr WorkingDirectory;
 	FileSystem::AliasPtr getWorkingDirectory(void) { return m_workingdir; }
 	void putWorkingDirectory(const FileSystem::AliasPtr& value) { m_workingdir = value; }
+
+	// Zombie
+	//
+	// Gets flag indicating if this process is a 'zombie' or not
+	__declspec(property(get=getZombie)) bool Zombie;
+	bool getZombie(void);
 
 private:
 

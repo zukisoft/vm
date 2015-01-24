@@ -57,7 +57,7 @@ uapi::long_t sys_vfork(PCONTEXT context)
 {
 	zero_init<sys32_task_state_t>		taskstate;		// Child task state data
 
-	// The result of sys_fork in the child process should be zero, set EAX
+	// The result of sys_vfork in the child process should be zero, set EAX
 	taskstate.eax = 0;
 
 	// Set the other general-purpose registers based on their current values

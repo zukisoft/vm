@@ -105,7 +105,7 @@ uapi::long_t sys_noentry(PCONTEXT context)
 syscall_t g_syscalls[512] = {
 
 /* 000 */	sys_noentry,
-/* 001 */	sys_noentry,
+/* 001 */	LOCAL_SYSCALL_1(sys_exit, int),
 /* 002 */	CONTEXT_SYSCALL(sys_fork),
 /* 003 */	REMOTE_SYSCALL_3(sys32_read, sys32_int_t, sys32_uchar_t*, sys32_size_t),
 /* 004 */	REMOTE_SYSCALL_3(sys32_write, sys32_int_t, const sys32_uchar_t*, sys32_size_t),
@@ -356,7 +356,7 @@ syscall_t g_syscalls[512] = {
 /* 249 */	sys_noentry,
 /* 250 */	sys_noentry,
 /* 251 */	sys_noentry,
-/* 252 */	sys_noentry,
+/* 252 */	LOCAL_SYSCALL_1(sys_exit_group, int),
 /* 253 */	sys_noentry,
 /* 254 */	sys_noentry,
 /* 255 */	sys_noentry,
