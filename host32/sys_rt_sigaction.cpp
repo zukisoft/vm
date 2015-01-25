@@ -21,31 +21,25 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <linux\mman.h>
+#include <linux/signal.h>
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
-//
-// RPC context handle
-extern sys32_context_t g_rpccontext;
-
 //-----------------------------------------------------------------------------
-// sys_old_mmap
+// sys_rt_sigaction
 //
-// Wrapper around the remote syscall to handle process-specific details that
-// the service can't handle on its own
+// Examine or change a signal action
+//
+// Arguments:
+//
+//	signal		- Signal to examine or change (cannot be SIGKILL or SIGSTOP)
+//	action		- Specifies the new action for the signal
+//	oldaction	- Receives the old action for the signal
+//	sigsetsize	- Size of the sigset_t data type
 
-uapi::long_t sys_old_mmap(void* address, uapi::size_t length, int prot, int flags, int fd, uapi::off_t offset)
+uapi::long_t sys_rt_sigaction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction, size_t sigsetsize)
 {
-	// Invoke the remote system call first to perform the memory mapping operation
-	sys32_long_t result = sys32_old_mmap(g_rpccontext, reinterpret_cast<sys32_addr_t>(address), length, prot, flags, fd, offset);
-	if(result < 0) return result;
-
-	// The MAP_LOCKED flag can't be handled by the service; attempt VirtualLock after the fact
-	if((flags & LINUX_MAP_LOCKED) == LINUX_MAP_LOCKED) VirtualLock(reinterpret_cast<void*>(result), length);
-
-	return result;
+	return -38;
 }
 
 //-----------------------------------------------------------------------------

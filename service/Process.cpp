@@ -354,6 +354,15 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 		} while((length > 0) && (read > 0));
 	};
 
+	// MAP_LOCKED - Attempt to lock the memory into the process working set
+	if(flags & LINUX_MAP_LOCKED) {
+
+		// Make an attempt to satisfy this request, but don't throw an exception if it fails
+		void* lockaddress = const_cast<void*>(address);
+		SIZE_T locklength = length;
+		NtApi::NtLockVirtualMemory(m_host->ProcessHandle, &lockaddress, &locklength, NtApi::MAP_PROCESS);
+	}
+
 	return address;
 }
 
@@ -408,6 +417,23 @@ const void* Process::SetProgramBreak(const void* address)
 	// Store and return the requested address, not the page-aligned address
 	m_programbreak = address;
 	return m_programbreak;
+}
+
+//-----------------------------------------------------------------------------
+// Process::Signal
+//
+// Sends a signal to the process
+//
+// Arguments:
+//
+//	signal		- The signal to send to the process
+
+void Process::Signal(int signal)
+{
+	// Signals are handled by the host process via a thread message queue
+	// TODO: There needs to be constants for the messages somewhere and 
+	// document the wparam/lparam arguments. WM_APP is a placeholder (0x8000)
+	if(!PostThreadMessage(m_host->ThreadId, WM_APP, 0, static_cast<LPARAM>(signal))) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------

@@ -964,6 +964,8 @@ void VmService::OnStart(int, LPTSTR*)
 
 	m_initprocess->Start();
 
+	// TODO: NOTE: The message loop, and therefore signals will not be available in the process
+
 	// TODO: EXCEPTION HANDLING FOR INIT PROCESS -- DIFFERENT?
 	// TODO: MONITOR INIT PROCESS - PANIC IF IT TERMINATES BEFORE SERVICE IS STOPPED
 

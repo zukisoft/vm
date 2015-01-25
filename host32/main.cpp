@@ -157,10 +157,27 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 
 	// TODO: TEMPORARY - This thread will need to wait for signals and also shouldn't
 	// die until every hosted thread has called exit() or some reasonable equivalent
+
+	// New plan, this would be a standard message loop not msgwaitformultipleobjects/peekmessage,
+	// GetMessage returns false when WM_QUIT is received
 	while(MsgWaitForMultipleObjects(1, &thread, FALSE, INFINITE, QS_ALLPOSTMESSAGE) == (WAIT_OBJECT_0 + 1)) {
 
-		// TODO: Thread message received - process it
-		while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE));
+		while(PeekMessage(&message, reinterpret_cast<HWND>(-1), 0, 0, PM_REMOVE)) {
+
+			int signal;
+			switch(message.message) {
+
+				// WM_APP: placeholder for a signal
+				case WM_APP:
+					// lParam == signal code
+					signal = static_cast<int>(message.lParam);
+					break;
+
+				// WM_QUIT: will need to handle this
+				case WM_QUIT:
+					break;
+			}
+		}
 	}
 
 	///WaitForSingleObject(thread, INFINITE);

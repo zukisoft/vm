@@ -127,6 +127,12 @@ public:
 	// Sets the program break address to increase or decrease data segment length
 	const void* SetProgramBreak(const void* address);
 
+	// Signal
+	//
+	// Sends a signal to the process
+	void Signal(int signal);
+	//void Signal(uapi::pid_t tgid, uapi::pid_t tid, int signal);
+
 	// Spawn (static)
 	//
 	// Creates a new process instance
@@ -146,11 +152,6 @@ public:
 	//
 	// TESTING
 	uapi::pid_t WaitChild_TEST(uapi::pid_t pid, int* status);
-	void TestPostMessage(void) { 
-		BOOL bresult = PostThreadMessage(m_host->ThreadId, 0x1234, 0, 0); 
-		DWORD dw = GetLastError(); 
-		(dw);
-	}
 
 	// WriteMemory
 	//

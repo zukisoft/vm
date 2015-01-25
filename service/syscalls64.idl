@@ -44,7 +44,6 @@ typedef sys64_uint_t					sys64_mode_t;
 typedef sys64_long_t					sys64_off_t;
 typedef sys64_longlong_t				sys64_loff_t;
 typedef sys64_int_t						sys64_pid_t;
-typedef sys64_ulonglong_t				sys64_sigset_t;
 typedef sys64_ulong_t					sys64_size_t;
 typedef sys64_long_t					sys64_ssize_t;
 typedef sys64_uint_t					sys64_sizeis_t;		// Special for 64-bit RPC calls

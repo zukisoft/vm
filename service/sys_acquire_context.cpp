@@ -78,7 +78,7 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_task_state_t* taskstate,
 		handle->Process->GetInitialTaskState(taskstate, sizeof(sys32_task_state_t));
 
 		// TODO: REMOVE ME
-		handle->Process->TestPostMessage();
+		handle->Process->Signal(LINUX_SIGCHLD);
 	}
 
 	catch(const Exception& ex) { SystemCall::FreeContext(handle); return ex.HResult; }

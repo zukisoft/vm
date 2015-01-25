@@ -97,6 +97,7 @@ public:
 	using NtDuplicateObjectFunc				= NTSTATUS(NTAPI*)(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG);
 	using NtFlushVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, PIO_STATUS_BLOCK);
 	using NtFreeVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG);
+	using NtLockVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG);
 	using NtMapViewOfSectionFunc			= NTSTATUS(NTAPI*)(HANDLE, HANDLE, PVOID*, ULONG_PTR, SIZE_T, PLARGE_INTEGER, PSIZE_T, SECTION_INHERIT, ULONG, ULONG);
 	using NtProtectVirtualMemoryFunc		= NTSTATUS(NTAPI*)(HANDLE, PVOID*, PSIZE_T, ULONG, PULONG);
 	using NtReadVirtualMemoryFunc			= NTSTATUS(NTAPI*)(HANDLE, LPCVOID, PVOID, SIZE_T, PSIZE_T);
@@ -139,6 +140,7 @@ public:
 	static const NtDuplicateObjectFunc				NtDuplicateObject;
 	static const NtFlushVirtualMemoryFunc			NtFlushVirtualMemory;
 	static const NtFreeVirtualMemoryFunc			NtFreeVirtualMemory;
+	static const NtLockVirtualMemoryFunc			NtLockVirtualMemory;
 	static const NtMapViewOfSectionFunc				NtMapViewOfSection;
 	static const NtProtectVirtualMemoryFunc			NtProtectVirtualMemory;
 	static const NtReadVirtualMemoryFunc			NtReadVirtualMemory;
