@@ -46,6 +46,9 @@ __int3264 sys_rt_sigaction(const SystemCall::Context* context, int signal, const
 	// SIGKILL and SIGSTOP cannot be changed
 	if((signal == LINUX_SIGKILL) || (signal == LINUX_SIGSTOP)) return -LINUX_EINVAL;
 
+	// SA_SIGINFO is not currently supported (may never need to be on x86/x86-64)
+	if(action && (action->sa_flags & LINUX_SA_SIGINFO)) return -LINUX_EINVAL;
+
 	try {
 
 		SystemCall::Impersonation impersonation;
@@ -55,7 +58,7 @@ __int3264 sys_rt_sigaction(const SystemCall::Context* context, int signal, const
 		(action);
 		(oldaction);
 
-		return -LINUX_ENOSYS;
+		return 0;
 	}
 
 	catch(...) { return SystemCall::TranslateException(std::current_exception()); }

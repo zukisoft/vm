@@ -41,6 +41,7 @@
 #include "ProcessClass.h"
 #include "ProcessHandles.h"
 #include "Random.h"
+#include "SignalHandlers.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
@@ -229,7 +230,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalHandlers>& sighandlers, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -262,6 +263,10 @@ private:
 	// VIRTUAL MEMORY
 	//
 	const void*						m_programbreak;		// Current program break
+
+	// SIGNALS
+	//
+	std::shared_ptr<SignalHandlers>		m_sighandlers;
 
 	// FILE SYSTEM
 	//

@@ -176,12 +176,13 @@ interface SystemCalls32
 	//
 	// Linux kernel system calls
 	// todo: should define which ones are non-standard or move/rename them (fork, clone, etc)
+	// note: [out]-only pointers that might be NULL should be set to [in, out, unique]
 	/* 002 */ sys32_long_t	sys32_fork([in] sys32_context_t context, [in, ref] sys32_task_state_t* taskstate);
 	/* 003 */ sys32_long_t	sys32_read([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref, size_is(count)] sys32_uchar_t* buf, [in] sys32_size_t count);
 	/* 004 */ sys32_long_t	sys32_write([in] sys32_context_t context, [in] sys32_int_t fd, [in, ref, size_is(count)] const sys32_uchar_t* buf, [in] sys32_size_t count);
 	/* 005 */ sys32_long_t	sys32_open([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 	/* 006 */ sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
-	/* 007 */ sys32_long_t	sys32_waitpid([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out] sys32_int_t* status, [in] sys32_int_t options);
+	/* 007 */ sys32_long_t	sys32_waitpid([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out, unique] sys32_int_t* status, [in] sys32_int_t options);
 	/* 008 */ sys32_long_t	sys32_creat([in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
 	/* 014 */ sys32_long_t	sys32_mknod([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 	/* 020 */ sys32_long_t	sys32_getpid([in] sys32_context_t context);
@@ -199,14 +200,14 @@ interface SystemCalls32
 	/* 099 */ sys32_long_t	sys32_statfs([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_statfs32* buf);
 	/* 100 */ sys32_long_t	sys32_fstatfs([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_statfs32* buf);
 	/* 109 */ sys32_long_t	sys32_uname([in] sys32_context_t context, [out, ref] linux_old_utsname* buf);
-	/* 114 */ sys32_long_t	sys32_wait4([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out] sys32_int_t* status, [in] sys32_int_t options, [in, out] linux_rusage32* rusage);
+	/* 114 */ sys32_long_t	sys32_wait4([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out, unique] sys32_int_t* status, [in] sys32_int_t options, [in, out, unique] linux_rusage32* rusage);
 	/* 120 */ sys32_long_t	sys32_clone([in] sys32_context_t context, [in, ref] sys32_task_state_t* taskstate, [in] sys32_ulong_t clone_flags, [in] sys32_addr_t parent_tidptr, [in] sys32_addr_t child_tidptr);
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 125 */ sys32_long_t	sys32_mprotect([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot);
 	/* 146 */ sys32_long_t	sys32_writev([in] sys32_context_t context, [in] sys32_int_t fd, [in, size_is(iovcnt)] sys32_iovec_t* iov, [in] sys32_int_t iovcnt);
 	/* 172 */ sys32_long_t	sys32_prctl([in] sys32_context_t context, [in] sys32_int_t option, [in] sys32_ulong_t arg2, [in] sys32_ulong_t arg3, [in] sys32_ulong_t arg4, [in] sys32_ulong_t arg5);
-	/* 174 */ sys32_long_t	sys32_rt_sigaction([in] sys32_context_t context, [in] sys32_int_t signal, [in] const sys32_sigaction_t* action, [in, out] sys32_sigaction_t* oldaction, [in] sys32_size_t sigsetsize);
+	/* 174 */ sys32_long_t	sys32_rt_sigaction([in] sys32_context_t context, [in] sys32_int_t signal, [in, unique] const sys32_sigaction_t* action, [in, out, unique] sys32_sigaction_t* oldaction, [in] sys32_size_t sigsetsize);
 	/* 183 */ sys32_long_t	sys32_getcwd([in] sys32_context_t context, [out, ref, size_is(size)] sys32_char_t* buf, [in] sys32_ulong_t size);
 	/* 190 */ sys32_long_t	sys32_vfork([in] sys32_context_t context, [in, ref] sys32_task_state_t* taskstate);
 	/* 192 */ sys32_long_t	sys32_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t pgoffset);
