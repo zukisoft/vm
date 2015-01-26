@@ -278,7 +278,7 @@ syscall_t g_syscalls[512] = {
 /* 171 */	sys_noentry,
 /* 172 */	REMOTE_SYSCALL_5(sys32_prctl, sys32_int_t, sys32_ulong_t, sys32_ulong_t, sys32_ulong_t, sys32_ulong_t),
 /* 173 */	sys_noentry,
-/* 174 */	LOCAL_SYSCALL_4(sys_rt_sigaction, int, const uapi::sigaction*, uapi::sigaction*, size_t),
+/* 174 */	REMOTE_SYSCALL_4(sys32_rt_sigaction, sys32_int_t, sys32_sigaction_t*, sys32_sigaction_t*, sys32_size_t),
 /* 175 */	sys_noentry,
 /* 176 */	sys_noentry,
 /* 177 */	sys_noentry,

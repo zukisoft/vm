@@ -114,9 +114,6 @@
     <ClCompile Include="sys_exit_group.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="sys_rt_sigaction.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">

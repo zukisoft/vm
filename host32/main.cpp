@@ -52,6 +52,12 @@ extern __declspec(thread) uint32_t t_gs;
 // Thread-local LDT
 extern __declspec(thread) sys32_ldt_t t_ldt;
 
+//// TEST
+#include <vector>
+#include <linux\signal.h>
+std::vector<uapi::sigaction> g_sigactions;
+//////////
+
 //-----------------------------------------------------------------------------
 // ThreadMain
 //

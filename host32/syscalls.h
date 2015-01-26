@@ -46,7 +46,6 @@ extern uapi::long_t sys_noentry(PCONTEXT);
 /* 001 */ extern uapi::long_t sys_exit(int status);
 /* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
 /* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
-/* 174 */ extern uapi::long_t sys_rt_sigaction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction, size_t sigsetsize);
 /* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
 /* 243 */ extern uapi::long_t sys_set_thread_area(uapi::user_desc*);
 /* 252 */ extern uapi::long_t sys_exit_group(int status);

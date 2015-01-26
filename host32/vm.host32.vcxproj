@@ -121,7 +121,6 @@
     <ClCompile Include="sys_exit.cpp" />
     <ClCompile Include="sys_exit_group.cpp" />
     <ClCompile Include="sys_fork.cpp" />
-    <ClCompile Include="sys_rt_sigaction.cpp" />
     <ClCompile Include="sys_set_thread_area.cpp" />
     <ClCompile Include="sys_vfork.cpp" />
     <ClCompile Include="trace.cpp" />
