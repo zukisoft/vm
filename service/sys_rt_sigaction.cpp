@@ -43,8 +43,8 @@ __int3264 sys_rt_sigaction(const SystemCall::Context* context, int signal, const
 	// The RPC marshaler would not have been able to deal with a mask longer than defined in the structure
 	if(sigsetsize != sizeof(uapi::sigset_t)) return -LINUX_EINVAL;
 
-	// SIGKILL and SIGSTOP cannot be changed
-	if((signal == LINUX_SIGKILL) || (signal == LINUX_SIGSTOP)) return -LINUX_EINVAL;
+	// SIGKILL and SIGSTOP cannot be changed, can also never exceed __NSIG
+	if((signal == LINUX_SIGKILL) || (signal == LINUX_SIGSTOP) || (signal > LINUX__NSIG)) return -LINUX_EINVAL;
 
 	// SA_SIGINFO is not currently supported (may never need to be on x86/x86-64)
 	if(action && (action->sa_flags & LINUX_SA_SIGINFO)) return -LINUX_EINVAL;
@@ -54,7 +54,10 @@ __int3264 sys_rt_sigaction(const SystemCall::Context* context, int signal, const
 		SystemCall::Impersonation impersonation;
 
 		context->Process->SetSignalAction(signal, action, oldaction);
-
+		
+		// REMOVE ME
+		if(signal == LINUX_SIGINT) context->Process->Signal(LINUX_SIGINT);
+		
 		return 0;
 	}
 

@@ -21,29 +21,51 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "Thread.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys32_register_thread
-//
-// Registers a hosted thread with the Process container
+// Thread Constructor (private)
 //
 // Arguments:
 //
-//	rpchandle		- RPC binding handle
-//	nativetid		- Native thread id to be registered for the process
-//	tid				- Receives the virtual machine thread ID
+//	tid			- Virtual thread identifier
 
-HRESULT sys32_register_thread(sys32_context_exclusive_t context, sys32_uint_t nativetid, sys32_pid_t* tid)
+Thread::Thread(uapi::pid_t tid) : m_tid(tid)
 {
-	SystemCall::Context* ctxt = reinterpret_cast<SystemCall::Context*>(context);
-
-	*tid = ctxt->Process->RegisterThread_TEST(nativetid);
-	return S_OK;
 }
 
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Thread::getSignalMask
+//
+// Gets the current blocked signal mask for the thread
+
+uapi::sigset_t Thread::getSignalMask(void) const
+{
+	return m_sigmask;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::putSignalMask
+//
+// Sets the blocked signal mask for the thread
+
+void Thread::putSignalMask(uapi::sigset_t value)
+{
+	m_sigmask = value;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getThreadId
+//
+// Gets the virtual thread identifier for this instance
+
+uapi::pid_t Thread::getThreadId(void) const
+{
+	return m_tid;
+}
+
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

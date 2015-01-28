@@ -450,14 +450,78 @@ void Process::SetSignalAction(int signal, const uapi::sigaction* action, uapi::s
 
 void Process::Signal(int signal)
 {
-	// Retrieve the current action for this signal
-	//sigaction_t action = m_sigactions[signal];
+	/// README:
+	// http://www.linuxprogrammingblog.com/all-about-linux-signals?page=show
+	///
+
+	if(signal > LINUX__NSIG) throw LinuxException(LINUX_EINVAL);
+
+	// Retrieve the currently action for this signal
 	uapi::sigaction action = m_sigactions->Get(signal);
 
-	// Signals are handled by the host process via a thread message queue
-	// TODO: There needs to be constants for the messages somewhere and 
-	// document the wparam/lparam arguments. WM_APP is a placeholder (0x8000)
-	if(!PostThreadMessage(m_host->ThreadId, WM_APP, 0, static_cast<LPARAM>(signal))) throw Win32Exception();
+	// SIGKILL cannot be masked
+	if(signal == LINUX_SIGKILL) {
+	}
+
+	// SIGSTOP cannot be masked
+	else if(signal == LINUX_SIGSTOP) {
+	}
+
+	// SIGCONT ?
+
+	// SIGCHLD also special
+
+	// Real-time signals range from SIGRTMIN to SIGRTMAX, behavior is different
+
+	// If the signal has been set to IGNORE don't do anything
+	if(action.sa_handler == LINUX_SIG_IGN) return;
+
+	// If the signal has been set to DEFAULT, use default behaviors
+	if(action.sa_handler == LINUX_SIG_DFL) return; //{
+
+	//}
+
+	//DWORD dw = 0;
+	//BOOL b = FALSE;
+	//CONTEXT context;
+	//CONTEXT handler;
+	//HANDLE thread = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, FALSE, m_threadid_TEST);
+	//if(thread) {
+
+	//	context.ContextFlags = CONTEXT_ALL;
+	//	dw = SuspendThread(thread);
+	//	b = GetThreadContext(thread, &context);
+	//	
+	//	handler = context;
+	//	handler.ContextFlags = CONTEXT_INTEGER |CONTEXT_CONTROL;
+	//	handler.Eip = reinterpret_cast<DWORD>(action.sa_handler);
+	//	b = SetThreadContext(thread, &handler);
+
+	//	CONTEXT context2;
+	//	context2.ContextFlags = CONTEXT_ALL;
+	//	GetThreadContext(thread, &context2);
+
+
+	//	dw = ResumeThread(thread);
+	//	// HANDLER HERE
+	//	// TRAMPOLINE WOULD CALL BACK AND PICK UP FROM HERE
+
+	//	//dw = SuspendThread(thread);
+	//	//b = SetThreadContext(thread, &context);
+	//	//dw = ResumeThread(thread);
+
+	//	CloseHandle(thread);
+	//}
+
+
+	//// The signal has a specified handler
+	//if(false /* TODO */) {
+	//}
+
+	//// Signals are handled by the host process via a thread message queue
+	//// TODO: There needs to be constants for the messages somewhere and 
+	//// document the wparam/lparam arguments. WM_APP is a placeholder (0x8000)
+	//if(!PostThreadMessage(m_host->ThreadId, WM_APP, 0, static_cast<LPARAM>(signal))) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
@@ -515,6 +579,13 @@ void Process::UnmapMemory(void* address, size_t length)
 	m_host->ReleaseMemory(address, length);
 }
 
+uapi::pid_t Process::RegisterThread_TEST(DWORD nativeid)
+{
+	// JUST A TEST - THIS IS GARBAGE
+	m_threadid_TEST = nativeid;
+	return 400;
+}
+
 uapi::pid_t Process::WaitChild_TEST(uapi::pid_t pid, int* status)
 {
 	// JUST A TEST - THIS IS GARBAGE
@@ -532,6 +603,8 @@ uapi::pid_t Process::WaitChild_TEST(uapi::pid_t pid, int* status)
 	if(handles.size() == 0) { 
 		return -LINUX_ECHILD; 
 	}
+
+	// this will also need to clean up zombie processes/threads
 
 	WaitForMultipleObjects(handles.size(), handles.data(), FALSE, INFINITE);
 	int x = 123; (x);

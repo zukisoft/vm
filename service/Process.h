@@ -45,6 +45,7 @@
 #include "SignalActions.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
+#include "Thread.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
@@ -160,6 +161,7 @@ public:
 	//
 	// TESTING
 	uapi::pid_t WaitChild_TEST(uapi::pid_t pid, int* status);
+	uapi::pid_t RegisterThread_TEST(DWORD nativeid);
 
 	// WriteMemory
 	//
@@ -260,6 +262,7 @@ private:
 
 	const uapi::pid_t					m_pid;				// Process identifier
 	std::weak_ptr<Process>				m_parent;			// Parent process
+	DWORD m_threadid_TEST;
 
 	// TESTING CHILDREN
 	// NEEDS SYNCHRONIZATION OBJECT
