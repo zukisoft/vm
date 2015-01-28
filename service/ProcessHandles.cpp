@@ -95,6 +95,9 @@ std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(const std::shared_ptr<
 	handle_map_t		handles;						// New collection for the duplicate handles
 	IndexPool<int>		fdpool(existing->m_fdpool);		// Index pool for the new collection
 
+	// The existing collection needs to be locked for read access during duplication
+	handle_lock_t::scoped_lock_read reader(existing->m_handlelock);
+
 	// Iterate over the existing collection and duplicate each handle with the same flags
 	for(auto iterator : existing->m_handles)
 		if(!handles.insert(std::make_pair(iterator.first, iterator.second->Duplicate(iterator.second->Flags))).second) throw LinuxException(LINUX_EBADF);
