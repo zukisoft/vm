@@ -29,6 +29,7 @@
 #include <linux/elf.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
+#include <linux/signal.h>
 #include <linux/stat.h>
 #include "elf_traits.h"
 #include "ElfArguments.h"
@@ -41,7 +42,7 @@
 #include "ProcessClass.h"
 #include "ProcessHandles.h"
 #include "Random.h"
-#include "SignalHandlers.h"
+#include "SignalActions.h"
 #include "SystemInformation.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
@@ -127,6 +128,12 @@ public:
 	//
 	// Sets the program break address to increase or decrease data segment length
 	const void* SetProgramBreak(const void* address);
+
+	// SetSignalAction
+	//
+	// Assigns an action to be taken for a process signal
+	void SetSignalAction(int signal, const uapi::sigaction* action) { return SetSignalAction(signal, action, nullptr); }
+	void SetSignalAction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction);
 
 	// Signal
 	//
@@ -230,7 +237,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalHandlers>& sighandlers, const void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
@@ -266,7 +273,7 @@ private:
 
 	// SIGNALS
 	//
-	std::shared_ptr<SignalHandlers>		m_sighandlers;
+	std::shared_ptr<SignalActions>	m_sigactions;		// Signal actions
 
 	// FILE SYSTEM
 	//

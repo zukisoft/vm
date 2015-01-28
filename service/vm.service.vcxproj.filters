@@ -338,7 +338,7 @@
     <ClInclude Include="..\common\uapi.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="SignalHandlers.h">
+    <ClInclude Include="SignalActions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -721,7 +721,7 @@
     <ClCompile Include="sys_rt_sigaction.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="SignalHandlers.cpp">
+    <ClCompile Include="SignalActions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -53,10 +53,7 @@ __int3264 sys_rt_sigaction(const SystemCall::Context* context, int signal, const
 
 		SystemCall::Impersonation impersonation;
 
-		(context);
-		(signal);
-		(action);
-		(oldaction);
+		context->Process->SetSignalAction(signal, action, oldaction);
 
 		return 0;
 	}

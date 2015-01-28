@@ -130,6 +130,14 @@ typedef struct {
 
 } linux_old_sigaction;
 
+typedef struct {
+
+		void*					ss_sp;
+		int						ss_flags;
+		linux_size_t			ss_size;
+
+} linux_stack_t;
+
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
@@ -138,13 +146,17 @@ namespace uapi {
 
 	typedef linux_sigaction		sigaction;
 	typedef linux_old_sigaction	old_sigaction;
+	typedef linux_stack_t		stack_t;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)
 
 //-----------------------------------------------------------------------------
-// include/linux/signal.h
+// include/uapi/linux/signal.h
 //-----------------------------------------------------------------------------
+
+#define LINUX_SS_ONSTACK		1
+#define LINUX_SS_DISABLE		2
 
 //-----------------------------------------------------------------------------
 
