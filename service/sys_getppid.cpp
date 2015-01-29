@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -34,13 +34,12 @@
 //
 //	context		- SystemCall context object
 
-__int3264 sys_getppid(const SystemCall::Context* context)
+__int3264 sys_getppid(const ContextHandle* context)
 {
 	_ASSERTE(context);
 
 	try { 
 
-		SystemCall::Impersonation impersonation;
 		return context->Process->ParentProcessId;
 	}
 
@@ -51,7 +50,7 @@ __int3264 sys_getppid(const SystemCall::Context* context)
 //
 sys32_long_t sys32_getppid(sys32_context_t context)
 {
-	return static_cast<sys32_long_t>(sys_getppid(reinterpret_cast<SystemCall::Context*>(context)));
+	return static_cast<sys32_long_t>(sys_getppid(reinterpret_cast<ContextHandle*>(context)));
 }
 
 #ifdef _M_X64
@@ -59,7 +58,7 @@ sys32_long_t sys32_getppid(sys32_context_t context)
 //
 sys64_long_t sys64_getppid(sys64_context_t context)
 {
-	return sys_getppid(reinterpret_cast<SystemCall::Context*>(context));
+	return sys_getppid(reinterpret_cast<ContextHandle*>(context));
 }
 #endif
 

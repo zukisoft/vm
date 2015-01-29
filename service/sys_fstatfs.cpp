@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -36,15 +36,13 @@
 //	fd			- Open file descriptor for any object on the file system
 //	buf			- Output buffer
 
-__int3264 sys_fstatfs(const SystemCall::Context* context, int fd, uapi::statfs* buf)
+__int3264 sys_fstatfs(const ContextHandle* context, int fd, uapi::statfs* buf)
 {
 	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	try {
 		
-		SystemCall::Impersonation impersonation;
-
 		// Resolve the file system through the file descriptor to retrieve the status
 		*buf = context->Process->GetHandle(fd)->Node->FileSystem->Status;
 	}
@@ -63,7 +61,7 @@ sys32_long_t sys32_fstatfs(sys32_context_t context, sys32_int_t fd, linux_statfs
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(sys_fstatfs(reinterpret_cast<SystemCall::Context*>(context), fd, &stats));
+	sys32_long_t result = static_cast<sys32_long_t>(sys_fstatfs(reinterpret_cast<ContextHandle*>(context), fd, &stats));
 
 	// If sys_statfs() was successful, convert the data from the generic structure into the compatible one
 	if(result >= 0) {
@@ -97,7 +95,7 @@ sys32_long_t sys32_fstatfs(sys32_context_t context, sys32_int_t fd, linux_statfs
 //
 sys64_long_t sys64_fstatfs(sys64_context_t context, sys64_int_t fd, linux_statfs64* buf)
 {
-	return sys_fstatfs(reinterpret_cast<SystemCall::Context*>(context), fd, buf);
+	return sys_fstatfs(reinterpret_cast<ContextHandle*>(context), fd, buf);
 }
 #endif
 

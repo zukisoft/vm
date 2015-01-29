@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
 // sys_wait4.cpp
 //
-__int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage);
+__int3264 sys_wait4(const ContextHandle* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage);
 
 //-----------------------------------------------------------------------------
 // sys_waitpid
@@ -41,7 +41,7 @@ __int3264 sys_wait4(const SystemCall::Context* context, uapi::pid_t pid, int* st
 //	status		- Optionally receives PID status information
 //	options		- Wait operation options
 
-__int3264 sys_waitpid(const SystemCall::Context* context, uapi::pid_t pid, int* status, int options)
+__int3264 sys_waitpid(const ContextHandle* context, uapi::pid_t pid, int* status, int options)
 {
 	// sys_waitpid is equivalent to sys_wait4(pid, status, options, nullptr)
 	return sys_wait4(context, pid, status, options, nullptr);
@@ -51,7 +51,7 @@ __int3264 sys_waitpid(const SystemCall::Context* context, uapi::pid_t pid, int* 
 //
 sys32_long_t sys32_waitpid(sys32_context_t context, sys32_pid_t pid, sys32_int_t* status, sys32_int_t options)
 {
-	return static_cast<sys32_long_t>(sys_waitpid(reinterpret_cast<SystemCall::Context*>(context), pid, status, options));
+	return static_cast<sys32_long_t>(sys_waitpid(reinterpret_cast<ContextHandle*>(context), pid, status, options));
 }
 
 //---------------------------------------------------------------------------

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -38,13 +38,11 @@
 //	mode		- Accessibility check mask (F_OK, R_OK, etc)
 //	flags		- Behavioral flags
 
-__int3264 sys_faccessat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
+__int3264 sys_faccessat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
 {
 	_ASSERTE(context);
 
 	try {
-
-		SystemCall::Impersonation impersonation;
 
 		// Determine if an absolute or relative pathname has been provided
 		bool absolute = ((pathname) && (pathname[0] == '/'));
@@ -66,7 +64,7 @@ __int3264 sys_faccessat(const SystemCall::Context* context, int dirfd, const uap
 //
 sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode, sys32_int_t flags)
 {
-	return static_cast<sys32_long_t>(sys_faccessat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode, flags));
+	return static_cast<sys32_long_t>(sys_faccessat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags));
 }
 
 #ifdef _M_X64
@@ -74,7 +72,7 @@ sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const s
 //
 sys64_long_t sys64_faccessat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode, sys64_int_t flags)
 {
-	return sys_faccessat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode, flags);
+	return sys_faccessat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags);
 }
 #endif
 

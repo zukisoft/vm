@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "ContextHandle.h"
 #include "HeapBuffer.h"
 #include "SystemCall.h"
 
@@ -38,41 +39,34 @@
 //	iov			- Array of iovec structures for the operation
 //	iovcnt		- Number of iovec structures provided via iov
 
-__int3264 sys_writev(const SystemCall::Context* context, int fd, uapi::iovec* iov, int iovcnt)
+uapi::long_t sys_writev(const ContextHandle* context, int fd, uapi::iovec* iov, int iovcnt)
 {
 	_ASSERTE(context);
 
 	if(iov == nullptr) return -LINUX_EFAULT;
 	if(iovcnt <= 0) return -LINUX_EINVAL;
 
-	try { 
-		
-		SystemCall::Impersonation impersonation;
+	// Get the handle represented by the file descriptor
+	auto handle = context->Process->GetHandle(fd);
 
-		// Get the handle represented by the file descriptor
-		auto handle = context->Process->GetHandle(fd);
+	// Calcluate the maximum required intermediate data buffer for the operation
+	size_t max = 0;
+	for(int index = 0; index < iovcnt; index++) { if(iov[index].iov_len > max) max = iov[index].iov_len; }
+	if(max == 0) throw LinuxException(LINUX_EINVAL);
 
-		// Calcluate the maximum required intermediate data buffer for the operation
-		size_t max = 0;
-		for(int index = 0; index < iovcnt; index++) { if(iov[index].iov_len > max) max = iov[index].iov_len; }
-		if(max == 0) throw LinuxException(LINUX_EINVAL);
+	// Allocate the intermediate buffer
+	HeapBuffer<uint8_t> buffer(max);
 
-		// Allocate the intermediate buffer
-		HeapBuffer<uint8_t> buffer(max);
+	// Repeatedly read the data from the child process address space and write it through the handle
+	size_t written = 0;
+	for(int index = 0; index < iovcnt; index++) {
 
-		// Repeatedly read the data from the child process address space and write it through the handle
-		size_t written = 0;
-		for(int index = 0; index < iovcnt; index++) {
-
-			size_t read = context->Process->ReadMemory(iov[index].iov_base, buffer, iov[index].iov_len);
-			if(read) written += handle->Write(buffer, read);
-		}
-
-		// Return the total number of bytes written; should be checking for an overflow here (EINVAL)
-		return static_cast<__int3264>(written);
+		size_t read = context->Process->ReadMemory(iov[index].iov_base, buffer, iov[index].iov_len);
+		if(read) written += handle->Write(buffer, read);
 	}
 
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// Return the total number of bytes written; should be checking for an overflow here (EINVAL)
+	return static_cast<uapi::long_t>(written);
 }
 
 #ifndef _M_X64
@@ -81,7 +75,7 @@ __int3264 sys_writev(const SystemCall::Context* context, int fd, uapi::iovec* io
 sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t* iov, sys32_int_t iovcnt)
 {
 	static_assert(sizeof(uapi::iovec) == sizeof(sys32_iovec_t), "uapi::iovec is not equivalent to sys32_iovec_t");
-	return sys_writev(reinterpret_cast<SystemCall::Context*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
+	return SystemCall::Invoke(sys_writev, reinterpret_cast<ContextHandle*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
 }
 #else
 // sys32_writev (64-bit)
@@ -101,7 +95,7 @@ sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t
 			vector[index].iov_len = static_cast<uapi::size_t>(iov[index].iov_len);
 		}
 
-		return static_cast<sys32_long_t>(sys_writev(reinterpret_cast<SystemCall::Context*>(context), fd, vector, iovcnt));
+		return static_cast<sys32_long_t>(SystemCall::Invoke(sys_writev, reinterpret_cast<ContextHandle*>(context), fd, vector, iovcnt));
 	}
 
 	catch(...) { return static_cast<sys32_long_t>(SystemCall::TranslateException(std::current_exception())); }
@@ -115,7 +109,7 @@ sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t
 sys64_long_t sys64_writev(sys64_context_t context, sys64_int_t fd, sys64_iovec_t* iov, sys64_int_t iovcnt)
 {
 	static_assert(sizeof(uapi::iovec) == sizeof(sys64_iovec_t), "uapi::iovec is not equivalent to sys64_iovec_t");
-	return sys_writev(reinterpret_cast<SystemCall::Context*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
+	return SystemCall::Invoke(sys_writev, reinterpret_cast<ContextHandle*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
 }
 #endif
 

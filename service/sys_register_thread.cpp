@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -38,7 +38,7 @@
 
 HRESULT sys32_register_thread(sys32_context_exclusive_t context, sys32_uint_t nativetid, sys32_pid_t* tid)
 {
-	SystemCall::Context* ctxt = reinterpret_cast<SystemCall::Context*>(context);
+	ContextHandle* ctxt = reinterpret_cast<ContextHandle*>(context);
 
 	*tid = ctxt->Process->RegisterThread_TEST(nativetid);
 	return S_OK;

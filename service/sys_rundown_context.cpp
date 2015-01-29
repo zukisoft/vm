@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -40,11 +40,11 @@ void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t cont
 	if(context == nullptr) return;
 
 	// TODO: CLEAN ME UP - TESTING CLOSEPROCESS - same pointer needed below
-	SystemCall::Context* syscallcontext = reinterpret_cast<SystemCall::Context*>(context);
+	ContextHandle* syscallcontext = reinterpret_cast<ContextHandle*>(context);
 	syscallcontext->VirtualMachine->CloseProcess(syscallcontext->Process);
 
 	// Cast the context handle back into a Context handle and destroy it
-	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(context));
+	ContextHandle::Release(reinterpret_cast<ContextHandle*>(context));
 }
 
 #ifdef _M_X64
@@ -63,7 +63,7 @@ void __RPC_USER sys64_context_exclusive_t_rundown(sys64_context_exclusive_t cont
 	if(context == nullptr) return;
 
 	// Cast the context handle back into a Context handle and destroy it
-	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(context));
+	ContextHandle::Release(reinterpret_cast<ContextHandle*>(context));
 }
 #endif	// _M_X64
 

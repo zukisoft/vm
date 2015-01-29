@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -36,7 +36,7 @@
 //	message		- ANSI message string
 //	length		- Length of the ANSI message string
 
-HRESULT sys_trace(const SystemCall::Context* context, const char_t* message, size_t length)
+HRESULT sys_trace(const ContextHandle* context, const char_t* message, size_t length)
 {
 	_ASSERTE(context);
 
@@ -53,7 +53,7 @@ HRESULT sys_trace(const SystemCall::Context* context, const char_t* message, siz
 //
 HRESULT sys32_trace(sys32_context_t context, sys32_char_t* message, sys32_size_t length)
 {
-	return sys_trace(reinterpret_cast<SystemCall::Context*>(context), message, length);
+	return sys_trace(reinterpret_cast<ContextHandle*>(context), message, length);
 }
 
 #ifdef _M_X64
@@ -61,7 +61,7 @@ HRESULT sys32_trace(sys32_context_t context, sys32_char_t* message, sys32_size_t
 //
 HRESULT sys64_trace(sys64_context_t context, sys64_char_t* message, sys64_sizeis_t length)
 {
-	return sys_trace(reinterpret_cast<SystemCall::Context*>(context), message, length);
+	return sys_trace(reinterpret_cast<ContextHandle*>(context), message, length);
 }
 #endif
 

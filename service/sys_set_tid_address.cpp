@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -35,13 +35,12 @@
 //	context		- SystemCall context object
 //	tidptr		- Address to assign as clear_child_tid
 
-__int3264 sys_set_tid_address(const SystemCall::Context* context, void* tidptr)
+__int3264 sys_set_tid_address(const ContextHandle* context, void* tidptr)
 {
 	_ASSERTE(context);
 
 	try { 		
 		
-		SystemCall::Impersonation impersonation; 
 		context->Process->TidAddress = tidptr;
 	}
 
@@ -54,7 +53,7 @@ __int3264 sys_set_tid_address(const SystemCall::Context* context, void* tidptr)
 //
 sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t tidptr)
 {
-	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(tidptr)));
+	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(tidptr)));
 }
 
 #ifdef _M_X64
@@ -62,7 +61,7 @@ sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t tidptr)
 //
 sys64_long_t sys64_set_tid_address(sys64_context_t context, sys64_addr_t tidptr)
 {
-	return sys_set_tid_address(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(tidptr));
+	return sys_set_tid_address(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(tidptr));
 }
 #endif
 

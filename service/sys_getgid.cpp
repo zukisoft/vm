@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -34,14 +34,12 @@
 //
 //	context		- SystemCall context object
 
-__int3264 sys_getgid(const SystemCall::Context* context)
+__int3264 sys_getgid(const ContextHandle* context)
 {
 	_ASSERTE(context);
 
 	try { 
 
-		SystemCall::Impersonation impersonation;
-		
 		// TODO: hard-code to root for now
 		return 0;
 	}
@@ -53,7 +51,7 @@ __int3264 sys_getgid(const SystemCall::Context* context)
 //
 sys32_long_t sys32_getgid(sys32_context_t context)
 {
-	return static_cast<sys32_long_t>(sys_getgid(reinterpret_cast<SystemCall::Context*>(context)));
+	return static_cast<sys32_long_t>(sys_getgid(reinterpret_cast<ContextHandle*>(context)));
 }
 
 #ifdef _M_X64
@@ -61,7 +59,7 @@ sys32_long_t sys32_getgid(sys32_context_t context)
 //
 sys64_long_t sys64_getgid(sys64_context_t context)
 {
-	return sys_getgid(reinterpret_cast<SystemCall::Context*>(context));
+	return sys_getgid(reinterpret_cast<ContextHandle*>(context));
 }
 #endif
 

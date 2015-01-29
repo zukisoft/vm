@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
 // sys_faccessat.cpp
 //
-__int3264 sys_faccessat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags);
+uapi::long_t sys_faccessat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags);
 
 //-----------------------------------------------------------------------------
 // sys_access
@@ -40,7 +40,7 @@ __int3264 sys_faccessat(const SystemCall::Context* context, int dirfd, const uap
 //	pathname	- Relative path for the file system object to check
 //	mode		- Accessibility check mask (F_OK, R_OK, etc)
 
-__int3264 sys_access(const SystemCall::Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
+uapi::long_t sys_access(const ContextHandle* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
 	// sys_access() is equivalent to sys_faccessat(AT_FDCWD)
 	return sys_faccessat(context, LINUX_AT_FDCWD, pathname, mode, 0);
@@ -50,7 +50,7 @@ __int3264 sys_access(const SystemCall::Context* context, const uapi::char_t* pat
 //
 sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_access(reinterpret_cast<SystemCall::Context*>(context), pathname, mode));
+	return static_cast<sys32_long_t>(sys_access(reinterpret_cast<ContextHandle*>(context), pathname, mode));
 }
 
 #ifdef _M_X64
@@ -58,7 +58,7 @@ sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname,
 //
 sys64_long_t sys64_access(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return sys_access(reinterpret_cast<SystemCall::Context*>(context), pathname, mode);
+	return sys_access(reinterpret_cast<ContextHandle*>(context), pathname, mode);
 }
 #endif
 

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -37,13 +37,12 @@
 //	length		- Length of the region to apply the protection
 //	prot		- Memory protection flags
 
-__int3264 sys_mprotect(const SystemCall::Context* context, void* address, uapi::size_t length, int prot)
+__int3264 sys_mprotect(const ContextHandle* context, void* address, uapi::size_t length, int prot)
 {
 	_ASSERTE(context);
 
 	try { 		
 		
-		SystemCall::Impersonation impersonation; 
 		context->Process->ProtectMemory(address, length, prot);
 	}
 
@@ -56,7 +55,7 @@ __int3264 sys_mprotect(const SystemCall::Context* context, void* address, uapi::
 //
 sys32_long_t sys32_mprotect(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot)
 {
-	return static_cast<sys32_long_t>(sys_mprotect(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot));
+	return static_cast<sys32_long_t>(sys_mprotect(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length, prot));
 }
 
 #ifdef _M_X64
@@ -64,7 +63,7 @@ sys32_long_t sys32_mprotect(sys32_context_t context, sys32_addr_t address, sys32
 //
 sys64_long_t sys64_mprotect(sys64_context_t context, sys64_addr_t address, sys64_size_t length, sys64_int_t prot)
 {
-	return sys_mprotect(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot);
+	return sys_mprotect(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length, prot);
 }
 #endif
 

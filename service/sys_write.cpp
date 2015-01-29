@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -37,13 +37,12 @@
 //	buf			- Input buffer containing the data to be written
 //	count		- Number of bytes written to the file system object
 
-__int3264 sys_write(const SystemCall::Context* context, int fd, const void* buf, size_t count)
+__int3264 sys_write(const ContextHandle* context, int fd, const void* buf, size_t count)
 {
 	_ASSERTE(context);
 
 	try { 
 		
-		SystemCall::Impersonation impersonation;
 		return context->Process->GetHandle(fd)->Write(buf, count); 
 	}
 
@@ -54,7 +53,7 @@ __int3264 sys_write(const SystemCall::Context* context, int fd, const void* buf,
 //
 sys32_long_t sys32_write(sys32_context_t context, sys32_int_t fd, const sys32_uchar_t* buf, sys32_size_t count)
 {
-	return static_cast<sys32_long_t>(sys_write(reinterpret_cast<SystemCall::Context*>(context), fd, buf, count));
+	return static_cast<sys32_long_t>(sys_write(reinterpret_cast<ContextHandle*>(context), fd, buf, count));
 }
 
 #ifdef _M_X64
@@ -62,7 +61,7 @@ sys32_long_t sys32_write(sys32_context_t context, sys32_int_t fd, const sys32_uc
 //
 sys64_long_t sys64_write(sys64_context_t context, sys64_int_t fd, const sys64_uchar_t* buf, sys64_sizeis_t count)
 {
-	return sys_write(reinterpret_cast<SystemCall::Context*>(context), fd, buf, count);
+	return sys_write(reinterpret_cast<ContextHandle*>(context), fd, buf, count);
 }
 #endif
 

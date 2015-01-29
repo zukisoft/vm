@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -37,7 +37,7 @@
 //	length		- Length of the memory range
 //	advice		- Advice from the calling process about the region's usage
 
-__int3264 sys_madvise(const SystemCall::Context* context, void* address, size_t length, int advice)
+__int3264 sys_madvise(const ContextHandle* context, void* address, size_t length, int advice)
 {
 	_ASSERTE(context);
 	
@@ -54,7 +54,7 @@ __int3264 sys_madvise(const SystemCall::Context* context, void* address, size_t 
 //
 sys32_long_t sys32_madvise(sys32_context_t context, sys32_addr_t addr, sys32_size_t length, sys32_int_t advice)
 {
-	return static_cast<sys32_long_t>(sys_madvise(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(addr), length, advice));
+	return static_cast<sys32_long_t>(sys_madvise(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(addr), length, advice));
 }
 
 #ifdef _M_X64
@@ -62,7 +62,7 @@ sys32_long_t sys32_madvise(sys32_context_t context, sys32_addr_t addr, sys32_siz
 //
 sys64_long_t sys64_madvise(sys64_context_t context, sys64_addr_t addr, sys64_size_t length, sys64_int_t advice)
 {
-	return sys_madvise(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(addr), length, advice);
+	return sys_madvise(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(addr), length, advice);
 }
 #endif
 

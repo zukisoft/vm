@@ -79,7 +79,7 @@ namespace std {
 	inline string to_string(const wchar_t* psz) { return to_string(psz, -1); }
 	inline string to_string(const char_t* psz, int cch) { return string(psz, cch); }
 	inline string to_string(const char_t* psz) { return string(psz); }
-	inline string to_string(const wstring& str) { return to_string(str.data(), str.size()); }
+	inline string to_string(const wstring& str) { return to_string(str.data(), static_cast<int>(str.size())); }
 
 	// std::to_wstring (conversion)
 	//
@@ -100,7 +100,7 @@ namespace std {
 	inline wstring to_wstring(const char_t* psz) { return to_wstring(psz, -1); }
 	inline wstring to_wstring(const wchar_t* psz, int cch) { return wstring(psz, cch); }
 	inline wstring to_wstring(const wchar_t* psz) { return wstring(psz); }
-	inline wstring to_wstring(const string& str) { return to_wstring(str.data(), str.size()); }
+	inline wstring to_wstring(const string& str) { return to_wstring(str.data(), static_cast<int>(str.size())); }
 
 	// std::to_tstring
 	//

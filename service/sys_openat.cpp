@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -38,13 +38,11 @@
 //	flags		- Open operation flags
 //	mode		- Mode flags to assign when creating a new file system object
 
-__int3264 sys_openat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+__int3264 sys_openat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
 	_ASSERTE(context);
 
 	try {
-
-		SystemCall::Impersonation impersonation;
 
 		// Determine if an absolute or relative pathname has been provided
 		bool absolute = ((pathname) && (pathname[0] == '/'));
@@ -67,7 +65,7 @@ __int3264 sys_openat(const SystemCall::Context* context, int dirfd, const uapi::
 //
 sys32_long_t sys32_openat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_int_t flags, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_openat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, flags, mode));
+	return static_cast<sys32_long_t>(sys_openat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, flags, mode));
 }
 
 #ifdef _M_X64
@@ -75,7 +73,7 @@ sys32_long_t sys32_openat(sys32_context_t context, sys32_int_t dirfd, const sys3
 //
 sys64_long_t sys64_openat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
 {
-	return sys_openat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, flags, mode);
+	return sys_openat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, flags, mode);
 }
 #endif
 

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -38,7 +38,7 @@
 //	stats		- Output structure
 //	flags		- Path resolution flags (AT_EMPTY_PATH, etc)
 
-__int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags)
+__int3264 sys_fstatat64(const ContextHandle* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags)
 {
 	_ASSERTE(context);
 
@@ -48,8 +48,6 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 	if((flags & ~(LINUX_AT_SYMLINK_NOFOLLOW | LINUX_AT_NO_AUTOMOUNT | LINUX_AT_EMPTY_PATH)) != 0) return -LINUX_EINVAL;
 
 	try {
-
-		SystemCall::Impersonation impersonation;
 
 		// Determine if an absolute or relative pathname has been provided
 		bool absolute = ((pathname) && (pathname[0] == '/'));
@@ -95,7 +93,7 @@ __int3264 sys_fstatat64(const SystemCall::Context* context, int fd, const uapi::
 //
 sys32_long_t sys32_fstatat64(sys32_context_t context, sys32_int_t fd, const sys32_char_t* pathname, linux_stat3264* buf, sys32_int_t flags)
 {
-	return static_cast<sys32_long_t>(sys_fstatat64(reinterpret_cast<SystemCall::Context*>(context), fd, pathname, buf, flags));
+	return static_cast<sys32_long_t>(sys_fstatat64(reinterpret_cast<ContextHandle*>(context), fd, pathname, buf, flags));
 }
 
 //---------------------------------------------------------------------------

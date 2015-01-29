@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -35,14 +35,13 @@
 //	context		- SystemCall context object
 //	buf			- Pointer to the output data structure
 
-__int3264 sys_olduname(const SystemCall::Context* context, uapi::oldold_utsname* buf)
+__int3264 sys_olduname(const ContextHandle* context, uapi::oldold_utsname* buf)
 {
 	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	try {
 
-		SystemCall::Impersonation impersonation;
 		auto vm = context->VirtualMachine;
 
 		vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,	LINUX__OLD_UTS_LEN + 1);
@@ -61,7 +60,7 @@ __int3264 sys_olduname(const SystemCall::Context* context, uapi::oldold_utsname*
 //
 sys32_long_t sys32_olduname(sys32_context_t context, uapi::oldold_utsname* buf)
 {
-	return static_cast<sys32_long_t>(sys_olduname(reinterpret_cast<SystemCall::Context*>(context), buf));
+	return static_cast<sys32_long_t>(sys_olduname(reinterpret_cast<ContextHandle*>(context), buf));
 }
 
 //---------------------------------------------------------------------------

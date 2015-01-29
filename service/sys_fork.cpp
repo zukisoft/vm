@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
 // sys_clone.cpp
 //
-__int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid);
+__int3264 sys_clone(const ContextHandle* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid);
 
 //-----------------------------------------------------------------------------
 // sys_fork
@@ -40,7 +40,7 @@ __int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t 
 //	taskstate		- Child task startup information
 //	taskstatelen	- Length of the child task startup information
 
-__int3264 sys_fork(const SystemCall::Context* context, void* taskstate, size_t taskstatelen)
+__int3264 sys_fork(const ContextHandle* context, void* taskstate, size_t taskstatelen)
 {
 	// sys_fork is equivalent to sys_clone(SIGCHLD)
 	return sys_clone(context, taskstate, taskstatelen, LINUX_SIGCHLD, nullptr, nullptr);
@@ -50,7 +50,7 @@ __int3264 sys_fork(const SystemCall::Context* context, void* taskstate, size_t t
 //
 sys32_long_t sys32_fork(sys32_context_t context, sys32_task_state_t* taskstate)
 {
-	return static_cast<sys32_long_t>(sys_fork(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys32_task_state_t)));
+	return static_cast<sys32_long_t>(sys_fork(reinterpret_cast<ContextHandle*>(context), taskstate, sizeof(sys32_task_state_t)));
 }
 
 #ifdef _M_X64
@@ -58,7 +58,7 @@ sys32_long_t sys32_fork(sys32_context_t context, sys32_task_state_t* taskstate)
 //
 sys64_long_t sys64_fork(sys64_context_t context, sys64_task_state_t* taskstate)
 {
-	return sys_fork(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys64_task_state_t));
+	return sys_fork(reinterpret_cast<ContextHandle*>(context), taskstate, sizeof(sys64_task_state_t));
 }
 #endif
 

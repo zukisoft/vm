@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 #include <linux/ldt.h>
 
 #pragma warning(push, 4)
@@ -40,7 +40,7 @@
 //	ptid			- Address to store the new child pid_t (in parent and child)
 //	ctid			- Address to store the new child pit_t (in child only)
 
-__int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid)
+__int3264 sys_clone(const ContextHandle* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid)
 {
 	_ASSERTE(context);
 
@@ -48,8 +48,6 @@ __int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t 
 	// (0x01200011)
 
 	try { 
-
-		SystemCall::Impersonation impersonation;
 
 		auto parent = context->Process;
 		auto child = context->VirtualMachine->CloneProcess(parent, flags, taskstate, taskstatelen);
@@ -88,7 +86,7 @@ __int3264 sys_clone(const SystemCall::Context* context, void* taskstate, size_t 
 sys32_long_t sys32_clone(sys32_context_t context, sys32_task_state_t* taskstate, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
 {
 	// Note that the parameter order for the x86 system call differs from the standard system call, ctid and tls are swapped
-	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys32_task_state_t), clone_flags, 
+	return static_cast<sys32_long_t>(sys_clone(reinterpret_cast<ContextHandle*>(context), taskstate, sizeof(sys32_task_state_t), clone_flags, 
 		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr)));
 }
 
@@ -97,7 +95,7 @@ sys32_long_t sys32_clone(sys32_context_t context, sys32_task_state_t* taskstate,
 //
 sys64_long_t sys64_clone(sys64_context_t context, sys64_task_state_t* taskstate, sys64_ulong_t clone_flags, sys64_addr_t parent_tidptr, sys64_addr_t child_tidptr)
 {
-	return sys_clone(reinterpret_cast<SystemCall::Context*>(context), taskstate, sizeof(sys64_task_state_t), static_cast<uint32_t>(clone_flags),
+	return sys_clone(reinterpret_cast<ContextHandle*>(context), taskstate, sizeof(sys64_task_state_t), static_cast<uint32_t>(clone_flags),
 		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr));
 }
 #endif

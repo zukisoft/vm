@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -36,7 +36,7 @@
 //	name		- New domain name string to be assigned
 //	len			- Length of the name string, does not include null terminator
 
-__int3264 sys_setdomainname(const SystemCall::Context* context, uapi::char_t* name, size_t len)
+__int3264 sys_setdomainname(const ContextHandle* context, uapi::char_t* name, size_t len)
 {
 	_ASSERTE(context);
 	if(name == nullptr) return -LINUX_EFAULT;
@@ -44,7 +44,6 @@ __int3264 sys_setdomainname(const SystemCall::Context* context, uapi::char_t* na
 
 	try { 
 		
-		SystemCall::Impersonation impersonation;
 		context->VirtualMachine->SetProperty(VirtualMachine::Properties::DomainName, name, len); 
 	}
 	
@@ -57,7 +56,7 @@ __int3264 sys_setdomainname(const SystemCall::Context* context, uapi::char_t* na
 //
 sys32_long_t sys32_setdomainname(sys32_context_t context, sys32_char_t* name, sys32_size_t len)
 {
-	return static_cast<sys32_long_t>(sys_setdomainname(reinterpret_cast<SystemCall::Context*>(context), name, len));
+	return static_cast<sys32_long_t>(sys_setdomainname(reinterpret_cast<ContextHandle*>(context), name, len));
 }
 
 #ifdef _M_X64
@@ -65,7 +64,7 @@ sys32_long_t sys32_setdomainname(sys32_context_t context, sys32_char_t* name, sy
 //
 sys64_long_t sys64_setdomainname(sys64_context_t context, sys64_char_t* name, sys64_sizeis_t len)
 {
-	return sys_setdomainname(reinterpret_cast<SystemCall::Context*>(context), name, len);
+	return sys_setdomainname(reinterpret_cast<ContextHandle*>(context), name, len);
 }
 #endif
 

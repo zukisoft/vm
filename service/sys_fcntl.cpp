@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -37,15 +37,13 @@
 //	cmd			- Operation command code
 //	arg			- Optional argument for the specified command code
 
-__int3264 sys_fcntl(const SystemCall::Context* context, int fd, int cmd, void* arg)
+__int3264 sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
 {
 	_ASSERTE(context);
 	(arg);
 
 	try { 		
 		
-		SystemCall::Impersonation impersonation;
-
 		auto handle = context->Process->GetHandle(fd);
 
 		// Commands are listed in the order described in the man page, not numerically
@@ -149,7 +147,7 @@ __int3264 sys_fcntl(const SystemCall::Context* context, int fd, int cmd, void* a
 //
 sys32_long_t sys32_fcntl64(sys32_context_t context, sys32_int_t fd, sys32_int_t cmd, sys32_addr_t arg)
 {
-	return static_cast<sys32_long_t>(sys_fcntl(reinterpret_cast<SystemCall::Context*>(context), fd, cmd, reinterpret_cast<void*>(arg)));
+	return static_cast<sys32_long_t>(sys_fcntl(reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg)));
 }
 
 #ifdef _M_X64
@@ -157,7 +155,7 @@ sys32_long_t sys32_fcntl64(sys32_context_t context, sys32_int_t fd, sys32_int_t 
 //
 sys64_long_t sys64_fcntl(sys64_context_t context, sys64_int_t fd, sys64_int_t cmd, sys64_addr_t arg)
 {
-	return sys_fcntl(reinterpret_cast<SystemCall::Context*>(context), fd, cmd, reinterpret_cast<void*>(arg));
+	return sys_fcntl(reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg));
 }
 #endif
 

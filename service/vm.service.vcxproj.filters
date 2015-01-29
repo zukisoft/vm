@@ -344,6 +344,9 @@
     <ClInclude Include="Thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ContextHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -728,6 +731,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContextHandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

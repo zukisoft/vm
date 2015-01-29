@@ -24,8 +24,8 @@
 #define __SYSTEMCALL_H_
 #pragma once
 
-#include "Process.h"
-#include "VirtualMachine.h"
+#include <type_traits>
+#include "ContextHandle.h"
 #include "Win32Exception.h"
 
 #include <syscalls32.h>
@@ -45,83 +45,37 @@ class SystemCall
 {
 public:
 
-	// Context
+	// Invoke
 	//
-	// Object type used as the RPC context handle for a client process; maintains
-	// a reference to the target VirtualMachine as well as the Process instance
-	// associated with the caller
-	//
-	// Instances of this class must be created/destroyed with the provided static
-	// functions as midl_user_allocate/midl_user_free are required by RPC
-	class Context
+	// Callable wrapper for any system call
+	template<typename _func, typename... _args>
+	static uapi::long_t Invoke(const _func& func, const ContextHandle* context, _args&&... args)
 	{
-	friend class SystemCall;
-	public:
+		_ASSERTE(context);
 
-		// Process
-		//
-		// Gets the process object instance
-		__declspec(property(get=getProcess)) std::shared_ptr<::Process> Process;
-		std::shared_ptr<::Process> getProcess(void) const { return m_process; }
+		uapi::long_t result = -1;				// Result from system call
 
-		// VirtualMachine
-		//
-		// Gets the contained VirtualMachine instance pointer
-		__declspec(property(get=getVirtualMachine)) std::shared_ptr<::VirtualMachine> VirtualMachine;
-		std::shared_ptr<::VirtualMachine> getVirtualMachine(void) const { return m_vm; }	
-	
-	private:
+		// Always impersonate the client prior to invoking the system call
+		RPC_STATUS rpcresult = RpcImpersonateClient(nullptr);
+		if(rpcresult != RPC_S_OK) /* TODO: LOG THIS? */ return -LINUX_EPERM;
 
-		~Context()=default;
-		Context(const Context&)=delete;
-		Context& operator=(const Context&)=delete;
+		try { result = func(context, std::forward<_args>(args)...); }
+		catch(...) { result = TranslateException(std::current_exception()); }
 
-		// Instance Constructor
-		//
-		Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process) : m_vm(vm), m_process(process) {}
-
-		// Member Variables
-		//
-		std::shared_ptr<::VirtualMachine>	m_vm;		// VirtualMachine instance
-		std::shared_ptr<::Process>			m_process;	// Process instance
-	};
-
-	// AllocContext (static)
-	//
-	// Constructs a new Context for use by an RPC system call client
-	static Context* AllocContext(const uuid_t instanceid, uint32_t hostpid)
-	{
-		auto vm = VirtualMachine::FindVirtualMachine(instanceid);
-		auto process = vm->FindProcessByHostID(hostpid);
-
-		// Allocate the backing storage for the Context with MIDL_user_allocate
-		void* context = MIDL_user_allocate(sizeof(Context));
-		if(!context) throw Exception(E_OUTOFMEMORY);
-
-		// Use placement new to construct the Context on the allocated storage
-		return new(context) Context(vm, process);
-	}
-
-	// FreeContext (static)
-	//
-	// Destroys and releases a Context instance
-	static void FreeContext(Context* context)
-	{
-		if(!context) return;
-
-		context->~Context();			// Invoke destructor
-		MIDL_user_free(context);		// Release backing storage
+		RpcRevertToSelf();						// Always revert impersonation
+		return result;							// Return system call result
 	}
 
 	// TranslateException (static)
 	//
 	// Converts an exception into a return value for a system call
-	static __int3264 TranslateException(std::exception_ptr ex)
+	static uapi::long_t TranslateException(std::exception_ptr ex)
 	{
 		try { std::rethrow_exception(ex); }
 		catch(LinuxException& ex) {
 			return -ex.Code;
 		}
+		// TODO: Win32Exception translation
 		catch(Exception& ex) {
 
 			int x = (int)ex.Code;
@@ -131,33 +85,6 @@ public:
 
 		return -1;			// <--- should be impossible to reach, shuts up the compiler
 	}
-
-	// Impersonation
-	//
-	// Class used to automate the calls to RpcImpersonateClient/RpcRevertToSelf, an
-	// instance of this should be present in every server-side system call to ensure
-	// that the virtual machine is accessed under the calling process' identity:
-	class Impersonation
-	{
-	public:
-
-		// Constructor
-		//
-		Impersonation()
-		{
-			RPC_STATUS result = RpcImpersonateClient(nullptr);
-			if(result != RPC_S_OK) throw Win32Exception(result);
-		}
-
-		// Destructor
-		//
-		~Impersonation() { RpcRevertToSelf(); }
-
-	private:
-
-		Impersonation(const Impersonation&)=delete;
-		Impersonation& operator=(const Impersonation&)=delete;
-	};
 
 private:
 

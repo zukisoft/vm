@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
 // sys_openat.cpp
 //
-__int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
+__int3264 sys_openat(const ContextHandle* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
 
 //-----------------------------------------------------------------------------
 // sys_open
@@ -41,7 +41,7 @@ __int3264 sys_openat(const SystemCall::Context* context, int fd, const uapi::cha
 //	flags		- File open/creation flags
 //	mode		- Mode mask to assign to the file if created
 
-__int3264 sys_open(const SystemCall::Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+__int3264 sys_open(const ContextHandle* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
 	// sys_open() is equivalent to sys_openat(AT_FDCWD)
 	return sys_openat(context, LINUX_AT_FDCWD, pathname, flags, mode);
@@ -51,7 +51,7 @@ __int3264 sys_open(const SystemCall::Context* context, const uapi::char_t* pathn
 //
 sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, sys32_int_t flags, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_open(reinterpret_cast<SystemCall::Context*>(context), pathname, flags, mode));
+	return static_cast<sys32_long_t>(sys_open(reinterpret_cast<ContextHandle*>(context), pathname, flags, mode));
 }
 
 #ifdef _M_X64
@@ -59,7 +59,7 @@ sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, s
 //
 sys64_long_t sys64_open(sys64_context_t context, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
 {
-	return sys_open(reinterpret_cast<SystemCall::Context*>(context), pathname, flags, mode);
+	return sys_open(reinterpret_cast<ContextHandle*>(context), pathname, flags, mode);
 }
 #endif
 

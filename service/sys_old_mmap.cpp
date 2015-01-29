@@ -21,14 +21,14 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 #include "SystemInformation.h"
 
 #pragma warning(push, 4)
 
 // sys_mmap.cpp
 //
-__int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset);
+__int3264 sys_mmap(const ContextHandle* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset);
 
 //-----------------------------------------------------------------------------
 // sys_old_mmap
@@ -45,7 +45,7 @@ __int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t len
 //	fd			- File/device from which to create the mapping
 //	offset		- Offset into file/device from which to map
 
-__int3264 sys_old_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t offset)
+__int3264 sys_old_mmap(const ContextHandle* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t offset)
 {
 	// Compatibility function; the offset must be a multiple of the system page size
 	if(offset & (SystemInformation::PageSize - 1)) return -LINUX_EINVAL;
@@ -58,7 +58,7 @@ __int3264 sys_old_mmap(const SystemCall::Context* context, void* address, size_t
 //
 sys32_long_t sys32_old_mmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot, sys32_int_t flags, sys32_int_t fd, sys32_off_t offset)
 {
-	return static_cast<sys32_long_t>(sys_old_mmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, offset));
+	return static_cast<sys32_long_t>(sys_old_mmap(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, offset));
 }
 
 //---------------------------------------------------------------------------

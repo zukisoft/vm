@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -38,13 +38,11 @@
 //	mode		- Mode flags to assign when creating the directory
 //	device		- Device identifier for creation of a device node
 
-__int3264 sys_mknodat(const SystemCall::Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
+__int3264 sys_mknodat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
 {
 	_ASSERTE(context);
 
 	try {
-
-		SystemCall::Impersonation impersonation;
 
 		// Determine if an absolute or relative pathname has been provided
 		bool absolute = ((pathname) && (pathname[0] == '/'));
@@ -99,7 +97,7 @@ __int3264 sys_mknodat(const SystemCall::Context* context, int dirfd, const uapi:
 //
 sys32_long_t sys32_mknodat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode, sys32_dev_t device)
 {
-	return static_cast<sys32_long_t>(sys_mknodat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode, device));
+	return static_cast<sys32_long_t>(sys_mknodat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, device));
 }
 
 #ifdef _M_X64
@@ -107,7 +105,7 @@ sys32_long_t sys32_mknodat(sys32_context_t context, sys32_int_t dirfd, const sys
 //
 sys64_long_t sys64_mknodat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode, sys64_dev_t device)
 {
-	return sys_mknodat(reinterpret_cast<SystemCall::Context*>(context), dirfd, pathname, mode, device);
+	return sys_mknodat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, device);
 }
 #endif
 

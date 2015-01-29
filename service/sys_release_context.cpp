@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 
 #pragma warning(push, 4)
 
@@ -39,11 +39,11 @@ HRESULT sys32_release_context(sys32_context_exclusive_t* context)
 	if((context == nullptr) || (*context == nullptr)) return E_POINTER;
 
 	// TODO: CLEAN ME UP - TESTING CLOSEPROCESS - same pointer needed below
-	SystemCall::Context* syscallcontext = reinterpret_cast<SystemCall::Context*>(*context);
+	ContextHandle* syscallcontext = reinterpret_cast<ContextHandle*>(*context);
 	syscallcontext->VirtualMachine->CloseProcess(syscallcontext->Process);
 
 	// Cast the context handle back into a Context handle and destroy it
-	SystemCall::FreeContext(syscallcontext);
+	ContextHandle::Release(syscallcontext);
 
 	*context = nullptr;					// Reset context handle to null
 	return S_OK;						// Context has been released
@@ -64,7 +64,7 @@ HRESULT sys64_release_context(sys64_context_exclusive_t* context)
 	if((context == nullptr) || (*context == nullptr)) return E_POINTER;
 
 	// Cast the context handle back into a Context handle and destroy it
-	SystemCall::FreeContext(reinterpret_cast<SystemCall::Context*>(*context));
+	ContextHandle::Release(reinterpret_cast<ContextHandle*>(*context));
 
 	*context = nullptr;					// Reset context handle to null
 	return S_OK;						// Context has been released

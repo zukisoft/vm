@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"
+#include "ContextHandle.h"
 #include "SystemInformation.h"
 
 #pragma warning(push, 4)
@@ -41,14 +41,12 @@
 //	fd			- File/device from which to create the mapping
 //	pgoffset	- Offset, in pages, into file/device from which to map
 
-__int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset)
+__int3264 sys_mmap(const ContextHandle* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset)
 {
 	_ASSERTE(context);
 
 	try { 		
 		
-		SystemCall::Impersonation impersonation;
-
 		// MAP_PRIVATE and MAP_SHARED dictate how this system call will work
 		switch(flags & (LINUX_MAP_PRIVATE | LINUX_MAP_SHARED)) {
 
@@ -73,7 +71,7 @@ __int3264 sys_mmap(const SystemCall::Context* context, void* address, size_t len
 //
 sys32_long_t sys32_mmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length, sys32_int_t prot, sys32_int_t flags, sys32_int_t fd, sys32_off_t pgoffset)
 {
-	return static_cast<sys32_long_t>(sys_mmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, pgoffset));
+	return static_cast<sys32_long_t>(sys_mmap(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, pgoffset));
 }
 
 #ifdef _M_X64
@@ -81,7 +79,7 @@ sys32_long_t sys32_mmap(sys32_context_t context, sys32_addr_t address, sys32_siz
 //
 sys64_long_t sys64_mmap(sys64_context_t context, sys64_addr_t address, sys64_size_t length, sys64_int_t prot, sys64_int_t flags, sys64_int_t fd, sys64_off_t pgoffset)
 {
-	return sys_mmap(reinterpret_cast<SystemCall::Context*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, pgoffset);
+	return sys_mmap(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length, prot, flags, fd, pgoffset);
 }
 #endif
 
