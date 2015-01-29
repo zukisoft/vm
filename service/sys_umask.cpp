@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -35,28 +36,21 @@
 //	context		- SystemCall context object
 //	mask		- New default file creation bitmask
 
-__int3264 sys_umask(const ContextHandle* context, uapi::mode_t mask)
+uapi::long_t sys_umask(const ContextHandle* context, uapi::mode_t mask)
 {
-	_ASSERTE(context);
+	// Get the previously set UMASK and apply the new one
+	uapi::mode_t previous = context->Process->FileCreationModeMask;
+	context->Process->FileCreationModeMask = mask;
 
-	try { 
-
-		// Get the previously set UMASK and apply the new one
-		uapi::mode_t previous = context->Process->FileCreationModeMask;
-		context->Process->FileCreationModeMask = mask;
-
-		// Return the previous UMASK bitmask as the result from this system call
-		return static_cast<__int3264>(previous);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// Return the previous UMASK bitmask as the result from this system call
+	return static_cast<uapi::long_t>(previous);
 }
 
 // sys32_umask
 //
 sys32_long_t sys32_umask(sys32_context_t context, sys32_mode_t mask)
 {
-	return static_cast<sys32_long_t>(sys_umask(reinterpret_cast<ContextHandle*>(context), mask));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_umask, reinterpret_cast<ContextHandle*>(context), mask));
 }
 
 #ifdef _M_X64
@@ -64,7 +58,7 @@ sys32_long_t sys32_umask(sys32_context_t context, sys32_mode_t mask)
 //
 sys64_long_t sys64_umask(sys64_context_t context, sys64_mode_t mask)
 {
-	return sys_umask(reinterpret_cast<ContextHandle*>(context), mask);
+	return SystemCall::Invoke(sys_umask, reinterpret_cast<ContextHandle*>(context), mask);
 }
 #endif
 

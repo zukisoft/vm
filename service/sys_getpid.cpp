@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -34,23 +35,17 @@
 //
 //	context		- SystemCall context object
 
-__int3264 sys_getpid(const ContextHandle* context)
+uapi::long_t sys_getpid(const ContextHandle* context)
 {
-	_ASSERTE(context);
-
-	try { 
-
-		return context->Process->ProcessId;
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	(context);
+	return context->Process->ProcessId;
 }
 
 // sys32_getpid
 //
 sys32_long_t sys32_getpid(sys32_context_t context)
 {
-	return static_cast<sys32_long_t>(sys_getpid(reinterpret_cast<ContextHandle*>(context)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getpid, reinterpret_cast<ContextHandle*>(context)));
 }
 
 #ifdef _M_X64
@@ -58,7 +53,7 @@ sys32_long_t sys32_getpid(sys32_context_t context)
 //
 sys64_long_t sys64_getpid(sys64_context_t context)
 {
-	return sys_getpid(reinterpret_cast<ContextHandle*>(context));
+	return SystemCall::Invoke(sys_getpid, reinterpret_cast<ContextHandle*>(context));
 }
 #endif
 

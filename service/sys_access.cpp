@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -50,7 +51,7 @@ uapi::long_t sys_access(const ContextHandle* context, const uapi::char_t* pathna
 //
 sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_access(reinterpret_cast<ContextHandle*>(context), pathname, mode));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_access, reinterpret_cast<ContextHandle*>(context), pathname, mode));
 }
 
 #ifdef _M_X64
@@ -58,7 +59,7 @@ sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname,
 //
 sys64_long_t sys64_access(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return sys_access(reinterpret_cast<ContextHandle*>(context), pathname, mode);
+	return SystemCall::Invoke(sys_access, reinterpret_cast<ContextHandle*>(context), pathname, mode);
 }
 #endif
 

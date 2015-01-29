@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -36,18 +37,12 @@
 //	buf			- Output buffer to receive the current working directory
 //	size		- Length of the output buffer in bytes
 
-__int3264 sys_getcwd(const ContextHandle* context, uapi::char_t* buf, size_t size)
+uapi::long_t sys_getcwd(const ContextHandle* context, uapi::char_t* buf, size_t size)
 {
-	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
 
-	try { 		
-		
-		// Ask the virtual machine instance to resolve the absolute path to the working directory
-		context->VirtualMachine->GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// Ask the virtual machine instance to resolve the absolute path to the working directory
+	context->VirtualMachine->GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
 
 	return 0;
 }
@@ -56,7 +51,7 @@ __int3264 sys_getcwd(const ContextHandle* context, uapi::char_t* buf, size_t siz
 //
 sys32_long_t sys32_getcwd(sys32_context_t context, sys32_char_t* buf, sys32_size_t size)
 {
-	return static_cast<sys32_long_t>(sys_getcwd(reinterpret_cast<ContextHandle*>(context), buf, size));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getcwd, reinterpret_cast<ContextHandle*>(context), buf, size));
 }
 
 #ifdef _M_X64
@@ -64,7 +59,7 @@ sys32_long_t sys32_getcwd(sys32_context_t context, sys32_char_t* buf, sys32_size
 //
 sys64_long_t sys64_getcwd(sys64_context_t context, sys64_char_t* buf, sys64_sizeis_t size)
 {
-	return sys_getcwd(reinterpret_cast<ContextHandle*>(context), buf, static_cast<size_t>(size));
+	return SystemCall::Invoke(sys_getcwd, reinterpret_cast<ContextHandle*>(context), buf, static_cast<size_t>(size));
 }
 #endif
 

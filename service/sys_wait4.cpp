@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -38,24 +39,17 @@
 //	options		- Wait operation options
 //	rusage		- Optionally receives child accounting information
 
-__int3264 sys_wait4(const ContextHandle* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
+uapi::long_t sys_wait4(const ContextHandle* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
 {
 	int					exitstatus;
-
-	_ASSERTE(context);
 
 	(status);
 	(options);
 	(rusage);
 
-	try { 
-
-		__int3264 result = static_cast<uapi::pid_t>(context->Process->WaitChild_TEST(pid, &exitstatus));
-		if(status) *status = exitstatus;
-		return result;
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	uapi::long_t result = static_cast<uapi::pid_t>(context->Process->WaitChild_TEST(pid, &exitstatus));
+	if(status) *status = exitstatus;
+	return result;
 }
 
 // sys32_wait4
@@ -65,7 +59,7 @@ sys32_long_t sys32_wait4(sys32_context_t context, sys32_pid_t pid, sys32_int_t* 
 	uapi::rusage			usage;				// Child accounting information
 
 	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(sys_wait4(reinterpret_cast<ContextHandle*>(context), pid, status, options, &usage));
+	sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_wait4, reinterpret_cast<ContextHandle*>(context), pid, status, options, &usage));
 
 	// If sys_wait4 was successful, convert the data from the generic structure into the compatible one
 	if((result >= 0) && (rusage != nullptr)) {
@@ -83,7 +77,7 @@ sys32_long_t sys32_wait4(sys32_context_t context, sys32_pid_t pid, sys32_int_t* 
 //
 sys64_long_t sys64_wait4(sys64_context_t context, sys64_pid_t pid, sys64_int_t* status, sys64_int_t options, linux_rusage64* rusage)
 {
-	return sys_wait4(reinterpret_cast<ContextHandle*>(context), pid, status, options, rusage);
+	return SystemCall::Invoke(sys_wait4, reinterpret_cast<ContextHandle*>(context), pid, status, options, rusage);
 }
 #endif
 

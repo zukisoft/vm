@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -38,24 +39,17 @@
 //	mode		- Accessibility check mask (F_OK, R_OK, etc)
 //	flags		- Behavioral flags
 
-__int3264 sys_faccessat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
+uapi::long_t sys_faccessat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
 {
-	_ASSERTE(context);
+	// Determine if an absolute or relative pathname has been provided
+	bool absolute = ((pathname) && (pathname[0] == '/'));
 
-	try {
+	// Determine the base alias from which to resolve the path
+	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
 
-		// Determine if an absolute or relative pathname has been provided
-		bool absolute = ((pathname) && (pathname[0] == '/'));
-
-		// Determine the base alias from which to resolve the path
-		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-			((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
-
-		// Use the VirtualMachine interface to check permissions to the specified file system object
-		context->VirtualMachine->CheckPermissions(context->Process->RootDirectory, base, pathname, flags, mode);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// Use the VirtualMachine interface to check permissions to the specified file system object
+	context->VirtualMachine->CheckPermissions(context->Process->RootDirectory, base, pathname, flags, mode);
 
 	return 0;
 }
@@ -64,7 +58,7 @@ __int3264 sys_faccessat(const ContextHandle* context, int dirfd, const uapi::cha
 //
 sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode, sys32_int_t flags)
 {
-	return static_cast<sys32_long_t>(sys_faccessat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_faccessat, reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags));
 }
 
 #ifdef _M_X64
@@ -72,7 +66,7 @@ sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const s
 //
 sys64_long_t sys64_faccessat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode, sys64_int_t flags)
 {
-	return sys_faccessat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags);
+	return SystemCall::Invoke(sys_faccessat, reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags);
 }
 #endif
 

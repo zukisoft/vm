@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -36,22 +37,16 @@
 
 __int3264 sys_getuid(const ContextHandle* context)
 {
-	_ASSERTE(context);
-
-	try { 
-
-		// TODO: hard-code to root for now
-		return 0;
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	(context);
+	// TODO: hard-code to root for now
+	return 0;
 }
 
 // sys32_getuid
 //
 sys32_long_t sys32_getuid(sys32_context_t context)
 {
-	return static_cast<sys32_long_t>(sys_getuid(reinterpret_cast<ContextHandle*>(context)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getuid, reinterpret_cast<ContextHandle*>(context)));
 }
 
 #ifdef _M_X64
@@ -59,7 +54,7 @@ sys32_long_t sys32_getuid(sys32_context_t context)
 //
 sys64_long_t sys64_getuid(sys64_context_t context)
 {
-	return sys_getuid(reinterpret_cast<ContextHandle*>(context));
+	return SystemCall::Invoke(sys_getuid, reinterpret_cast<ContextHandle*>(context));
 }
 #endif
 

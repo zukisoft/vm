@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -37,108 +38,102 @@
 //	cmd			- Operation command code
 //	arg			- Optional argument for the specified command code
 
-__int3264 sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
+uapi::long_t sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
 {
-	_ASSERTE(context);
 	(arg);
 
-	try { 		
-		
-		auto handle = context->Process->GetHandle(fd);
+	auto handle = context->Process->GetHandle(fd);
 
-		// Commands are listed in the order described in the man page, not numerically
-		switch(cmd) {
+	// Commands are listed in the order described in the man page, not numerically
+	switch(cmd) {
 
-			//
-			// FILE DESCRIPTOR DUPLICATION
-			//
+		//
+		// FILE DESCRIPTOR DUPLICATION
+		//
 
-			// F_DUPFD - Duplicate the handle using the original flags
-			case LINUX_F_DUPFD:	
-				return context->Process->AddHandle(handle->Duplicate(handle->Flags));
+		// F_DUPFD - Duplicate the handle using the original flags
+		case LINUX_F_DUPFD:	
+			return context->Process->AddHandle(handle->Duplicate(handle->Flags));
 
-			// F_DUPFD_CLOEXEC - Duplicate the handle with O_CLOEXEC specified as well
-			case LINUX_F_DUPFD_CLOEXEC:
-				return context->Process->AddHandle(handle->Duplicate(handle->Flags | LINUX_O_CLOEXEC));
+		// F_DUPFD_CLOEXEC - Duplicate the handle with O_CLOEXEC specified as well
+		case LINUX_F_DUPFD_CLOEXEC:
+			return context->Process->AddHandle(handle->Duplicate(handle->Flags | LINUX_O_CLOEXEC));
 
-			//
-			// FILE DESCRIPTOR FLAGS
-			//
+		//
+		// FILE DESCRIPTOR FLAGS
+		//
 
-			// F_GETFD - Get the file descriptor flags (only close-on-exec is supported)
-			case LINUX_F_GETFD:
-				return handle->CloseOnExec ? LINUX_FD_CLOEXEC : 0;
+		// F_GETFD - Get the file descriptor flags (only close-on-exec is supported)
+		case LINUX_F_GETFD:
+			return handle->CloseOnExec ? LINUX_FD_CLOEXEC : 0;
 
-			// F_SETFD - Set the file descriptor flags (only close-on-exec is supported)
-			case LINUX_F_SETFD:
-				handle->CloseOnExec = (reinterpret_cast<__int3264>(arg) == LINUX_FD_CLOEXEC);
-				return 0;
+		// F_SETFD - Set the file descriptor flags (only close-on-exec is supported)
+		case LINUX_F_SETFD:
+			handle->CloseOnExec = (reinterpret_cast<__int3264>(arg) == LINUX_FD_CLOEXEC);
+			return 0;
 
-			//
-			// FILE STATUS FLAGS
-			//
+		//
+		// FILE STATUS FLAGS
+		//
 
-			// F_GETFL
-			// F_SETFL
+		// F_GETFL
+		// F_SETFL
 
-			//
-			// ADVISORY RECORD LOCKING
-			//
+		//
+		// ADVISORY RECORD LOCKING
+		//
 
-			// F_SETLK
-			// F_SETLKW
-			// F_GETLK
+		// F_SETLK
+		// F_SETLKW
+		// F_GETLK
 
-			//
-			// OPEN FILE DESCRIPTOR LOCKS
-			//
+		//
+		// OPEN FILE DESCRIPTOR LOCKS
+		//
 
-			// F_OFD_SETLK
-			// F_OFD_SETLKW
-			// F_OFD_GETLK
+		// F_OFD_SETLK
+		// F_OFD_SETLKW
+		// F_OFD_GETLK
 
-			//
-			// MANDATORY LOCKING
-			// (Do not support?)
+		//
+		// MANDATORY LOCKING
+		// (Do not support?)
 
-			//
-			// MANAGING SIGNALS
-			//
+		//
+		// MANAGING SIGNALS
+		//
 
-			// F_GETOWN
-			// F_SETOWN
-			// F_GETOWN_EX
-			// F_SETOWN_EX
-			// F_GETSIG
-			// F_SETSIG
+		// F_GETOWN
+		// F_SETOWN
+		// F_GETOWN_EX
+		// F_SETOWN_EX
+		// F_GETSIG
+		// F_SETSIG
 
-			//
-			// LEASES
-			//
+		//
+		// LEASES
+		//
 
-			// F_SETLEASE
-			// F_GETLEASE
+		// F_SETLEASE
+		// F_GETLEASE
 
-			//
-			// FILE AND DIRECTORY CHANGE NOTIFICATION
-			//
+		//
+		// FILE AND DIRECTORY CHANGE NOTIFICATION
+		//
 
-			// F_NOTIFY
+		// F_NOTIFY
 
-			//
-			// CHANGING THE CAPACITY OF A PIPE
-			//
+		//
+		// CHANGING THE CAPACITY OF A PIPE
+		//
 
-			// F_SETPIPE_SZ
-			// F_GETPIPE_SZ
+		// F_SETPIPE_SZ
+		// F_GETPIPE_SZ
 
-			default:
-				_RPTF1(_CRT_ASSERT, "sys_fcntl: Unknown command %d", cmd);
-				throw LinuxException(LINUX_EINVAL);
-		}
+		default:
+			_RPTF1(_CRT_ASSERT, "sys_fcntl: Unknown command %d", cmd);
+			throw LinuxException(LINUX_EINVAL);
 	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
 	return -LINUX_EINVAL;
 }
@@ -147,7 +142,7 @@ __int3264 sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
 //
 sys32_long_t sys32_fcntl64(sys32_context_t context, sys32_int_t fd, sys32_int_t cmd, sys32_addr_t arg)
 {
-	return static_cast<sys32_long_t>(sys_fcntl(reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fcntl, reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg)));
 }
 
 #ifdef _M_X64
@@ -155,7 +150,7 @@ sys32_long_t sys32_fcntl64(sys32_context_t context, sys32_int_t fd, sys32_int_t 
 //
 sys64_long_t sys64_fcntl(sys64_context_t context, sys64_int_t fd, sys64_int_t cmd, sys64_addr_t arg)
 {
-	return sys_fcntl(reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg));
+	return SystemCall::Invoke(sys_fcntl, reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg));
 }
 #endif
 
