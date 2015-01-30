@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_fstatat64.cpp
 //
-__int3264 sys_fstatat64(const ContextHandle* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags);
+uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags);
 
 //-----------------------------------------------------------------------------
 // sys_fstat64
@@ -36,11 +36,11 @@ __int3264 sys_fstatat64(const ContextHandle* context, int fd, const uapi::char_t
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	fd			- File descriptor from which to retrieve the stats
 //	stats		- Output structure
 
-__int3264 sys_fstat64(const ContextHandle* context, int fd, linux_stat3264* buf)
+uapi::long_t sys_fstat64(const Context* context, int fd, linux_stat3264* buf)
 {
 	// sys_fstat64 is equivalent to sys_fstatat64(fd, LINUX_AT_EMPTY_PATH)
 	return sys_fstatat64(context, fd, "", buf, LINUX_AT_EMPTY_PATH);
@@ -50,7 +50,7 @@ __int3264 sys_fstat64(const ContextHandle* context, int fd, linux_stat3264* buf)
 //
 sys32_long_t sys32_fstat64(sys32_context_t context, sys32_int_t fd, linux_stat3264* buf)
 {
-	return static_cast<sys32_long_t>(sys_fstat64(reinterpret_cast<ContextHandle*>(context), fd, buf));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fstat64, context, fd, buf));
 }
 
 //---------------------------------------------------------------------------

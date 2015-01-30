@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,10 +32,10 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	fd			- File descriptor to be closed
 
-uapi::long_t sys_close(const ContextHandle* context, int fd)
+uapi::long_t sys_close(const Context* context, int fd)
 {
 	context->Process->RemoveHandle(fd);
 	return 0;
@@ -46,7 +45,7 @@ uapi::long_t sys_close(const ContextHandle* context, int fd)
 //
 sys32_long_t sys32_close(sys32_context_t context, sys32_int_t fd)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_close, reinterpret_cast<ContextHandle*>(context), fd));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_close, context, fd));
 }
 
 #ifdef _M_X64
@@ -54,7 +53,7 @@ sys32_long_t sys32_close(sys32_context_t context, sys32_int_t fd)
 //
 sys64_long_t sys64_close(sys64_context_t context, sys64_int_t fd)
 {
-	return SystemCall::Invoke(sys_close, reinterpret_cast<ContextHandle*>(context), fd);
+	return SystemCall::Invoke(sys_close, context, fd);
 }
 #endif
 

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,20 +32,12 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	tidptr		- Address to assign as clear_child_tid
 
-__int3264 sys_set_tid_address(const ContextHandle* context, void* tidptr)
+uapi::long_t sys_set_tid_address(const Context* context, void* tidptr)
 {
-	_ASSERTE(context);
-
-	try { 		
-		
-		context->Process->TidAddress = tidptr;
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
-
+	context->Process->TidAddress = tidptr;
 	return context->Process->ProcessId;
 }
 
@@ -53,7 +45,7 @@ __int3264 sys_set_tid_address(const ContextHandle* context, void* tidptr)
 //
 sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t tidptr)
 {
-	return static_cast<sys32_long_t>(sys_set_tid_address(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(tidptr)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_set_tid_address, context, reinterpret_cast<void*>(tidptr)));
 }
 
 #ifdef _M_X64
@@ -61,7 +53,7 @@ sys32_long_t sys32_set_tid_address(sys32_context_t context, sys32_addr_t tidptr)
 //
 sys64_long_t sys64_set_tid_address(sys64_context_t context, sys64_addr_t tidptr)
 {
-	return sys_set_tid_address(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(tidptr));
+	return SystemCall::Invoke(sys_set_tid_address, context, reinterpret_cast<void*>(tidptr));
 }
 #endif
 

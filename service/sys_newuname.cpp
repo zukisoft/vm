@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,27 +32,21 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	buf			- Pointer to the output data structure
 
-__int3264 sys_newuname(const ContextHandle* context, uapi::new_utsname* buf)
+uapi::long_t sys_newuname(const Context* context, uapi::new_utsname* buf)
 {
-	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
 
-	try {
-	
-		auto vm = context->VirtualMachine;
+	auto vm = context->VirtualMachine;
 
-		vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,		LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,		LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,		LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::OperatingSystemVersion, buf->version,		LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::HardwareIdentifier,		buf->machine,		LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::DomainName,				buf->domainname,	LINUX__NEW_UTS_LEN + 1);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,		LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,		LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,		LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::OperatingSystemVersion, buf->version,		LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::HardwareIdentifier,		buf->machine,		LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::DomainName,				buf->domainname,	LINUX__NEW_UTS_LEN + 1);
 
 	return 0;
 }
@@ -61,7 +55,7 @@ __int3264 sys_newuname(const ContextHandle* context, uapi::new_utsname* buf)
 //
 sys32_long_t sys32_newuname(sys32_context_t context, uapi::new_utsname* buf)
 {
-	return static_cast<sys32_long_t>(sys_newuname(reinterpret_cast<ContextHandle*>(context), buf));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_newuname, context, buf));
 }
 
 #ifdef _M_X64
@@ -69,7 +63,7 @@ sys32_long_t sys32_newuname(sys32_context_t context, uapi::new_utsname* buf)
 //
 sys64_long_t sys64_newuname(sys64_context_t context, uapi::new_utsname* buf)
 {
-	return sys_newuname(reinterpret_cast<ContextHandle*>(context), buf);
+	return SystemCall::Invoke(sys_newuname, context, buf);
 }
 #endif
 

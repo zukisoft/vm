@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,26 +32,20 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	buf			- Pointer to the output data structure
 
-__int3264 sys_uname(const ContextHandle* context, uapi::old_utsname* buf)
+uapi::long_t sys_uname(const Context* context, uapi::old_utsname* buf)
 {
-	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
 
-	try {
+	auto vm = context->VirtualMachine;
 
-		auto vm = context->VirtualMachine;
-
-		vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,	LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,	LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,	LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::OperatingSystemVersion, buf->version,	LINUX__NEW_UTS_LEN + 1);
-		vm->GetProperty(VirtualMachine::Properties::HardwareIdentifier,		buf->machine,	LINUX__NEW_UTS_LEN + 1);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,	LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,	LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,	LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::OperatingSystemVersion, buf->version,	LINUX__NEW_UTS_LEN + 1);
+	vm->GetProperty(VirtualMachine::Properties::HardwareIdentifier,		buf->machine,	LINUX__NEW_UTS_LEN + 1);
 
 	return 0;
 }
@@ -60,7 +54,7 @@ __int3264 sys_uname(const ContextHandle* context, uapi::old_utsname* buf)
 //
 sys32_long_t sys32_uname(sys32_context_t context, uapi::old_utsname* buf)
 {
-	return static_cast<sys32_long_t>(sys_uname(reinterpret_cast<ContextHandle*>(context), buf));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_uname, context, buf));
 }
 
 //---------------------------------------------------------------------------

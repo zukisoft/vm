@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,9 +32,9 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 
-uapi::long_t sys_getppid(const ContextHandle* context)
+uapi::long_t sys_getppid(const Context* context)
 {
 	(context);
 	return context->Process->ParentProcessId;
@@ -45,7 +44,7 @@ uapi::long_t sys_getppid(const ContextHandle* context)
 //
 sys32_long_t sys32_getppid(sys32_context_t context)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getppid, reinterpret_cast<ContextHandle*>(context)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getppid, context));
 }
 
 #ifdef _M_X64
@@ -53,7 +52,7 @@ sys32_long_t sys32_getppid(sys32_context_t context)
 //
 sys64_long_t sys64_getppid(sys64_context_t context)
 {
-	return SystemCall::Invoke(sys_getppid, reinterpret_cast<ContextHandle*>(context));
+	return SystemCall::Invoke(sys_getppid, context);
 }
 #endif
 

@@ -21,14 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_faccessat.cpp
 //
-uapi::long_t sys_faccessat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags);
+uapi::long_t sys_faccessat(const Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags);
 
 //-----------------------------------------------------------------------------
 // sys_access
@@ -37,11 +36,11 @@ uapi::long_t sys_faccessat(const ContextHandle* context, int dirfd, const uapi::
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Relative path for the file system object to check
 //	mode		- Accessibility check mask (F_OK, R_OK, etc)
 
-uapi::long_t sys_access(const ContextHandle* context, const uapi::char_t* pathname, uapi::mode_t mode)
+uapi::long_t sys_access(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
 	// sys_access() is equivalent to sys_faccessat(AT_FDCWD)
 	return sys_faccessat(context, LINUX_AT_FDCWD, pathname, mode, 0);
@@ -51,7 +50,7 @@ uapi::long_t sys_access(const ContextHandle* context, const uapi::char_t* pathna
 //
 sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_access, reinterpret_cast<ContextHandle*>(context), pathname, mode));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_access, context, pathname, mode));
 }
 
 #ifdef _M_X64
@@ -59,7 +58,7 @@ sys32_long_t sys32_access(sys32_context_t context, const sys32_char_t* pathname,
 //
 sys64_long_t sys64_access(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return SystemCall::Invoke(sys_access, reinterpret_cast<ContextHandle*>(context), pathname, mode);
+	return SystemCall::Invoke(sys_access, context, pathname, mode);
 }
 #endif
 

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,63 +32,56 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	dirfd		- Previously opened directory object file descriptor
 //	pathname	- Relative path for the directory to create
 //	mode		- Mode flags to assign when creating the directory
 //	device		- Device identifier for creation of a device node
 
-__int3264 sys_mknodat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
+uapi::long_t sys_mknodat(const Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
 {
-	_ASSERTE(context);
+	// Determine if an absolute or relative pathname has been provided
+	bool absolute = ((pathname) && (pathname[0] == '/'));
 
-	try {
+	// Determine the base alias from which to resolve the path
+	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
 
-		// Determine if an absolute or relative pathname has been provided
-		bool absolute = ((pathname) && (pathname[0] == '/'));
+	// Apply the process' current umask to the provided creation mode flags
+	mode &= ~context->Process->FileCreationModeMask;
 
-		// Determine the base alias from which to resolve the path
-		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-			((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
+	// Invoke the proper method on the virtual machine based on the node type requested
+	switch(mode & LINUX_S_IFMT) {
 
-		// Apply the process' current umask to the provided creation mode flags
-		mode &= ~context->Process->FileCreationModeMask;
+		// S_IFREG (or zero): Create a new regular file node
+		case 0:
+		case LINUX_S_IFREG:
+			_RPTF0(_CRT_ASSERT, "mknodat: S_IFREG not implemented yet");
+			break;
 
-		// Invoke the proper method on the virtual machine based on the node type requested
-		switch(mode & LINUX_S_IFMT) {
+		// S_IFCHR: Create a new character device node
+		case LINUX_S_IFCHR:
+			context->VirtualMachine->CreateCharacterDevice(context->Process->RootDirectory, base, pathname, mode, device);
+			break;
 
-			// S_IFREG (or zero): Create a new regular file node
-			case 0:
-			case LINUX_S_IFREG:
-				_RPTF0(_CRT_ASSERT, "mknodat: S_IFREG not implemented yet");
-				break;
+		// S_IFBLK: Create a new block device node
+		case LINUX_S_IFBLK:
+			_RPTF0(_CRT_ASSERT, "mknodat: S_IFBLK not implemented yet");
+			break;
 
-			// S_IFCHR: Create a new character device node
-			case LINUX_S_IFCHR:
-				context->VirtualMachine->CreateCharacterDevice(context->Process->RootDirectory, base, pathname, mode, device);
-				break;
+		// S_IFIFO: Create a new pipe node
+		case LINUX_S_IFIFO:
+			_RPTF0(_CRT_ASSERT, "mknodat: S_IFIFO not implemented yet");
+			break;
 
-			// S_IFBLK: Create a new block device node
-			case LINUX_S_IFBLK:
-				_RPTF0(_CRT_ASSERT, "mknodat: S_IFBLK not implemented yet");
-				break;
+		// S_IFSOCK: Create a new socket node
+		case LINUX_S_IFSOCK:
+			_RPTF0(_CRT_ASSERT, "mknodat: S_IFSOCK not implemented yet");
+			break;
 
-			// S_IFIFO: Create a new pipe node
-			case LINUX_S_IFIFO:
-				_RPTF0(_CRT_ASSERT, "mknodat: S_IFIFO not implemented yet");
-				break;
-
-			// S_IFSOCK: Create a new socket node
-			case LINUX_S_IFSOCK:
-				_RPTF0(_CRT_ASSERT, "mknodat: S_IFSOCK not implemented yet");
-				break;
-
-			// Other node types cannot be created by this system call
-			default: throw LinuxException(LINUX_EINVAL);
-		}
+		// Other node types cannot be created by this system call
+		default: throw LinuxException(LINUX_EINVAL);
 	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
 
 	return 0;
 }
@@ -97,7 +90,7 @@ __int3264 sys_mknodat(const ContextHandle* context, int dirfd, const uapi::char_
 //
 sys32_long_t sys32_mknodat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode, sys32_dev_t device)
 {
-	return static_cast<sys32_long_t>(sys_mknodat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, device));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_mknodat, context, dirfd, pathname, mode, device));
 }
 
 #ifdef _M_X64
@@ -105,7 +98,7 @@ sys32_long_t sys32_mknodat(sys32_context_t context, sys32_int_t dirfd, const sys
 //
 sys64_long_t sys64_mknodat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode, sys64_dev_t device)
 {
-	return sys_mknodat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, device);
+	return SystemCall::Invoke(sys_mknodat, context, dirfd, pathname, mode, device);
 }
 #endif
 

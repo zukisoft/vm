@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,13 +32,13 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	signal		- Signal to examine or change (cannot be SIGKILL or SIGSTOP)
 //	action		- Specifies the new action for the signal
 //	oldaction	- Receives the old action for the signal
 //	sigsetsize	- Size of the sigset_t data type
 
-uapi::long_t sys_rt_sigaction(const ContextHandle* context, int signal, const uapi::sigaction* action, uapi::sigaction* oldaction, size_t sigsetsize)
+uapi::long_t sys_rt_sigaction(const Context* context, int signal, const uapi::sigaction* action, uapi::sigaction* oldaction, size_t sigsetsize)
 {
 	// The RPC marshaler would not have been able to deal with a mask longer than defined in the structure
 	if(sigsetsize != sizeof(uapi::sigset_t)) return -LINUX_EINVAL;
@@ -63,7 +62,7 @@ uapi::long_t sys_rt_sigaction(const ContextHandle* context, int signal, const ua
 sys32_long_t sys32_rt_sigaction(sys32_context_t context, sys32_int_t signal, const sys32_sigaction_t* action, sys32_sigaction_t* oldaction, sys32_size_t sigsetsize)
 {
 	static_assert(sizeof(uapi::sigaction) == sizeof(sys32_sigaction_t), "uapi::sigaction is not equivalent to sys32_sigaction_t");
-	return SystemCall::Invoke(sys_rt_sigaction, reinterpret_cast<ContextHandle*>(context), signal, reinterpret_cast<const uapi::sigaction*>(action), reinterpret_cast<uapi::sigaction*>(oldaction), sigsetsize);
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_rt_sigaction, context, signal, reinterpret_cast<const uapi::sigaction*>(action), reinterpret_cast<uapi::sigaction*>(oldaction), sigsetsize));
 }
 
 //---------------------------------------------------------------------------

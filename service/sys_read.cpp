@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,28 +32,21 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	fd			- File descriptor
 //	buf			- Output buffer to receive the data read
 //	count		- Number of bytes to read from the file system object
 
-__int3264 sys_read(const ContextHandle* context, int fd, void* buf, size_t count)
+uapi::long_t sys_read(const Context* context, int fd, void* buf, size_t count)
 {
-	_ASSERTE(context);
-
-	try { 
-		
-		return context->Process->GetHandle(fd)->Read(buf, count); 
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	return context->Process->GetHandle(fd)->Read(buf, count); 
 }
 
 // sys32_read
 //
 sys32_long_t sys32_read(sys32_context_t context, sys32_int_t fd, sys32_uchar_t* buf, sys32_size_t count)
 {
-	return static_cast<sys32_long_t>(sys_read(reinterpret_cast<ContextHandle*>(context), fd, buf, count));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_read, context, fd, buf, count));
 }
 
 #ifdef _M_X64
@@ -61,7 +54,7 @@ sys32_long_t sys32_read(sys32_context_t context, sys32_int_t fd, sys32_uchar_t* 
 //
 sys64_long_t sys64_read(sys64_context_t context, sys64_int_t fd, sys64_uchar_t* buf, sys64_sizeis_t count)
 {
-	return sys_read(reinterpret_cast<ContextHandle*>(context), fd, buf, count);
+	return SystemCall::Invoke(sys_read, context, fd, buf, count);
 }
 #endif
 

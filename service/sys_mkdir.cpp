@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_mkdirat.cpp
 //
-__int3264 sys_mkdirat(const ContextHandle* context, int fd, const uapi::char_t* pathname, uapi::mode_t mode);
+uapi::long_t sys_mkdirat(const Context* context, int fd, const uapi::char_t* pathname, uapi::mode_t mode);
 
 //-----------------------------------------------------------------------------
 // sys_mkdir
@@ -36,11 +36,11 @@ __int3264 sys_mkdirat(const ContextHandle* context, int fd, const uapi::char_t* 
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Path to the new directory to be created
 //	mode		- Mode flags to assign to the new directory object
 
-__int3264 sys_mkdir(const ContextHandle* context, const uapi::char_t* pathname, uapi::mode_t mode)
+uapi::long_t sys_mkdir(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
 	// sys_mkdir() is equivalent to sys_mkdirat(AT_FDCWD)
 	return sys_mkdirat(context, LINUX_AT_FDCWD, pathname, mode);
@@ -50,7 +50,7 @@ __int3264 sys_mkdir(const ContextHandle* context, const uapi::char_t* pathname, 
 //
 sys32_long_t sys32_mkdir(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_mkdir(reinterpret_cast<ContextHandle*>(context), pathname, mode));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_mkdir, context, pathname, mode));
 }
 
 #ifdef _M_X64
@@ -58,7 +58,7 @@ sys32_long_t sys32_mkdir(sys32_context_t context, const sys32_char_t* pathname, 
 //
 sys64_long_t sys64_mkdir(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return sys_mkdir(reinterpret_cast<ContextHandle*>(context), pathname, mode);
+	return SystemCall::Invoke(sys_mkdir, context, pathname, mode);
 }
 #endif
 

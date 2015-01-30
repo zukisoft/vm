@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __CONTEXTHANDLE_H_
-#define __CONTEXTHANDLE_H_
+#ifndef __CONTEXT_H_
+#define __CONTEXT_H_
 #pragma once
 
 #include "Process.h"
@@ -32,14 +32,14 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ContextHandle
+// Context
 //
 // Object type used as the RPC context handle for a client process; maintains
 // references to various virtual machine objects that are used to implement
 // the system calls.  Instances of this class must be created and destroyed
 // with the provided static Allocate() and Release() methods
 
-class ContextHandle
+class Context
 {
 public:
 
@@ -48,59 +48,49 @@ public:
 
 	// Allocate
 	//
-	// Allocates a new ContextHandle instance
-	static ContextHandle* Allocate(const std::shared_ptr<::VirtualMachine>& vm);
-	static ContextHandle* Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process);
-	static ContextHandle* Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
+	// Allocates a new Context instance
+	static Context* Allocate(const std::shared_ptr<::VirtualMachine>& vm);
+	static Context* Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process);
+	static Context* Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
 
 	// Release
 	//
-	// Releases a ContextHandle instance
-	static ContextHandle* Release(ContextHandle* context);
+	// Releases a Context instance
+	static Context* Release(Context* context);
 
 	//-------------------------------------------------------------------------
-	// Properties
+	// Fields
 
 	// Process
 	//
-	// Gets the process object instance
-	__declspec(property(get=getProcess)) std::shared_ptr<::Process> Process;
-	std::shared_ptr<::Process> getProcess(void) const { return m_process; }
+	// Virtual machine process instance
+	const std::shared_ptr<::Process> Process;
 
 	// Thread
 	//
-	// Gets the thread object instance
-	__declspec(property(get=getThread)) std::shared_ptr<::Thread> Thread;
-	std::shared_ptr<::Thread> getThread(void) const { return m_thread; }
+	// Process thread instance
+	const std::shared_ptr<::Thread> Thread;
 
 	// VirtualMachine
 	//
-	// Gets the contained VirtualMachine instance pointer
-	__declspec(property(get=getVirtualMachine)) std::shared_ptr<::VirtualMachine> VirtualMachine;
-	std::shared_ptr<::VirtualMachine> getVirtualMachine(void) const { return m_vm; }	
+	// Virtual machine instance
+	const std::shared_ptr<::VirtualMachine> VirtualMachine;
 
 private:
 
-	~ContextHandle()=default;
-	ContextHandle(const ContextHandle&)=delete;
-	ContextHandle& operator=(const ContextHandle&)=delete;
+	~Context()=default;
+	Context(const Context&)=delete;
+	Context& operator=(const Context&)=delete;
 
 	// Instance Constructors
 	//
-	ContextHandle(const std::shared_ptr<::VirtualMachine>& vm);
-	ContextHandle(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process);
-	ContextHandle(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	std::shared_ptr<::VirtualMachine>	m_vm;			// VirtualMachine instance
-	std::shared_ptr<::Process>			m_process;		// Process instance
-	std::shared_ptr<::Thread>			m_thread;		// Thread instance
+	Context(const std::shared_ptr<::VirtualMachine>& vm);
+	Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process);
+	Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __CONTEXTHANDLE_H_
+#endif	// __CONTEXT_H_

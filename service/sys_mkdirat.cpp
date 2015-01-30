@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,32 +32,25 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	dirfd		- Previously opened directory object file descriptor
 //	pathname	- Relative path for the directory to create
 //	mode		- Mode flags to assign when creating the directory
 
-__int3264 sys_mkdirat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode)
+uapi::long_t sys_mkdirat(const Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode)
 {
-	_ASSERTE(context);
+	// Determine if an absolute or relative pathname has been provided
+	bool absolute = ((pathname) && (pathname[0] == '/'));
 
-	try {
+	// Determine the base alias from which to resolve the path
+	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
 
-		// Determine if an absolute or relative pathname has been provided
-		bool absolute = ((pathname) && (pathname[0] == '/'));
+	// Apply the process' current umask to the provided creation mode flags
+	mode &= ~context->Process->FileCreationModeMask;
 
-		// Determine the base alias from which to resolve the path
-		FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-			((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
-
-		// Apply the process' current umask to the provided creation mode flags
-		mode &= ~context->Process->FileCreationModeMask;
-
-		// Attempt to create the directory object relative from the base alias
-		context->VirtualMachine->CreateDirectory(context->Process->RootDirectory, base, pathname, mode);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// Attempt to create the directory object relative from the base alias
+	context->VirtualMachine->CreateDirectory(context->Process->RootDirectory, base, pathname, mode);
 
 	return 0;
 }
@@ -66,7 +59,7 @@ __int3264 sys_mkdirat(const ContextHandle* context, int dirfd, const uapi::char_
 //
 sys32_long_t sys32_mkdirat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_mkdirat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_mkdirat, context, dirfd, pathname, mode));
 }
 
 #ifdef _M_X64
@@ -74,7 +67,7 @@ sys32_long_t sys32_mkdirat(sys32_context_t context, sys32_int_t dirfd, const sys
 //
 sys64_long_t sys64_mkdirat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return sys_mkdirat(reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode);
+	return SystemCall::Invoke(sys_mkdirat, context, dirfd, pathname, mode);
 }
 #endif
 

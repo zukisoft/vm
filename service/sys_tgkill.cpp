@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,12 +32,12 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	tgid		- Target thread group
 //	pid			- Target thread identifier
 //	sig			- Signal to send to the thread
 
-uapi::long_t sys_tgkill(const ContextHandle* context, uapi::pid_t tgid, uapi::pid_t pid, int sig)
+uapi::long_t sys_tgkill(const Context* context, uapi::pid_t tgid, uapi::pid_t pid, int sig)
 {
 	(context);
 	(tgid);
@@ -52,7 +51,7 @@ uapi::long_t sys_tgkill(const ContextHandle* context, uapi::pid_t tgid, uapi::pi
 //
 sys32_long_t sys32_tgkill(sys32_context_t context, sys32_pid_t tgid, sys32_pid_t pid, sys32_int_t sig)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_tgkill, reinterpret_cast<ContextHandle*>(context), tgid, pid, sig));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_tgkill, context, tgid, pid, sig));
 }
 
 #ifdef _M_X64
@@ -60,7 +59,7 @@ sys32_long_t sys32_tgkill(sys32_context_t context, sys32_pid_t tgid, sys32_pid_t
 //
 sys64_long_t sys64_tgkill(sys64_context_t context, sys64_pid_t tgid, sys64_pid_t pid, sys64_int_t sig)
 {
-	return SystemCall::Invoke(sys_tgkill, reinterpret_cast<ContextHandle*>(context), tgid, pid, sig);
+	return SystemCall::Invoke(sys_tgkill, context, tgid, pid, sig);
 }
 #endif
 

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,17 +32,16 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	option		- Operation to be performed
 //	arg2		- Optional operation-specific argument
 //	arg3		- Optional operation-specific argument
 //	arg4		- Optional operation-specific argument
 //	arg5		- Optional operation-specific argument
 
-__int3264 sys_prctl(const ContextHandle* context, int option, uapi::ulong_t arg2, uapi::ulong_t arg3, uapi::ulong_t arg4, uapi::ulong_t arg5)
+uapi::long_t sys_prctl(const Context* context, int option, uapi::ulong_t arg2, uapi::ulong_t arg3, uapi::ulong_t arg4, uapi::ulong_t arg5)
 {
-	_ASSERTE(context);
-
+	(context);
 	(option);
 	(arg2);
 	(arg3);
@@ -56,7 +55,7 @@ __int3264 sys_prctl(const ContextHandle* context, int option, uapi::ulong_t arg2
 //
 sys32_long_t sys32_prctl(sys32_context_t context, sys32_int_t option, sys32_ulong_t arg2, sys32_ulong_t arg3, sys32_ulong_t arg4, sys32_ulong_t arg5)
 {
-	return static_cast<sys32_long_t>(sys_prctl(reinterpret_cast<ContextHandle*>(context), option, arg2, arg3, arg4, arg5));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_prctl, context, option, arg2, arg3, arg4, arg5));
 }
 
 #ifdef _M_X64
@@ -64,7 +63,7 @@ sys32_long_t sys32_prctl(sys32_context_t context, sys32_int_t option, sys32_ulon
 //
 sys64_long_t sys64_prctl(sys64_context_t context, sys64_int_t option, sys64_ulong_t arg2, sys64_ulong_t arg3, sys64_ulong_t arg4, sys64_ulong_t arg5)
 {
-	return sys_prctl(reinterpret_cast<ContextHandle*>(context), option, arg2, arg3, arg4, arg5);
+	return SystemCall::Invoke(sys_prctl, context, option, arg2, arg3, arg4, arg5);
 }
 #endif
 

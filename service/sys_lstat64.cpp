@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_fstatat64.cpp
 //
-__int3264 sys_fstatat64(const ContextHandle* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags);
+uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags);
 
 //-----------------------------------------------------------------------------
 // sys_lstat64
@@ -36,11 +36,11 @@ __int3264 sys_fstatat64(const ContextHandle* context, int fd, const uapi::char_t
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Pathname to the file system object
 //	stats		- Output structure
 
-__int3264 sys_lstat64(const ContextHandle* context, const uapi::char_t* pathname, linux_stat3264* buf)
+uapi::long_t sys_lstat64(const Context* context, const uapi::char_t* pathname, linux_stat3264* buf)
 {
 	// sys_lstat64 is equivalent to sys_fstatat64(LINUX_AT_FDCWD, LINUX_AT_SYMLINK_NOFOLLOW)
 	return sys_fstatat64(context, LINUX_AT_FDCWD, pathname, buf, LINUX_AT_SYMLINK_NOFOLLOW);
@@ -50,7 +50,7 @@ __int3264 sys_lstat64(const ContextHandle* context, const uapi::char_t* pathname
 //
 sys32_long_t sys32_lstat64(sys32_context_t context, const sys32_char_t* pathname, linux_stat3264* buf)
 {
-	return static_cast<sys32_long_t>(sys_lstat64(reinterpret_cast<ContextHandle*>(context), pathname, buf));
+	return SystemCall::Invoke(sys_lstat64, context, pathname, buf);
 }
 
 //---------------------------------------------------------------------------

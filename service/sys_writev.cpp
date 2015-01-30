@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "HeapBuffer.h"
 #include "SystemCall.h"
 
@@ -34,15 +33,13 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	fd			- Open file descriptor for the target object
 //	iov			- Array of iovec structures for the operation
 //	iovcnt		- Number of iovec structures provided via iov
 
-uapi::long_t sys_writev(const ContextHandle* context, int fd, uapi::iovec* iov, int iovcnt)
+uapi::long_t sys_writev(const Context* context, int fd, uapi::iovec* iov, int iovcnt)
 {
-	_ASSERTE(context);
-
 	if(iov == nullptr) return -LINUX_EFAULT;
 	if(iovcnt <= 0) return -LINUX_EINVAL;
 
@@ -52,7 +49,7 @@ uapi::long_t sys_writev(const ContextHandle* context, int fd, uapi::iovec* iov, 
 	// Calcluate the maximum required intermediate data buffer for the operation
 	size_t max = 0;
 	for(int index = 0; index < iovcnt; index++) { if(iov[index].iov_len > max) max = iov[index].iov_len; }
-	if(max == 0) throw LinuxException(LINUX_EINVAL);
+	if(max == 0) return -LINUX_EINVAL;
 
 	// Allocate the intermediate buffer
 	HeapBuffer<uint8_t> buffer(max);
@@ -75,7 +72,7 @@ uapi::long_t sys_writev(const ContextHandle* context, int fd, uapi::iovec* iov, 
 sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t* iov, sys32_int_t iovcnt)
 {
 	static_assert(sizeof(uapi::iovec) == sizeof(sys32_iovec_t), "uapi::iovec is not equivalent to sys32_iovec_t");
-	return SystemCall::Invoke(sys_writev, reinterpret_cast<ContextHandle*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
+	return SystemCall::Invoke(sys_writev, context, fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
 }
 #else
 // sys32_writev (64-bit)
@@ -85,20 +82,15 @@ sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t
 	if(iov == nullptr) return -LINUX_EFAULT;
 	if(iovcnt <= 0) return -LINUX_EINVAL;
 
-	try {
+	// uapi::iovec and sys32_iovec_t are not equivalent structures; iov array must be converted
+	HeapBuffer<uapi::iovec> vector(iovcnt);
+	for(int index = 0; index < iovcnt; index++) {
 
-		// uapi::iovec and sys32_iovec_t are not equivalent structures; iov array must be converted
-		HeapBuffer<uapi::iovec> vector(iovcnt);
-		for(int index = 0; index < iovcnt; index++) {
-
-			vector[index].iov_base = reinterpret_cast<void*>(iov[index].iov_base);
-			vector[index].iov_len = static_cast<uapi::size_t>(iov[index].iov_len);
-		}
-
-		return static_cast<sys32_long_t>(SystemCall::Invoke(sys_writev, reinterpret_cast<ContextHandle*>(context), fd, vector, iovcnt));
+		vector[index].iov_base = reinterpret_cast<void*>(iov[index].iov_base);
+		vector[index].iov_len = static_cast<uapi::size_t>(iov[index].iov_len);
 	}
 
-	catch(...) { return static_cast<sys32_long_t>(SystemCall::TranslateException(std::current_exception())); }
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_writev, context, fd, vector, iovcnt));
 }
 
 #endif
@@ -109,7 +101,7 @@ sys32_long_t sys32_writev(sys32_context_t context, sys32_int_t fd, sys32_iovec_t
 sys64_long_t sys64_writev(sys64_context_t context, sys64_int_t fd, sys64_iovec_t* iov, sys64_int_t iovcnt)
 {
 	static_assert(sizeof(uapi::iovec) == sizeof(sys64_iovec_t), "uapi::iovec is not equivalent to sys64_iovec_t");
-	return SystemCall::Invoke(sys_writev, reinterpret_cast<ContextHandle*>(context), fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
+	return SystemCall::Invoke(sys_writev, context, fd, reinterpret_cast<uapi::iovec*>(iov), iovcnt);
 }
 #endif
 

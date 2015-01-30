@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,9 +32,9 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 
-__int3264 sys_getuid(const ContextHandle* context)
+uapi::long_t sys_getuid(const Context* context)
 {
 	(context);
 	// TODO: hard-code to root for now
@@ -46,7 +45,7 @@ __int3264 sys_getuid(const ContextHandle* context)
 //
 sys32_long_t sys32_getuid(sys32_context_t context)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getuid, reinterpret_cast<ContextHandle*>(context)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getuid, context));
 }
 
 #ifdef _M_X64
@@ -54,7 +53,7 @@ sys32_long_t sys32_getuid(sys32_context_t context)
 //
 sys64_long_t sys64_getuid(sys64_context_t context)
 {
-	return SystemCall::Invoke(sys_getuid, reinterpret_cast<ContextHandle*>(context));
+	return SystemCall::Invoke(sys_getuid, context);
 }
 #endif
 

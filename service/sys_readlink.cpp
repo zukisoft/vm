@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,29 +32,22 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Relative path to the symbolic link object
 //	buf			- Output buffer
 //	bufsiz		- Length of the output buffer, in bytes
 
-__int3264 sys_readlink(const ContextHandle* context, const uapi::char_t* pathname, uapi::char_t* buf, size_t bufsiz)
+uapi::long_t sys_readlink(const Context* context, const uapi::char_t* pathname, uapi::char_t* buf, size_t bufsiz)
 {
-	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
-
-	try { 		
-		
-		return context->VirtualMachine->ReadSymbolicLink(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, buf, bufsiz);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	return context->VirtualMachine->ReadSymbolicLink(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, buf, bufsiz);
 }
 
 // sys32_readlink
 //
 sys32_long_t sys32_readlink(sys32_context_t context, const sys32_char_t* pathname, sys32_char_t* buf, sys32_size_t bufsiz)
 {
-	return static_cast<sys32_long_t>(sys_readlink(reinterpret_cast<ContextHandle*>(context), pathname, buf, bufsiz));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_readlink, context, pathname, buf, bufsiz));
 }
 
 #ifdef _M_X64
@@ -62,7 +55,7 @@ sys32_long_t sys32_readlink(sys32_context_t context, const sys32_char_t* pathnam
 //
 sys64_long_t sys64_readlink(sys64_context_t context, const sys64_char_t* pathname, sys64_char_t* buf, sys64_sizeis_t bufsiz)
 {
-	return sys_readlink(reinterpret_cast<ContextHandle*>(context), pathname, buf, static_cast<size_t>(bufsiz));
+	return SystemCall::Invoke(sys_readlink, context, pathname, buf, static_cast<size_t>(bufsiz));
 }
 #endif
 

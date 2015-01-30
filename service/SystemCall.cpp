@@ -26,42 +26,39 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_getcwd
+// SystemCall::TranslateException
 //
-// Gets the current working directory as an absolute path
+// Translates an std::exception into a system call result code
 //
 // Arguments:
 //
-//	context		- System call context object
-//	buf			- Output buffer to receive the current working directory
-//	size		- Length of the output buffer in bytes
+//	ex		- Exception to be translated
 
-uapi::long_t sys_getcwd(const Context* context, uapi::char_t* buf, size_t size)
+uapi::long_t SystemCall::TranslateException(std::exception_ptr ex)
 {
-	if(buf == nullptr) return -LINUX_EFAULT;
+	// Re-throw the exception to handle it based on the underlying type
+	try { std::rethrow_exception(ex); }
+	
+	// LinuxException: direct result code
+	catch(LinuxException& ex) { return -ex.Code; }
 
-	// Ask the virtual machine instance to resolve the absolute path to the working directory
-	context->VirtualMachine->GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
+	// TODO: Win32Exception translation
 
-	return 0;
+	// Exception: 
+	catch(Exception& ex) {
+
+		// TODO: SOMETHING REASONABLE HERE
+		int x = (int)ex.Code;
+		return -x;
+	}
+
+	// Anything else:
+	// TODO: SOMETHING REASONABLE HERE
+	catch(...) { return -LINUX_EFAULT; }
+
+	return -1;			// <--- should be impossible to reach, shuts up the compiler
 }
 
-// sys32_readlink
-//
-sys32_long_t sys32_getcwd(sys32_context_t context, sys32_char_t* buf, sys32_size_t size)
-{
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_getcwd, context, buf, size));
-}
-
-#ifdef _M_X64
-// sys64_getcwd
-//
-sys64_long_t sys64_getcwd(sys64_context_t context, sys64_char_t* buf, sys64_sizeis_t size)
-{
-	return SystemCall::Invoke(sys_getcwd, context, buf, static_cast<size_t>(size));
-}
-#endif
-
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

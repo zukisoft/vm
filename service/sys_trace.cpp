@@ -21,9 +21,12 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"			// TODO: REMOVE ME IN FAVOR OF SPECIFIC HEADERS
 
 #pragma warning(push, 4)
+
+//
+// TODO: THIS DOES NOT NEED A CONTEXT-- rename to rpc32_trace/rpc_trace
 
 //-----------------------------------------------------------------------------
 // sys_trace
@@ -32,14 +35,12 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	message		- ANSI message string
 //	length		- Length of the ANSI message string
 
-HRESULT sys_trace(const ContextHandle* context, const char_t* message, size_t length)
+HRESULT sys_trace(const Context* context, const char_t* message, size_t length)
 {
-	_ASSERTE(context);
-
 	UNREFERENCED_PARAMETER(context);
 	UNREFERENCED_PARAMETER(length);
 
@@ -53,7 +54,8 @@ HRESULT sys_trace(const ContextHandle* context, const char_t* message, size_t le
 //
 HRESULT sys32_trace(sys32_context_t context, sys32_char_t* message, sys32_size_t length)
 {
-	return sys_trace(reinterpret_cast<ContextHandle*>(context), message, length);
+	// TODO: NOT A SYSTEM CALL - NO SYSTEMCALL::INVOKE
+	return sys_trace((Context*)context, message, length);
 }
 
 #ifdef _M_X64
@@ -61,7 +63,8 @@ HRESULT sys32_trace(sys32_context_t context, sys32_char_t* message, sys32_size_t
 //
 HRESULT sys64_trace(sys64_context_t context, sys64_char_t* message, sys64_sizeis_t length)
 {
-	return sys_trace(reinterpret_cast<ContextHandle*>(context), message, length);
+	// TODO: NOT A SYSTEM CALL - NO SYSTEMCALL::INVOKE
+	return sys_trace((Context*)context, message, length);
 }
 #endif
 

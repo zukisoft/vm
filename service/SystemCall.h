@@ -24,8 +24,8 @@
 #define __SYSTEMCALL_H_
 #pragma once
 
-#include <type_traits>
-#include "ContextHandle.h"
+#include "Context.h"
+#include "LinuxException.h"
 #include "Win32Exception.h"
 
 #include <syscalls32.h>
@@ -38,56 +38,60 @@
 //-----------------------------------------------------------------------------
 // SystemCall
 //
-// Helper routines and classes used for implementation of system calls via RPC
-// to allow interaction with the top-level Virtual Machine objects
+// System call invocation wrapper that provides the common initialization and
+// termination code, exception handling, etc.
+//
+// Each wrapped system call must accept a const ContextHandle* as its first argument, 
+// the remaining arguments are variadic and will be passed directly:
+//
+// uapi::long_t sys_sample(const ContextHandle* context, int argument1, int argument2);
+//
+// Invoking a system call from an RPC callback is accomplished by calling the
+// variadic Invoke() method, passing the system call function and the RPC context handle 
+// followed by the remaining arguments for the system call:
+//
+// sys32_long_t sys32_sample(sys32_context_t context, sys32_int_t arg1, sys32_int_t arg2
+// {
+//		return static_cast<sys32_long_t>(SystemCall::Invoke(sys_sample, context, arg1, arg2));
+// }
 
 class SystemCall
 {
 public:
 
-	// Invoke
-	//
-	// Callable wrapper for any system call
-	template<typename _func, typename... _args>
-	static uapi::long_t Invoke(const _func& func, const ContextHandle* context, _args&&... args)
-	{
-		_ASSERTE(context);
+	//-------------------------------------------------------------------------
+	// Member Functions
 
+	// Invoke<> (static)
+	//
+	// System call invocation wrapper
+	template<typename _func, typename... _args>
+	static uapi::long_t Invoke(const _func& func, void* context, _args&&... args)
+	{
 		uapi::long_t result = -1;				// Result from system call
+
+		if(!context) return -LINUX_EFAULT;
 
 		// Always impersonate the client prior to invoking the system call
 		RPC_STATUS rpcresult = RpcImpersonateClient(nullptr);
-		if(rpcresult != RPC_S_OK) /* TODO: LOG THIS? */ return -LINUX_EPERM;
+		if(rpcresult != RPC_S_OK) return -LINUX_EPERM;
 
-		try { result = func(context, std::forward<_args>(args)...); }
+		// Invoke the system call inside of a generic exception handler
+		try { result = func(reinterpret_cast<Context*>(context), std::forward<_args>(args)...); }
 		catch(...) { result = TranslateException(std::current_exception()); }
 
-		RpcRevertToSelf();						// Always revert impersonation
-		return result;							// Return system call result
+		RpcRevertToSelf();					// Revert the impersonation
+		return result;						// Return system call result
 	}
 
 	// TranslateException (static)
 	//
 	// Converts an exception into a return value for a system call
-	static uapi::long_t TranslateException(std::exception_ptr ex)
-	{
-		try { std::rethrow_exception(ex); }
-		catch(LinuxException& ex) {
-			return -ex.Code;
-		}
-		// TODO: Win32Exception translation
-		catch(Exception& ex) {
-
-			int x = (int)ex.Code;
-			return -x;
-		}
-		catch(...) { return -LINUX_ENOSYS; }
-
-		return -1;			// <--- should be impossible to reach, shuts up the compiler
-	}
+	static uapi::long_t TranslateException(std::exception_ptr ex);
 
 private:
 
+	SystemCall()=delete;
 	~SystemCall()=delete;
 	SystemCall(const SystemCall&)=delete;
 	SystemCall& operator=(const SystemCall&)=delete;

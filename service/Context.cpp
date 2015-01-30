@@ -21,38 +21,38 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "Context.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ContextHandle Constructor (private)
+// Context Constructor (private)
 //
 // Arguments:
 //
 //	vm			- VirtualMachine instance to associate with the context
 
-ContextHandle::ContextHandle(const std::shared_ptr<::VirtualMachine>& vm) : m_vm(vm) 
+Context::Context(const std::shared_ptr<::VirtualMachine>& vm) : VirtualMachine(vm) 
 {
 	_ASSERTE(vm);
 }
 
 //-----------------------------------------------------------------------------
-// ContextHandle Constructor (private)
+// Context Constructor (private)
 //
 // Arguments:
 //
 //	vm			- VirtualMachine instance to associate with the context
 //	process		- Process instance to associate with the context
 
-ContextHandle::ContextHandle(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process) : m_vm(vm), m_process(process)
+Context::Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process) : VirtualMachine(vm), Process(process)
 {
 	_ASSERTE(vm);
 	_ASSERTE(process);
 }
 
 //-----------------------------------------------------------------------------
-// ContextHandle Constructor (private)
+// Context Constructor (private)
 //
 // Arguments:
 //
@@ -60,8 +60,8 @@ ContextHandle::ContextHandle(const std::shared_ptr<::VirtualMachine>& vm, const 
 //	process		- Process instance to associate with the context
 //	thread		- Thread instance to associate with the context
 
-ContextHandle::ContextHandle(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
-	: m_vm(vm), m_process(process), m_thread(thread) 
+Context::Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
+	: VirtualMachine(vm), Process(process), Thread(thread) 
 {
 	_ASSERTE(vm);
 	_ASSERTE(process);
@@ -69,48 +69,48 @@ ContextHandle::ContextHandle(const std::shared_ptr<::VirtualMachine>& vm, const 
 }
 
 //-----------------------------------------------------------------------------
-// ContextHandle::Allocate (static)
+// Context::Allocate (static)
 //
-// Allocates a new ContextHandle instance
+// Allocates a new Context instance
 //
 // Arguments:
 //
 //	vm			- VirtualMachine instance to associate with the context
 
-ContextHandle* ContextHandle::Allocate(const std::shared_ptr<::VirtualMachine>& vm)
+Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm)
 {
-	// Allocate the storage for the ContextHandle with MIDL_user_allocate
-	void* instance = MIDL_user_allocate(sizeof(ContextHandle));
+	// Allocate the storage for the Context with MIDL_user_allocate
+	void* instance = MIDL_user_allocate(sizeof(Context));
 	if(!instance) throw Exception(E_OUTOFMEMORY);
 
-	// Use placement new to construct the ContextHandle in the allocated storage
-	return new(instance) ContextHandle(vm);
+	// Use placement new to construct the Context in the allocated storage
+	return new(instance) Context(vm);
 }
 
 //-----------------------------------------------------------------------------
-// ContextHandle::Allocate (static)
+// Context::Allocate (static)
 //
-// Allocates a new ContextHandle instance
+// Allocates a new Context instance
 //
 // Arguments:
 //
 //	vm			- VirtualMachine instance to associate with the context
 //	process		- Process instance to associate with the context
 
-ContextHandle* ContextHandle::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process)
+Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process)
 {
-	// Allocate the storage for the ContextHandle with MIDL_user_allocate
-	void* instance = MIDL_user_allocate(sizeof(ContextHandle));
+	// Allocate the storage for the Context with MIDL_user_allocate
+	void* instance = MIDL_user_allocate(sizeof(Context));
 	if(!instance) throw Exception(E_OUTOFMEMORY);
 
-	// Use placement new to construct the ContextHandle in the allocated storage
-	return new(instance) ContextHandle(vm, process);
+	// Use placement new to construct the Context in the allocated storage
+	return new(instance) Context(vm, process);
 }
 
 //-----------------------------------------------------------------------------
-// ContextHandle::Allocate (static)
+// Context::Allocate (static)
 //
-// Allocates a new ContextHandle instance
+// Allocates a new Context instance
 //
 // Arguments:
 //
@@ -118,30 +118,30 @@ ContextHandle* ContextHandle::Allocate(const std::shared_ptr<::VirtualMachine>& 
 //	process		- Process instance to associate with the context
 //	thread		- Thread instance to associate with the context
 
-ContextHandle* ContextHandle::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
+Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
 {
-	// Allocate the storage for the ContextHandle with MIDL_user_allocate
-	void* instance = MIDL_user_allocate(sizeof(ContextHandle));
+	// Allocate the storage for the Context with MIDL_user_allocate
+	void* instance = MIDL_user_allocate(sizeof(Context));
 	if(!instance) throw Exception(E_OUTOFMEMORY);
 
-	// Use placement new to construct the ContextHandle in the allocated storage
-	return new(instance) ContextHandle(vm, process, thread);
+	// Use placement new to construct the Context in the allocated storage
+	return new(instance) Context(vm, process, thread);
 }
 
 //-----------------------------------------------------------------------------
-// ContextHandle::Release (static)
+// Context::Release (static)
 //
-// Releases a ContextHandle instance
+// Releases a Context instance
 //
 // Arguments:
 //
-//	context		- Existing ContextHandle instance
+//	context		- Existing Context instance
 
-ContextHandle* ContextHandle::Release(ContextHandle* context)
+Context* Context::Release(Context* context)
 {
 	if(!context) return nullptr;
 
-	context->~ContextHandle();		// Invoke object destructor
+	context->~Context();		// Invoke object destructor
 	MIDL_user_free(context);		// Release allocated storage
 	return nullptr;					// Convenience NULL for the caller
 }

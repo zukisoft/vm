@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,23 +32,17 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	path		- Path to any object within the mounted file system
 //	buf			- Output buffer
 
-__int3264 sys_statfs(const ContextHandle* context, const uapi::char_t* path, uapi::statfs* buf)
+uapi::long_t sys_statfs(const Context* context, const uapi::char_t* path, uapi::statfs* buf)
 {
-	_ASSERTE(context);
 	if(buf == nullptr) return -LINUX_EFAULT;
-
-	try {
 		
-		// Resolve the path to the target alias and go through it to get to the file system information
-		auto alias = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, context->Process->WorkingDirectory, path, 0);
-		*buf = alias->Node->FileSystem->Status;
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	// Resolve the path to the target alias and go through it to get to the file system information
+	auto alias = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, context->Process->WorkingDirectory, path, 0);
+	*buf = alias->Node->FileSystem->Status;
 
 	return 0;
 }
@@ -62,7 +56,7 @@ sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, lin
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(sys_statfs(reinterpret_cast<ContextHandle*>(context), path, &stats));
+	sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_statfs, context, path, &stats));
 
 	// If sys_statfs() was successful, convert the data from the generic structure into the compatible one
 	if(result >= 0) {
@@ -96,7 +90,7 @@ sys32_long_t sys32_statfs(sys32_context_t context, const sys32_char_t* path, lin
 //
 sys64_long_t sys64_statfs(sys64_context_t context, const sys64_char_t* path, linux_statfs64* buf)
 {
-	return sys_statfs(reinterpret_cast<ContextHandle*>(context), path, buf);
+	return SystemCall::Invoke(sys_statfs, context, path, buf);
 }
 #endif
 

@@ -21,12 +21,12 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_fstatfs.cpp
-__int3264 sys_fstatfs(const ContextHandle* context, int fd, uapi::statfs* buf);
+uapi::long_t sys_fstatfs(const Context* context, int fd, uapi::statfs* buf);
 
 // sys32_fstatfs64
 //
@@ -39,7 +39,7 @@ sys32_long_t sys32_fstatfs64(sys32_context_t context, sys32_int_t fd, sys32_size
 	if(length != sizeof(uapi::statfs3264)) return -LINUX_EFAULT;
 
 	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(sys_fstatfs(reinterpret_cast<ContextHandle*>(context), fd, &stats));
+	sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_fstatfs, context, fd, &stats));
 
 	// If sys_fstatfs() was successful, convert the data from the generic structure into the compatible one
 	if(result >= 0) {

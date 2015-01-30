@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,12 +32,12 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	fd			- Open file descriptor to be manipulated
 //	cmd			- Operation command code
 //	arg			- Optional argument for the specified command code
 
-uapi::long_t sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
+uapi::long_t sys_fcntl(const Context* context, int fd, int cmd, void* arg)
 {
 	(arg);
 
@@ -69,7 +68,7 @@ uapi::long_t sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
 
 		// F_SETFD - Set the file descriptor flags (only close-on-exec is supported)
 		case LINUX_F_SETFD:
-			handle->CloseOnExec = (reinterpret_cast<__int3264>(arg) == LINUX_FD_CLOEXEC);
+			handle->CloseOnExec = (reinterpret_cast<uapi::long_t>(arg) == LINUX_FD_CLOEXEC);
 			return 0;
 
 		//
@@ -142,7 +141,7 @@ uapi::long_t sys_fcntl(const ContextHandle* context, int fd, int cmd, void* arg)
 //
 sys32_long_t sys32_fcntl64(sys32_context_t context, sys32_int_t fd, sys32_int_t cmd, sys32_addr_t arg)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fcntl, reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fcntl, context, fd, cmd, reinterpret_cast<void*>(arg)));
 }
 
 #ifdef _M_X64
@@ -150,7 +149,7 @@ sys32_long_t sys32_fcntl64(sys32_context_t context, sys32_int_t fd, sys32_int_t 
 //
 sys64_long_t sys64_fcntl(sys64_context_t context, sys64_int_t fd, sys64_int_t cmd, sys64_addr_t arg)
 {
-	return SystemCall::Invoke(sys_fcntl, reinterpret_cast<ContextHandle*>(context), fd, cmd, reinterpret_cast<void*>(arg));
+	return SystemCall::Invoke(sys_fcntl, context, fd, cmd, reinterpret_cast<void*>(arg));
 }
 #endif
 

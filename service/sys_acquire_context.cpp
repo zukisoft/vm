@@ -21,7 +21,8 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "Context.h"
+#include "SystemCall.h"		// TODO: REMOVE ME?
 
 #pragma warning(push, 4)
 
@@ -49,7 +50,7 @@ using CONTEXT64 = CONTEXT;
 HRESULT sys32_acquire_context(handle_t rpchandle, sys32_task_state_t* taskstate, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
-	ContextHandle*				handle = nullptr;	// System call context handle
+	Context*					handle = nullptr;	// System call context handle
 	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
 	RPC_STATUS					rpcresult;			// Result from RPC function call
 
@@ -72,14 +73,14 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_task_state_t* taskstate,
 		// Allocate and initialize a Context object to be passed back as the RPC context
 		auto vm = VirtualMachine::FindVirtualMachine(objectid);
 		auto process = vm->FindProcessByHostID(reinterpret_cast<uint32_t>(attributes.ClientPID));
-		handle = ContextHandle::Allocate(vm, process);
+		handle = Context::Allocate(vm, process);
 
 		// Acquire the task state information for the process
 		handle->Process->GetInitialTaskState(taskstate, sizeof(sys32_task_state_t));
 	}
 
-	catch(const Exception& ex) { ContextHandle::Release(handle); return ex.HResult; }
-	catch(...) { ContextHandle::Release(handle); return E_FAIL; }
+	catch(const Exception& ex) { Context::Release(handle); return ex.HResult; }
+	catch(...) { Context::Release(handle); return E_FAIL; }
 
 	*context = reinterpret_cast<sys32_context_exclusive_t>(handle);
 	return S_OK;
@@ -100,7 +101,7 @@ HRESULT sys32_acquire_context(handle_t rpchandle, sys32_task_state_t* taskstate,
 HRESULT sys64_acquire_context(handle_t rpchandle, sys64_task_state_t* taskstate, sys64_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
-	ContextHandle*		handle = nullptr;	// System call context handle
+	Context*					handle = nullptr;	// System call context handle
 	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
 	RPC_STATUS					rpcresult;			// Result from RPC function call
 
@@ -123,14 +124,14 @@ HRESULT sys64_acquire_context(handle_t rpchandle, sys64_task_state_t* taskstate,
 		// Allocate and initialize a Context object to be passed back as the RPC context
 		auto vm = VirtualMachine::FindVirtualMachine(objectid);
 		auto process = vm->FindProcessByHostID(reinterpret_cast<uint32_t>(attributes.ClientPID));
-		handle = ContextHandle::Allocate(vm, process);
+		handle = Context::Allocate(vm, process);
 
 		// Acquire the task state information for the process
 		handle->Process->GetInitialTaskState(taskstate, sizeof(sys64_task_state_t));
 	}
 
-	catch(const Exception& ex) { ContextHandle::Release(handle); return ex.HResult; }
-	catch(...) { ContextHandle::Release(handle); return E_FAIL; }
+	catch(const Exception& ex) { Context::Release(handle); return ex.HResult; }
+	catch(...) { Context::Release(handle); return E_FAIL; }
 
 	*context = reinterpret_cast<sys32_context_exclusive_t>(handle);
 	return S_OK;

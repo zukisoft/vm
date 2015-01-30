@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,13 +32,13 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	dirfd		- Previously opened directory object file descriptor
 //	pathname	- Relative path for the file system object to check
 //	mode		- Accessibility check mask (F_OK, R_OK, etc)
 //	flags		- Behavioral flags
 
-uapi::long_t sys_faccessat(const ContextHandle* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
+uapi::long_t sys_faccessat(const Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, int flags)
 {
 	// Determine if an absolute or relative pathname has been provided
 	bool absolute = ((pathname) && (pathname[0] == '/'));
@@ -58,7 +57,7 @@ uapi::long_t sys_faccessat(const ContextHandle* context, int dirfd, const uapi::
 //
 sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const sys32_char_t* pathname, sys32_mode_t mode, sys32_int_t flags)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_faccessat, reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_faccessat, context, dirfd, pathname, mode, flags));
 }
 
 #ifdef _M_X64
@@ -66,7 +65,7 @@ sys32_long_t sys32_faccessat(sys32_context_t context, sys32_int_t dirfd, const s
 //
 sys64_long_t sys64_faccessat(sys64_context_t context, sys64_int_t dirfd, const sys64_char_t* pathname, sys64_mode_t mode, sys64_int_t flags)
 {
-	return SystemCall::Invoke(sys_faccessat, reinterpret_cast<ContextHandle*>(context), dirfd, pathname, mode, flags);
+	return SystemCall::Invoke(sys_faccessat, context, dirfd, pathname, mode, flags);
 }
 #endif
 

@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_mknodat.cpp
 //
-__int3264 sys_mknodat(const ContextHandle* context, int fd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device);
+uapi::long_t sys_mknodat(const Context* context, int fd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device);
 
 //-----------------------------------------------------------------------------
 // sys_mknod
@@ -36,12 +36,12 @@ __int3264 sys_mknodat(const ContextHandle* context, int fd, const uapi::char_t* 
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Path to the new node to be created
 //	mode		- Mode flags to assign to the new directory object
 //	device		- Device identifier when creating a device node
 
-__int3264 sys_mknod(const ContextHandle* context, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
+uapi::long_t sys_mknod(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
 {
 	// sys_mknod() is equivalent to sys_mknodat(AT_FDCWD)
 	return sys_mknodat(context, LINUX_AT_FDCWD, pathname, mode, device);
@@ -51,7 +51,7 @@ __int3264 sys_mknod(const ContextHandle* context, const uapi::char_t* pathname, 
 //
 sys32_long_t sys32_mknod(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode, sys32_dev_t device)
 {
-	return static_cast<sys32_long_t>(sys_mknod(reinterpret_cast<ContextHandle*>(context), pathname, mode, device));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_mknod, context, pathname, mode, device));
 }
 
 #ifdef _M_X64
@@ -59,7 +59,7 @@ sys32_long_t sys32_mknod(sys32_context_t context, const sys32_char_t* pathname, 
 //
 sys64_long_t sys64_mknod(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode, sys64_dev_t device)
 {
-	return sys_mknod(reinterpret_cast<ContextHandle*>(context), pathname, mode, device);
+	return SystemCall::Invoke(sys_mknod, context, pathname, mode, device);
 }
 #endif
 

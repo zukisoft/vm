@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,21 +32,13 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	address		- Base address of the region to unmap
 //	length		- Length of the region to unmap
 
-__int3264 sys_munmap(const ContextHandle* context, void* address, uapi::size_t length)
+uapi::long_t sys_munmap(const Context* context, void* address, uapi::size_t length)
 {
-	_ASSERTE(context);
-
-	try { 		
-		
-		context->Process->UnmapMemory(address, length);
-	}
-
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
-
+	context->Process->UnmapMemory(address, length);
 	return 0;
 }
 
@@ -54,7 +46,7 @@ __int3264 sys_munmap(const ContextHandle* context, void* address, uapi::size_t l
 //
 sys32_long_t sys32_munmap(sys32_context_t context, sys32_addr_t address, sys32_size_t length)
 {
-	return static_cast<sys32_long_t>(sys_munmap(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_munmap, context, reinterpret_cast<void*>(address), length));
 }
 
 #ifdef _M_X64
@@ -62,7 +54,7 @@ sys32_long_t sys32_munmap(sys32_context_t context, sys32_addr_t address, sys32_s
 //
 sys64_long_t sys64_munmap(sys64_context_t context, sys64_addr_t address, sys64_size_t length)
 {
-	return sys_munmap(reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(address), length);
+	return SystemCall::Invoke(sys_munmap, context, reinterpret_cast<void*>(address), length);
 }
 #endif
 

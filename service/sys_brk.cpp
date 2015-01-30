@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
@@ -33,12 +32,12 @@
 //
 // Arguments:
 //
-//	context			- SystemCall context object
+//	context			- System call context object
 //	brk				- Requested new program break address
 
-uapi::long_t sys_brk(const ContextHandle* context, void* brk)
+uapi::long_t sys_brk(const Context* context, void* brk)
 {
-	// Request the new program break address from the Process object
+	// Set the process program break and return the updated address
 	return reinterpret_cast<uapi::long_t>(context->Process->SetProgramBreak(brk));
 }
 
@@ -46,7 +45,7 @@ uapi::long_t sys_brk(const ContextHandle* context, void* brk)
 //
 sys32_long_t sys32_brk(sys32_context_t context, sys32_addr_t brk)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_brk, reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(brk)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_brk, context, reinterpret_cast<void*>(brk)));
 }
 
 #ifdef _M_X64
@@ -54,7 +53,7 @@ sys32_long_t sys32_brk(sys32_context_t context, sys32_addr_t brk)
 //
 sys64_long_t sys64_brk(sys64_context_t context, sys64_addr_t brk)
 {
-	return SystemCall::Invoke(sys_brk, reinterpret_cast<ContextHandle*>(context), reinterpret_cast<void*>(brk));
+	return SystemCall::Invoke(sys_brk, context, reinterpret_cast<void*>(brk));
 }
 #endif
 

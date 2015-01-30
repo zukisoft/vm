@@ -21,14 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_clone.cpp
 //
-uapi::long_t sys_clone(const ContextHandle* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid);
+uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid);
 
 //-----------------------------------------------------------------------------
 // sys_fork
@@ -37,11 +36,11 @@ uapi::long_t sys_clone(const ContextHandle* context, void* taskstate, size_t tas
 //
 // Arguments:
 //
-//	context			- SystemCall context object
+//	context			- System call context object
 //	taskstate		- Child task startup information
 //	taskstatelen	- Length of the child task startup information
 
-uapi::long_t sys_fork(const ContextHandle* context, void* taskstate, size_t taskstatelen)
+uapi::long_t sys_fork(const Context* context, void* taskstate, size_t taskstatelen)
 {
 	// sys_fork is equivalent to sys_clone(SIGCHLD)
 	return sys_clone(context, taskstate, taskstatelen, LINUX_SIGCHLD, nullptr, nullptr);
@@ -51,7 +50,7 @@ uapi::long_t sys_fork(const ContextHandle* context, void* taskstate, size_t task
 //
 sys32_long_t sys32_fork(sys32_context_t context, sys32_task_state_t* taskstate)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fork, reinterpret_cast<ContextHandle*>(context), taskstate, sizeof(sys32_task_state_t)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fork, context, taskstate, sizeof(sys32_task_state_t)));
 }
 
 #ifdef _M_X64
@@ -59,7 +58,7 @@ sys32_long_t sys32_fork(sys32_context_t context, sys32_task_state_t* taskstate)
 //
 sys64_long_t sys64_fork(sys64_context_t context, sys64_task_state_t* taskstate)
 {
-	return SystemCall::Invoke(sys_fork, reinterpret_cast<ContextHandle*>(context), taskstate, sizeof(sys64_task_state_t));
+	return SystemCall::Invoke(sys_fork, context, taskstate, sizeof(sys64_task_state_t));
 }
 #endif
 

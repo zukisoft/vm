@@ -21,14 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
 #include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_openat.cpp
 //
-uapi::long_t sys_openat(const ContextHandle* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
+uapi::long_t sys_openat(const Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
 
 //-----------------------------------------------------------------------------
 // sys_creat
@@ -37,11 +36,11 @@ uapi::long_t sys_openat(const ContextHandle* context, int fd, const uapi::char_t
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Path to the file on the virtual file system
 //	mode		- Mode mask to assign to the file if created
 
-uapi::long_t sys_creat(const ContextHandle* context, const uapi::char_t* pathname, uapi::mode_t mode)
+uapi::long_t sys_creat(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
 	// sys_creat() is equivalent to sys_openat(AT_FDCWD) with a fixed set of flags
 	return sys_openat(context, LINUX_AT_FDCWD, pathname, LINUX_O_CREAT | LINUX_O_WRONLY | LINUX_O_TRUNC, mode);
@@ -51,7 +50,7 @@ uapi::long_t sys_creat(const ContextHandle* context, const uapi::char_t* pathnam
 //
 sys32_long_t sys32_creat(sys32_context_t context, const sys32_char_t* pathname, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_creat, reinterpret_cast<ContextHandle*>(context), pathname, mode));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_creat, context, pathname, mode));
 }
 
 #ifdef _M_X64
@@ -59,7 +58,7 @@ sys32_long_t sys32_creat(sys32_context_t context, const sys32_char_t* pathname, 
 //
 sys64_long_t sys64_creat(sys64_context_t context, const sys64_char_t* pathname, sys64_mode_t mode)
 {
-	return SystemCall::Invoke(sys_creat, reinterpret_cast<ContextHandle*>(context), pathname, mode);
+	return SystemCall::Invoke(sys_creat, context, pathname, mode);
 }
 #endif
 

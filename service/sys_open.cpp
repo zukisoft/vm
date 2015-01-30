@@ -21,13 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
 // sys_openat.cpp
 //
-__int3264 sys_openat(const ContextHandle* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
+uapi::long_t sys_openat(const Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
 
 //-----------------------------------------------------------------------------
 // sys_open
@@ -36,12 +36,12 @@ __int3264 sys_openat(const ContextHandle* context, int fd, const uapi::char_t* p
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	pathname	- Path to the file on the virtual file system
 //	flags		- File open/creation flags
 //	mode		- Mode mask to assign to the file if created
 
-__int3264 sys_open(const ContextHandle* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+uapi::long_t sys_open(const Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
 	// sys_open() is equivalent to sys_openat(AT_FDCWD)
 	return sys_openat(context, LINUX_AT_FDCWD, pathname, flags, mode);
@@ -51,7 +51,7 @@ __int3264 sys_open(const ContextHandle* context, const uapi::char_t* pathname, i
 //
 sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, sys32_int_t flags, sys32_mode_t mode)
 {
-	return static_cast<sys32_long_t>(sys_open(reinterpret_cast<ContextHandle*>(context), pathname, flags, mode));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_open, context, pathname, flags, mode));
 }
 
 #ifdef _M_X64
@@ -59,7 +59,7 @@ sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, s
 //
 sys64_long_t sys64_open(sys64_context_t context, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
 {
-	return sys_open(reinterpret_cast<ContextHandle*>(context), pathname, flags, mode);
+	return SystemCall::Invoke(sys_open=, context, pathname, flags, mode);
 }
 #endif
 

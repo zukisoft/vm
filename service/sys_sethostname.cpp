@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ContextHandle.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -32,22 +32,16 @@
 //
 // Arguments:
 //
-//	context		- SystemCall context object
+//	context		- System call context object
 //	name		- New host name string to be assigned
 //	len			- Length of the name string, does not include null terminator
 
-__int3264 sys_sethostname(const ContextHandle* context, uapi::char_t* name, size_t len)
+uapi::long_t sys_sethostname(const Context* context, const uapi::char_t* name, size_t len)
 {
-	_ASSERTE(context);
 	if(name == nullptr) return -LINUX_EFAULT;
 	if(len == 0) return -LINUX_EINVAL;
 
-	try { 
-		
-		context->VirtualMachine->SetProperty(VirtualMachine::Properties::HostName, name, len); 
-	}
-	
-	catch(...) { return SystemCall::TranslateException(std::current_exception()); }
+	context->VirtualMachine->SetProperty(VirtualMachine::Properties::HostName, name, len); 
 
 	return 0;
 }
@@ -56,7 +50,7 @@ __int3264 sys_sethostname(const ContextHandle* context, uapi::char_t* name, size
 //
 sys32_long_t sys32_sethostname(sys32_context_t context, sys32_char_t* name, sys32_size_t len)
 {
-	return static_cast<sys32_long_t>(sys_sethostname(reinterpret_cast<ContextHandle*>(context), name, len));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_sethostname, context, name, len));
 }
 
 #ifdef _M_X64
@@ -64,7 +58,7 @@ sys32_long_t sys32_sethostname(sys32_context_t context, sys32_char_t* name, sys3
 //
 sys64_long_t sys64_sethostname(sys64_context_t context, sys64_char_t* name, sys64_sizeis_t len)
 {
-	return sys_sethostname(reinterpret_cast<ContextHandle*>(context), name, len);
+	return SystemCall::Invoke(sys_sethostname, context, name, len);
 }
 #endif
 
