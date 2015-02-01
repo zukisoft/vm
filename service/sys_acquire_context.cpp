@@ -26,16 +26,6 @@
 
 #pragma warning(push, 4)
 
-// CONTEXT32 / CONTEXT64
-//
-// Aliases for either CONTEXT or WOW64_CONTEXT, depending on build type
-#ifndef _M_X64
-using CONTEXT32 = CONTEXT;
-#else
-using CONTEXT32 = WOW64_CONTEXT;
-using CONTEXT64 = CONTEXT;
-#endif
-
 //-----------------------------------------------------------------------------
 // sys32_acquire_context
 //
