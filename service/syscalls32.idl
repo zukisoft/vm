@@ -94,7 +94,7 @@ typedef struct _sys32_task_t {
 	sys32_addr_t		esp;
 
 	// Segment Registers
-	sys32_ulong_t		gs;
+	sys32_ushort_t		gs;
 
 } sys32_task_t;
 

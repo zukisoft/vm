@@ -33,7 +33,7 @@ extern __declspec(thread) sys32_context_t t_rpccontext;
 // t_gs (emulator.cpp)
 //
 // Emulated GS register value
-extern __declspec(thread) uint32_t t_gs;
+extern __declspec(thread) uint16_t t_gs;
 
 //-----------------------------------------------------------------------------
 // sys_clone

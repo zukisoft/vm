@@ -33,7 +33,7 @@ extern void* g_ldt;
 // t_gs (main.cpp)
 //
 // Thread-local emulated GS segment register
-extern __declspec(thread) uint32_t t_gs;
+extern __declspec(thread) uint16_t t_gs;
 
 // trace.cpp
 //
@@ -41,22 +41,12 @@ void TraceMessage(const char_t* message, size_t length);
 
 // GS<>
 //
-// Accesses a value in the emulated GS segment via an offset.  The value
-// itself is munged up by sys_set_thread_area and the hosted libc binary
-// and must be decoded to get back to the TLS slot
+// Accesses a value in the emulated GS segment via an offset
 template<typename size_type> inline size_type& GS(uintptr_t offset)
 {
-	_ASSERTE(t_gs > 0);		// This would never be zero if set properly
-
-	// Demunge the slot within the LDT from the emulated GS segment register
-	uintptr_t slot = (((uintptr_t(t_gs) - 3) >> 3) >> 8) - 1;
-
 	// Return a reference to the specified offset as the requested data type
 	uapi::user_desc32* ldt = reinterpret_cast<uapi::user_desc32*>(g_ldt);
-	
-	// TODO: SLOT NUMBER IS BROKEN RIGHT NOW
-	//return *reinterpret_cast<size_type*>(uintptr_t(ldt[slot].base_addr) + offset);
-	return *reinterpret_cast<size_type*>(uintptr_t(ldt[0].base_addr) + offset);
+	return *reinterpret_cast<size_type*>(uintptr_t(ldt[t_gs >> 3].base_addr) + offset);
 }
 
 // InvokeSystemCall

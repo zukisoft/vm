@@ -43,7 +43,7 @@ __declspec(thread) sys32_task_t t_exittask;
 // t_gs
 //
 // Thread-local emulated GS segment register
-__declspec(thread) uint32_t t_gs;
+__declspec(thread) uint16_t t_gs;
 
 // t_rpccontext
 //
