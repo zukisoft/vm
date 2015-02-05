@@ -48,9 +48,9 @@ uapi::long_t sys_fork(const Context* context, void* taskstate, size_t taskstatel
 
 // sys32_fork
 //
-sys32_long_t sys32_fork(sys32_context_t context, sys32_task_state_t* taskstate)
+sys32_long_t sys32_fork(sys32_context_t context, sys32_task_t* taskstate)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fork, context, taskstate, sizeof(sys32_task_state_t)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_fork, context, taskstate, sizeof(sys32_task_t)));
 }
 
 #ifdef _M_X64

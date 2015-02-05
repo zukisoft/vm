@@ -22,10 +22,10 @@
 
 #include "stdafx.h"
 
-// g_rpccontext
+// t_rpccontext (main.cpp)
 //
-// Global RPC context handle to the system calls server
-extern sys32_context_t g_rpccontext;
+// RPC context handle for the current thread
+extern __declspec(thread) sys32_context_t t_rpccontext;
 
 //-----------------------------------------------------------------------------
 // TraceMessage
@@ -42,7 +42,7 @@ extern sys32_context_t g_rpccontext;
 void TraceMessage(const char_t* message, size_t length)
 {
 	// Nothing much to do, just send the message to the service
-	sys32_trace(g_rpccontext, const_cast<sys32_char_t*>(message), length);
+	sys32_trace(t_rpccontext, const_cast<sys32_char_t*>(message), length);
 }
 
 //-----------------------------------------------------------------------------

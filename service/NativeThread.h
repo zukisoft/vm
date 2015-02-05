@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include "NtApi.h"
 #include "ProcessClass.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
@@ -50,8 +51,25 @@ public:
 
 	// Create (static)
 	//
-	// Creates a new NativeThread instance
-	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint, void* stackpointer, size_t tlssize);
+	// Creates a new NativeThread instance from an entry point and stack pointer
+	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint, void* stackpointer, size_t tlslength)
+		{ return Create(process, entrypoint, stackpointer, nullptr, tlslength); }
+
+	// Create (static)
+	//
+	// Creates a new NativeThread instance from an entry point, stack pointer and existing thread-local storage data
+	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint, void* stackpointer, void* tlsdata, size_t tlslength);
+
+	// Create (static)
+	//
+	// Creates a new NativeThread instance using an existing task state
+	static std::unique_ptr<NativeThread> Create(HANDLE process, void* taskstate, size_t taskstatelength, size_t tlslength)
+		{ return Create(process, taskstate, taskstatelength, nullptr, tlslength); }
+	
+	// Create (static)
+	//
+	// Creates a new NativeThread instance using an existing task state and thread-local storage data
+	static std::unique_ptr<NativeThread> Create(HANDLE process, void* taskstate, size_t taskstatelength, void* tlsdata, size_t tlslength);
 
 	// Resume
 	//
@@ -102,9 +120,6 @@ private:
 	//
 	NativeThread(HANDLE thread, DWORD threadid, void* tlsbase, size_t tlslength) : m_thread(thread), m_threadid(threadid), m_tlsbase(tlsbase), m_tlslength(tlslength) {}
 	friend std::unique_ptr<NativeThread> std::make_unique<NativeThread, HANDLE&, DWORD&, void*&, size_t&>(HANDLE&, DWORD&, void*&, size_t&);
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
 
 	//-------------------------------------------------------------------------
 	// Member Variables

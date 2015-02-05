@@ -24,10 +24,15 @@
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
+// t_exittask (main.cpp)
 //
-// RPC context handle
-extern sys32_context_t g_rpccontext;
+// Thread-local task state information to restore original thread
+extern __declspec(thread) sys32_task_t t_exittask;
+
+// t_rpccontext (main.cpp)
+//
+// RPC context handle for the current thread
+extern __declspec(thread) sys32_context_t t_rpccontext;
 
 //-----------------------------------------------------------------------------
 // sys_exit
@@ -36,17 +41,26 @@ extern sys32_context_t g_rpccontext;
 //
 // Arguments:
 //
-//	status			- Exit code
+//	context		- Pointer to the CONTEXT structure from the exception handler
 
-uapi::long_t sys_exit(int status)
+uapi::long_t sys_exit(PCONTEXT context)
 {
-	return -38;
+	// Cast out the arguments to sys_exit
+	sys32_ulong_t status = static_cast<sys32_ulong_t>(context->Ebx);	
 
-	// Inform the virtual machine service that the thread is exiting
-	sys32_unregister_thread(g_rpccontext, GetCurrentThreadId(), status);
+	// Restore the saved task information, this will cause the thread to jump back
+	// to the original point where it was forked when the CONTEXT is reapplied
+	context->Eax = status;
+	context->Ebx = t_exittask.ebx;
+	context->Ecx = t_exittask.ecx;
+	context->Edx = t_exittask.edx;
+	context->Edi = t_exittask.edi;
+	context->Esi = t_exittask.esi;
+	context->Eip = t_exittask.eip;
+	context->Ebp = t_exittask.ebp;
+	context->Esp = t_exittask.esp;
 
-	// Exit the thread using the specified status code
-	ExitThread(static_cast<DWORD>(status));
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

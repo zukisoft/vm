@@ -67,8 +67,8 @@ void TaskState::CopyTo(void* taskstate, size_t length) const
 template <>
 std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* entrypoint, const void* stackpointer)
 {
-	HeapBuffer<uint8_t> blob(sizeof(sys32_task_state_t));
-	sys32_task_state_t* state = reinterpret_cast<sys32_task_state_t*>(&blob);
+	HeapBuffer<uint8_t> blob(sizeof(sys32_task_t));
+	sys32_task_t* state = reinterpret_cast<sys32_task_t*>(&blob);
 
 	// Integer Registers
 	state->eax = 0;
@@ -85,9 +85,6 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* entr
 
 	// Segment Registers
 	state->gs = 0;
-
-	// Local Descriptor Table
-	memset(&state->ldt, -1, sizeof(sys32_ldt_t));
 
 	return std::make_unique<TaskState>(std::move(blob));
 }
@@ -106,10 +103,10 @@ template <>
 std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* existing, size_t length)
 {
 	if(existing == nullptr) throw Exception(E_POINTER);
-	if(length != sizeof(sys32_task_state_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys32_task_state_t));
+	if(length != sizeof(sys32_task_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys32_task_t));
 
 	// Copy the existing task information into a new HeapBuffer<> instance
-	HeapBuffer<uint8_t> blob(sizeof(sys32_task_state_t));
+	HeapBuffer<uint8_t> blob(sizeof(sys32_task_t));
 	memcpy(blob, existing, length);
 
 	return std::make_unique<TaskState>(std::move(blob));

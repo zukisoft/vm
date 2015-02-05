@@ -25,43 +25,27 @@
 
 #pragma warning(push, 4)
 
-// sys_openat.cpp
-//
-uapi::long_t sys_openat(const Context* context, int fd, const uapi::char_t* pathname, int flags, uapi::mode_t mode);
-
 //-----------------------------------------------------------------------------
-// sys_open
+// sys32_acquire_process
 //
-// Opens, and possibly creates, a file on the virtual file system
+// Acquires the process context for a 32-bit host
 //
 // Arguments:
 //
-//	context		- System call context object
-//	pathname	- Path to the file on the virtual file system
-//	flags		- File open/creation flags
-//	mode		- Mode mask to assign to the file if created
+//	rpchandle		- RPC binding handle
+//	tid				- [in] native thread id within the host process
+//	task			- [out] set to the thread task information
+//	context			- [out] set to the newly allocated context handle
 
-uapi::long_t sys_open(const Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
+HRESULT sys32_acquire_thread(handle_t rpchandle, sys32_uint_t tid, sys32_task_t* task, sys32_context_exclusive_t* context)
 {
-	// sys_open() is equivalent to sys_openat(AT_FDCWD)
-	return sys_openat(context, LINUX_AT_FDCWD, pathname, flags, mode);
-}
+	(context);
+	(tid);
+	(task);
+	(rpchandle);
 
-// sys32_open
-//
-sys32_long_t sys32_open(sys32_context_t context, const sys32_char_t* pathname, sys32_int_t flags, sys32_mode_t mode)
-{
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_open, context, pathname, flags, mode));
+	return E_FAIL;
 }
-
-#ifdef _M_X64
-// sys64_open
-//
-sys64_long_t sys64_open(sys64_context_t context, const sys64_char_t* pathname, sys64_int_t flags, sys64_mode_t mode)
-{
-	return SystemCall::Invoke(sys_open, context, pathname, flags, mode);
-}
-#endif
 
 //---------------------------------------------------------------------------
 

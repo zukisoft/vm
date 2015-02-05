@@ -26,10 +26,10 @@
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
+// t_rpccontext (main.cpp)
 //
-// RPC context handle
-extern sys32_context_t g_rpccontext;
+// RPC context handle for the current thread
+extern __declspec(thread) sys32_context_t t_rpccontext;
 
 // REMOTE_SYSCALL_X
 //
@@ -37,25 +37,25 @@ extern sys32_context_t g_rpccontext;
 // into the RPC interface or require any RPC memory allocation/release operations, otherwise
 // there needs to be a LOCAL_SYSCALL_X function defined for it
 #define REMOTE_SYSCALL_0(_syscall) \
-[](PCONTEXT context) -> uapi::long_t { UNREFERENCED_PARAMETER(context); return _syscall(g_rpccontext); }
+[](PCONTEXT context) -> uapi::long_t { UNREFERENCED_PARAMETER(context); return _syscall(t_rpccontext); }
 
 #define REMOTE_SYSCALL_1(_syscall, _type_0) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx)); }
+[](PCONTEXT context) -> uapi::long_t { return _syscall(t_rpccontext, (_type_0)(context->Ebx)); }
 
 #define REMOTE_SYSCALL_2(_syscall, _type_0, _type_1) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx)); }
+[](PCONTEXT context) -> uapi::long_t { return _syscall(t_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx)); }
 
 #define REMOTE_SYSCALL_3(_syscall, _type_0, _type_1, _type_2) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx)); }
+[](PCONTEXT context) -> uapi::long_t { return _syscall(t_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx)); }
 
 #define REMOTE_SYSCALL_4(_syscall, _type_0, _type_1, _type_2, _type_3) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi)); }
+[](PCONTEXT context) -> uapi::long_t { return _syscall(t_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi)); }
 
 #define REMOTE_SYSCALL_5(_syscall, _type_0, _type_1, _type_2, _type_3, _type_4) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi)); }
+[](PCONTEXT context) -> uapi::long_t { return _syscall(t_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi)); }
 
 #define REMOTE_SYSCALL_6(_syscall, _type_0, _type_1, _type_2, _type_3, _type_4, _type_5) \
-[](PCONTEXT context) -> uapi::long_t { return _syscall(g_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi), (_type_5)(context->Ebp)); }
+[](PCONTEXT context) -> uapi::long_t { return _syscall(t_rpccontext, (_type_0)(context->Ebx), (_type_1)(context->Ecx), (_type_2)(context->Edx), (_type_3)(context->Esi), (_type_4)(context->Edi), (_type_5)(context->Ebp)); }
 
 // CONTEXT_SYSCALL
 //
@@ -105,7 +105,7 @@ uapi::long_t sys_noentry(PCONTEXT context)
 syscall_t g_syscalls[512] = {
 
 /* 000 */	sys_noentry,
-/* 001 */	LOCAL_SYSCALL_1(sys_exit, int),
+/* 001 */	CONTEXT_SYSCALL(sys_exit),
 /* 002 */	CONTEXT_SYSCALL(sys_fork),
 /* 003 */	REMOTE_SYSCALL_3(sys32_read, sys32_int_t, sys32_uchar_t*, sys32_size_t),
 /* 004 */	REMOTE_SYSCALL_3(sys32_write, sys32_int_t, const sys32_uchar_t*, sys32_size_t),
@@ -347,7 +347,7 @@ syscall_t g_syscalls[512] = {
 /* 240 */	sys_noentry,
 /* 241 */	sys_noentry,
 /* 242 */	sys_noentry,
-/* 243 */	LOCAL_SYSCALL_1(sys_set_thread_area, uapi::user_desc*),
+/* 243 */	REMOTE_SYSCALL_1(sys32_set_thread_area, linux_user_desc32*),
 /* 244 */	sys_noentry,
 /* 245 */	sys_noentry,
 /* 246 */	sys_noentry,

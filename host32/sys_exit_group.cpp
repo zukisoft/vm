@@ -24,10 +24,10 @@
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
+// t_rpccontext (main.cpp)
 //
-// RPC context handle
-extern sys32_context_t g_rpccontext;
+// RPC context handle for the current thread
+extern __declspec(thread) sys32_context_t t_rpccontext;
 
 //-----------------------------------------------------------------------------
 // sys_exit_group

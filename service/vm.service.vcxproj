@@ -638,9 +638,11 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="SignalActions.cpp" />
+    <ClCompile Include="sys_acquire_process.cpp" />
     <ClCompile Include="SystemCall.cpp" />
     <ClCompile Include="sys_access.cpp" />
     <ClCompile Include="sys_acquire_context.cpp" />
+    <ClCompile Include="sys_acquire_thread.cpp" />
     <ClCompile Include="sys_brk.cpp" />
     <ClCompile Include="sys_clone.cpp" />
     <ClCompile Include="sys_close.cpp" />
@@ -679,6 +681,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_rundown_context.cpp" />
     <ClCompile Include="sys_setdomainname.cpp" />
     <ClCompile Include="sys_sethostname.cpp" />
+    <ClCompile Include="sys_set_thead_area.cpp" />
     <ClCompile Include="sys_stat64.cpp" />
     <ClCompile Include="sys_statfs.cpp" />
     <ClCompile Include="sys_statfs64.cpp" />

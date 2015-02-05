@@ -21,94 +21,135 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <process.h>
-#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4731)	// frame pointer modified by inline assembly code
 
-// g_rpccontext
+// g_ldt
 //
-// Global RPC context handle to the system calls server
-sys32_context_t g_rpccontext;
+// Pointer to the process-wide local descriptor table
+void* g_ldt = nullptr;
+
+// g_rpcbinding
+//
+// Global RPC binding handle to the system calls interface
+RPC_BINDING_HANDLE g_rpcbinding = nullptr;
+
+// t_exittask
+//
+// Thread-local task state information to restore host thread on exit
+__declspec(thread) sys32_task_t t_exittask;
+
+// t_gs
+//
+// Thread-local emulated GS segment register
+__declspec(thread) uint32_t t_gs;
+
+// t_rpccontext
+//
+// Thread-local RPC context handle for the system calls interface
+__declspec(thread) sys32_context_t t_rpccontext;
 
 // EmulationExceptionHandler (emulator.cpp)
 //
 // Vectored Exception handler used to provide emulation
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception);
 
-// t_hostedthread
+//-----------------------------------------------------------------------------
+// ExecuteTask
 //
-// Used to determine if the current thread is a hosted/emulated thread
-__declspec(thread) bool t_hostedthread;
-
-// t_gs (emulator.cpp)
+// Executes a hosted task on the calling thread.  The hosted task must call the
+// sys_exit() procedure, or an equivalent, in order for this to return control
+// back to the original execution path
 //
-// Emulated GS register value
-extern __declspec(thread) uint32_t t_gs;
-
-// t_ldt (emulator.cpp)
+// Arguments:
 //
-// Thread-local LDT
-extern __declspec(thread) sys32_ldt_t t_ldt;
+//	task			- Task to be executed on this thread
 
-//// TEST
-#include <vector>
-#include <linux\signal.h>
-std::vector<uapi::sigaction> g_sigactions;
-//////////
+DWORD ExecuteTask(sys32_task_t* task)
+{
+	sys32_task_t*	exittask = &t_exittask;		// Pointer to exit task state
+	uint32_t		result;						// Result from the task (EAX)
+
+	// Set the emulated GS segment register first
+	t_gs = task->gs;
+
+	// Use the EDI register as the pointer to the destination task state
+	__asm push edi;
+	__asm mov edi, exittask;
+
+	// Save the current register state into the task structure
+	__asm mov [edi]sys32_task_t.eax, eax;
+	__asm mov [edi]sys32_task_t.ebx, ebx;
+	__asm mov [edi]sys32_task_t.ecx, ecx;
+	__asm mov [edi]sys32_task_t.edx, edx;
+	// edi -> being used as the pointer
+	__asm mov [edi]sys32_task_t.esi, esi;
+	__asm mov [edi]sys32_task_t.ebp, ebp;
+	__asm mov [edi]sys32_task_t.esp, esp;
+
+	// Set the instruction pointer such that it will return at the label below
+	__asm mov eax, threadexit;
+	__asm mov [edi]sys32_task_t.eip, eax;
+
+	 // Use the ESI register as the pointer to the source task state
+	__asm mov esi, task;
+
+	// Set the current register state from the task structure
+	__asm mov eax, [esi]sys32_task_t.eax;
+	__asm mov ebx, [esi]sys32_task_t.ebx;
+	__asm mov ecx, [esi]sys32_task_t.ecx;
+	__asm mov edx, [esi]sys32_task_t.edx;
+	__asm mov edi, [esi]sys32_task_t.edi;
+	// esi -> being used as the pointer
+	__asm mov ebp, [esi]sys32_task_t.ebp;
+	__asm mov esp, [esi]sys32_task_t.esp;
+
+	// Push the instruction pointer onto the new stack
+	__asm push [esi]sys32_task_t.eip;
+
+	// Set ESI and jump into the entry point via a RET instruction
+	__asm mov esi, [esi]sys32_task_t.esi;
+	__asm ret;
+
+threadexit:
+
+	// When the code gets back here, all registers except EDI will be set up,
+	// EDI was pushed onto the stack before it was switched
+	__asm pop edi;
+
+	// The return code for the thread will have been set in the EAX register
+	__asm mov result, eax;
+
+	return result;
+}
 
 //-----------------------------------------------------------------------------
 // ThreadMain
 //
-// Entry point for a hosted thread
+// Entry point for a thread created by the virtual machine service
 //
 // Arguments:
 //
-//	arg			- Argument passed to _beginthreadex (sys32_task_state_t)
+//	arg			- Argument passed to CreateThread
 
-unsigned __stdcall ThreadMain(void* arg)
+DWORD WINAPI ThreadMain(void*)
 {
-	uapi::pid_t				tid;				// Thread id from the RPC service
+	zero_init<sys32_task_t>		task;			// Task information for this thread
+	DWORD						exitcode;		// Thread exit code
 
-	// This is a hosted thread
-	t_hostedthread = true;
+	// Attempt to acquire the task information and context handle from the server
+	HRESULT hresult = sys32_acquire_thread(g_rpcbinding, GetCurrentThreadId(), &task, &t_rpccontext);
+	if(FAILED(hresult)) return static_cast<DWORD>(hresult);
 
-	// First register the thread with the RPC service
-	HRESULT result = sys32_register_thread(g_rpccontext, GetCurrentThreadId(), &tid);
-	if(FAILED(result)) { /* TODO: HANDLE BAD THING */ }
+	// Execute the task provided in the thread startup information
+	exitcode = ExecuteTask(&task);
 
-	// Cast out the task state structure passed into the thread entry point
-	sys32_task_state_t* taskstate = reinterpret_cast<sys32_task_state_t*>(arg);
+	// Release the server context handle for this thread
+	sys32_release_context(&t_rpccontext);
 
-	// Initialize the LDT as a copy of the provided LDT
-	memcpy(&t_ldt, taskstate->ldt, sizeof(sys32_ldt_t));
-
-	// Set up the emulated GS register for this thread
-	t_gs = taskstate->gs;
-	
-	// Use the frame pointer to access the startup information fields;
-	// this function will never return so it can be trashed
-	__asm mov ebp, arg;
-
-	// Set the general-purpose registers
-	__asm mov eax, [ebp]sys32_task_state_t.eax;
-	__asm mov ebx, [ebp]sys32_task_state_t.ebx;
-	__asm mov ecx, [ebp]sys32_task_state_t.ecx;
-	__asm mov edx, [ebp]sys32_task_state_t.edx;
-	__asm mov edi, [ebp]sys32_task_state_t.edi;
-	__asm mov esi, [ebp]sys32_task_state_t.esi;
-
-	// Set the stack pointer and push the instruction pointer
-	__asm mov esp, [ebp]sys32_task_state_t.esp;
-	__asm push [ebp]sys32_task_state_t.eip;
-
-	// Restore the frame pointer and jump via return
-	__asm mov ebp, [ebp]sys32_task_state_t.ebp;
-	__asm ret
-
-	// Hosted thread never returns control back to here
-	return static_cast<unsigned>(E_UNEXPECTED);
+	// Individual threads can return from the entry point, do not call ExitThread()
+	return exitcode;
 }
 
 //-----------------------------------------------------------------------------
@@ -125,15 +166,10 @@ unsigned __stdcall ThreadMain(void* arg)
 
 int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
-	zero_init<sys32_task_state_t>	taskstate;		// State information from the service
-	RPC_BINDING_HANDLE				binding;		// RPC binding from command line
-	MSG								message;		// Thread message queue message
+	zero_init<sys32_process_t>		process;		// Process information from the service
 	RPC_STATUS						rpcresult;		// Result from RPC function call
 	DWORD							exitcode;		// Exit code from the main thread
 	HRESULT							hresult;		// Result from system call API function
-
-	// This is not a hosted thread
-	t_hostedthread = false;
 
 	// EXPECTED ARGUMENTS:
 	//
@@ -142,60 +178,28 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(__argc != 2) return static_cast<int>(ERROR_INVALID_PARAMETER);
 
 	// The only argument passed into the host process is the RPC binding string necessary to connect to the server
-	rpcresult = RpcBindingFromStringBinding(reinterpret_cast<rpc_tchar_t*>(__targv[1]), &binding);
+	rpcresult = RpcBindingFromStringBinding(reinterpret_cast<rpc_tchar_t*>(__targv[1]), &g_rpcbinding);
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
-	// Establish a thread message queue prior to contacting the RPC server
-	PeekMessage(&message, nullptr, WM_USER, WM_USER, PM_NOREMOVE);
-
-	// Attempt to acquire the host runtime context handle from the server
-	hresult = sys32_acquire_context(binding, &taskstate, &g_rpccontext);
+	// Attempt to acquire the host process information and context from the server
+	hresult = sys32_acquire_process(g_rpcbinding, reinterpret_cast<sys32_addr_t>(ThreadMain), &process, &t_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
-	// Create a suspended thread that will execute the Linux binary
-	HANDLE thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, SystemInformation::AllocationGranularity, ThreadMain, &taskstate, CREATE_SUSPENDED, nullptr));
-	if(thread == nullptr) { /* TODO: HANDLE THIS */ }
+	// Set the pointer to the process-wide local descriptor table
+	g_ldt = reinterpret_cast<void*>(process.ldt);
 
 	// Install the emulator, which operates by intercepting low-level exceptions
 	AddVectoredExceptionHandler(1, EmulationExceptionHandler);
 
-	ResumeThread(thread);						// Launch the hosted process
+	// Execute the task provided in the process startup information
+	exitcode = ExecuteTask(&process.task);
 
-	// TODO: TEMPORARY - This thread will need to wait for signals and also shouldn't
-	// die until every hosted thread has called exit() or some reasonable equivalent
+	// Release the server context handle for this thread
+	sys32_release_context(&t_rpccontext);
 
-	// New plan, this would be a standard message loop not msgwaitformultipleobjects/peekmessage,
-	// GetMessage returns false when WM_QUIT is received
-	while(MsgWaitForMultipleObjects(1, &thread, FALSE, INFINITE, QS_ALLPOSTMESSAGE) == (WAIT_OBJECT_0 + 1)) {
-
-		while(PeekMessage(&message, reinterpret_cast<HWND>(-1), 0, 0, PM_REMOVE)) {
-
-			int signal;
-			switch(message.message) {
-
-				// WM_APP: placeholder for a signal
-				case WM_APP:
-					// lParam == signal code
-					signal = static_cast<int>(message.lParam);
-					break;
-
-				// WM_QUIT: will need to handle this
-				case WM_QUIT:
-					break;
-			}
-		}
-	}
-
-	///WaitForSingleObject(thread, INFINITE);
-
-	GetExitCodeThread(thread, &exitcode);		// Get the exit code from the thread
-	CloseHandle(thread);						// Finished with the thread handle
-
-	// All hosted threads have terminated, release the RPC context
-	sys32_release_context(&g_rpccontext);
-
-	// Return the exit code from the main thread as the result from this process
-	return static_cast<int>(exitcode);
+	// Call ExitThread rather than returning from WinMain, that would invoke ExitProcess()
+	// and kill any other threads that have been created inside this host process
+	ExitThread(exitcode);
 }
 
 //-----------------------------------------------------------------------------

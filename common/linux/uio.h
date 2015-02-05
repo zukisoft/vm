@@ -32,6 +32,8 @@
 
 #pragma pack(push, 1)
 
+// TODO: THIS SHOULD HAVE 32 AND 64 BIT VERSIONS
+
 typedef struct {
 
 	void*			iov_base;

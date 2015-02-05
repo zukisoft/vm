@@ -25,77 +25,19 @@
 #include "syscalls.h"
 #include <linux/errno.h>
 
+// g_ldt (main.cpp)
+//
+// Pointer to the process-wide local descriptor table
+extern void* g_ldt;
+
+// t_gs (main.cpp)
+//
+// Thread-local emulated GS segment register
+extern __declspec(thread) uint32_t t_gs;
+
 // trace.cpp
 //
 void TraceMessage(const char_t* message, size_t length);
-
-// t_gs
-//
-// Emulated GS register value
-__declspec(thread) uint32_t t_gs = 0;
-
-// t_ldt
-//
-// Thread-local LDT
-__declspec(thread) sys32_ldt_t t_ldt;
-
-// t_hostedthread (main.cpp)
-//
-// Used to determine if the current thread is a hosted/emulated thread
-extern __declspec(thread) bool t_hostedthread;
-
-// AllocateLDTEntry
-//
-// Allocates an emulated LDT entry
-//
-sys32_ldt_entry_t* AllocateLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry)
-{
-	_ASSERTE((ldt != nullptr) && (entry != nullptr));
-
-	// Get the requested slot number and cast out the LDT for array access
-	int slot = entry->entry_number;
-	sys32_ldt_entry_t* table = reinterpret_cast<sys32_ldt_entry_t*>(ldt);
-
-	// If the entry number is -1, select the first available entry in the table
-	// (this will be the first slot with a -1 as the entry_number)
-	if(slot == -1) {
-
-		for(int index = 0; index < sys32_ldt_entries; index++)
-			if(table[index].entry_number == -1) { slot = index; break; }
-	}
-
-	// After auto-selection, the slot number must be in bounds for the table
-	if((slot < 0) || (slot >= sys32_ldt_entries)) return nullptr;
-
-	// Copy the entry into the LDT and assign the slot number
-	table[slot] = *entry;
-	table[slot].entry_number = slot;
-
-	// Return a pointer to the allocated/updated entry
-	return &table[slot];
-}
-
-// FreeLDTEntry
-//
-// Releases an emulated LDT entry
-//
-sys32_ldt_entry_t* FreeLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry)
-{
-	_ASSERTE((ldt != nullptr) && (entry != nullptr));
-
-	// Get the requested slot number and cast out the LDT for array access
-	int slot = entry->entry_number;
-	sys32_ldt_entry_t* table = reinterpret_cast<sys32_ldt_entry_t*>(ldt);
-
-	// The slot number must be in bounds for the table
-	if((slot < 0) || (slot >= sys32_ldt_entries)) return nullptr;
-
-	// Set the entire slot to -1 to clear it out and reset the entry_number
-	memset(&table[slot], -1, sizeof(sys32_ldt_entry_t));
-
-	// Return a pointer to the released entry
-	return &table[slot];
-}
 
 // GS<>
 //
@@ -106,13 +48,15 @@ template<typename size_type> inline size_type& GS(uintptr_t offset)
 {
 	_ASSERTE(t_gs > 0);		// This would never be zero if set properly
 
-	// Demunge the thread local storage slot
-	// TODO: HACKED VALUE; SEE SET_THREAD_AREA AND CLEAN THIS UP
+	// Demunge the slot within the LDT from the emulated GS segment register
 	uintptr_t slot = (((uintptr_t(t_gs) - 3) >> 3) >> 8) - 1;
 
 	// Return a reference to the specified offset as the requested data type
-	_ASSERTE(t_ldt[slot].entry_number >= 0);
-	return *reinterpret_cast<size_type*>(uintptr_t(t_ldt[slot].base_addr) + offset);
+	uapi::user_desc32* ldt = reinterpret_cast<uapi::user_desc32*>(g_ldt);
+	
+	// TODO: SLOT NUMBER IS BROKEN RIGHT NOW
+	//return *reinterpret_cast<size_type*>(uintptr_t(ldt[slot].base_addr) + offset);
+	return *reinterpret_cast<size_type*>(uintptr_t(ldt[0].base_addr) + offset);
 }
 
 // InvokeSystemCall
@@ -311,9 +255,6 @@ emulator::instruction MOV_GSRM32_IMM32(0x65, 0xC7, [](emulator::context_t* conte
 
 LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 {
-	// The exception handler is intended to service hosted threads only, never native ones
-	if(!t_hostedthread) return EXCEPTION_CONTINUE_SEARCH;
-
 	// All the exceptions that are handled here in the emulator are access violations
 	if(exception->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
 

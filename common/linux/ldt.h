@@ -29,25 +29,55 @@
 //-----------------------------------------------------------------------------
 
 #define LINUX_LDT_ENTRIES			8192	/* Maximum number of LDT entries supported. */
-#define LINUX_LDT_ENTRY_SIZE		8		/* The size of each LDT entry. */
+
+typedef struct {
+
+	uint32_t	entry_number;
+	uint32_t	base_addr;
+	uint32_t	limit;
+	uint32_t	flags;
+	
+} linux_user_desc32;
+
+typedef struct {
+
+	uint32_t	entry_number;
+	uint64_t	base_addr;
+	uint32_t	limit;
+	uint32_t	flags:1;
+	
+} linux_user_desc64;
 
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
-	struct user_desc {
-		unsigned int  entry_number;
-		unsigned int  base_addr;
-		unsigned int  limit;
-		unsigned int  seg_32bit:1;
-		unsigned int  contents:2;
-		unsigned int  read_exec_only:1;
-		unsigned int  limit_in_pages:1;
-		unsigned int  seg_not_present:1;
-		unsigned int  useable:1;
-	#ifdef _M_X64
-		unsigned int  lm:1;
-	#endif
-	};
+	typedef struct {
+
+		uint32_t	entry_number;
+		uint32_t	base_addr;
+		uint32_t	limit;
+		uint32_t	seg_32bit:1;
+		uint32_t	contents:2;
+		uint32_t	read_exec_only:1;
+		uint32_t	limit_in_pages:1;
+		uint32_t	seg_not_present:1;
+		uint32_t	useable:1;
+	
+	} user_desc32;
+
+	typedef struct {
+
+		uint32_t	entry_number;
+		uint64_t	base_addr;
+		uint32_t	limit;
+		uint32_t	seg_32bit:1;
+		uint32_t	contents:2;
+		uint32_t	read_exec_only:1;
+		uint32_t	limit_in_pages:1;
+		uint32_t	seg_not_present:1;
+		uint32_t	useable:1;
+	
+	} user_desc64;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)

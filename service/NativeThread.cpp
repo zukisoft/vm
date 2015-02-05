@@ -30,9 +30,15 @@
 // Aliases for either CONTEXT or WOW64_CONTEXT, depending on build type
 #ifndef _M_X64
 using CONTEXT32 = CONTEXT;
+#define GetThreadContext32	GetThreadContext
+#define SetThreadContext32	SetThreadContext
 #else
 using CONTEXT32 = WOW64_CONTEXT;
 using CONTEXT64 = CONTEXT;
+#define GetThreadContext32	Wow64GetThreadContext
+#define GetThreadContext64	GetThreadContext
+#define SetThreadContext32	Wow64SetThreadContext
+#define SetThreadContext64	SetThreadContext
 #endif
 
 //-----------------------------------------------------------------------------
@@ -53,50 +59,104 @@ NativeThread::~NativeThread()
 //	process			- Handle to the native process
 //	entrypoint		- Entry point for the thread
 //	stackpointer	- Stack pointer for the thread
-//	tlssize			- Length required for the thread local storage
+//	tlsdata			- Data to be copied into the thread-local storage area or null
+//	tlslength		- Length required for the thread-local storage
 
-std::unique_ptr<NativeThread> NativeThread::Create(HANDLE process, void* entrypoint, void* stackpointer, size_t tlssize)
+std::unique_ptr<NativeThread> NativeThread::Create(HANDLE process, void* entrypoint, void* stackpointer, void* tlsdata, size_t tlslength)
+{
+	zero_init<CONTEXT32>		context;			// Thread context information
+
+	// Apply the provided entry point and stack pointer to the dummy context
+	context.Ebp = reinterpret_cast<DWORD>(stackpointer);
+	context.Eip = reinterpret_cast<DWORD>(entrypoint);
+	context.Esp = reinterpret_cast<DWORD>(stackpointer);
+
+	// Invoke the creation function that accepts the task state structure
+	return Create(process, &context, sizeof(CONTEXT32), tlsdata, tlslength);
+}
+
+//-----------------------------------------------------------------------------
+// NativeThread::::Create<CONTEXT32> (static)
+//
+// Creates a new thread in the specified process
+//
+// Arguments:
+//
+//	process			- Handle to the native process
+//	taskstate		- Pointer to an existing task state structure
+//	taskstatelength	- Length of the task state information structure
+//	tlsdata			- Data to be copied into the thread-local storage area or null
+//	tlslength		- Length required for the thread-local storage
+
+std::unique_ptr<NativeThread> NativeThread::Create(HANDLE process, void* taskstate, size_t taskstatelen, void* tlsdata, size_t tlslength)
 {
 	DWORD						threadid;			// Thread ID
-	zero_init<CONTEXT32>		context;			// Thread context information
+	CONTEXT32					context;			// Thread context information
 	MEMORY_BASIC_INFORMATION	meminfo;			// Virtual memory information
 
-	// Adjust the thread local storage size to be a multiple of the system allocation granularity
-	tlssize = align::up(tlssize, SystemInformation::AllocationGranularity);
+	// TODO: temporary - need to switch out with a template class for x86/x64
+	if(taskstatelen != sizeof(CONTEXT32)) throw Exception(E_INVALIDARG);
+	CONTEXT32* existing = reinterpret_cast<CONTEXT32*>(taskstate);
 
-	// Create the thread in the target process using the specified entry point and thread local storage reservation
-	HANDLE thread = CreateRemoteThread(process, nullptr, tlssize, reinterpret_cast<LPTHREAD_START_ROUTINE>(entrypoint), nullptr,
-		CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, &threadid);
+	// Create the thread in the target process using the specified entry point and thread-local storage reservation
+	HANDLE thread = CreateRemoteThread(process, nullptr, align::up(tlslength, SystemInformation::AllocationGranularity), 
+		nullptr, nullptr, CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, &threadid);
 	if(thread == nullptr) throw Win32Exception();
+
+	//
+	// 64K stack
+	//
+	// 48K unused
+	// 8K guard
+	// 8K stack
+
+	// is it useful to push to the stack or just allocate another section
+
+
+	//
+	// TODO: EAX NEEDS TO BE SET TO THE ENTRY POINT, CREATETHREAD() INVOKES RTLUSERTHREAD WHICH
+	// NEEDS TO DO ESSENTIAL SET UP OTHERWISE THIS WON'T WORK
+	// SHOULD BE OK TO MUCK WITH THE STACK POINTER, THOUGH
+	//
 
 	try {
 
 		// Acquire the context information for the newly created thread
 		context.ContextFlags = CONTEXT_ALL;
-		if(!GetThreadContext(thread, &context)) throw Win32Exception();
+		if(!GetThreadContext32(thread, &context)) throw Win32Exception();
 
 		// Get the allocation base address for the native thread stack, this will be repurposed for thread local storage
 		if(VirtualQueryEx(process, reinterpret_cast<LPCVOID>(context.Esp), &meminfo, sizeof(MEMORY_BASIC_INFORMATION)) == 0) throw Win32Exception();
 		void* tlsbase = meminfo.AllocationBase;
 
-		// Commit the native thread stack and reset all protection to PAGE_READWRITE
-		if(VirtualAllocEx(process, tlsbase, tlssize, MEM_COMMIT, PAGE_READWRITE) == nullptr) throw Win32Exception();
+		// Commit the native thread stack and reset the protection to PAGE_READWRITE
+		if(VirtualAllocEx(process, tlsbase, tlslength, MEM_COMMIT, PAGE_READWRITE) == nullptr) throw Win32Exception();
 
-		// Set up the thread context to jump into the entry point and use the provided stack pointer
+		// If TLS initialization data has been provided, copy that into the repurposed memory region
+		if(tlsdata) NtApi::NtWriteVirtualMemory(process, tlsbase, tlsdata, tlslength, nullptr);
+
+		// Apply only the INTEGER and CONTROL flags from the provided task state structure
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
-		context.Eax = context.Ebx = context.Ecx = context.Edx = context.Edi = context.Esi = 0;
-		context.Eip = reinterpret_cast<DWORD>(entrypoint);
-		context.Esp = reinterpret_cast<DWORD>(stackpointer);
-		context.Ebp = reinterpret_cast<DWORD>(stackpointer);
-		if(!SetThreadContext(thread, &context)) throw Win32Exception();
+		context.Eax = existing->Eax;
+		context.Ebx = existing->Ebx;
+		context.Ecx = existing->Ecx;
+		context.Edx = existing->Edx;
+		context.Edi = existing->Edi;
+		context.Esi = existing->Esi;
+		context.Ebp = existing->Ebp;
+		context.Eip = existing->Eip;
+		context.Esp = existing->Esp;
+
+		// Attempt to set the task state to the suspended thread object
+		if(!SetThreadContext32(thread, &context)) throw Win32Exception();
 
 		// Create and return the NativeThread instance
-		return std::make_unique<NativeThread>(thread, threadid, tlsbase, tlssize);
+		return std::make_unique<NativeThread>(thread, threadid, tlsbase, tlslength);
 	} 
 	
 	catch(...) { CloseHandle(thread); throw; }
 }
-
+	
 //-----------------------------------------------------------------------------
 // NativeThread::Resume
 //

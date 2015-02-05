@@ -47,9 +47,9 @@ template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const st
 //	TODO: DOCUMENT THEM
 
 Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-	std::unique_ptr<TaskState>&& taskstate, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
+	std::unique_ptr<TaskState>&& taskstate, const void* ldt, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
 	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
-	m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak)
+	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak)
 {
 }
 
@@ -134,7 +134,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 				// Create the signal actions collection for the child process, which may be shared or duplicated (CLONE_SIGHAND)
 				std::shared_ptr<SignalActions> childactions = (flags & LINUX_CLONE_SIGHAND) ? m_sigactions : SignalActions::Duplicate(m_sigactions);
 						
-				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), childhandles, childactions, m_programbreak);
+				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, childhandles, childactions, m_programbreak);
 			}
 
 			catch(...) { vm->ReleasePID(pid); throw; }
@@ -255,13 +255,17 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		const void* entry_point = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
 		const void* program_break = executable->ProgramBreak;
 
-		// TESTING NEW STARTUP INFORMATION
+		// TODO LDT TEST
+		// SIZE IS BASED ON CLASS (32 v 64)
+		const void* ldt = host->AllocateMemory(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), PAGE_READWRITE);
+
+		// TODO TESTING NEW STARTUP INFORMATION
 		std::unique_ptr<TaskState> ts = TaskState::Create(_class, entry_point, stack_pointer);
 		std::shared_ptr<ProcessHandles> handles = ProcessHandles::Create();
 		std::shared_ptr<SignalActions> actions = SignalActions::Create();
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), handles, actions, program_break);
+		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), ldt, handles, actions, program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
@@ -540,6 +544,11 @@ void Process::Signal(int signal)
 std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const uapi::char_t* filename,
 	const uapi::char_t** argv, const uapi::char_t** envp)
 {
+
+	(envp);
+	(argv);
+	(pid);
+
 	// When creating a process directly via this function, the root and working directory are the filesystem root
 	std::shared_ptr<FileSystem> rootfs = vm->RootFileSystem;
 

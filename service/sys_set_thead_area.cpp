@@ -21,46 +21,31 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <linux/errno.h>
-#include <linux/ldt.h>
+#include "SystemCall.h"
+#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 
-// t_ldt
-//
-// Thread-local LDT
-extern __declspec(thread) sys32_ldt_t t_ldt;
-
-// AllocateLDTEntry (emulator.cpp)
-//
-sys32_ldt_entry_t* AllocateLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry);
-
 //-----------------------------------------------------------------------------
-// sys_set_thread_area
-//
-// Arguments:
-//
-//	u_info		- Thread-local storage descriptor
+// TODOTODO
 
-uapi::long_t sys_set_thread_area(uapi::user_desc* u_info)
+uapi::long_t sys_set_thread_area(const Context* context, uapi::user_desc32* u_info)
 {
-	if(u_info == nullptr) return -LINUX_EFAULT;
 
-	// Attempt to allocate/alter the entry at the specified position in the LDT
-	sys32_ldt_entry_t* result = AllocateLDTEntry(&t_ldt, reinterpret_cast<sys32_ldt_entry_t*>(u_info));
-	if(result == nullptr) return -LINUX_ESRCH;
+	// STUB STUB STUB TODO TODO TODO
 
-	// Return the resultant entry number back through the user_desc structure upon success
-	//
-	// TODO: THIS VALUE IS HACKED LIKE IT WAS - THIS NEEDS TO BE CLEANED UP AND DOCUMENTED
-	// IN ADDITION A NON -1 ENTRY_NUMBER IS NOT LIKELY TO WORK
-
-	u_info->entry_number = ((result->entry_number + 1) << 8);
+	u_info->entry_number = 1;
+	context->Process->WriteMemory(context->Process->TESTLDT, u_info, sizeof(uapi::user_desc32));
 	return 0;
 }
 
-//-----------------------------------------------------------------------------
+// sys32_set_thread_area
+//
+sys32_long_t sys32_set_thread_area(sys32_context_t context, linux_user_desc32* u_info)
+{
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_set_thread_area, context, reinterpret_cast<uapi::user_desc32*>(u_info)));
+}
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-

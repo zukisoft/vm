@@ -75,10 +75,10 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 
 // sys32_clone
 //
-sys32_long_t sys32_clone(sys32_context_t context, sys32_task_state_t* taskstate, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
+sys32_long_t sys32_clone(sys32_context_t context, sys32_task_t* taskstate, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
 {
 	// Note that the parameter order for the x86 system call differs from the standard system call, ctid and tls are swapped
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_clone, context, taskstate, sizeof(sys32_task_state_t), clone_flags, 
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_clone, context, taskstate, sizeof(sys32_task_t), clone_flags, 
 		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr)));
 }
 

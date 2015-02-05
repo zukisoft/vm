@@ -72,7 +72,7 @@ sys32_long_t sys32_mount(sys32_context_t context, const sys32_char_t* source, co
 //
 sys64_long_t sys64_mount(sys64_context_t context, const sys64_char_t* source, const sys64_char_t* target, const sys64_char_t* filesystem, sys64_ulong_t flags, sys64_addr_t data)
 {
-	return SystemCall::Invoke(sys_mount(context, source, target, filesystem, static_cast<uint32_t>(flags), reinterpret_cast<void*>(data));
+	return SystemCall::Invoke(sys_mount, context, source, target, filesystem, static_cast<uint32_t>(flags), reinterpret_cast<void*>(data));
 }
 #endif
 

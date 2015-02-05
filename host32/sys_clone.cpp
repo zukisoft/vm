@@ -25,28 +25,15 @@
 
 #pragma warning(push, 4)
 
-// g_rpccontext (main.cpp)
+// t_rpccontext (main.cpp)
 //
-// RPC context handle
-extern sys32_context_t g_rpccontext;
+// RPC context handle for the current thread
+extern __declspec(thread) sys32_context_t t_rpccontext;
 
 // t_gs (emulator.cpp)
 //
 // Emulated GS register value
 extern __declspec(thread) uint32_t t_gs;
-
-// t_ldt (emulator.cpp)
-//
-// Thread-local LDT
-extern __declspec(thread) sys32_ldt_t t_ldt;
-
-// AllocateLDTEntry (emulator.cpp)
-//
-sys32_ldt_entry_t* AllocateLDTEntry(sys32_ldt_t* ldt, sys32_ldt_entry_t* entry);
-
-// sys32_ldt_entry_t and uapi::user_desc must be the same size
-//
-static_assert(sizeof(sys32_ldt_entry_t) == sizeof(uapi::user_desc), "sys32_ldt_entry_t is not the same size as uapi::user_desc");
 
 //-----------------------------------------------------------------------------
 // sys_clone
@@ -59,13 +46,13 @@ static_assert(sizeof(sys32_ldt_entry_t) == sizeof(uapi::user_desc), "sys32_ldt_e
 
 uapi::long_t sys_clone(PCONTEXT context)
 {
-	zero_init<sys32_task_state_t>		taskstate;		// Child task state data
+	zero_init<sys32_task_t>			taskstate;		// Child task state data
 
 	// Cast out the arguments to sys_clone
 	sys32_ulong_t		clone_flags		= static_cast<sys32_ulong_t>(context->Ebx);	
 	void*				child_stack		= reinterpret_cast<void*>(context->Ecx);
 	uapi::pid_t*		parent_tidptr	= reinterpret_cast<uapi::pid_t*>(context->Edx);
-	uapi::user_desc*	tls_val			= reinterpret_cast<uapi::user_desc*>(context->Esi);
+	uapi::user_desc32*	tls_val			= reinterpret_cast<uapi::user_desc32*>(context->Esi);
 	uapi::pid_t*		child_tidptr	= reinterpret_cast<uapi::pid_t*>(context->Edi);
 
 	// The result of sys_clone in the child process/thread should be zero, set EAX
@@ -87,15 +74,19 @@ uapi::long_t sys_clone(PCONTEXT context)
 	// Copy this thread's current emulated GS register value
 	taskstate.gs = t_gs;
 
-	// Copy this thread's local descriptor table into the startup information
-	memcpy(&taskstate.ldt, &t_ldt, sizeof(sys32_ldt_t));
+	// temporary
+	_ASSERTE(tls_val == nullptr);
 
-	// If a new TLS slot is to be allocated in the cloned process, allocate it in the startup
-	// information, but do not actually modify this thread's emulated LDT
-	if(tls_val) AllocateLDTEntry(&taskstate.ldt, reinterpret_cast<sys32_ldt_entry_t*>(tls_val));
+	//// Copy this thread's local descriptor table into the startup information
+	//memcpy(&taskstate.ldt, &t_ldt, sizeof(sys32_ldt_t));
+
+	// TODO: put me back - need set_thread_area call, or add to sys32_clone (do the latter)
+	//// If a new TLS slot is to be allocated in the cloned process, allocate it in the startup
+	//// information, but do not actually modify this thread's emulated LDT
+	//if(tls_val) AllocateLDTEntry(&taskstate.ldt, reinterpret_cast<sys32_ldt_entry_t*>(tls_val));
 
 	// Invoke sys_clone with the generated startup information for the new process/thread
-	return sys32_clone(g_rpccontext, &taskstate, clone_flags, reinterpret_cast<sys32_addr_t>(parent_tidptr), 
+	return sys32_clone(t_rpccontext, &taskstate, clone_flags, reinterpret_cast<sys32_addr_t>(parent_tidptr), 
 		reinterpret_cast<sys32_addr_t>(child_tidptr));
 }
 

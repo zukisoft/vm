@@ -48,9 +48,9 @@ uapi::long_t sys_vfork(const Context* context, void* taskstate, size_t taskstate
 
 // sys32_vfork
 //
-sys32_long_t sys32_vfork(sys32_context_t context, sys32_task_state_t* taskstate)
+sys32_long_t sys32_vfork(sys32_context_t context, sys32_task_t* taskstate)
 {
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_vfork, context, taskstate, sizeof(sys32_task_state_t)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_vfork, context, taskstate, sizeof(sys32_task_t)));
 }
 
 #ifdef _M_X64

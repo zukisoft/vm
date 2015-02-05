@@ -745,6 +745,15 @@
     <ClCompile Include="NativeThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sys_acquire_thread.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_acquire_process.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_set_thead_area.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc">
