@@ -44,9 +44,14 @@ void TraceMessage(const char_t* message, size_t length);
 // Accesses a value in the emulated GS segment via an offset
 template<typename size_type> inline size_type& GS(uintptr_t offset)
 {
+	// In order to try and prevent running into a real LDT, the high bit of the
+	// slot is always set, limiting this to 4096 slots.  Strip out the high bit
+	// and then the lowest 3 bits to get the actual offset
+	uint16_t slot = (t_gs >> 3) & ~LINUX_LDT_ENTRIES;
+
 	// Return a reference to the specified offset as the requested data type
 	uapi::user_desc32* ldt = reinterpret_cast<uapi::user_desc32*>(g_ldt);
-	return *reinterpret_cast<size_type*>(uintptr_t(ldt[t_gs >> 3].base_addr) + offset);
+	return *reinterpret_cast<size_type*>(uintptr_t(ldt[slot].base_addr) + offset);
 }
 
 // InvokeSystemCall

@@ -31,11 +31,7 @@
 
 uapi::long_t sys_set_thread_area(const Context* context, uapi::user_desc32* u_info)
 {
-
-	// STUB STUB STUB TODO TODO TODO
-
-	u_info->entry_number = 0;
-	context->Process->WriteMemory(context->Process->TESTLDT, u_info, sizeof(uapi::user_desc32));
+	context->Process->SetLocalDescriptor(u_info);
 	return 0;
 }
 

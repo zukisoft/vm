@@ -49,7 +49,7 @@ template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const st
 Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	std::unique_ptr<TaskState>&& taskstate, const void* ldt, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
 	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
-	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak)
+	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak), m_ldtslots(LINUX_LDT_ENTRIES)
 {
 }
 
@@ -382,6 +382,46 @@ uapi::pid_t Process::getParentProcessId(void) const
 	// the parent process becomes the init process (id 1)
 	std::shared_ptr<Process> parent = m_parent.lock();
 	return (parent) ? parent->ProcessId : VirtualMachine::PROCESSID_INIT;
+}
+
+//-----------------------------------------------------------------------------
+// Process::SetLocalDescriptor
+//
+// Creates or updates an entry in the process local descriptor table
+//
+// Arguments:
+//
+//	u_info		- user_desc structure describing the LDT to be updated
+
+void Process::SetLocalDescriptor(uapi::user_desc32* u_info)
+{
+	uint32_t slot = u_info->entry_number;
+
+	ldt_lock_t::scoped_lock writer(m_ldtlock);
+
+	// If the slot number is -1, locate a free slot in the bitmap instead
+	if(slot == -1) {
+
+		slot = m_ldtslots.FindClear();
+		if(slot == Bitmap::NotFound) throw LinuxException(LINUX_ESRCH);
+
+		// From the caller's perspective, the slot will have bit 13 (0x1000) set
+		// to help ensure that a real LDT won't get accessed
+		slot |= LINUX_LDT_ENTRIES;
+	}
+
+	// The slot number must not exceed LINUX_LDT_ENTRIES (4096)
+	if(slot < LINUX_LDT_ENTRIES) throw LinuxException(LINUX_EINVAL);
+
+	// Attempt to update the entry in the process local descriptor table memory region
+	uintptr_t destination = uintptr_t(m_ldt) + ((slot & ~LINUX_LDT_ENTRIES) * sizeof(uapi::user_desc32));
+	m_host->WriteMemory(reinterpret_cast<void*>(destination), u_info, sizeof(uapi::user_desc32));
+
+	// Provide the allocated/updated slot number back to the caller in the user_desc structure
+	u_info->entry_number = slot;
+
+	// Track the slot allocation in the zero-based LDT allocation bitmap
+	m_ldtslots.Set(slot & ~LINUX_LDT_ENTRIES);
 }
 
 //-----------------------------------------------------------------------------

@@ -28,7 +28,12 @@
 // arch/x86/include/uapi/asm/ldt.h
 //-----------------------------------------------------------------------------
 
-#define LINUX_LDT_ENTRIES			8192	/* Maximum number of LDT entries supported. */
+// LINUX_LDT_ENTRIES
+//
+// The real constant is 8192, the number of LDTs available on the x86 platform,
+// however to try and prevent running into a real LDT, always set the high bit
+// which limits the implemented virtual LDT to 4096 slots
+#define LINUX_LDT_ENTRIES	4096
 
 typedef struct {
 

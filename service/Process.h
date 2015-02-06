@@ -33,6 +33,7 @@
 #include <linux/signal.h>
 #include <linux/stat.h>
 #include "elf_traits.h"
+#include "Bitmap.h"
 #include "ElfArguments.h"
 #include "ElfImage.h"
 #include "Exception.h"
@@ -125,6 +126,12 @@ public:
 	//
 	// Removes a file system handle from the process
 	void RemoveHandle(int index) { m_handles->Remove(index); }
+
+	// SetLocalDescriptor
+	//
+	// Sets a local descriptor table entry
+	// TODO: WILL THIS APPLY TO x64?
+	void SetLocalDescriptor(uapi::user_desc32* u_info);
 
 	// SetProgramBreak
 	//
@@ -246,6 +253,11 @@ private:
 		std::unique_ptr<TaskState>&& taskstate, const void* ldt, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
+	// ldt_lock_t
+	//
+	// Local descriptor table collection synchronization object
+	using ldt_lock_t = Concurrency::reader_writer_lock;
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -277,7 +289,12 @@ private:
 	// VIRTUAL MEMORY
 	//
 	const void*						m_programbreak;		// Current program break
+
+	// LOCAL DESCRIPTOR TABLE
+	//
 	const void*						m_ldt;				// Local descriptor table
+	Bitmap							m_ldtslots;			// LDT allocation bitmap
+	ldt_lock_t						m_ldtlock;			// LDT synchronization object
 
 	// SIGNALS
 	//

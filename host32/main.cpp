@@ -83,7 +83,7 @@ DWORD ExecuteTask(sys32_task_t* task)
 	__asm mov [edi]sys32_task_t.ebx, ebx;
 	__asm mov [edi]sys32_task_t.ecx, ecx;
 	__asm mov [edi]sys32_task_t.edx, edx;
-	// edi -> being used as the pointer
+	// edi -> being used as the pointer; on the stack
 	__asm mov [edi]sys32_task_t.esi, esi;
 	__asm mov [edi]sys32_task_t.ebp, ebp;
 	__asm mov [edi]sys32_task_t.esp, esp;
@@ -101,7 +101,7 @@ DWORD ExecuteTask(sys32_task_t* task)
 	__asm mov ecx, [esi]sys32_task_t.ecx;
 	__asm mov edx, [esi]sys32_task_t.edx;
 	__asm mov edi, [esi]sys32_task_t.edi;
-	// esi -> being used as the pointer
+	// esi -> being used as the pointer; set it last
 	__asm mov ebp, [esi]sys32_task_t.ebp;
 	__asm mov esp, [esi]sys32_task_t.esp;
 
