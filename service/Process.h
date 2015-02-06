@@ -250,7 +250,7 @@ private:
 	// Instance Constructor
 	//
 	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		std::unique_ptr<TaskState>&& taskstate, const void* ldt, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak);
+		std::unique_ptr<TaskState>&& taskstate, const void* ldt, Bitmap&& ldtmap, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
 	// ldt_lock_t

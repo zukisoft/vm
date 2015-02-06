@@ -27,7 +27,7 @@
 
 // sys_clone.cpp
 //
-uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid);
+uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid, uapi::user_desc32* tls_val);
 
 //-----------------------------------------------------------------------------
 // sys_vfork
@@ -43,7 +43,7 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 uapi::long_t sys_vfork(const Context* context, void* taskstate, size_t taskstatelen)
 {
 	// sys_vfork is equivalent to sys_clone(CLONE_VFORK | CLONE_VM | SIGCHLD)
-	return sys_clone(context, taskstate, taskstatelen, LINUX_CLONE_VFORK | LINUX_CLONE_VM | LINUX_SIGCHLD, nullptr, nullptr);
+	return sys_clone(context, taskstate, taskstatelen, LINUX_CLONE_VFORK | LINUX_CLONE_VM | LINUX_SIGCHLD, nullptr, nullptr, nullptr);
 }
 
 // sys32_vfork

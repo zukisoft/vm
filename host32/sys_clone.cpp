@@ -67,27 +67,17 @@ uapi::long_t sys_clone(PCONTEXT context)
 	taskstate.eip = context->Eip;
 
 	// Set the frame and stack pointers explicitly if requested, otherwise use this thread's registers
-	// TODO: What should EBP be set to if there is a new stack pointer?
 	taskstate.ebp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Ebp;
 	taskstate.esp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Esp;
 
-	// Copy this thread's current emulated GS register value
-	taskstate.gs = t_gs;
-
-	// temporary
+	// Child will use the same GS segment register as this calling thread
+	// TODO: SHOULD GS SEGMENT REGISTER STAY THE SAME OR CHANGE IF TLS_VAL WAS SPECIFIED?
 	_ASSERTE(tls_val == nullptr);
-
-	//// Copy this thread's local descriptor table into the startup information
-	//memcpy(&taskstate.ldt, &t_ldt, sizeof(sys32_ldt_t));
-
-	// TODO: put me back - need set_thread_area call, or add to sys32_clone (do the latter)
-	//// If a new TLS slot is to be allocated in the cloned process, allocate it in the startup
-	//// information, but do not actually modify this thread's emulated LDT
-	//if(tls_val) AllocateLDTEntry(&taskstate.ldt, reinterpret_cast<sys32_ldt_entry_t*>(tls_val));
+	taskstate.gs = t_gs;
 
 	// Invoke sys_clone with the generated startup information for the new process/thread
 	return sys32_clone(t_rpccontext, &taskstate, clone_flags, reinterpret_cast<sys32_addr_t>(parent_tidptr), 
-		reinterpret_cast<sys32_addr_t>(child_tidptr));
+		reinterpret_cast<sys32_addr_t>(child_tidptr), reinterpret_cast<linux_user_desc32*>(tls_val));
 }
 
 //-----------------------------------------------------------------------------

@@ -38,8 +38,9 @@
 //	flags			- Clone operation flags
 //	ptid			- Address to store the new child pid_t (in parent and child)
 //	ctid			- Address to store the new child pit_t (in child only)
+//	tls_val			- Optional new thread-local storage descriptor for the child
 
-uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid)
+uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid, uapi::user_desc32* tls_val)
 {
 	// NOTE: GLIBC sends in CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD for flags when fork(3) is called
 	// (0x01200011)
@@ -69,17 +70,22 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	// Sets a pointer to the thread id in the child process.  See set_tid_address(2) for more details.
 	if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) child->TidAddress = reinterpret_cast<void*>(ctid);
 
+	// CLONE_SETTLS
+	//
+	// Indicates that a new thread-local storage descriptor should be set for the child process/thread
+	if((flags & LINUX_CLONE_SETTLS) && tls_val) child->SetLocalDescriptor(tls_val);
+
 	// The calling process gets the new PID as the result
 	return static_cast<uapi::long_t>(newpid);
 }
 
 // sys32_clone
 //
-sys32_long_t sys32_clone(sys32_context_t context, sys32_task_t* taskstate, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr)
+sys32_long_t sys32_clone(sys32_context_t context, sys32_task_t* taskstate, sys32_ulong_t clone_flags, sys32_addr_t parent_tidptr, sys32_addr_t child_tidptr, linux_user_desc32* tls_val)
 {
 	// Note that the parameter order for the x86 system call differs from the standard system call, ctid and tls are swapped
 	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_clone, context, taskstate, sizeof(sys32_task_t), clone_flags, 
-		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr)));
+		reinterpret_cast<uapi::pid_t*>(parent_tidptr), reinterpret_cast<uapi::pid_t*>(child_tidptr), reinterpret_cast<uapi::user_desc32*>(tls_val)));
 }
 
 #ifdef _M_X64

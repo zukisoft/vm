@@ -47,9 +47,9 @@ template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const st
 //	TODO: DOCUMENT THEM
 
 Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-	std::unique_ptr<TaskState>&& taskstate, const void* ldt, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
+	std::unique_ptr<TaskState>&& taskstate, const void* ldt, Bitmap&& ldtslots, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
 	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
-	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak), m_ldtslots(LINUX_LDT_ENTRIES)
+	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak), m_ldtslots(std::move(ldtslots))
 {
 }
 
@@ -122,6 +122,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 		try {
 
 			host->CloneMemory(m_host);					// Clone the address space of the existing process
+
 			// TODO: If CLONE_VM then the memory gets shared, not cloned
 
 			pid = vm->AllocatePID();					// Allocate a new process identifier for the child
@@ -134,7 +135,8 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 				// Create the signal actions collection for the child process, which may be shared or duplicated (CLONE_SIGHAND)
 				std::shared_ptr<SignalActions> childactions = (flags & LINUX_CLONE_SIGHAND) ? m_sigactions : SignalActions::Duplicate(m_sigactions);
 						
-				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, childhandles, childactions, m_programbreak);
+				Bitmap ldtslots(m_ldtslots);
+				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
 			}
 
 			catch(...) { vm->ReleasePID(pid); throw; }
@@ -265,7 +267,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		std::shared_ptr<SignalActions> actions = SignalActions::Create();
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), ldt, handles, actions, program_break);
+		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
@@ -395,13 +397,14 @@ uapi::pid_t Process::getParentProcessId(void) const
 
 void Process::SetLocalDescriptor(uapi::user_desc32* u_info)
 {
+	// Grab the requested slot number from the user_desc structure
 	uint32_t slot = u_info->entry_number;
 
 	ldt_lock_t::scoped_lock writer(m_ldtlock);
 
-	// If the slot number is -1, locate a free slot in the bitmap instead
 	if(slot == -1) {
 
+		// Attempt to locate a free slot in the LDT allocation bitmap
 		slot = m_ldtslots.FindClear();
 		if(slot == Bitmap::NotFound) throw LinuxException(LINUX_ESRCH);
 
@@ -410,8 +413,8 @@ void Process::SetLocalDescriptor(uapi::user_desc32* u_info)
 		slot |= LINUX_LDT_ENTRIES;
 	}
 
-	// The slot number must not exceed LINUX_LDT_ENTRIES (4096)
-	if(slot < LINUX_LDT_ENTRIES) throw LinuxException(LINUX_EINVAL);
+	// The slot number must fall between LINUX_LDT_ENTRIES and (LINUX_LDT_ENTRIES << 1)
+	if((slot < LINUX_LDT_ENTRIES) || (slot >= (LINUX_LDT_ENTRIES << 1))) throw LinuxException(LINUX_EINVAL);
 
 	// Attempt to update the entry in the process local descriptor table memory region
 	uintptr_t destination = uintptr_t(m_ldt) + ((slot & ~LINUX_LDT_ENTRIES) * sizeof(uapi::user_desc32));

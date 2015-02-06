@@ -27,10 +27,18 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// TODOTODO
+// sys_set_thread_area
+//
+// Sets a thread-local storage (TLS) area
+//
+// Arguments:
+//
+//	context		- System call context object
+//	u_info		- Pointer to the user_desc structure that defines the area
 
 uapi::long_t sys_set_thread_area(const Context* context, uapi::user_desc32* u_info)
 {
+	// Thread-local storage is implemented through an emulated local descriptor table
 	context->Process->SetLocalDescriptor(u_info);
 	return 0;
 }
