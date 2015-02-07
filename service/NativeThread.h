@@ -25,7 +25,7 @@
 #pragma once
 
 #include <memory>
-#include "NtApi.h"
+#include "NativeTask.h"
 #include "ProcessClass.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
@@ -51,35 +51,35 @@ public:
 
 	// Create (static)
 	//
-	// Creates a new NativeThread instance from an entry point and stack pointer
-	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint, void* stackpointer, size_t tlslength)
-		{ return Create(process, entrypoint, stackpointer, nullptr, tlslength); }
+	// Creates a new NativeThread instance within a native process
+	template<ProcessClass _class>
+	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint) { return Create<_class>(process, entrypoint, nullptr); }
 
 	// Create (static)
 	//
-	// Creates a new NativeThread instance from an entry point, stack pointer and existing thread-local storage data
-	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint, void* stackpointer, void* tlsdata, size_t tlslength);
-
-	// Create (static)
-	//
-	// Creates a new NativeThread instance using an existing task state
-	static std::unique_ptr<NativeThread> Create(HANDLE process, void* taskstate, size_t taskstatelength, size_t tlslength)
-		{ return Create(process, taskstate, taskstatelength, nullptr, tlslength); }
-	
-	// Create (static)
-	//
-	// Creates a new NativeThread instance using an existing task state and thread-local storage data
-	static std::unique_ptr<NativeThread> Create(HANDLE process, void* taskstate, size_t taskstatelength, void* tlsdata, size_t tlslength);
+	// Creates a new NativeThread instance within a native process
+	template<ProcessClass _class>
+	static std::unique_ptr<NativeThread> Create(HANDLE process, void* entrypoint, void* argument);
 
 	// Resume
 	//
 	// Resumes the thread from a suspended state
 	void Resume(void);
 
+	// ResumeTask
+	//
+	// Resumes the thread from a suspended state with a new task
+	void ResumeTask(const std::unique_ptr<NativeTask>& task);
+
 	// Suspend
 	//
 	// Suspends the thread
 	void Suspend(void);
+
+	// SuspendTask
+	//
+	// Suspends the thread and returns the current task information
+	std::unique_ptr<NativeTask> SuspendTask(void);
 
 	// Terminate
 	//
@@ -89,27 +89,17 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// ThreadHandle
+	// Handle
 	//
 	// Gets the host main thread handle
-	__declspec(property(get=getThreadHandle)) HANDLE ThreadHandle;
-	HANDLE getThreadHandle(void) const { return m_thread; }
+	__declspec(property(get=getThreadHandle)) HANDLE Handle;
+	HANDLE getThreadHandle(void) const { return m_handle; }
 
 	// ThreadId
 	//
 	// Gets the host main thread identifier
 	__declspec(property(get=getThreadId)) DWORD ThreadId;
 	DWORD getThreadId(void) const { return m_threadid; }
-
-	// TlsBase
-	//
-	// Gets the base address of the thread-local storage area
-	const void* getTlsBase(void) const { return m_tlsbase; }
-
-	// TlsLength
-	//
-	// Gets the length of the thread-local storage area
-	size_t getTlsLength(void) const { return m_tlslength; }
 
 private:
 
@@ -118,16 +108,15 @@ private:
 
 	// Instance Constructor
 	//
-	NativeThread(HANDLE thread, DWORD threadid, void* tlsbase, size_t tlslength) : m_thread(thread), m_threadid(threadid), m_tlsbase(tlsbase), m_tlslength(tlslength) {}
-	friend std::unique_ptr<NativeThread> std::make_unique<NativeThread, HANDLE&, DWORD&, void*&, size_t&>(HANDLE&, DWORD&, void*&, size_t&);
+	NativeThread(ProcessClass _class, HANDLE handle, DWORD threadid) : m_class(_class), m_handle(handle), m_threadid(threadid) {}
+	friend std::unique_ptr<NativeThread> std::make_unique<NativeThread, ProcessClass, HANDLE&, DWORD&>(ProcessClass&&, HANDLE&, DWORD&);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const HANDLE				m_thread;			// Native thread handle
+	const ProcessClass			m_class;			// Native thread class
+	const HANDLE				m_handle;			// Native thread handle
 	DWORD						m_threadid;			// Native thread id
-	void*						m_tlsbase;			// TLS region base address
-	size_t						m_tlslength;		// Length of the TLS region
 };
 
 //-----------------------------------------------------------------------------

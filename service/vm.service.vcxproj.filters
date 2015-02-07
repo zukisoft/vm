@@ -350,6 +350,9 @@
     <ClInclude Include="NativeThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NativeTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -753,6 +756,9 @@
     </ClCompile>
     <ClCompile Include="sys_set_thead_area.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeTask.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

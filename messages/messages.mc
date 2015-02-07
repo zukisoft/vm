@@ -30,6 +30,7 @@ FacilityNames=(
 			TaskState=4:FACILITY_TASKSTATE
 			Process=5:FACILITY_PROCESS
 			Service=6:FACILITY_SERVICE
+			Native=7:FACILITY_NATIVE
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1232,7 +1233,7 @@ Language=English
 The specified process architecture class (%1!d!) is not supported.
 .
 
-MessageId=2
+MessageId=
 Severity=Error
 SymbolicName=E_TASKSTATEINVALIDLENGTH
 Language=English
@@ -1249,10 +1250,10 @@ Severity=Error
 Facility=Process
 SymbolicName=E_PROCESSINVALIDX86HOST
 Language=English
-The configured host application for 32-bit i386 processes is not a 32-bit application.
+The configured host application for 32-bit x86 processes is not a 32-bit application.
 .
 
-MessageId=2
+MessageId=
 Severity=Error
 SymbolicName=E_PROCESSINVALIDX64HOST
 Language=English
@@ -1272,10 +1273,29 @@ Language=English
 The specified initial RAM file system (initramfs) archive %1 cannot be found or is not a file object
 .
 
-MessageId=2
+MessageId=
 Severity=Error
 SymbolicName=E_INITRAMFSEXTRACT
 Language=English
 An error occurred extracting the contents of the initial RAM file system (initramfs) archive %1: %2
 .
 
+;//----------------------------------------------------------------------------
+;// Native
+;//
+;// Messages specific to the native process and thread management classes
+
+MessageId=1
+Severity=Error
+Facility=Native
+SymbolicName=E_NATIVEPOINTER32
+Language=English
+The pointer value specified is not valid for use in a 32-bit native process
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_NATIVEUNSUPPORTEDPROCESSCLASS
+Language=English
+The specified process architecture class (%1!d!) is not supported.
+.
