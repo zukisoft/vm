@@ -1295,7 +1295,7 @@ The pointer value specified is not valid for use in a 32-bit native process
 
 MessageId=
 Severity=Error
-SymbolicName=E_NATIVEUNSUPPORTEDPROCESSCLASS
+SymbolicName=E_NATIVEUNSUPPORTEDArchitecture
 Language=English
 The specified process architecture class (%1!d!) is not supported.
 .

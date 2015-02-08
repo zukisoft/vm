@@ -25,17 +25,17 @@
 
 #pragma warning(push, 4)
 
-// Process::Create<ProcessClass::x86>
+// Process::Create<Architecture::x86>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Process> Process::Create<ProcessClass::x86>(const std::shared_ptr<VirtualMachine>&, uapi::pid_t pid, const FileSystem::AliasPtr&,
+template std::shared_ptr<Process> Process::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>&, uapi::pid_t pid, const FileSystem::AliasPtr&,
 	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 
 #ifdef _M_X64
-// Process::Create<ProcessClass::x86_64>
+// Process::Create<Architecture::x86_64>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const std::shared_ptr<VirtualMachine>&, uapi::pid_t pid, const FileSystem::AliasPtr&,
+template std::shared_ptr<Process> Process::Create<Architecture::x86_64>(const std::shared_ptr<VirtualMachine>&, uapi::pid_t pid, const FileSystem::AliasPtr&,
 	const FileSystem::AliasPtr&, const FileSystem::HandlePtr&, const uapi::char_t**, const uapi::char_t**, const tchar_t*, const tchar_t*);
 #endif
 
@@ -46,15 +46,15 @@ template std::shared_ptr<Process> Process::Create<ProcessClass::x86_64>(const st
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+Process::Process(Architecture architecture, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	std::unique_ptr<TaskState>&& taskstate, const void* ldt, Bitmap&& ldtslots, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
-	m_class(_class), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
+	m_class(architecture), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
 	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak), m_ldtslots(std::move(ldtslots))
 {
 }
 
 //-----------------------------------------------------------------------------
-// Process::CheckHostProcessClass<x86> (static, private)
+// Process::CheckHostArchitecture<x86> (static, private)
 //
 // Verifies that the created host process is 32-bit
 //
@@ -62,7 +62,7 @@ Process::Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t 
 //
 //	process		- Handle to the created host process
 
-template <> inline void Process::CheckHostProcessClass<ProcessClass::x86>(HANDLE process)
+template <> inline void Process::CheckHostArchitecture<Architecture::x86>(HANDLE process)
 {
 	BOOL			result;				// Result from IsWow64Process
 
@@ -75,7 +75,7 @@ template <> inline void Process::CheckHostProcessClass<ProcessClass::x86>(HANDLE
 }
 
 //-----------------------------------------------------------------------------
-// Process::CheckHostProcessClass<x86_64> (static, private)
+// Process::CheckHostArchitecture<x86_64> (static, private)
 //
 // Verifies that the created host process is 64-bit
 //
@@ -84,7 +84,7 @@ template <> inline void Process::CheckHostProcessClass<ProcessClass::x86>(HANDLE
 //	process		- Handle to the created host process
 
 #ifdef _M_X64
-template <> inline void Process::CheckHostProcessClass<ProcessClass::x86_64>(HANDLE process)
+template <> inline void Process::CheckHostArchitecture<Architecture::x86_64>(HANDLE process)
 {
 	BOOL				result;				// Result from IsWow64Process
 
@@ -174,12 +174,12 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 //	hostpath	- Path to the external host to load
 //	hostargs	- Command line arguments to pass to the host
 
-template <ProcessClass _class>
+template <Architecture architecture>
 std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, 
 	const FileSystem::AliasPtr& workingdir, const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, 
 	const tchar_t* hostpath, const tchar_t* hostargs)
 {
-	using elf = elf_traits<_class>;
+	using elf = elf_traits<architecture>;
 
 	std::unique_ptr<ElfImage>		executable;				// The main ELF binary image to be loaded
 	std::unique_ptr<ElfImage>		interpreter;			// Optional interpreter image specified by executable
@@ -189,7 +189,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// as this will all go south very quickly if it's not the expected architecture
 	// todo: need the handles to stuff that are to be inherited (signals, etc)
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
-	CheckHostProcessClass<_class>(host->ProcessHandle);
+	CheckHostArchitecture<architecture>(host->ProcessHandle);
 
 	try {
 
@@ -200,13 +200,13 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		Random::Generate(random, 16);
 
 		// Attempt to load the binary image into the process, then check for an interpreter
-		executable = ElfImage::Load<_class>(handle, host);
+		executable = ElfImage::Load<architecture>(handle, host);
 		if(executable->Interpreter) {
 
 			// Acquire a handle to the interpreter binary and attempt to load that into the process
 			bool absolute = (*executable->Interpreter == '/');
 			FileSystem::HandlePtr interphandle = vm->OpenExecutable(rootdir, (absolute) ? rootdir : workingdir, executable->Interpreter);
-			interpreter = ElfImage::Load<_class>(interphandle, host);
+			interpreter = ElfImage::Load<architecture>(interphandle, host);
 		}
 
 		// Construct the ELF arguments stack image for the hosted process
@@ -250,7 +250,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		host->ProtectMemory(reinterpret_cast<void*>(uintptr_t(stack) + stacklen - SystemInformation::PageSize), SystemInformation::PageSize, PAGE_READONLY | PAGE_GUARD);
 
 		// Write the ELF arguments into the read/write portion of the process stack section and get the resultant pointer
-		const void* stack_pointer = args.GenerateProcessStack<_class>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack) + SystemInformation::PageSize), 
+		const void* stack_pointer = args.GenerateProcessStack<architecture>(host->ProcessHandle, reinterpret_cast<void*>(uintptr_t(stack) + SystemInformation::PageSize), 
 			stacklen - (SystemInformation::PageSize * 2));
 
 		// Load the remainder of the StartupInfo structure with the necessary information to get the ELF binary running
@@ -262,12 +262,12 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		const void* ldt = host->AllocateMemory(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), PAGE_READWRITE);
 
 		// TODO TESTING NEW STARTUP INFORMATION
-		std::unique_ptr<TaskState> ts = TaskState::Create(_class, entry_point, stack_pointer);
+		std::unique_ptr<TaskState> ts = TaskState::Create(architecture, entry_point, stack_pointer);
 		std::shared_ptr<ProcessHandles> handles = ProcessHandles::Create();
 		std::shared_ptr<SignalActions> actions = SignalActions::Create();
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(_class, std::move(host), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
+		return std::make_shared<Process>(architecture, std::move(host), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

@@ -320,9 +320,6 @@
     <ClInclude Include="..\common\IndexPool2.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="ProcessClass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="elf_traits.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
@@ -347,10 +344,10 @@
     <ClInclude Include="Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NativeThread.h">
+    <ClInclude Include="Architecture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NativeTask.h">
+    <ClInclude Include="architecture_traits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -745,9 +742,6 @@
     <ClCompile Include="Context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NativeThread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sys_acquire_thread.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
@@ -756,9 +750,6 @@
     </ClCompile>
     <ClCompile Include="sys_set_thead_area.cpp">
       <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="NativeTask.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

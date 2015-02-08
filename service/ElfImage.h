@@ -26,12 +26,12 @@
 
 #include <linux/fs.h>
 #include "elf_traits.h"
+#include "Architecture.h"
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
 #include "Host.h"
 #include "NtApi.h"
-#include "ProcessClass.h"
 #include "SystemInformation.h"
 #include "StructuredException.h"
 #include "Win32Exception.h"
@@ -58,7 +58,7 @@ public:
 	// Load (StreamReader)
 	//
 	// Loads an ELF image into memory from a StreamReader instance
-	template <ProcessClass _class>
+	template <Architecture architecture>
 	static std::unique_ptr<ElfImage> Load(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host);
 
 	//-------------------------------------------------------------------------
@@ -141,14 +141,14 @@ private:
 	// LoadBinary
 	//
 	// Loads an ELF binary image into virtual memory
-	template <ProcessClass _class>
+	template <Architecture architecture>
 	static std::unique_ptr<ElfImage> LoadBinary(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host);
 
 	// ValidateHeader
 	//
 	// Validates the contents of an ELF binary header
-	template <ProcessClass _class>
-	static void ValidateHeader(const typename elf_traits<_class>::elfheader_t* elfheader);
+	template <Architecture architecture>
+	static void ValidateHeader(const typename elf_traits<architecture>::elfheader_t* elfheader);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

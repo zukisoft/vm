@@ -32,8 +32,32 @@
 //
 //	tid			- Virtual thread identifier
 
-Thread::Thread(uapi::pid_t tid) : m_tid(tid)
+Thread::Thread(Architecture architecture, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
+	: m_architecture(architecture), m_tid(tid), m_nativehandle(nativehandle), m_nativetid(nativetid)
 {
+}
+
+//-----------------------------------------------------------------------------
+// Thread Destructor
+
+Thread::~Thread()
+{
+	CloseHandle(m_nativehandle);
+}
+
+//-----------------------------------------------------------------------------
+// Thread::FromHandle (static)
+//
+// Arguments:
+//
+//	tid				- Thread ID to assign to the thread
+//	nativehandle	- Native operating system handle
+//	nativetid		- Native operating system thread identifier
+
+template<Architecture architecture>
+std::shared_ptr<Thread> Thread::FromHandle(uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
+{
+	return std::make_shared<Thread>(architecture, tid, nativehandle, nativetid);
 }
 
 //-----------------------------------------------------------------------------
@@ -54,6 +78,44 @@ uapi::sigset_t Thread::getSignalMask(void) const
 void Thread::putSignalMask(uapi::sigset_t value)
 {
 	m_sigmask = value;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::Resume
+//
+// Resumes the thread from a suspended state
+//
+// Arguments:
+//
+//	NONE
+
+void Thread::Resume(void)
+{
+	if(ResumeThread(m_nativehandle) == -1) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
+// Thread::Suspend
+//
+// Suspends the thread
+//
+// Arguments:
+//
+//	NONE
+
+void Thread::Suspend(void)
+{
+#ifndef _M_X64
+
+	if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
+
+#else
+
+	// On 64-bit builds, Wow64SuspendThread() should be used for 32-bit threads
+	if(m_architecture == Architecture::x86) if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception();
+	else if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
+
+#endif
 }
 
 //-----------------------------------------------------------------------------

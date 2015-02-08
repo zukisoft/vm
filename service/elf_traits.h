@@ -27,7 +27,7 @@
 #include <linux/auxvec.h>
 #include <linux/elf.h>
 #include <linux/elf-em.h>
-#include "ProcessClass.h"
+#include "Architecture.h"
 
 #pragma warning(push, 4)
 
@@ -39,11 +39,11 @@
 
 // elf_traits
 //
-template <ProcessClass _class> struct elf_traits {};
+template <Architecture architecture> struct elf_traits {};
 
 // elf_traits<x86>
 //
-template <> struct elf_traits<ProcessClass::x86>
+template <> struct elf_traits<Architecture::x86>
 {
 	typedef uapi::Elf32_Addr		addr_t;
 	typedef uapi::Elf32_auxv_t		auxv_t;
@@ -73,12 +73,12 @@ template <> struct elf_traits<ProcessClass::x86>
 // elf_traits<x86> static initializers
 //
 __declspec(selectany)
-const uapi::char_t* elf_traits<ProcessClass::x86>::platform = "i686";
+const uapi::char_t* elf_traits<Architecture::x86>::platform = "i686";
 
 #ifdef _M_X64
 // elf_traits<x86_64>
 //
-template <> struct elf_traits<ProcessClass::x86_64>
+template <> struct elf_traits<Architecture::x86_64>
 {
 	typedef uapi::Elf64_Addr		addr_t;
 	typedef uapi::Elf64_auxv_t		auxv_t;
@@ -108,7 +108,7 @@ template <> struct elf_traits<ProcessClass::x86_64>
 // elf_traits<x86_64> static initializers
 //
 __declspec(selectany)
-const uapi::char_t* elf_traits<ProcessClass::x86_64>::platform = "x86_64";
+const uapi::char_t* elf_traits<Architecture::x86_64>::platform = "x86_64";
 #endif
 
 //-----------------------------------------------------------------------------

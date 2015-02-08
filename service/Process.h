@@ -33,6 +33,7 @@
 #include <linux/signal.h>
 #include <linux/stat.h>
 #include "elf_traits.h"
+#include "Architecture.h"
 #include "Bitmap.h"
 #include "ElfArguments.h"
 #include "ElfImage.h"
@@ -41,7 +42,6 @@
 #include "Host.h"
 #include "LinuxException.h"
 #include "NtApi.h"
-#include "ProcessClass.h"
 #include "ProcessHandles.h"
 #include "Random.h"
 #include "SignalActions.h"
@@ -89,7 +89,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new process instance via an external Windows host binary
-	template <ProcessClass _class>
+	template <Architecture architecture>
 	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 		const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
@@ -182,8 +182,8 @@ public:
 	// Class
 	//
 	// Gets the class (x86/x86_64) of the process
-	__declspec(property(get=getClass)) ProcessClass Class;
-	ProcessClass getClass(void) const { return m_class; }
+	__declspec(property(get=getClass)) Architecture Class;
+	Architecture getClass(void) const { return m_class; }
 
 	// FileCreationModeMask
 	//
@@ -249,7 +249,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(ProcessClass _class, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+	Process(Architecture architecture, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 		std::unique_ptr<TaskState>&& taskstate, const void* ldt, Bitmap&& ldtmap, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
@@ -261,11 +261,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// CheckHostProcessClass (static)
+	// CheckHostArchitecture (static)
 	//
 	// Verifies that the created host process type matches what is expected
-	template <ProcessClass _class>
-	static void CheckHostProcessClass(HANDLE process);
+	template <Architecture architecture>
+	static void CheckHostArchitecture(HANDLE process);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -273,7 +273,7 @@ private:
 	std::unique_ptr<Host>		m_host;			// Hosted windows process
 	std::unique_ptr<TaskState>	m_taskstate;	// Initial task state information
 
-	const ProcessClass			m_class;
+	const Architecture			m_class;
 	////
 
 	const uapi::pid_t					m_pid;				// Process identifier

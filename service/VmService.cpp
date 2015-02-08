@@ -199,10 +199,10 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 {
 	VirtualMachine::Properties hostprop;
 
-	if(process->Class == ProcessClass::x86) hostprop = Properties::HostProcessBinary32;
+	if(process->Class == Architecture::x86) hostprop = Properties::HostProcessBinary32;
 
 #ifdef _M_X64
-	else if(process->Class == ProcessClass::x86_64) hostprop = Properties::HostProcessBinary64;
+	else if(process->Class == Architecture::x86_64) hostprop = Properties::HostProcessBinary64;
 #endif
 
 	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
@@ -254,12 +254,12 @@ std::shared_ptr<Process> VmService::CreateProcess(uapi::pid_t pid, const FileSys
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			// TODO: clean up the arguments, I hate c_str(). need to work on svctl::parameter
 			case LINUX_ELFCLASS32: 
-				return Process::Create<ProcessClass::x86>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment,
+				return Process::Create<Architecture::x86>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment,
 					GetProperty(Properties::HostProcessBinary32).c_str(), GetProperty(Properties::HostProcessArguments).c_str());
 #ifdef _M_X64
 			// ELFCLASS64: Create a 64-bit host process for the binary
 			case LINUX_ELFCLASS64: 
-				return Process::Create<ProcessClass::x86_64>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment, 
+				return Process::Create<Architecture::x86_64>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment, 
 					GetProperty(Properties::HostProcessBinary64).c_str(), GetProperty(Properties::HostProcessArguments).c_str());
 #endif
 			// Any other ELFCLASS -> ENOEXEC	

@@ -356,6 +356,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="architecture_traits.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="elf_traits.h" />
     <ClInclude Include="ElfImage.h" />
@@ -363,10 +364,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Host.h" />
     <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="MountOptions.h" />
-    <ClInclude Include="NativeTask.h" />
-    <ClInclude Include="NativeThread.h" />
     <ClInclude Include="Process.h" />
-    <ClInclude Include="ProcessClass.h" />
+    <ClInclude Include="Architecture.h" />
     <ClInclude Include="ProcessHandles.h" />
     <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="Context.h" />
@@ -634,8 +633,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
-    <ClCompile Include="NativeTask.cpp" />
-    <ClCompile Include="NativeThread.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="ProcFileSystem.cpp" />

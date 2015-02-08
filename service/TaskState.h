@@ -25,9 +25,9 @@
 #pragma once
 
 #include <memory>
+#include "Architecture.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
-#include "ProcessClass.h"
 
 #pragma warning(push, 4)				
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -53,12 +53,12 @@ public:
 	// Create (static)
 	//
 	// Creates a new TaskState blob for the specified process class
-	static std::unique_ptr<TaskState> Create(ProcessClass _class, const void* entrypoint, const void* stackpointer);
+	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* entrypoint, const void* stackpointer);
 
 	// Create (static)
 	//
 	// Creates a new TaskState blob from an existing task state blob
-	static std::unique_ptr<TaskState> Create(ProcessClass _class, const void* existing, size_t length);
+	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* existing, size_t length);
 
 private:
 
@@ -76,13 +76,13 @@ private:
 	// Create (static)
 	//
 	// Creates a new TaskState blob with the provided entry and stack pointers
-	template <ProcessClass _class> 
+	template <Architecture architecture> 
 	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
 
 	// Create (static)
 	//
 	// Creates a new TaskState blob from an existing task state blob
-	template <ProcessClass _class> 
+	template <Architecture architecture> 
 	static std::unique_ptr<TaskState> Create(const void* existing, size_t length);
 
 	//-------------------------------------------------------------------------

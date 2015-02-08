@@ -20,28 +20,52 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __PROCESSCLASS_H_
-#define __PROCESSCLASS_H_
+#ifndef __ARCHITECTURE_TRAITS_H_
+#define __ARCHITECTURE_TRAITS_H_
 #pragma once
+
+#include "Architecture.h"
+#include <stdint.h>
 
 #pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// ProcessClass Enumeration
+// architecture_traits
 //
-// Used primarily with template specialization, defines the class/architecture
-// of a hosted virtual machine process
+template <Architecture architecture> struct architecture_traits {};
 
-enum class ProcessClass
+// architecture_traits<x86>
+//
+template <> struct architecture_traits<Architecture::x86>
 {
-	x86			= 0,				// 32-bit I386 process
-#ifdef _M_X64
-	x86_64		= 1,				// 64-bit AMD64 process
+#ifndef _M_X64
+	typedef CONTEXT					context_t;
+#else
+	typedef WOW64_CONTEXT			context_t;
 #endif
+
+	static const size_t				maxaddress = UINT32_MAX;
+
+	architecture_traits(const architecture_traits&)=delete;
+	architecture_traits& operator=(const architecture_traits&)=delete;
 };
+
+#ifdef _M_X64
+// architecture_traits<x86_64>
+//
+template <> struct architecture_traits<Architecture::x86_64>
+{
+	typedef CONTEXT					context_t;
+
+	static const size_t				maxaddress = UINT64_MAX;
+
+	architecture_traits(const architecture_traits&)=delete;
+	architecture_traits& operator=(const architecture_traits&)=delete;
+};
+
+#endif
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __PROCESSCLASS_H_
+#endif	// __ARCHITECTURE_TRAITS_H_

@@ -54,7 +54,7 @@ void TaskState::CopyTo(void* taskstate, size_t length) const
 }
 
 //-----------------------------------------------------------------------------
-// TaskState::Create<ProcessClass::x86> (static, private)
+// TaskState::Create<Architecture::x86> (static, private)
 //
 // Constructs a TaskState for a new process or thread
 //
@@ -65,7 +65,7 @@ void TaskState::CopyTo(void* taskstate, size_t length) const
 //	stackpointer	- Address of the process/thread stack pointer
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* entrypoint, const void* stackpointer)
 {
 	HeapBuffer<uint8_t> blob(sizeof(sys32_task_t));
 	sys32_task_t* state = reinterpret_cast<sys32_task_t*>(&blob);
@@ -90,7 +90,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* entr
 }
 
 //-----------------------------------------------------------------------------
-// TaskState::Create<ProcessClass::x86> (static, private)
+// TaskState::Create<Architecture::x86> (static, private)
 //
 // Constructs a TaskState from an existing task state blob
 //
@@ -100,7 +100,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* entr
 //	length			- Length of the existing task state blob
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* existing, size_t length)
 {
 	if(existing == nullptr) throw Exception(E_POINTER);
 	if(length != sizeof(sys32_task_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys32_task_t));
@@ -115,7 +115,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* exis
 #ifdef _M_X64
 
 //-----------------------------------------------------------------------------
-// TaskState::Create<ProcessClass::x86_64> (static, private)
+// TaskState::Create<Architecture::x86_64> (static, private)
 //
 // Constructs a TaskState for a new process or thread
 //
@@ -126,7 +126,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86>(const void* exis
 //	stackpointer	- Address of the process/thread stack pointer
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* entrypoint, const void* stackpointer)
 {
 	HeapBuffer<uint8_t> blob(sizeof(sys64_task_state_t));
 	sys64_task_state_t* state = reinterpret_cast<sys64_task_state_t*>(&blob);
@@ -156,7 +156,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* e
 }
 
 //-----------------------------------------------------------------------------
-// TaskState::Create<ProcessClass::x86_64> (static, private)
+// TaskState::Create<Architecture::x86_64> (static, private)
 //
 // Constructs a TaskState from an existing task state blob
 //
@@ -166,7 +166,7 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* e
 //	length			- Length of the existing task state blob
 
 template <>
-std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* existing, size_t length)
 {
 	if(existing == nullptr) throw Exception(E_POINTER);
 	if(length != sizeof(sys64_task_state_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(sys64_task_state_t));
@@ -191,21 +191,21 @@ std::unique_ptr<TaskState> TaskState::Create<ProcessClass::x86_64>(const void* e
 //	entrypoint		- Entry point for the new process or thread
 //	stackpointer	- Stack pointer for the new process or thread
 
-std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create(Architecture architecture, const void* entrypoint, const void* stackpointer)
 {
 	// Select the correct internal function based on the process class
-	switch(_class) {
+	switch(architecture) {
 
 		// x86 - sys32_task_state_t
-		case ProcessClass::x86: return TaskState::Create<ProcessClass::x86>(entrypoint, stackpointer);
+		case Architecture::x86: return TaskState::Create<Architecture::x86>(entrypoint, stackpointer);
 
 #ifdef _M_X64
 		// x86_64 - sys64_task_state_t
-		case ProcessClass::x86_64: return TaskState::Create<ProcessClass::x86_64>(entrypoint, stackpointer);
+		case Architecture::x86_64: return TaskState::Create<Architecture::x86_64>(entrypoint, stackpointer);
 #endif
 	}
 
-	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(_class));
+	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
 }
 
 //-----------------------------------------------------------------------------
@@ -219,21 +219,21 @@ std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, const void* en
 //	existing		- Pointer to the existing blob of task state
 //	length			- Length of the existing blob of task state
 
-std::unique_ptr<TaskState> TaskState::Create(ProcessClass _class, const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::Create(Architecture architecture, const void* existing, size_t length)
 {
 	// Select the correct internal function based on the process class
-	switch(_class) {
+	switch(architecture) {
 
 		// x86 - sys32_task_state_t
-		case ProcessClass::x86: return TaskState::Create<ProcessClass::x86>(existing, length);
+		case Architecture::x86: return TaskState::Create<Architecture::x86>(existing, length);
 
 #ifdef _M_X64
 		// x86_64 - sys64_task_state_t
-		case ProcessClass::x86_64: return TaskState::Create<ProcessClass::x86_64>(existing, length);
+		case Architecture::x86_64: return TaskState::Create<Architecture::x86_64>(existing, length);
 #endif
 	}
 
-	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(_class));
+	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
 }
 
 //-----------------------------------------------------------------------------

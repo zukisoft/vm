@@ -29,6 +29,7 @@
 #include <set>	// temp
 #include <linux/elf.h>
 #include "resource.h"
+#include "Architecture.h"
 #include "CompressedStreamReader.h"
 #include "CpioArchive.h"
 #include "Exception.h"
@@ -37,7 +38,6 @@
 #include "IndexPool.h"
 #include "PathSplitter.h"
 #include "Process.h"
-#include "ProcessClass.h"
 #include "RpcInterface.h"
 #include "SystemLog.h"
 #include "VirtualMachine.h"
