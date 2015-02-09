@@ -110,7 +110,7 @@ namespace uapi {
 #define LINUX_SA_ONESHOT		LINUX_SA_RESETHAND
 
 typedef uint64_t				linux_sigset_t;
-typedef linux_ulong_t			linux_old_sigset_t;
+typedef uint32_t				linux_old_sigset_t;
 
 typedef struct {
 
@@ -157,6 +157,22 @@ namespace uapi {
 
 #define LINUX_SS_ONSTACK		1
 #define LINUX_SS_DISABLE		2
+
+//-----------------------------------------------------------------------------
+// include/linux/signal.h
+//-----------------------------------------------------------------------------
+
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
+
+	// Converts a signal identifier into a signal mask bit
+	inline uapi::sigset_t sigmask(int signal)
+	{
+		return static_cast<uapi::sigset_t>(1) << (signal - 1);
+	}
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
 
 //-----------------------------------------------------------------------------
 

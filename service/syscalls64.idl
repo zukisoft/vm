@@ -64,6 +64,22 @@ typedef struct _sys64_iovec {
 
 } sys64_iovec_t;
 
+// sys64_sigset_t
+//
+// Represents the blocked signal bitmask for a thread
+typedef linux_sigset_t	sys64_sigset_t;
+
+// sys64_stack_t
+//
+// Version of stack_t structure that can be marshalled by RPC
+typedef struct _sys64_stack_t {
+
+	sys64_addr_t		ss_sp;
+	sys64_int_t			ss_flags;
+	sys64_size_t		ss_size;
+
+} sys64_stack_t;
+
 // sys64_task_state_t
 //
 // Structure used to initialize a new process or thread
@@ -142,6 +158,7 @@ interface SystemCalls64
 	/* 010 */ sys64_long_t	sys64_mprotect([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t prot);
 	/* 011 */ sys64_long_t	sys64_munmap([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length);
 	/* 012 */ sys64_long_t	sys64_brk([in] sys64_context_t context, [in] sys64_addr_t brk);
+	/* 014 */ sys64_long_t	sys64_rt_sigprocmask([in] sys64_context_t context, [in] sys64_int_t how, [in, unique] const sys64_sigset_t* newmask, [in, out, unique] sys64_sigset_t* oldmask);
 	/* 020 */ sys64_long_t	sys64_writev([in] sys64_context_t context, [in] sys64_int_t fd, [in, size_is(iovcnt)] sys64_iovec_t* iov, [in] sys64_int_t iovcnt);	
 	/* 021 */ sys64_long_t	sys64_access([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 028 */ sys64_long_t	sys64_madvise([in] sys64_context_t context, [in] sys64_addr_t addr, [in] sys64_size_t length, [in] sys64_int_t advice);
@@ -160,6 +177,7 @@ interface SystemCalls64
 	/* 102 */ sys64_long_t	sys64_getuid([in] sys64_context_t context);
 	/* 104 */ sys64_long_t	sys64_getgid([in] sys64_context_t context);
 	/* 110 */ sys64_long_t	sys64_getppid([in] sys64_context_t context);
+	/* 131 */ sys64_long_t	sys64_sigaltstack([in] sys64_context_t context, [in, unique] const sys64_stack_t* newstack, [in, out, unique] sys64_stack_t* oldstack);
 	/* 133 */ sys64_long_t	sys64_mknod([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode, [in] sys64_dev_t device);
 	/* 137 */ sys64_long_t	sys64_statfs([in] sys64_context_t context, [in, string] const sys64_char_t* path, [out, ref] linux_statfs64* buf);
 	/* 137 */ sys64_long_t	sys64_fstatfs([in] sys64_context_t context, [in] sys64_int_t fd, [out, ref] linux_statfs64* buf);

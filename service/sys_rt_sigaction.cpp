@@ -50,10 +50,6 @@ uapi::long_t sys_rt_sigaction(const Context* context, int signal, const uapi::si
 	if(action && (action->sa_flags & LINUX_SA_SIGINFO)) return -LINUX_EINVAL;
 
 	context->Process->SetSignalAction(signal, action, oldaction);
-		
-	// REMOVE ME
-	if(signal == LINUX_SIGINT) context->Process->Signal(LINUX_SIGINT);
-		
 	return 0;
 }
 

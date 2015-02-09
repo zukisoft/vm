@@ -75,6 +75,9 @@ typedef struct _sys32_sigaction {
 
 } sys32_sigaction_t;
 
+// sys32_stack_t
+//
+// Version of stack_t structure that can be marshalled by RPC
 typedef struct _sys32_stack_t {
 
 	sys32_addr_t		ss_sp;
@@ -118,6 +121,16 @@ typedef struct _sys32_process {
 	sys32_task_t		task;
 
 } sys32_process_t;
+
+// sys32_sigset_t
+//
+// Represents the blocked signal bitmask for a thread
+typedef linux_sigset_t		sys32_sigset_t;
+
+// sys32_old_sigset_t
+//
+// Backwards-compatible blocked signal mask for a thread
+typedef linux_old_sigset_t	sys32_old_sigset_t;
 
 // Interface SystemCalls32
 //
@@ -211,9 +224,11 @@ interface SystemCalls32
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 125 */ sys32_long_t	sys32_mprotect([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot);
+	/* 126 */ sys32_long_t	sys32_sigprocmask([in] sys32_context_t context, [in] sys32_int_t how, [in, unique] const sys32_old_sigset_t* newmask, [in, out, unique] sys32_old_sigset_t* oldmask);
 	/* 146 */ sys32_long_t	sys32_writev([in] sys32_context_t context, [in] sys32_int_t fd, [in, size_is(iovcnt)] sys32_iovec_t* iov, [in] sys32_int_t iovcnt);
 	/* 172 */ sys32_long_t	sys32_prctl([in] sys32_context_t context, [in] sys32_int_t option, [in] sys32_ulong_t arg2, [in] sys32_ulong_t arg3, [in] sys32_ulong_t arg4, [in] sys32_ulong_t arg5);
 	/* 174 */ sys32_long_t	sys32_rt_sigaction([in] sys32_context_t context, [in] sys32_int_t signal, [in, unique] const sys32_sigaction_t* action, [in, out, unique] sys32_sigaction_t* oldaction, [in] sys32_size_t sigsetsize);
+	/* 175 */ sys32_long_t	sys32_rt_sigprocmask([in] sys32_context_t context, [in] sys32_int_t how, [in, unique] const sys32_sigset_t* newmask, [in, out, unique] sys32_sigset_t* oldmask);
 	/* 183 */ sys32_long_t	sys32_getcwd([in] sys32_context_t context, [out, ref, size_is(size)] sys32_char_t* buf, [in] sys32_ulong_t size);
 	/* 186 */ sys32_long_t	sys32_sigaltstack([in] sys32_context_t context, [in, unique] const sys32_stack_t* newstack, [in, out, unique] sys32_stack_t* oldstack);
 	/* 190 */ sys32_long_t	sys32_vfork([in] sys32_context_t context, [in, ref] sys32_task_t* task);

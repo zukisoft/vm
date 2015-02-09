@@ -66,6 +66,11 @@ public:
 	// Sets the alternate stack to use for signal handlers
 	void SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_t* oldstack);
 
+	// SetSignalMask
+	//
+	// Sets the signal mask
+	void SetSignalMask(const uapi::sigset_t* newmask, uapi::sigset_t* oldmask);
+
 	// Suspend
 	//
 	// Suspends the thread
@@ -89,15 +94,14 @@ public:
 	// SignalAlternateStack
 	//
 	// Gets the alternate stack for signal handlers
-	__declspec(property(get=getSignalAlternateStack, put=putSignalAlternateStack)) uapi::stack_t SignalAlternateStack;
+	__declspec(property(get=getSignalAlternateStack)) uapi::stack_t SignalAlternateStack;
 	uapi::stack_t getSignalAlternateStack(void) const;
 
 	// SignalMask
 	//
 	// Gets/sets the blocked signal mask for the thread
-	__declspec(property(get=getSignalMask, put=putSignalMask)) uapi::sigset_t SignalMask;
+	__declspec(property(get=getSignalMask)) uapi::sigset_t SignalMask;
 	uapi::sigset_t getSignalMask(void) const;
-	void putSignalMask(uapi::sigset_t value);
 
 	// ThreadId
 	//

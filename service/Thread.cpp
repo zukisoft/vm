@@ -95,36 +95,6 @@ DWORD Thread::getNativeThreadId(void) const
 }
 
 //-----------------------------------------------------------------------------
-// Thread::getSignalAlternateStack
-//
-// Gets the alternate signal handler stack information
-
-uapi::stack_t Thread::getSignalAlternateStack(void) const
-{
-	return m_sigaltstack;
-}
-
-//-----------------------------------------------------------------------------
-// Thread::getSignalMask
-//
-// Gets the current blocked signal mask for the thread
-
-uapi::sigset_t Thread::getSignalMask(void) const
-{
-	return m_sigmask;
-}
-
-//-----------------------------------------------------------------------------
-// Thread::putSignalMask
-//
-// Sets the blocked signal mask for the thread
-
-void Thread::putSignalMask(uapi::sigset_t value)
-{
-	m_sigmask = value;
-}
-
-//-----------------------------------------------------------------------------
 // Thread::Resume
 //
 // Resumes the thread from a suspended state
@@ -160,6 +130,46 @@ void Thread::SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_
 		if(m_architecture == Architecture::x86) { architecture_traits<Architecture::x86>::CheckPointer(newstack->ss_sp); }
 		m_sigaltstack = *newstack;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Thread::SetSignalMask
+//
+// Sets the signal mask for the thread
+//
+// Arguments:
+//
+//	newmask			- Optional new signal mask
+//	oldmask			- Optional old signal mask
+
+void Thread::SetSignalMask(const uapi::sigset_t* newmask, uapi::sigset_t* oldmask)
+{
+	// If the original mask is requested, copy that out first
+	if(oldmask) *oldmask = m_sigmask;
+
+	// If a new mask is provided, change the contained information but always
+	// ensure that SIGKILL and SIGSTOP are set, these signals cannot be masked
+	if(newmask) m_sigmask = (*newmask | uapi::sigmask(LINUX_SIGKILL) | uapi::sigmask(LINUX_SIGSTOP));
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getSignalAlternateStack
+//
+// Gets the alternate signal handler stack information
+
+uapi::stack_t Thread::getSignalAlternateStack(void) const
+{
+	return m_sigaltstack;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getSignalMask
+//
+// Gets the current signal mask for the thread
+
+uapi::sigset_t Thread::getSignalMask(void) const
+{
+	return m_sigmask;
 }
 
 //-----------------------------------------------------------------------------
