@@ -106,7 +106,7 @@ public:
 	//
 	// Locates a Process instance by the host process' PID, necessary for the system
 	// call interface to establish the context
-	virtual std::shared_ptr<Process> FindProcessByHostID(uint32_t hostpid) = 0;
+	virtual std::shared_ptr<Process> FindNativeProcess(DWORD nativepid) = 0;
 
 	// FindVirtualMachine (static)
 	//

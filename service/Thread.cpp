@@ -25,6 +25,18 @@
 
 #pragma warning(push, 4)
 
+// Thread::FromHandle<Architecture::x86>
+//
+// Explicit Instantiation of template function
+template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86>(uapi::pid_t, HANDLE, DWORD);
+
+#ifdef _M_X64
+// Thread::FromHandle<Architecture::x86_64>
+//
+// Explicit Instantiation of template function
+template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(uapi::pid_t, HANDLE, DWORD);
+#endif
+
 //-----------------------------------------------------------------------------
 // Thread Constructor (private)
 //
@@ -35,6 +47,8 @@
 Thread::Thread(Architecture architecture, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
 	: m_architecture(architecture), m_tid(tid), m_nativehandle(nativehandle), m_nativetid(nativetid)
 {
+	// The initial alternate signal handler stack is disabled
+	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
 }
 
 //-----------------------------------------------------------------------------
@@ -58,6 +72,36 @@ template<Architecture architecture>
 std::shared_ptr<Thread> Thread::FromHandle(uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
 {
 	return std::make_shared<Thread>(architecture, tid, nativehandle, nativetid);
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getNativeHandle
+//
+// Gets the native operating system handle for this thread
+
+HANDLE Thread::getNativeHandle(void) const
+{
+	return m_nativehandle;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getNativeThreadId
+//
+// Gets the native operating thread identifier
+
+DWORD Thread::getNativeThreadId(void) const
+{
+	return m_nativetid;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getSignalAlternateStack
+//
+// Gets the alternate signal handler stack information
+
+uapi::stack_t Thread::getSignalAlternateStack(void) const
+{
+	return m_sigaltstack;
 }
 
 //-----------------------------------------------------------------------------
@@ -95,6 +139,30 @@ void Thread::Resume(void)
 }
 
 //-----------------------------------------------------------------------------
+// Thread::SetSignalAlternateStack
+//
+// Sets the alternate signal handler stack information
+//
+// Arguments:
+//
+//	newstack		- Optional new stack information
+//	oldstack		- Optional old stack information
+
+void Thread::SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_t* oldstack)
+{
+	// If the original stack information is requested, copy that out first
+	if(oldstack) *oldstack = m_sigaltstack;
+
+	// If new stack information is provided, change the contained stack information
+	if(newstack) {
+
+		// Verify the pointer does not exceed the allowable maximum address
+		if(m_architecture == Architecture::x86) { architecture_traits<Architecture::x86>::CheckPointer(newstack->ss_sp); }
+		m_sigaltstack = *newstack;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Thread::Suspend
 //
 // Suspends the thread
@@ -112,7 +180,7 @@ void Thread::Suspend(void)
 #else
 
 	// On 64-bit builds, Wow64SuspendThread() should be used for 32-bit threads
-	if(m_architecture == Architecture::x86) if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception();
+	if(m_architecture == Architecture::x86) { if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception(); }
 	else if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
 
 #endif

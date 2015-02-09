@@ -46,11 +46,15 @@ template std::shared_ptr<Process> Process::Create<Architecture::x86_64>(const st
 //
 //	TODO: DOCUMENT THEM
 
-Process::Process(Architecture architecture, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+Process::Process(::Architecture architecture, std::unique_ptr<Host>&& host, std::shared_ptr<Thread>&& thread, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 	std::unique_ptr<TaskState>&& taskstate, const void* ldt, Bitmap&& ldtslots, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak) : 
-	m_class(architecture), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
+	m_architecture(architecture), m_host(std::move(host)), m_pid(pid), m_rootdir(rootdir), m_workingdir(workingdir), m_taskstate(std::move(taskstate)), 
 	m_ldt(ldt), m_handles(handles), m_sigactions(sigactions), m_programbreak(programbreak), m_ldtslots(std::move(ldtslots))
 {
+	m_nativethreadproc = nullptr;
+
+	// Add the initial process thread to the collection
+	m_threads[thread->ThreadId] = std::move(thread);
 }
 
 //-----------------------------------------------------------------------------
@@ -107,7 +111,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 	// need parent process to set that up, see CLONE_PARENT flag as well
 
 
-	std::unique_ptr<TaskState> ts = TaskState::Create(m_class, taskstate, taskstatelen);
+	std::unique_ptr<TaskState> ts = TaskState::Create(m_architecture, taskstate, taskstatelen);
 	std::shared_ptr<Process> child;
 	uapi::pid_t pid = 0;
 
@@ -136,7 +140,9 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 				std::shared_ptr<SignalActions> childactions = (flags & LINUX_CLONE_SIGHAND) ? m_sigactions : SignalActions::Duplicate(m_sigactions);
 						
 				Bitmap ldtslots(m_ldtslots);
-				child = std::make_shared<Process>(m_class, std::move(host), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
+				// todo: Architecture is hard-coced
+				std::shared_ptr<Thread> thread = Thread::FromHandle<Architecture::x86>(pid, host->ThreadHandle, host->ThreadId);
+				child = std::make_shared<Process>(m_architecture, std::move(host), std::move(thread), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
 			}
 
 			catch(...) { vm->ReleasePID(pid); throw; }
@@ -261,13 +267,17 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		// SIZE IS BASED ON CLASS (32 v 64)
 		const void* ldt = host->AllocateMemory(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), PAGE_READWRITE);
 
+		// Create the main thread for the process, the initial thread's TID will always match the process PID
+		std::shared_ptr<Thread> thread = Thread::FromHandle<architecture>(pid, host->ThreadHandle, host->ThreadId);
+		// this should abort on bad handle for now
+
 		// TODO TESTING NEW STARTUP INFORMATION
 		std::unique_ptr<TaskState> ts = TaskState::Create(architecture, entry_point, stack_pointer);
 		std::shared_ptr<ProcessHandles> handles = ProcessHandles::Create();
 		std::shared_ptr<SignalActions> actions = SignalActions::Create();
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(architecture, std::move(host), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
+		return std::make_shared<Process>(architecture, std::move(host), std::move(thread), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor
@@ -275,6 +285,45 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 	// that wouldn't be true is interpreter's OpenExec() call which should already throw LinuxExceptions
 	// TODO: exit code should be a LINUX exit code, not a Windows one
 	catch(...) { host->Terminate(E_FAIL); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// Process::FindNativeThread
+//
+// Locates a thread within this process based on its native thread identifier
+//
+// Arguments:
+//
+//	nativetid		- Native thread identifier
+
+std::shared_ptr<Thread> Process::FindNativeThread(DWORD nativetid)
+{
+	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
+
+	// Iterate over the collection to find the native thread
+	for(const auto iterator : m_threads)
+		if(iterator.second->NativeThreadId == nativetid) return iterator.second;
+
+	// Specified thread is not a thread within this process
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// Process::FindThread
+//
+// Locates a thread within this process based on its thread identifier
+//
+// Arguments:
+//
+//	tid			- Thread identifier
+
+std::shared_ptr<Thread> Process::FindThread(uapi::pid_t tid)
+{
+	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
+
+	// Locate the thread within the collection
+	const auto found = m_threads.find(tid);
+	return (found != m_threads.end()) ? found->second : nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -291,6 +340,16 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 void Process::GetInitialTaskState(void* startinfo, size_t length)
 {
 	return m_taskstate->CopyTo(startinfo, length);
+}
+
+//-----------------------------------------------------------------------------
+// Process::getLocalDescriptorTable
+//
+// Gets the address of the local descriptor table in the process
+
+const void* Process::getLocalDescriptorTable(void) const
+{
+	return m_ldt;
 }
 
 //-----------------------------------------------------------------------------
@@ -373,6 +432,51 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 	}
 
 	return address;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getNativeHandle
+//
+// Gets the native operating system handle for the process
+
+HANDLE Process::getNativeHandle(void) const
+{
+	return m_host->ProcessHandle;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getNativeProcessId
+//
+// Gets the native operating system process identifier
+
+DWORD Process::getNativeProcessId(void) const
+{
+	return m_host->ProcessId;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getNativeThreadProc
+//
+// Gets the address of the native thread entry point for the process
+
+void* Process::getNativeThreadProc(void) const
+{
+	return m_nativethreadproc;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getNativeThreadProc
+//
+// Gets the address of the native thread entry point for the process
+
+void Process::putNativeThreadProc(void* value)
+{
+#ifdef _M_X64
+	// TODO: this syntax is still awkward, Architecture may need to be non-template?
+	if(m_architecture == Architecture::x86) architecture_traits<Architecture>::CheckPointer(value);
+#endif
+
+	m_nativethreadproc = value;
 }
 
 //-----------------------------------------------------------------------------

@@ -67,7 +67,7 @@ std::shared_ptr<VirtualMachine> VirtualMachine::FindVirtualMachine(const uuid_t&
 	// Attempt to locate the instanceid in the collection and ask it to generate an
 	// std::shared_ptr<VirtualMachine> from itself; understood this is a hack job
 	auto iterator = s_instances.find(instanceid);
-	return (iterator == s_instances.end()) ? nullptr : iterator->second->ToSharedPointer();
+	return (iterator != s_instances.end()) ? iterator->second->ToSharedPointer() : nullptr;
 }
 
 //-----------------------------------------------------------------------------

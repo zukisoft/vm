@@ -27,10 +27,10 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			Elf=3:FACILITY_ELF
-			TaskState=4:FACILITY_TASKSTATE
-			Process=5:FACILITY_PROCESS
-			Service=6:FACILITY_SERVICE
-			Native=7:FACILITY_NATIVE
+			Architecture=4:FACILITY_ARCHITECTURE
+			TaskState=5:FACILITY_TASKSTATE
+			Process=6:FACILITY_PROCESS
+			Service=7:FACILITY_SERVICE
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1227,6 +1227,19 @@ The amount of memory required (%1!lu! bytes) for the ELF process arguments excee
 
 MessageId=1
 Severity=Error
+Facility=Architecture
+SymbolicName=E_ARCHITECTUREPOINTER
+Language=English
+An invalid address or pointer was specified for the current architecture.
+.
+
+;//----------------------------------------------------------------------------
+;// TaskState
+;//
+;// Messages specific to hosted process/thread task state
+
+MessageId=1
+Severity=Error
 Facility=TaskState
 SymbolicName=E_TASKSTATEUNSUPPORTEDCLASS
 Language=English
@@ -1278,24 +1291,4 @@ Severity=Error
 SymbolicName=E_INITRAMFSEXTRACT
 Language=English
 An error occurred extracting the contents of the initial RAM file system (initramfs) archive %1: %2
-.
-
-;//----------------------------------------------------------------------------
-;// Native
-;//
-;// Messages specific to the native process and thread management classes
-
-MessageId=1
-Severity=Error
-Facility=Native
-SymbolicName=E_NATIVEPOINTER32
-Language=English
-The pointer value specified is not valid for use in a 32-bit native process
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_NATIVEUNSUPPORTEDArchitecture
-Language=English
-The specified process architecture class (%1!d!) is not supported.
 .

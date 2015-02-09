@@ -75,6 +75,14 @@ typedef struct _sys32_sigaction {
 
 } sys32_sigaction_t;
 
+typedef struct _sys32_stack_t {
+
+	sys32_addr_t		ss_sp;
+	sys32_int_t			ss_flags;
+	sys32_size_t		ss_size;
+
+} sys32_stack_t;
+
 // sys32_task_t
 //
 // Structure used to define a thread task
@@ -207,6 +215,7 @@ interface SystemCalls32
 	/* 172 */ sys32_long_t	sys32_prctl([in] sys32_context_t context, [in] sys32_int_t option, [in] sys32_ulong_t arg2, [in] sys32_ulong_t arg3, [in] sys32_ulong_t arg4, [in] sys32_ulong_t arg5);
 	/* 174 */ sys32_long_t	sys32_rt_sigaction([in] sys32_context_t context, [in] sys32_int_t signal, [in, unique] const sys32_sigaction_t* action, [in, out, unique] sys32_sigaction_t* oldaction, [in] sys32_size_t sigsetsize);
 	/* 183 */ sys32_long_t	sys32_getcwd([in] sys32_context_t context, [out, ref, size_is(size)] sys32_char_t* buf, [in] sys32_ulong_t size);
+	/* 186 */ sys32_long_t	sys32_sigaltstack([in] sys32_context_t context, [in, unique] const sys32_stack_t* newstack, [in, out, unique] sys32_stack_t* oldstack);
 	/* 190 */ sys32_long_t	sys32_vfork([in] sys32_context_t context, [in, ref] sys32_task_t* task);
 	/* 192 */ sys32_long_t	sys32_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t pgoffset);
 	/* 195 */ sys32_long_t	sys32_stat64([in] sys32_context_t context, [in, string] const sys32_char_t* path, [out, ref] linux_stat3264* buf);

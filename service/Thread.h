@@ -27,6 +27,7 @@
 #include <atomic>
 #include <memory>
 #include <linux/signal.h>
+#include "architecture_traits.h"
 #include "Architecture.h"
 #include "Win32Exception.h"
 
@@ -60,6 +61,11 @@ public:
 	// Resumes the thread
 	void Resume(void);
 
+	// SetSignalAlternateStack
+	//
+	// Sets the alternate stack to use for signal handlers
+	void SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_t* oldstack);
+
 	// Suspend
 	//
 	// Suspends the thread
@@ -82,10 +88,9 @@ public:
 
 	// SignalAlternateStack
 	//
-	// Gets/sets an alternate stack for signal handlers
+	// Gets the alternate stack for signal handlers
 	__declspec(property(get=getSignalAlternateStack, put=putSignalAlternateStack)) uapi::stack_t SignalAlternateStack;
 	uapi::stack_t getSignalAlternateStack(void) const;
-	void putSignalAlternateStack(uapi::stack_t value);
 
 	// SignalMask
 	//
@@ -118,7 +123,7 @@ private:
 	const DWORD					m_nativetid;		// Native thread identifier
 	const uapi::pid_t			m_tid;				// Thread identifier
 	std::atomic<uapi::sigset_t>	m_sigmask;			// Current signal mask
-	uapi::stack_t				m_sigaltstack;		// Alternate signal stack
+	std::atomic<uapi::stack_t>	m_sigaltstack;		// Alternate signal stack
 };
 
 //-----------------------------------------------------------------------------

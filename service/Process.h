@@ -32,6 +32,7 @@
 #include <linux/sched.h>
 #include <linux/signal.h>
 #include <linux/stat.h>
+#include "architecture_traits.h"
 #include "elf_traits.h"
 #include "Architecture.h"
 #include "Bitmap.h"
@@ -66,11 +67,7 @@ public:
 
 	// Destructor
 	//
-	~Process()
-	{
-		_RPTF1(_CRT_WARN, "Process::~Process(%d)", m_pid);
-		//OutputDebugString(L"----------> PROCESS::~PROCESS\r\n");
-	}
+	~Process()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -92,6 +89,16 @@ public:
 	template <Architecture architecture>
 	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 		const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
+
+	// FindNativeThread
+	//
+	// Locates a thread instance based on its native thread id
+	std::shared_ptr<Thread> FindNativeThread(DWORD nativetid);
+
+	// FindThread
+	//
+	// Locates a thread instance based on it's tid
+	std::shared_ptr<Thread> FindThread(uapi::pid_t tid);
 
 	// GetHandle
 	//
@@ -182,8 +189,8 @@ public:
 	// Class
 	//
 	// Gets the class (x86/x86_64) of the process
-	__declspec(property(get=getClass)) Architecture Class;
-	Architecture getClass(void) const { return m_class; }
+	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
+	::Architecture getArchitecture(void) const { return m_architecture; }
 
 	// FileCreationModeMask
 	//
@@ -192,12 +199,30 @@ public:
 	uapi::mode_t getFileCreationModeMask(void) const { return m_umask; }
 	void putFileCreationModeMask(uapi::mode_t value) { m_umask = (value & LINUX_S_IRWXUGO); }
 
-	// HostProcessId
+	// LocalDescriptorTable
 	//
-	// Gets the host process identifier
-	// TODO: I don't like having this, get rid of it
-	__declspec(property(get=getHostProcessId)) DWORD HostProcessId;
-	DWORD getHostProcessId(void) const { return m_host->ProcessId; }
+	// Gets the address of the process' local descriptor table
+	__declspec(property(get=getLocalDescriptorTable)) const void* LocalDescriptorTable;
+	const void* getLocalDescriptorTable(void) const;
+
+	// NativeHandle
+	//
+	// Gets the native process handle
+	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
+	HANDLE getNativeHandle(void) const;
+
+	// NativeProcessId
+	//
+	// Gets the native process identifier
+	__declspec(property(get=getNativeProcessId)) DWORD NativeProcessId;
+	DWORD getNativeProcessId(void) const;
+
+	// NativeThreadProc
+	//
+	// Gets/sets the native process thread entry point
+	__declspec(property(get=getNativeThreadProc, put=putNativeThreadProc)) void* NativeThreadProc;
+	void* getNativeThreadProc(void) const;
+	void putNativeThreadProc(void* value);
 
 	// ParentProcessId
 	//
@@ -239,9 +264,6 @@ public:
 	__declspec(property(get=getZombie)) bool Zombie;
 	bool getZombie(void);
 
-	__declspec(property(get=getTESTLDT)) const void* TESTLDT;
-	const void* getTESTLDT(void) { return m_ldt; }
-
 private:
 
 	Process(const Process&)=delete;
@@ -249,7 +271,7 @@ private:
 
 	// Instance Constructor
 	//
-	Process(Architecture architecture, std::unique_ptr<Host>&& host, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
+	Process(::Architecture architecture, std::unique_ptr<Host>&& host, std::shared_ptr<Thread>&& thread, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
 		std::unique_ptr<TaskState>&& taskstate, const void* ldt, Bitmap&& ldtmap, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, const void* programbreak);
 	friend class std::_Ref_count_obj<Process>;
 
@@ -258,13 +280,16 @@ private:
 	// Local descriptor table collection synchronization object
 	using ldt_lock_t = Concurrency::reader_writer_lock;
 
+	using thread_map_t = std::unordered_map<uapi::pid_t, std::shared_ptr<Thread>>;
+	using thread_map_lock_t = Concurrency::reader_writer_lock;
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
 	// CheckHostArchitecture (static)
 	//
 	// Verifies that the created host process type matches what is expected
-	template <Architecture architecture>
+	template <::Architecture architecture>
 	static void CheckHostArchitecture(HANDLE process);
 
 	//-------------------------------------------------------------------------
@@ -273,7 +298,12 @@ private:
 	std::unique_ptr<Host>		m_host;			// Hosted windows process
 	std::unique_ptr<TaskState>	m_taskstate;	// Initial task state information
 
-	const Architecture			m_class;
+	// TODO: move implementation in from Host?
+	//HANDLE						m_nativeprocess;		// Native process handle
+	//DWORD						m_nativepid;			// Native process identifier
+	void*						m_nativethreadproc;		// Native ThreadProc
+
+	const ::Architecture			m_architecture;
 	////
 
 	const uapi::pid_t					m_pid;				// Process identifier
@@ -283,6 +313,10 @@ private:
 	// TESTING CHILDREN
 	// NEEDS SYNCHRONIZATION OBJECT
 	std::unordered_map<int, std::weak_ptr<Process>> m_children;
+
+	
+	thread_map_t				m_threads;
+	thread_map_lock_t			m_threadslock;
 
 	void*					m_tidaddress = nullptr;
 

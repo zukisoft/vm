@@ -199,10 +199,10 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 {
 	VirtualMachine::Properties hostprop;
 
-	if(process->Class == Architecture::x86) hostprop = Properties::HostProcessBinary32;
+	if(process->Architecture == Architecture::x86) hostprop = Properties::HostProcessBinary32;
 
 #ifdef _M_X64
-	else if(process->Class == Architecture::x86_64) hostprop = Properties::HostProcessBinary64;
+	else if(process->Architecture == Architecture::x86_64) hostprop = Properties::HostProcessBinary64;
 #endif
 
 	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
@@ -343,11 +343,12 @@ void VmService::CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& roo
 	directory->CreateSymbolicLink(branch, splitter.Leaf, target);
 }
 
-std::shared_ptr<Process> VmService::FindProcessByHostID(uint32_t hostpid)
+std::shared_ptr<Process> VmService::FindNativeProcess(DWORD nativepid)
 {
-	if(hostpid == m_initprocess->HostProcessId) return m_initprocess;
+	if(nativepid == m_initprocess->NativeProcessId) return m_initprocess;
+
 	for(auto iterator : m_processes)
-		if(hostpid == iterator.second->HostProcessId) return iterator.second;
+		if(nativepid == iterator.second->NativeProcessId) return iterator.second;
 
 	return nullptr;
 }

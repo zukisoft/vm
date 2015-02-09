@@ -24,8 +24,9 @@
 #define __ARCHITECTURE_TRAITS_H_
 #pragma once
 
-#include "Architecture.h"
 #include <stdint.h>
+#include "Architecture.h"
+#include "Exception.h"
 
 #pragma warning(push, 4)
 
@@ -38,12 +39,12 @@ template <Architecture architecture> struct architecture_traits {};
 template <> struct architecture_traits<Architecture::x86>
 {
 #ifndef _M_X64
-	typedef CONTEXT					context_t;
+	typedef CONTEXT	context_t;
+	static void CheckPointer(void*) {}
 #else
 	typedef WOW64_CONTEXT			context_t;
+	static void CheckPointer(void* pointer) { if(uintptr_t(pointer) > UINT32_MAX) throw Exception(E_ARCHITECTUREPOINTER); }
 #endif
-
-	static const size_t				maxaddress = UINT32_MAX;
 
 	architecture_traits(const architecture_traits&)=delete;
 	architecture_traits& operator=(const architecture_traits&)=delete;
@@ -55,13 +56,13 @@ template <> struct architecture_traits<Architecture::x86>
 template <> struct architecture_traits<Architecture::x86_64>
 {
 	typedef CONTEXT					context_t;
+	static void CheckPointer(void*) {}
 
 	static const size_t				maxaddress = UINT64_MAX;
 
 	architecture_traits(const architecture_traits&)=delete;
 	architecture_traits& operator=(const architecture_traits&)=delete;
 };
-
 #endif
 
 //-----------------------------------------------------------------------------

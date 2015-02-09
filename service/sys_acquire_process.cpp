@@ -45,15 +45,11 @@ HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32
 	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
 	RPC_STATUS					rpcresult;			// Result from RPC function call
 
-	(threadproc);
-
-	// Acquire the object id for the interface connected to by the client, this will
-	// indicate the VirtualMachine instance identifier
+	// Acquire the object id for the interface connected to by the client
 	rpcresult = RpcBindingInqObject(rpchandle, &objectid);
 	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
 
-	// Acquire the attributes of the calling process for the Context object, this 
-	// exposes the client process' PID for mapping to a Process object instance
+	// Acquire the attributes of the calling process
 	memset(&attributes, 0, sizeof(RPC_CALL_ATTRIBUTES));
 	attributes.Version = RPC_CALL_ATTRIBUTES_VERSION;
 	attributes.Flags = RPC_QUERY_CLIENT_PID;
@@ -63,14 +59,27 @@ HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32
 
 	try {
 
-		// Allocate and initialize a Context object to be passed back as the RPC context
+		// Use the RPC object id to locate the virtual machine instance
 		auto vm = VirtualMachine::FindVirtualMachine(objectid);
-		auto proc = vm->FindProcessByHostID(reinterpret_cast<uint32_t>(attributes.ClientPID));
-		handle = Context::Allocate(vm, proc);
+		if(vm == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
-		// Acquire the task state information for the process
-		handle->Process->GetInitialTaskState(&process->task, sizeof(sys32_task_t));
-		process->ldt = reinterpret_cast<sys32_addr_t>(const_cast<void*>(handle->Process->TESTLDT));
+		// Use the client's native process identifier to find the process
+		auto proc = vm->FindNativeProcess(reinterpret_cast<DWORD>(attributes.ClientPID));
+		if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+		
+		// Use the process virtual PID to locate the thread, the first thread will match
+		auto thread = proc->FindThread(proc->ProcessId);
+		if(thread == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+
+		// Set the provided address as the native thread entry point for the process
+		proc->NativeThreadProc = reinterpret_cast<void*>(threadproc);
+
+		// Acquire the necessary information for the process
+		proc->GetInitialTaskState(&process->task, sizeof(sys32_task_t));
+		process->ldt = reinterpret_cast<sys32_addr_t>(proc->LocalDescriptorTable);
+		
+		// Allocate the context handle by referencing the acquired objects
+		handle = Context::Allocate(vm, proc, thread);
 	}
 
 	catch(const Exception& ex) { Context::Release(handle); return ex.HResult; }

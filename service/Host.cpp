@@ -30,7 +30,7 @@
 
 Host::~Host()
 {
-	CloseHandle(m_procinfo.hThread);
+	///CloseHandle(m_procinfo.hThread);
 	CloseHandle(m_procinfo.hProcess);
 }
 

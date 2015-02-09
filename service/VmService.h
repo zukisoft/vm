@@ -78,7 +78,7 @@ public:
 	virtual void								ReleasePID(uapi::pid_t pid);
 	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen);
 	virtual void								CloseProcess(const std::shared_ptr<Process>& process);
-	virtual std::shared_ptr<Process>			FindProcessByHostID(uint32_t hostpid);
+	virtual std::shared_ptr<Process>			FindNativeProcess(DWORD nativepid);
 
 	// updated file system api
 	virtual void								CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
