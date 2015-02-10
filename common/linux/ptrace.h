@@ -48,6 +48,9 @@ typedef struct {
 	uint32_t		esp;
 	uint32_t		eflags;
 
+	// Segment Registers
+	uint16_t		gs;
+
 } linux_pt_regs32;
 
 // NOTE: This structure is not equivalent to the linux version and cannot be

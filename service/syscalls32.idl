@@ -89,25 +89,7 @@ typedef struct _sys32_stack_t {
 // sys32_task_t
 //
 // Structure used to define a thread task
-typedef struct _sys32_task_t {
-
-	// Integer Registers
-	sys32_ulong_t		eax;
-	sys32_ulong_t		ebx;
-	sys32_ulong_t		ecx;
-	sys32_ulong_t		edx;
-	sys32_ulong_t		edi;
-	sys32_ulong_t		esi;
-
-	// Control Registers
-	sys32_addr_t		eip;
-	sys32_addr_t		ebp;
-	sys32_addr_t		esp;
-
-	// Segment Registers
-	sys32_ushort_t		gs;
-
-} sys32_task_t;
+typedef linux_pt_regs32 sys32_task_t;
 
 // sys32_process_t
 //

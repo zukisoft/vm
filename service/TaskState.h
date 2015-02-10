@@ -25,9 +25,9 @@
 #pragma once
 
 #include <memory>
+#include <linux/ptrace.h>
 #include "Architecture.h"
 #include "Exception.h"
-#include "HeapBuffer.h"
 
 #pragma warning(push, 4)				
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -35,8 +35,7 @@
 //-----------------------------------------------------------------------------
 // TaskState
 //
-// Class that abstracts the architecture specific task state structures into a 
-// blob that can be maintained by a Process object
+// Class that abstracts the architecture specific task state structures
 
 class TaskState
 {
@@ -47,17 +46,17 @@ public:
 
 	// CopyTo
 	//
-	// Copies the task state blob, the size must match exactly
+	// Copies the task state, the size must match exactly
 	void CopyTo(void* taskstate, size_t length) const;
 
 	// Create (static)
 	//
-	// Creates a new TaskState blob for the specified process class
+	// Creates a new TaskState for the specified architecture
 	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* entrypoint, const void* stackpointer);
 
 	// Create (static)
 	//
-	// Creates a new TaskState blob from an existing task state blob
+	// Creates a new TaskState from an existing task state
 	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* existing, size_t length);
 
 private:
@@ -65,10 +64,21 @@ private:
 	TaskState(const TaskState&)=delete;
 	TaskState& operator=(const TaskState&)=delete;
 
+	// pt_regs_t
+	//
+	// Union of the available register sets to store for the task state
+	union pt_regs_t {
+
+		uapi::pt_regs32		x86;				// 32-bit register set
+#ifdef _M_X64
+		uapi::pt_regs64		x86_64;				// 64-bit register set
+#endif
+	};
+
 	// Instance Constructor
 	//
-	TaskState(HeapBuffer<uint8_t>&& blob) : m_blob(std::move(blob)) {}
-	friend std::unique_ptr<TaskState> std::make_unique<TaskState, HeapBuffer<uint8_t>>(HeapBuffer<uint8_t>&&);
+	TaskState(Architecture architecture, pt_regs_t&& regs) : m_architecture(std::move(architecture)), m_regs(std::move(regs)) {}
+	friend std::unique_ptr<TaskState> std::make_unique<TaskState, Architecture, pt_regs_t>(Architecture&&, pt_regs_t&&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -88,7 +98,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 	
-	const HeapBuffer<uint8_t>		m_blob;			// Contained blob of data
+	Architecture			m_architecture;			// Selected architecture
+	pt_regs_t				m_regs;					// Contained register data
 };
 
 //-----------------------------------------------------------------------------

@@ -80,33 +80,10 @@ typedef struct _sys64_stack_t {
 
 } sys64_stack_t;
 
-// sys64_task_state_t
+// sys64_task_t
 //
-// Structure used to initialize a new process or thread
-typedef struct _sys64_task_state {
-
-	// Integer Registers
-	sys64_ulong_t		rax;
-	sys64_ulong_t		rbx;
-	sys64_ulong_t		rcx;
-	sys64_ulong_t		rdx;
-	sys64_ulong_t		rdi;
-	sys64_ulong_t		rsi;
-	sys64_ulong_t		r8;
-	sys64_ulong_t		r9;
-	sys64_ulong_t		r10;
-	sys64_ulong_t		r11;
-	sys64_ulong_t		r12;
-	sys64_ulong_t		r13;
-	sys64_ulong_t		r14;
-	sys64_ulong_t		r15;
-
-	// Control Registers
-	sys64_addr_t		rbp;
-	sys64_addr_t		rip;
-	sys64_addr_t		rsp;
-
-} sys64_task_state_t;
+// Structure used to define a thread task
+typedef linux_pt_regs64 sys64_task_t;
 
 // Interface SystemCalls64
 //
