@@ -27,9 +27,9 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			Elf=3:FACILITY_ELF
-			Architecture=4:FACILITY_ARCHITECTURE
-			TaskState=5:FACILITY_TASKSTATE
-			Process=6:FACILITY_PROCESS
+			TaskState=4:FACILITY_TASKSTATE
+			Process=5:FACILITY_PROCESS
+			Thread=6:FACILITY_THREAD
 			Service=7:FACILITY_SERVICE
 			)
 
@@ -1227,19 +1227,6 @@ The amount of memory required (%1!lu! bytes) for the ELF process arguments excee
 
 MessageId=1
 Severity=Error
-Facility=Architecture
-SymbolicName=E_ARCHITECTUREPOINTER
-Language=English
-An invalid address or pointer was specified for the current architecture.
-.
-
-;//----------------------------------------------------------------------------
-;// TaskState
-;//
-;// Messages specific to hosted process/thread task state
-
-MessageId=1
-Severity=Error
 Facility=TaskState
 SymbolicName=E_TASKSTATEUNSUPPORTEDCLASS
 Language=English
@@ -1271,6 +1258,26 @@ Severity=Error
 SymbolicName=E_PROCESSINVALIDX64HOST
 Language=English
 The configured host application for 64-bit x86_64 processes is not a 64-bit application.
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_PROCESSINVALIDTHREADPROC
+Language=English
+The remote thread entry point provided for a hosted process is invalid.
+.
+
+;//----------------------------------------------------------------------------
+;// Thread
+;//
+;// Messages specific to hosted thread management
+
+MessageId=1
+Severity=Error
+Facility=Thread
+SymbolicName=E_THREADINVALIDSIGALTSTACK
+Language=English
+The pointer provided for a thread signal alternate stack is invalid.
 .
 
 ;//----------------------------------------------------------------------------

@@ -472,8 +472,7 @@ void* Process::getNativeThreadProc(void) const
 void Process::putNativeThreadProc(void* value)
 {
 #ifdef _M_X64
-	// TODO: this syntax is still awkward, Architecture may need to be non-template?
-	if(m_architecture == Architecture::x86) architecture_traits<Architecture>::CheckPointer(value);
+	if((m_architecture == Architecture::x86) && (uintptr_t(value) > UINT32_MAX)) throw Exception(E_PROCESSINVALIDTHREADPROC);
 #endif
 
 	m_nativethreadproc = value;

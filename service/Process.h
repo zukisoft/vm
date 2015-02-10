@@ -32,7 +32,6 @@
 #include <linux/sched.h>
 #include <linux/signal.h>
 #include <linux/stat.h>
-#include "architecture_traits.h"
 #include "elf_traits.h"
 #include "Architecture.h"
 #include "Bitmap.h"

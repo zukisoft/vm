@@ -347,9 +347,6 @@
     <ClInclude Include="Architecture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="architecture_traits.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\ptrace.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>

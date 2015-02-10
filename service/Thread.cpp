@@ -128,7 +128,9 @@ void Thread::SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_
 	if(newstack) {
 
 		// Verify the pointer does not exceed the allowable maximum address
-		if(m_architecture == Architecture::x86) { architecture_traits<Architecture::x86>::CheckPointer(newstack->ss_sp); }
+#ifdef _M_X64
+		if((m_architecture == Architecture::x86) && (uintptr_t(newstack->ss_sp) > UINT32_MAX)) throw Exception(E_THREADINVALIDSIGALTSTACK);
+#endif
 		m_sigaltstack = *newstack;
 	}
 }

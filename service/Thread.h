@@ -27,7 +27,6 @@
 #include <atomic>
 #include <memory>
 #include <linux/signal.h>
-#include "architecture_traits.h"
 #include "Architecture.h"
 #include "Win32Exception.h"
 
