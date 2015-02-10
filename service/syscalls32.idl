@@ -91,6 +91,10 @@ typedef struct _sys32_stack_t {
 // Structure used to define a thread task
 typedef linux_pt_regs32 sys32_task_t;
 
+//
+// TODO: sys32_thread_t that contains task_t, process below will contain thread_t and ldt
+//
+
 // sys32_process_t
 //
 // Structure used to initialize a new process
@@ -137,26 +141,15 @@ interface SystemCalls32
 	// the handle points to does not need to be changed by an interface method
 	typedef [context_handle] sys32_context_exclusive_t sys32_context_t;
 
-
-	// TODO: NEW WAY
-	// don't pass in the PID, that's not secure -- continue to get from RPC
+	// sys32_acquire_process (synchronous)
+	//
+	// Allocates a new context handle and startup information for a process
 	HRESULT sys32_acquire_process([in] sys32_addr_t threadproc, [out, ref] sys32_process_t* process, [out, ref] sys32_context_exclusive_t* context);
 
-	// don't pass in the PID, not secure
+	// sys32_acquire_thread (synchronous)
+	//
+	// Allocates a new context handle and startup information for a thread
 	HRESULT sys32_acquire_thread([in] sys32_uint_t tid, [out, ref] sys32_task_t* task, [out, ref] sys32_context_exclusive_t* context);
-
-	// this will be the same, essentially
-	//HRESULT sys32_release_context([in, out, ref] sys32_context_exclusive_t* context);
-
-	// sys32_acquire_context (synchronous)
-	//
-	// Allocates a new context handle and startup information for a child process
-	//HRESULT sys32_acquire_context([out, ref] sys32_task_state_t* taskstate, [out, ref] sys32_context_exclusive_t* context);
-
-	// sys32_register_thread (synchronous)
-	//
-	// Invoked when a new thread is started in the process
-	HRESULT sys32_register_thread([in] sys32_context_exclusive_t context, [in] sys32_uint_t nativetid, [out, ref] sys32_pid_t* tid);
 
 	// sys32_release_context (synchronous)
 	//
@@ -167,11 +160,6 @@ interface SystemCalls32
 	//
 	// Sends a trace message back to the service from the host
 	HRESULT sys32_trace([in] sys32_context_t context, [in, size_is(length)] sys32_char_t* message, [in] sys32_size_t length);
-
-	// sys32_unregister_thread (synchronous)
-	//
-	// Invoked when a process thread is exiting
-	HRESULT sys32_unregister_thread([in] sys32_context_exclusive_t context, [in] sys32_uint_t nativetid, [in] sys32_int_t exitcode);
 
 	// sys32_xxxxx
 	//
