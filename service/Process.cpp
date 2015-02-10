@@ -776,7 +776,7 @@ uapi::pid_t Process::WaitChild_TEST(uapi::pid_t pid, int* status)
 //-----------------------------------------------------------------------------
 // Process::getZombie
 
-bool Process::getZombie(void)
+bool Process::getZombie(void) const
 {
 	// If the host process has terminated, this process is a zombie
 	return (WaitForSingleObject(m_host->ProcessHandle, 0) == WAIT_OBJECT_0);

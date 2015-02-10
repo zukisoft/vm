@@ -45,7 +45,8 @@ template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(uapi::
 //	tid			- Virtual thread identifier
 
 Thread::Thread(Architecture architecture, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
-	: m_architecture(architecture), m_tid(tid), m_nativehandle(nativehandle), m_nativetid(nativetid)
+	: m_architecture(architecture), m_tid(tid), m_nativehandle(nativehandle), m_nativetid(nativetid),
+	m_sigmask(0) // <-- needs to be passed in
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };

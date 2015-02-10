@@ -52,7 +52,6 @@
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
-#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // Process
@@ -148,7 +147,6 @@ public:
 	// SetSignalAction
 	//
 	// Assigns an action to be taken for a process signal
-	void SetSignalAction(int signal, const uapi::sigaction* action) { return SetSignalAction(signal, action, nullptr); }
 	void SetSignalAction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction);
 
 	// Signal
@@ -262,7 +260,7 @@ public:
 	//
 	// Gets flag indicating if this process is a 'zombie' or not
 	__declspec(property(get=getZombie)) bool Zombie;
-	bool getZombie(void);
+	bool getZombie(void) const;
 
 private:
 

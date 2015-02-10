@@ -20,58 +20,73 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ARCHITECTURE_TRAITS_H_
-#define __ARCHITECTURE_TRAITS_H_
+#ifndef __LINUX_PTRACE_H_
+#define __LINUX_PTRACE_H_
 #pragma once
 
-#include <stdint.h>
-#include <linux/ptrace.h>
-#include "Architecture.h"
-#include "Exception.h"
+#include "types.h"
 
-#pragma warning(push, 4)
+//-----------------------------------------------------------------------------
+// arch/x86/include/uapi/asm/ptrace.h
+//-----------------------------------------------------------------------------
 
-// architecture_traits
-//
-template <Architecture architecture> struct architecture_traits {};
+// NOTE: This structure is not equivalent to the linux version and cannot be
+// used as a parameter for system calls
+typedef struct {
 
-// architecture_traits<x86>
-//
-template <> struct architecture_traits<Architecture::x86>
-{
-	typedef uapi::pt_regs32		pt_regs;
+	// Integer Registers
+	uint32_t		eax;
+	uint32_t		ebx;
+	uint32_t		ecx;
+	uint32_t		edx;
+	uint32_t		edi;
+	uint32_t		esi;
 
-#ifndef _M_X64
-	typedef CONTEXT	context_t;
-	static void CheckPointer(void*) {}
-#else
-	typedef WOW64_CONTEXT			context_t;
-	static void CheckPointer(void* pointer) { if(uintptr_t(pointer) > UINT32_MAX) throw Exception(E_ARCHITECTUREPOINTER); }
-#endif
+	// Control Registers
+	uint32_t		ebp;
+	uint32_t		eip;
+	uint32_t		esp;
+	uint32_t		eflags;
 
-	architecture_traits(const architecture_traits&)=delete;
-	architecture_traits& operator=(const architecture_traits&)=delete;
-};
+} linux_pt_regs32;
 
-#ifdef _M_X64
-// architecture_traits<x86_64>
-//
-template <> struct architecture_traits<Architecture::x86_64>
-{
-	typedef uapi::pt_regs64			pt_regs;
+// NOTE: This structure is not equivalent to the linux version and cannot be
+// used as a parameter for system calls
+typedef struct {
 
-	typedef CONTEXT					context_t;
-	static void CheckPointer(void*) {}
+	// Integer Registers
+	uint64_t		rax;
+	uint64_t		rbx;
+	uint64_t		rcx;
+	uint64_t		rdx;
+	uint64_t		rdi;
+	uint64_t		rsi;
+	uint64_t		r8;
+	uint64_t		r9;
+	uint64_t		r10;
+	uint64_t		r11;
+	uint64_t		r12;
+	uint64_t		r13;
+	uint64_t		r14;
+	uint64_t		r15;
 
-	static const size_t				maxaddress = UINT64_MAX;
+	// Control Registers
+	uint64_t		rbp;
+	uint64_t		rip;
+	uint64_t		rsp;
+	uint64_t		rflags;
 
-	architecture_traits(const architecture_traits&)=delete;
-	architecture_traits& operator=(const architecture_traits&)=delete;
-};
-#endif
+} linux_pt_regs64;
+
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
+
+	typedef linux_pt_regs32		pt_regs32;
+	typedef linux_pt_regs64		pt_regs64;
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
 
 //-----------------------------------------------------------------------------
 
-#pragma warning(pop)
-
-#endif	// __ARCHITECTURE_TRAITS_H_
+#endif		// __LINUX_PTRACE_H_
