@@ -61,6 +61,61 @@ Thread::~Thread()
 }
 
 //-----------------------------------------------------------------------------
+// Thread::BeginSignal
+//
+// Begins execution of a signal handler on the thread
+//
+// Arguments:
+//
+//	signal			- Signal to be processed
+//	action			- Action to be taken for the signal
+
+void Thread::BeginSignal(int signal, uapi::sigaction action)
+{
+	// IF THE SPECIFIED SIGNAL IS NOT ALREADY PENDING AND NOT SA_NODEFER
+	// THEN PUSH INTO THE QUEUE
+	m_pendingsignals.push(std::make_pair(signal, action));
+	
+	// EVERYTHING ELSE IN HERE WILL MOVE TO THAT QUEUE HANDLER
+	// perhaps use a condition variable -- or a thread pool?
+
+	// make it so DEFAULT cannot be passed in, this should always have a sigaction
+	// that can be operated upon.  Even if it's just to terminate the thread/process.
+	// "SignalActions" class can hold static default sigactions for everything
+
+	// Define the signal mask to use while the handler is executing; this is the
+	// combination of the current mask, the action mask and the signal being handled
+	uapi::sigset_t mask = m_sigmask | action.sa_mask;
+	if((action.sa_flags & LINUX_SA_NODEFER) == 0) mask |= uapi::sigmask(signal);
+
+	// SAVE THE MASK AND TASK STATE
+	m_savedsigtask = SuspendTask();
+
+	// create the new task state
+	// resumetask() the thread
+
+	// return to caller, but the saved state must be popped by sigreturn() ? how would this
+	// work for non-x86 architectures, or is sigreturn() always always called?
+}
+
+//-----------------------------------------------------------------------------
+// Thread::EndSignal
+//
+// Completes execution of a signal handler on the thread
+//
+// Arguments:
+//
+//	NONE
+
+void Thread::EndSignal(void)
+{
+	// here I guess we just need to restore the saved signal state, but
+	// if there are other signals pending there is no point in restoring the
+	// task state, that should be reapplied only when all signals are done?
+	// the signal mask should be retrieved/restored in-between signals, though.
+}
+
+//-----------------------------------------------------------------------------
 // Thread::FromHandle (static)
 //
 // Arguments:

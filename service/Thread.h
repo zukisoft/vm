@@ -25,6 +25,7 @@
 #pragma once
 
 #include <atomic>
+#include <concurrent_priority_queue.h>
 #include <memory>
 #include <linux/signal.h>
 #include "Architecture.h"
@@ -48,6 +49,16 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Member Functions
+
+	// BeginSignal
+	//
+	// Begins queued execution of a signal handler on this thread
+	void BeginSignal(int signal, uapi::sigaction action);
+
+	// EndSignal
+	//
+	// Completes execution of the current signal handler on this thread
+	void EndSignal(void);
 
 	// FromHandle
 	//
@@ -123,6 +134,25 @@ private:
 	Thread(const Thread&)=delete;
 	Thread& operator=(const Thread&)=delete;
 
+	// queued_signal_t
+	//
+	// Data type stored in the signal queue for this thread
+	using queued_signal_t = std::pair<int, uapi::sigaction>;
+
+	// signal_queue_predicate_t
+	//
+	// Predicate to use with signal_queue_t that defines the priority of the items.  Lower signal
+	// ordinal values are given priority over higher ordinal values
+	struct signal_queue_predicate_t : public std::binary_function<queued_signal_t, queued_signal_t, bool>
+	{
+		bool operator()(const queued_signal_t& lhs, const queued_signal_t& rhs) const { return lhs.first > rhs.first; }
+	};
+
+	// signal_queue_t
+	//
+	// Priority queue that holds the pending signals for this thread
+	using signal_queue_t = Concurrency::concurrent_priority_queue<queued_signal_t, signal_queue_predicate_t>;
+
 	// Instance Constructor
 	//
 	Thread(Architecture architecture, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
@@ -137,6 +167,12 @@ private:
 	const uapi::pid_t			m_tid;				// Thread identifier
 	std::atomic<uapi::sigset_t>	m_sigmask;			// Current signal mask
 	std::atomic<uapi::stack_t>	m_sigaltstack;		// Alternate signal stack
+
+	// Signal Management
+	//
+	signal_queue_t				m_pendingsignals;	// Pending signals
+	std::unique_ptr<TaskState>	m_savedsigtask;		// Previous task state
+	uapi::sigset_t				m_savedsigmask;		// Previous signal mask
 };
 
 //-----------------------------------------------------------------------------
