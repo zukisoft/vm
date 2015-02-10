@@ -110,6 +110,24 @@ void Thread::Resume(void)
 }
 
 //-----------------------------------------------------------------------------
+// Thread::ResumeTask
+//
+// Resumes the thread from a suspended state after applying a task state
+//
+// Arguments:
+//
+//	task		- Task state to be applied to the thread
+
+void Thread::ResumeTask(const std::unique_ptr<TaskState>& task)
+{
+	// Apply the specified task to the native thread
+	task->ToNativeThread(m_architecture, m_nativehandle);
+
+	// Resume the thread
+	if(ResumeThread(m_nativehandle) == -1) throw Win32Exception();
+}
+
+//-----------------------------------------------------------------------------
 // Thread::SetSignalAlternateStack
 //
 // Sets the alternate signal handler stack information
@@ -127,8 +145,8 @@ void Thread::SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_
 	// If new stack information is provided, change the contained stack information
 	if(newstack) {
 
-		// Verify the pointer does not exceed the allowable maximum address
 #ifdef _M_X64
+		// Verify the pointer does not exceed the allowable maximum address
 		if((m_architecture == Architecture::x86) && (uintptr_t(newstack->ss_sp) > UINT32_MAX)) throw Exception(E_THREADINVALIDSIGALTSTACK);
 #endif
 		m_sigaltstack = *newstack;
@@ -197,6 +215,24 @@ void Thread::Suspend(void)
 	else if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
 
 #endif
+}
+
+//-----------------------------------------------------------------------------
+// Thread::SuspendTask
+//
+// Suspends the thread and captures it's task state
+//
+// Arguments:
+//
+//	NONE
+
+std::unique_ptr<TaskState> Thread::SuspendTask(void)
+{
+	Suspend();						// Suspend the native operating system thread
+	
+	// Attempt to capture the task state for the thread, and resume on exception
+	try { return TaskState::FromNativeThread(m_architecture, m_nativehandle); }
+	catch(...) { Resume(); throw; }
 }
 
 //-----------------------------------------------------------------------------

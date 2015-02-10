@@ -28,6 +28,7 @@
 #include <linux/ptrace.h>
 #include "Architecture.h"
 #include "Exception.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)				
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -58,6 +59,16 @@ public:
 	//
 	// Creates a new TaskState from an existing task state
 	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* existing, size_t length);
+
+	// FromNativeThread (static)
+	//
+	// Captures the task state of a native operating system thread
+	static std::unique_ptr<TaskState> FromNativeThread(Architecture architecture, HANDLE nativehandle);
+
+	// ToNativeThread
+	//
+	// Applies this task state to a native operating system thread
+	void ToNativeThread(Architecture architecture, HANDLE nativehandle);
 
 private:
 
@@ -94,6 +105,18 @@ private:
 	// Creates a new TaskState blob from an existing task state blob
 	template <Architecture architecture> 
 	static std::unique_ptr<TaskState> Create(const void* existing, size_t length);
+
+	// FromNativeThread (static)
+	//
+	// Captures the task state from a native operating system thread
+	template <Architecture architecture>
+	static std::unique_ptr<TaskState> FromNativeThread(HANDLE nativehandle);
+
+	// ToNativeThread
+	//
+	// Applies this task state to a native operating system thread
+	template <Architecture architecture>
+	void ToNativeThread(HANDLE nativehandle);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

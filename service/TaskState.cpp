@@ -47,6 +47,7 @@ void TaskState::CopyTo(void* taskstate, size_t length) const
 #endif
 
 	// The size matches, just copy the data from the contained buffer
+	// TODO: When this is redone, don't do things like this, hit the .x86 or .x86_64 fields
 	memcpy(taskstate, &m_regs, length);
 }
 
@@ -145,7 +146,7 @@ std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* e
 	registers.x86_64.rip = reinterpret_cast<uint64_t>(entrypoint);
 	registers.x86_64.rbp = reinterpret_cast<uint64_t>(stackpointer);
 	registers.x86_64.rsp = reinterpret_cast<uint64_t>(stackpointer);
-	registers.x86_64.rflags = 0;
+	registers.x86_64.eflags = 0;
 
 	return std::make_unique<TaskState>(Architecture::x86_64, std::move(registers));
 }
@@ -229,6 +230,148 @@ std::unique_ptr<TaskState> TaskState::Create(Architecture architecture, const vo
 	}
 
 	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
+}
+
+// todo: document
+template <>
+std::unique_ptr<TaskState> TaskState::FromNativeThread<Architecture::x86>(HANDLE nativethread)
+{
+#ifndef _M_X64
+	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
+	if(!GetThreadContext(nativethread, &context)) throw Win32Exception();
+#else
+	WOW64_CONTEXT context { WOW64_CONTEXT_INTEGER | WOW64_CONTEXT_CONTROL };
+	if(!Wow64GetThreadContext(nativethread, &context)) throw Win32Exception();
+#endif
+
+	// Convert the 32-bit CONTEXT into pt_regs
+	pt_regs_t registers;
+	registers.x86.eax = context.Eax;
+	registers.x86.ebx = context.Ebx;
+	registers.x86.ecx = context.Ecx;
+	registers.x86.edx = context.Edx;
+	registers.x86.edi = context.Edi;
+	registers.x86.esi = context.Esi;
+	registers.x86.ebp = context.Ebp;
+	registers.x86.eip = context.Eip;
+	registers.x86.esp = context.Esp;
+	registers.x86.eflags = context.EFlags;
+
+	// todo - this is pointless to capture/set, it will never work anyway
+	// registers.x86.gs = static_cast<uint16_t>(context.SegGs);
+
+	return std::make_unique<TaskState>(Architecture::x86, std::move(registers));
+}
+
+// todo: document
+#ifdef _M_X64
+template <>
+std::unique_ptr<TaskState> TaskState::FromNativeThread<Architecture::x86_64>(HANDLE nativethread)
+{
+	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
+	if(!GetThreadContext(nativethread, &context)) throw Win32Exception();
+
+	// Convert the 64-bit CONTEXT into pt_regs
+	pt_regs_t registers;
+	registers.x86_64.rax = context.Rax;
+	registers.x86_64.rbx = context.Rbx;
+	registers.x86_64.rcx = context.Rcx;
+	registers.x86_64.rdx = context.Rdx;
+	registers.x86_64.rdi = context.Rdi;
+	registers.x86_64.rsi = context.Rsi;
+	registers.x86_64.rbp = context.Rbp;
+	registers.x86_64.r8  = context.R8;
+	registers.x86_64.r9  = context.R9;
+	registers.x86_64.r10 = context.R10;
+	registers.x86_64.r11 = context.R11;
+	registers.x86_64.r12 = context.R12;
+	registers.x86_64.r13 = context.R13;
+	registers.x86_64.r14 = context.R14;
+	registers.x86_64.r15 = context.R15;
+	registers.x86_64.rip = context.Rip;
+	registers.x86_64.rsp = context.Rsp;
+	registers.x86_64.eflags = context.EFlags;
+
+	return std::make_unique<TaskState>(Architecture::x86_64, std::move(registers));
+}
+#endif
+
+// generic
+std::unique_ptr<TaskState> TaskState::FromNativeThread(Architecture architecture, HANDLE nativethread)
+{
+	if(architecture == Architecture::x86) return FromNativeThread<Architecture::x86>(nativethread);
+#ifdef _M_X64
+	else if(architecture == Architecture::x86_64) return FromNativeThread<Architecture::x86_64>(nativethread);
+#endif
+	else throw Exception(E_FAIL);			// todo: Exception
+}
+
+// todo: document
+template<> 
+void TaskState::ToNativeThread<Architecture::x86>(HANDLE nativethread)
+{
+#ifndef _M_X64
+	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
+#else
+	WOW64_CONTEXT context { WOW64_CONTEXT_INTEGER | WOW64_CONTEXT_CONTROL };
+#endif
+
+	context.Eax = m_regs.x86.eax;
+	context.Ebx = m_regs.x86.ebx;
+	context.Ecx = m_regs.x86.ecx;
+	context.Edx = m_regs.x86.edx;
+	context.Edi = m_regs.x86.edi;
+	context.Esi = m_regs.x86.esi;
+	context.Ebp = m_regs.x86.ebp;
+	context.Eip = m_regs.x86.eip;
+	context.Esp = m_regs.x86.esp;
+	context.EFlags = m_regs.x86.eflags;
+
+#ifndef _M_X64
+	if(!SetThreadContext(nativethread, &context)) throw Win32Exception();
+#else
+	if(!Wow64SetThreadContext(nativethread, &context)) throw Win32Exception();
+#endif
+}
+
+#ifdef _M_X64
+// todo: document
+template<> 
+void TaskState::ToNativeThread<Architecture::x86_64>(HANDLE nativethread)
+{
+	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
+
+	context.Rax = m_regs.x86_64.rax;
+	context.Rbx = m_regs.x86_64.rbx;
+	context.Rcx = m_regs.x86_64.rcx;
+	context.Rdx = m_regs.x86_64.rdx;
+	context.Rdi = m_regs.x86_64.rdi;
+	context.Rsi = m_regs.x86_64.rsi;
+	context.R8  = m_regs.x86_64.r8;
+	context.R9  = m_regs.x86_64.r9;
+	context.R10	= m_regs.x86_64.r10;
+	context.R11	= m_regs.x86_64.r11;
+	context.R12	= m_regs.x86_64.r12;
+	context.R13	= m_regs.x86_64.r13;
+	context.R14	= m_regs.x86_64.r14;
+	context.R15	= m_regs.x86_64.r15;
+	context.Rbp = m_regs.x86_64.rbp;
+	context.Rip = m_regs.x86_64.rip;
+	context.Rsp = m_regs.x86_64.rsp;
+	context.EFlags = m_regs.x86_64.eflags;
+
+	if(!SetThreadContext(nativethread, &context)) throw Win32Exception();
+}
+#endif
+
+// generic
+void TaskState::ToNativeThread(Architecture architecture, HANDLE nativethread)
+{
+	if(architecture == Architecture::x86) ToNativeThread<Architecture::x86>(nativethread);
+#ifdef _M_X64
+	else if(architecture == Architecture::x86_64) ToNativeThread<Architecture::x86_64>(nativethread);
+#endif
+	else throw Exception(E_FAIL);			// todo: Exception
 }
 
 //-----------------------------------------------------------------------------

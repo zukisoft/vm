@@ -28,6 +28,7 @@
 #include <memory>
 #include <linux/signal.h>
 #include "Architecture.h"
+#include "TaskState.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -59,6 +60,11 @@ public:
 	// Resumes the thread
 	void Resume(void);
 
+	// ResumeTask
+	//
+	// Resumes the thread after application of a task state
+	void ResumeTask(const std::unique_ptr<TaskState>& task);
+
 	// SetSignalAlternateStack
 	//
 	// Sets the alternate stack to use for signal handlers
@@ -73,6 +79,11 @@ public:
 	//
 	// Suspends the thread
 	void Suspend(void);
+
+	// SuspendTask
+	//
+	// Suspends the thread and captures the task state
+	std::unique_ptr<TaskState> SuspendTask(void);
 
 	//-------------------------------------------------------------------------
 	// Properties
