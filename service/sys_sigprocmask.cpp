@@ -27,6 +27,7 @@
 #pragma warning(push, 4)
 
 // sys_rt_sigprocmask.cpp
+//
 uapi::long_t sys_rt_sigprocmask(const Context* context, int how, const uapi::sigset_t* newmask, uapi::sigset_t* oldmask);
 
 //-----------------------------------------------------------------------------

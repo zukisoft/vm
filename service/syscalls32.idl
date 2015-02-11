@@ -191,6 +191,7 @@ interface SystemCalls32
 	/* 100 */ sys32_long_t	sys32_fstatfs([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_statfs32* buf);
 	/* 109 */ sys32_long_t	sys32_uname([in] sys32_context_t context, [out, ref] linux_old_utsname* buf);
 	/* 114 */ sys32_long_t	sys32_wait4([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out, unique] sys32_int_t* status, [in] sys32_int_t options, [in, out, unique] linux_rusage32* rusage);
+	/* 119 */ sys32_long_t	sys32_sigreturn([in] sys32_context_t context);
 	/* 120 */ sys32_long_t	sys32_clone([in] sys32_context_t context, [in, ref] sys32_task_t* task, [in] sys32_ulong_t clone_flags, [in] sys32_addr_t parent_tidptr, [in] sys32_addr_t child_tidptr, [in, out, unique] linux_user_desc32* tls_val);
 	/* 121 */ sys32_long_t	sys32_setdomainname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
 	/* 122 */ sys32_long_t	sys32_newuname([in] sys32_context_t context, [out, ref] linux_new_utsname* buf);
@@ -198,6 +199,7 @@ interface SystemCalls32
 	/* 126 */ sys32_long_t	sys32_sigprocmask([in] sys32_context_t context, [in] sys32_int_t how, [in, unique] const sys32_old_sigset_t* newmask, [in, out, unique] sys32_old_sigset_t* oldmask);
 	/* 146 */ sys32_long_t	sys32_writev([in] sys32_context_t context, [in] sys32_int_t fd, [in, size_is(iovcnt)] sys32_iovec_t* iov, [in] sys32_int_t iovcnt);
 	/* 172 */ sys32_long_t	sys32_prctl([in] sys32_context_t context, [in] sys32_int_t option, [in] sys32_ulong_t arg2, [in] sys32_ulong_t arg3, [in] sys32_ulong_t arg4, [in] sys32_ulong_t arg5);
+	/* 173 */ sys32_long_t	sys32_rt_sigreturn([in] sys32_context_t context);
 	/* 174 */ sys32_long_t	sys32_rt_sigaction([in] sys32_context_t context, [in] sys32_int_t signal, [in, unique] const sys32_sigaction_t* action, [in, out, unique] sys32_sigaction_t* oldaction, [in] sys32_size_t sigsetsize);
 	/* 175 */ sys32_long_t	sys32_rt_sigprocmask([in] sys32_context_t context, [in] sys32_int_t how, [in, unique] const sys32_sigset_t* newmask, [in, out, unique] sys32_sigset_t* oldmask);
 	/* 183 */ sys32_long_t	sys32_getcwd([in] sys32_context_t context, [out, ref, size_is(size)] sys32_char_t* buf, [in] sys32_ulong_t size);

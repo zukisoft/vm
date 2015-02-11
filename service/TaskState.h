@@ -60,6 +60,11 @@ public:
 	// Creates a new TaskState from an existing task state
 	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* existing, size_t length);
 
+	// Duplicate
+	//
+	// Creates a duplicate task state
+	std::unique_ptr<TaskState> Duplicate(void) const;
+
 	// FromNativeThread (static)
 	//
 	// Captures the task state of a native operating system thread
@@ -69,6 +74,30 @@ public:
 	//
 	// Applies this task state to a native operating system thread
 	void ToNativeThread(Architecture architecture, HANDLE nativehandle);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// InstructionPointer
+	//
+	// Gets/sets the instruction pointer contained by the task state
+	__declspec(property(get=getInstructionPointer, put=putInstructionPointer)) void* InstructionPointer;
+	void* getInstructionPointer(void) const;
+	void putInstructionPointer(void* value);
+
+	// AX
+	// TODO: needs better name; don't use int3264
+	// Gets/sets the result register value (EAX/RAX)
+	__declspec(property(get=getAX, put=putAX)) unsigned __int3264 AX;
+	unsigned __int3264 getAX(void) const;
+	void putAX(unsigned __int3264 value);
+
+	// StackPointer
+	//
+	// Gets/sets the stack pointer contained by the task state
+	__declspec(property(get=getStackPointer, put=putStackPointer)) void* StackPointer;
+	void* getStackPointer(void) const;
+	void putStackPointer(void* value);
 
 private:
 

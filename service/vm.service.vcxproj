@@ -677,12 +677,14 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_release_context.cpp" />
     <ClCompile Include="sys_rt_sigaction.cpp" />
     <ClCompile Include="sys_rt_sigprocmask.cpp" />
+    <ClCompile Include="sys_rt_sigreturn.cpp" />
     <ClCompile Include="sys_rundown_context.cpp" />
     <ClCompile Include="sys_setdomainname.cpp" />
     <ClCompile Include="sys_sethostname.cpp" />
     <ClCompile Include="sys_set_thead_area.cpp" />
     <ClCompile Include="sys_sigaltstack.cpp" />
     <ClCompile Include="sys_sigprocmask.cpp" />
+    <ClCompile Include="sys_sigreturn.cpp" />
     <ClCompile Include="sys_stat64.cpp" />
     <ClCompile Include="sys_statfs.cpp" />
     <ClCompile Include="sys_statfs64.cpp" />

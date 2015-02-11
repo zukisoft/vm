@@ -141,7 +141,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 						
 				Bitmap ldtslots(m_ldtslots);
 				// todo: Architecture is hard-coced
-				std::shared_ptr<Thread> thread = Thread::FromHandle<Architecture::x86>(pid, host->ThreadHandle, host->ThreadId);
+				std::shared_ptr<Thread> thread = Thread::FromHandle<Architecture::x86>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
 				child = std::make_shared<Process>(m_architecture, std::move(host), std::move(thread), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
 			}
 
@@ -268,7 +268,7 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		const void* ldt = host->AllocateMemory(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), PAGE_READWRITE);
 
 		// Create the main thread for the process, the initial thread's TID will always match the process PID
-		std::shared_ptr<Thread> thread = Thread::FromHandle<architecture>(pid, host->ThreadHandle, host->ThreadId);
+		std::shared_ptr<Thread> thread = Thread::FromHandle<architecture>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
 		// this should abort on bad handle for now
 
 		// TODO TESTING NEW STARTUP INFORMATION
@@ -600,6 +600,8 @@ void Process::SetSignalAction(int signal, const uapi::sigaction* action, uapi::s
 
 void Process::Signal(int signal)
 {
+	// most of this is moving to Thread
+
 	/// README:
 	// http://www.linuxprogrammingblog.com/all-about-linux-signals?page=show
 	///
@@ -608,70 +610,27 @@ void Process::Signal(int signal)
 
 	// Retrieve the currently action for this signal
 	uapi::sigaction action = m_sigactions->Get(signal);
+	m_threads.at(m_pid)->BeginSignal(signal, action);
 
-	// SIGKILL cannot be masked
-	if(signal == LINUX_SIGKILL) {
-	}
-
-	// SIGSTOP cannot be masked
-	else if(signal == LINUX_SIGSTOP) {
-	}
-
-	// SIGCONT ?
-
-	// SIGCHLD also special
-
-	// Real-time signals range from SIGRTMIN to SIGRTMAX, behavior is different
-
-	// If the signal has been set to IGNORE don't do anything
-	if(action.sa_handler == LINUX_SIG_IGN) return;
-
-	// If the signal has been set to DEFAULT, use default behaviors
-	if(action.sa_handler == LINUX_SIG_DFL) return; //{
-
+	//// SIGKILL cannot be masked
+	//if(signal == LINUX_SIGKILL) {
 	//}
 
-	//DWORD dw = 0;
-	//BOOL b = FALSE;
-	//CONTEXT context;
-	//CONTEXT handler;
-	//HANDLE thread = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, FALSE, m_threadid_TEST);
-	//if(thread) {
-
-	//	context.ContextFlags = CONTEXT_ALL;
-	//	dw = SuspendThread(thread);
-	//	b = GetThreadContext(thread, &context);
-	//	
-	//	handler = context;
-	//	handler.ContextFlags = CONTEXT_INTEGER |CONTEXT_CONTROL;
-	//	handler.Eip = reinterpret_cast<DWORD>(action.sa_handler);
-	//	b = SetThreadContext(thread, &handler);
-
-	//	CONTEXT context2;
-	//	context2.ContextFlags = CONTEXT_ALL;
-	//	GetThreadContext(thread, &context2);
-
-
-	//	dw = ResumeThread(thread);
-	//	// HANDLER HERE
-	//	// TRAMPOLINE WOULD CALL BACK AND PICK UP FROM HERE
-
-	//	//dw = SuspendThread(thread);
-	//	//b = SetThreadContext(thread, &context);
-	//	//dw = ResumeThread(thread);
-
-	//	CloseHandle(thread);
+	//// SIGSTOP cannot be masked
+	//else if(signal == LINUX_SIGSTOP) {
 	//}
 
+	//// SIGCONT ?
 
-	//// The signal has a specified handler
-	//if(false /* TODO */) {
-	//}
+	//// SIGCHLD also special
 
-	//// Signals are handled by the host process via a thread message queue
-	//// TODO: There needs to be constants for the messages somewhere and 
-	//// document the wparam/lparam arguments. WM_APP is a placeholder (0x8000)
-	//if(!PostThreadMessage(m_host->ThreadId, WM_APP, 0, static_cast<LPARAM>(signal))) throw Win32Exception();
+	//// Real-time signals range from SIGRTMIN to SIGRTMAX, behavior is different
+
+	//// If the signal has been set to IGNORE don't do anything
+	//if(action.sa_handler == LINUX_SIG_IGN) return;
+
+	//// If the signal has been set to DEFAULT, use default behaviors
+	//if(action.sa_handler == LINUX_SIG_DFL) return; //{
 }
 
 //-----------------------------------------------------------------------------

@@ -25,6 +25,29 @@
 
 #pragma warning(push, 4)
 
+unsigned __int3264 TaskState::getAX(void) const
+{
+	if(m_architecture == Architecture::x86) return m_regs.x86.eax;
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) return m_regs.x86_64.rax;
+#endif
+	else return 0;
+}
+
+void TaskState::putAX(unsigned __int3264 value)
+{
+	if(m_architecture == Architecture::x86) {
+#ifdef _M_X64
+		if(value > UINT32_MAX) throw Exception(E_FAIL); // todo: Exception
+#endif
+		m_regs.x86.eax = (value & 0xFFFFFFFF);
+	}
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) m_regs.x86_64.rax = value;
+#endif
+	else throw Exception(E_FAIL);	// todo: exception
+}
+
 //-----------------------------------------------------------------------------
 // TaskState::CopyTo
 //
@@ -232,6 +255,14 @@ std::unique_ptr<TaskState> TaskState::Create(Architecture architecture, const vo
 	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
 }
 
+std::unique_ptr<TaskState> TaskState::Duplicate(void) const
+{
+	// need copy ctor for these, std::move is dumb here
+	Architecture arch = m_architecture;
+	pt_regs_t registers = m_regs;
+	return std::make_unique<TaskState>(std::move(arch), std::move(registers));
+}
+
 // todo: document
 template <>
 std::unique_ptr<TaskState> TaskState::FromNativeThread<Architecture::x86>(HANDLE nativethread)
@@ -304,6 +335,52 @@ std::unique_ptr<TaskState> TaskState::FromNativeThread(Architecture architecture
 	else if(architecture == Architecture::x86_64) return FromNativeThread<Architecture::x86_64>(nativethread);
 #endif
 	else throw Exception(E_FAIL);			// todo: Exception
+}
+
+void* TaskState::getInstructionPointer(void) const
+{
+	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_regs.x86.eip);
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) return reinterpret_cast<void*>(m_regs.x86_64.rip);
+#endif
+	else return nullptr;
+}
+
+void TaskState::putInstructionPointer(void* value)
+{
+	if(m_architecture == Architecture::x86) {
+#ifdef _M_X64
+		if(uintptr_t(value) > UINT32_MAX) throw Exception(E_POINTER);	// todo: exception
+#endif
+		m_regs.x86.eip = reinterpret_cast<uint32_t>(value);
+	}
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) m_regs.x86_64.rip = reinterpret_cast<uint64_t>(value);
+#endif
+	else throw Exception(E_FAIL);	// todo: exception
+}
+
+void* TaskState::getStackPointer(void) const
+{
+	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_regs.x86.esp);
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) return reinterpret_cast<void*>(m_regs.x86_64.rsp);
+#endif
+	else return nullptr;
+}
+
+void TaskState::putStackPointer(void* value)
+{
+	if(m_architecture == Architecture::x86) {
+#ifdef _M_X64
+		if(uintptr_t(value) > UINT32_MAX) throw Exception(E_POINTER);	// todo: exception
+#endif
+		m_regs.x86.esp = reinterpret_cast<uint32_t>(value);
+	}
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) m_regs.x86_64.rsp = reinterpret_cast<uint64_t>(value);
+#endif
+	else throw Exception(E_FAIL);	// todo: exception
 }
 
 // todo: document

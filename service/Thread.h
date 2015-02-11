@@ -29,6 +29,7 @@
 #include <memory>
 #include <linux/signal.h>
 #include "Architecture.h"
+#include "NtApi.h"
 #include "TaskState.h"
 #include "Win32Exception.h"
 
@@ -63,8 +64,9 @@ public:
 	// FromHandle
 	//
 	// Creates a new Thread instance from a native operating system handle
+	// todo: Remove processtemp
 	template<Architecture architecture>
-	static std::shared_ptr<Thread> FromHandle(uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
+	static std::shared_ptr<Thread> FromHandle(HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
 
 	// Resume
 	//
@@ -155,11 +157,22 @@ private:
 
 	// Instance Constructor
 	//
-	Thread(Architecture architecture, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
+	Thread(Architecture architecture, HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
 	friend class std::_Ref_count_obj<Thread>;
 
 	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// ProcessQueuedSignal
+	//
+	// Processes a single signal popped from the queue
+	void ProcessQueuedSignal(queued_signal_t signal);
+
+	//-------------------------------------------------------------------------
 	// Member Variables
+
+	// temporary? may want weak_pointer to the Process instead here
+	HANDLE						m_processtemp;
 
 	const Architecture			m_architecture;		// Thread architecture
 	HANDLE						m_nativehandle;		// Native thread handle
@@ -171,6 +184,7 @@ private:
 	// Signal Management
 	//
 	signal_queue_t				m_pendingsignals;	// Pending signals
+	std::atomic<bool>			m_insignal = false;
 	std::unique_ptr<TaskState>	m_savedsigtask;		// Previous task state
 	uapi::sigset_t				m_savedsigmask;		// Previous signal mask
 };

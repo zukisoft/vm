@@ -28,13 +28,13 @@
 // Thread::FromHandle<Architecture::x86>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86>(uapi::pid_t, HANDLE, DWORD);
+template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86>(HANDLE, uapi::pid_t, HANDLE, DWORD);
 
 #ifdef _M_X64
 // Thread::FromHandle<Architecture::x86_64>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(uapi::pid_t, HANDLE, DWORD);
+template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(HANDLE, uapi::pid_t, HANDLE, DWORD);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -44,9 +44,9 @@ template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(uapi::
 //
 //	tid			- Virtual thread identifier
 
-Thread::Thread(Architecture architecture, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
+Thread::Thread(Architecture architecture, HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
 	: m_architecture(architecture), m_tid(tid), m_nativehandle(nativehandle), m_nativetid(nativetid),
-	m_sigmask(0) // <-- needs to be passed in
+	m_sigmask(0), m_processtemp(processtemp) // <-- needs to be passed in
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
@@ -72,30 +72,97 @@ Thread::~Thread()
 
 void Thread::BeginSignal(int signal, uapi::sigaction action)
 {
-	// IF THE SPECIFIED SIGNAL IS NOT ALREADY PENDING AND NOT SA_NODEFER
-	// THEN PUSH INTO THE QUEUE
+	// TODO: RULES -- check the mask, don't queue multiples, etc
+	// There is also a rule for the maximum # of queued signals (32, I think).
+	// Consider a signal handler that never returns or calls EndSignal
 	m_pendingsignals.push(std::make_pair(signal, action));
-	
-	// EVERYTHING ELSE IN HERE WILL MOVE TO THAT QUEUE HANDLER
-	// perhaps use a condition variable -- or a thread pool?
 
-	// make it so DEFAULT cannot be passed in, this should always have a sigaction
-	// that can be operated upon.  Even if it's just to terminate the thread/process.
-	// "SignalActions" class can hold static default sigactions for everything
+	// Only process a pending signal if not already handling one; the next
+	// one will be popped from the queue when that signal finishes
+	bool expected = false;
+	if(m_insignal.compare_exchange_strong(expected, true)) {
 
-	// Define the signal mask to use while the handler is executing; this is the
-	// combination of the current mask, the action mask and the signal being handled
-	uapi::sigset_t mask = m_sigmask | action.sa_mask;
-	if((action.sa_flags & LINUX_SA_NODEFER) == 0) mask |= uapi::sigmask(signal);
+		queued_signal_t signal;
+		if(m_pendingsignals.try_pop(signal)) ProcessQueuedSignal(signal);
+		else m_insignal = false;
+	}
+}
 
-	// SAVE THE MASK AND TASK STATE
+// WIP
+//
+// The goal here is to never actually block the calling RPC thread and not have any
+// OS handles or things that need to be cleaned up if the thread dies.  If a thread
+// dies in the middle of a signal handler or enters an infinite loop, that shouldn't
+// matter to this code.
+//
+// there is also a race condition to deal with when a thread (or process) is first
+// created, until it's done with acquiring context and getting itself set up, it 
+// isn't eligible to be pre-empted by a signal at all as the necessary stuff like
+// the ldt or the GS register may not be set yet.
+//
+// and to make it even harder, have to deal with what happens if this is invoked while
+// the thread is in a system call (RPC in our case), it needs to be restarted or
+// killed, not just pick up where it left off (which may not work anyway). easy, huh?
+//
+// the RPC call for sigreturn() -- can it be set up such that it just fires and then
+// the calling client thread is suspended?  It's not supposed to return and although
+// it will end up blowing the stack away, what happens to the RPC call and its memory?
+void Thread::ProcessQueuedSignal(queued_signal_t signal)
+{
+	_ASSERTE(m_insignal);				// Should only be called if "in signal"
+
+	// mask
+	uapi::sigset_t mask = m_sigmask | signal.second.sa_mask;
+	if((signal.second.sa_flags & LINUX_SA_NODEFER) == 0) mask |= uapi::sigmask(signal.first);
+	m_savedsigmask = m_sigmask;
+	m_sigmask = mask;
+
+	// task state
 	m_savedsigtask = SuspendTask();
 
-	// create the new task state
-	// resumetask() the thread
+	//
+	// TODO: DEFAULT HANDLERS AND WHATNOT HERE
+	//
 
-	// return to caller, but the saved state must be popped by sigreturn() ? how would this
-	// work for non-x86 architectures, or is sigreturn() always always called?
+	// start a signal handler callback
+	auto newstate = m_savedsigtask->Duplicate();
+	
+	// signal number in E/RAX
+	newstate->AX = signal.first;
+
+	// instruction pointer
+	newstate->InstructionPointer = signal.second.sa_handler;
+
+	// stack pointer
+	// todo: needs to be aligned - see align_sigframe in signal.c
+	uintptr_t stackpointer = uintptr_t(newstate->StackPointer);
+	if((signal.second.sa_flags & LINUX_SA_ONSTACK) && (m_sigaltstack.operator uapi::stack_t().ss_flags != LINUX_SS_DISABLE)) {
+
+		stackpointer = uintptr_t(m_sigaltstack.operator uapi::stack_t().ss_sp);
+	}
+
+	// TODO: bunch of stuff needs to be on the stack here for compatibility
+	// see arch\x86\kernel\signal.c
+	// don't forget x86/x64 are going to be different sizes here
+
+	// TESTING: push signal number onto the stack first?
+	uint32_t signo = signal.first;
+	stackpointer -= sizeof(uint32_t);
+	NtApi::NtWriteVirtualMemory(m_processtemp, reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t), nullptr);
+	
+	if(signal.second.sa_flags & LINUX_SA_RESTORER) {
+
+		// write the sa_restorer pointer to the stack
+		stackpointer -= sizeof(uint32_t);
+		NtApi::NtWriteVirtualMemory(m_processtemp, reinterpret_cast<void*>(stackpointer), &signal.second.sa_restorer, sizeof(uint32_t), nullptr);
+	}
+	
+	newstate->StackPointer = reinterpret_cast<void*>(stackpointer);
+
+	ResumeTask(newstate);
+	
+	// in theory this ultimately calls into EndSignal from the remote thread
+	// which undoes what was done here
 }
 
 //-----------------------------------------------------------------------------
@@ -112,7 +179,25 @@ void Thread::EndSignal(void)
 	// here I guess we just need to restore the saved signal state, but
 	// if there are other signals pending there is no point in restoring the
 	// task state, that should be reapplied only when all signals are done?
-	// the signal mask should be retrieved/restored in-between signals, though.
+	// the signal mask should be retrieved/restored in-between signals, though
+
+	_ASSERTE(m_insignal);
+	if(!m_insignal) return;
+
+	Suspend();
+
+	// TODO: need to kick off additional signals here
+	//queued_signal_t signal;
+	//if(m_pendingsignals.try_pop(signal)) {
+
+	//	ProcessQueuedSignal(signal);
+	//	return;
+	//}
+
+	m_sigmask = m_savedsigmask;
+	ResumeTask(m_savedsigtask);
+	
+	m_insignal = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -125,9 +210,9 @@ void Thread::EndSignal(void)
 //	nativetid		- Native operating system thread identifier
 
 template<Architecture architecture>
-std::shared_ptr<Thread> Thread::FromHandle(uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
+std::shared_ptr<Thread> Thread::FromHandle(HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
 {
-	return std::make_shared<Thread>(architecture, tid, nativehandle, nativetid);
+	return std::make_shared<Thread>(architecture, processtemp, tid, nativehandle, nativetid);
 }
 
 //-----------------------------------------------------------------------------
