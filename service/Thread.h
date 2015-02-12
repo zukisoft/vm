@@ -141,6 +141,46 @@ private:
 	// Data type stored in the signal queue for this thread
 	using queued_signal_t = std::pair<int, uapi::sigaction>;
 
+	// rt_sigframe_x86
+	//
+	// 32-bit signal handler stack frame
+	struct rt_sigframe_x86 {
+
+		uint32_t				pretcode;
+		int32_t					signal;
+		uint32_t				pinfo;
+		uint32_t				puc;
+		// todo: siginfo			info;
+		// todo: ucontext_ia32		uc;
+		uint8_t					retcode[8];
+		// todo: floating point state follows
+	};
+
+	// rt_sigframe_x64
+	//
+	// 64-bit signal handler stack frame
+	struct rt_sigframe_x64 {
+
+		uint64_t				pretcode;
+		// todo: ucontext		uc;
+		// todo: siginfo		info;
+		// todo: floating point state follows
+	};
+
+	// sigframe_x86
+	//
+	// 32-bit signal handler stack frame
+	struct sigframe_x86 {
+
+		uint32_t				pretcode;
+		int32_t					sig;
+		// todo: sigcontext_ia32	sc;
+		// todo: _fpstate_ia32		fpstate_unused;
+		// todo: uint32_t			extramask[_NSIG_WORDS-1];
+		uint8_t					retcode[8];
+		// todo: floating point state follows
+	};
+
 	// signal_queue_predicate_t
 	//
 	// Predicate to use with signal_queue_t that defines the priority of the items.  Lower signal

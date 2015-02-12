@@ -124,6 +124,14 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	// TODO: DEFAULT HANDLERS AND WHATNOT HERE
 	//
 
+	// If x64, the linux kernel decrements the stack pointer by 128 bytes as a 'red zone'
+
+	// check for possible stack overflows and set stack pointer to a bad place to cause
+	// an exception
+
+	// x86 can have 2 different stack frames, one for sigaction and one for rt_sigaction
+	// x64 only has rt_sigaction stack frame
+
 	// start a signal handler callback
 	auto newstate = m_savedsigtask->Duplicate();
 	
@@ -132,6 +140,20 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 
 	// instruction pointer
 	newstate->InstructionPointer = signal.second.sa_handler;
+
+	sigframe_x86 frame;
+	frame.sig = signal.first;
+	frame.pretcode = reinterpret_cast<uint32_t>(&signal.second.sa_restorer);
+
+	// retcode
+	// the embedded pointer to sigreturn can't be specified - no idea where sys_sigreturn will be in the hot
+	// pop eax; mov eax, XXXXXXXXh; int 80h
+	//frame.retcode = { 0x58, 0xB8, 0x00, 0x00, 0x00, 0x00, 0xCD, 0x80 };
+
+	// rt_retcode
+	// the embedded pointer to sigreturn can't be specified - no idea where sys_rt_sigreturn will be in the host
+	// mov eax, XXXXXXXXh; int 80h;
+	//frame.retcode = { 0xB8, 0x00, 0x00, 0x00, 0x00, 0x80, 0xCD, 0x00 };
 
 	// stack pointer
 	// todo: needs to be aligned - see align_sigframe in signal.c
