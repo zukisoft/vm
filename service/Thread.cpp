@@ -238,7 +238,8 @@ DWORD Thread::getNativeThreadId(void) const
 //-----------------------------------------------------------------------------
 // Thread::Resume
 //
-// Resumes the thread from a suspended state
+// Resumes the thread from a suspended state; forces a thread that has been
+// suspended multiple times to resume execution.
 //
 // Arguments:
 //
@@ -246,7 +247,15 @@ DWORD Thread::getNativeThreadId(void) const
 
 void Thread::Resume(void)
 {
-	if(ResumeThread(m_nativehandle) == -1) throw Win32Exception();
+	DWORD result;				// Result from function call
+
+	// Repeatedly call ResumeThread until it has overcome all suspend
+	// operations.  If it returns zero, the thread was not suspended.
+	do { result = ResumeThread(m_nativehandle); }
+	while((result != -1) && (result > 1));
+
+	// A result of -1 (0xFFFFFFFF) indicates that an error occurred
+	if(result == -1) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
@@ -263,8 +272,7 @@ void Thread::ResumeTask(const std::unique_ptr<TaskState>& task)
 	// Apply the specified task to the native thread
 	task->ToNativeThread(m_architecture, m_nativehandle);
 
-	// Resume the thread
-	if(ResumeThread(m_nativehandle) == -1) throw Win32Exception();
+	Resume();					// Resume the thread
 }
 
 //-----------------------------------------------------------------------------
