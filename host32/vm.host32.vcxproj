@@ -118,6 +118,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="syscalls.cpp" />
     <ClCompile Include="sys_clone.cpp" />
+    <ClCompile Include="sys_execve.cpp" />
     <ClCompile Include="sys_exit.cpp" />
     <ClCompile Include="sys_exit_group.cpp" />
     <ClCompile Include="sys_fork.cpp" />

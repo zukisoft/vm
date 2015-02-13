@@ -161,6 +161,11 @@ interface SystemCalls32
 	// Sends a trace message back to the service from the host
 	HRESULT sys32_trace([in] sys32_context_t context, [in, size_is(length)] sys32_char_t* message, [in] sys32_size_t length);
 
+	// todo: check out [partial_ignore] attribute, that should be used for optional pointer arguments that can be NULL
+	// todo: check out [maybe] attribute for the sigreturn/rt_sigreturn functions, no response from server will be expected
+	// todo: check out [maybe] for exit() stuff too when I get there, anything that won't return to the caller.  Need to know
+	//       if that implies it won't be called more than once like [idempotent]
+
 	// sys32_xxxxx
 	//
 	// Linux kernel system calls
@@ -173,7 +178,8 @@ interface SystemCalls32
 	/* 005 */ sys32_long_t	sys32_open([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_int_t flags, [in] sys32_mode_t mode);
 	/* 006 */ sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
 	/* 007 */ sys32_long_t	sys32_waitpid([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out, unique] sys32_int_t* status, [in] sys32_int_t options);
-	/* 008 */ sys32_long_t	sys32_creat([in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
+	/* 008 */ sys32_long_t	sys32_creat([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
+	/* 011 */ sys32_long_t	sys32_execve([in] sys32_context_t context, [in, string] const sys32_char_t* filename, [in] sys32_int_t argc, [in, string, size_is(argc)] const sys32_char_t* argv[], [in] sys32_int_t envc, [in, string, size_is(envc)] const sys32_char_t* envp[]);
 	/* 014 */ sys32_long_t	sys32_mknod([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 	/* 020 */ sys32_long_t	sys32_getpid([in] sys32_context_t context);
 	/* 021 */ sys32_long_t	sys32_mount([in] sys32_context_t context, [in, string] const sys32_char_t* source, [in, string] const sys32_char_t* target, [in, string] const sys32_char_t* filesystem, [in] sys32_ulong_t flags, [in] sys32_addr_t data);

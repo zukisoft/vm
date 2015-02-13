@@ -20,38 +20,37 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
-#include <linux/signal.h>
+#include "stdafx.h"
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
-// syscall_t
-//
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
-
-// g_syscalls
-//
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
-
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
-
-/* 001 */ extern uapi::long_t sys_exit(PCONTEXT);
-/* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
-/* 011 */ extern uapi::long_t sys_execve(const uapi::char_t*, const uapi::char_t* argv[], const uapi::char_t* envp[]);
-/* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
-/* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
-/* 252 */ extern uapi::long_t sys_exit_group(int status);
-
 //-----------------------------------------------------------------------------
+// sys_execve
+//
+// Executes a program
+//
+// Arguments:
+//
+//	context		- System call context object
+//	filename	- Path to the binary file to be executed
+//	argv		- Command-line argument array
+//	envp		- Environment variable array
+
+uapi::long_t sys_execve(const Context* context, const uapi::char_t* filename, int argc, const uapi::char_t** argv, int envc, const uapi::char_t** envp)
+{
+	// NOTE: argc/envc include the NULL, why
+
+	return 0;
+}
+
+// sys32_execve
+//
+sys32_long_t sys32_execve(sys32_context_t context, const sys32_char_t* filename, sys32_int_t argc, const sys32_char_t* argv[], sys32_int_t envc, const sys32_char_t* envp[])
+{
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_execve, context, filename, argc, argv, envc, envp));
+}
+
+//---------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __SYSCALLS_H_

@@ -20,38 +20,44 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SYSCALLS_H_
-#define __SYSCALLS_H_
-#pragma once
-
-#include <linux/errno.h>
-#include <linux/ldt.h>
-#include <linux/signal.h>
+#include "stdafx.h"
 
 #pragma warning(push, 4)
 
-// syscall_t
+// t_rpccontext (main.cpp)
 //
-// Prototype for a system call handle
-using syscall_t = int (*)(PCONTEXT);
+// RPC context handle for the current thread
+extern __declspec(thread) sys32_context_t t_rpccontext;
 
-// g_syscalls
+//-----------------------------------------------------------------------------
+// sys_execve
 //
-// Table of system calls, organized by entry point ordinal
-extern syscall_t g_syscalls[512];
+// Executes a program
+//
+// Arguments:
+//
+//	filename		- Path to the binary file to be executed
+//	argv			- Command-line argument array
+//	envp			- Environment variable array
 
-// TODO: PUT FUNCTION PROTOTYPES FOR EACH ONE HERE
-extern uapi::long_t sys_noentry(PCONTEXT);
+uapi::long_t sys_execve(const uapi::char_t* filename, const uapi::char_t* argv[], const uapi::char_t* envp[])
+{
+	int		argc = 1;		// Number of command-line argument strings (includes NULL)
+	int		envc = 1;		// Number of environment variables (includes NULL)
 
-/* 001 */ extern uapi::long_t sys_exit(PCONTEXT);
-/* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
-/* 011 */ extern uapi::long_t sys_execve(const uapi::char_t*, const uapi::char_t* argv[], const uapi::char_t* envp[]);
-/* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
-/* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
-/* 252 */ extern uapi::long_t sys_exit_group(int status);
+	// RPC doesn't have the capability to marshal multi-dimensional arrays, so
+	// they have to be scanned to get the element counts.  Include the final null
+	// string as part of the count so that is also sent to the server
+
+	for(const uapi::char_t** element = argv; *element; element++, argc++);
+	for(const uapi::char_t** element = envp; *element; element++, envc++);
+
+	// Execute the RPC function with the calculated argument and envvar count
+	return sys32_execve(t_rpccontext, filename, argc, argv, envc, envp);
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __SYSCALLS_H_
+

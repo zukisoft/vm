@@ -131,6 +131,13 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 
 	// x86 can have 2 different stack frames, one for sigaction and one for rt_sigaction
 	// x64 only has rt_sigaction stack frame
+	//
+	// the data in these stack frames is crazy big -- probably want a whole class for that
+	// like 'SignalStackFrame' (Architecture specific)
+
+	// looks like those sneaky linux guys actually tuck the state away on the stack,
+	// which is actually quite a good idea and saves trouble here if that's the right
+	// context
 
 	// start a signal handler callback
 	auto newstate = m_savedsigtask->Duplicate();
@@ -168,6 +175,13 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	// don't forget x86/x64 are going to be different sizes here
 
 	// TESTING: push signal number onto the stack first?
+	// edit: it's actually just __cdecl:
+	//
+	//	RETURN ADDRESS
+	//	ARG1			- SIGNAL NUMBER
+	//	ARG2			- SIGINFO*
+	//	ARG3			- UCONTEXT*
+	//  ... more stuff follows
 	uint32_t signo = signal.first;
 	stackpointer -= sizeof(uint32_t);
 	NtApi::NtWriteVirtualMemory(m_processtemp, reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t), nullptr);
@@ -202,6 +216,9 @@ void Thread::EndSignal(void)
 	// if there are other signals pending there is no point in restoring the
 	// task state, that should be reapplied only when all signals are done?
 	// the signal mask should be retrieved/restored in-between signals, though
+	//
+	// *IF* everything needed is stored on the stack when sigaled, this becomes easier
+	// as we can just grab it from there and reapply it rather than storing everything
 
 	_ASSERTE(m_insignal);
 	if(!m_insignal) return;
@@ -375,15 +392,11 @@ uapi::sigset_t Thread::getSignalMask(void) const
 void Thread::Suspend(void)
 {
 #ifndef _M_X64
-
 	if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
-
 #else
-
 	// On 64-bit builds, Wow64SuspendThread() should be used for 32-bit threads
 	if(m_architecture == Architecture::x86) { if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception(); }
 	else if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
-
 #endif
 }
 

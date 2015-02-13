@@ -148,7 +148,7 @@ interface SystemCalls64
 	/* 072 */ sys64_long_t	sys64_fcntl([in] sys64_context_t context, [in] sys64_int_t fd, [in] sys64_int_t cmd, [in] sys64_addr_t arg);
 	/* 079 */ sys64_long_t	sys64_getcwd([in] sys64_context_t context, [out, ref, size_is(size)] sys64_char_t* buf, [in] sys64_sizeis_t size);
 	/* 083 */ sys64_long_t	sys64_mkdir([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
-	/* 085 */ sys64_long_t	sys64_creat([in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
+	/* 085 */ sys64_long_t	sys64_creat([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [in] sys64_mode_t mode);
 	/* 089 */ sys64_long_t	sys64_readlink([in] sys64_context_t context, [in, string] const sys64_char_t* pathname, [out, ref, size_is(bufsiz)] sys64_char_t* buf, [in] sys64_sizeis_t bufsiz);
 	/* 095 */ sys64_long_t	sys64_umask([in] sys64_context_t context, [in] sys64_mode_t mask);
 	/* 102 */ sys64_long_t	sys64_getuid([in] sys64_context_t context);
