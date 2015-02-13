@@ -143,6 +143,7 @@ interface SystemCalls64
 	/* 056 */ sys64_long_t	sys64_clone([in] sys64_context_t context, [in, ref] sys64_task_state_t* taskstate, [in] sys64_ulong_t clone_flags, [in] sys64_addr_t parent_tidptr, [in] sys64_addr_t child_tidptr);
 	/* 057 */ sys64_long_t	sys64_fork([in] sys64_context_t context, [in, ref] sys64_task_state_t* taskstate);
 	/* 058 */ sys64_long_t	sys64_vfork([in] sys64_context_t context, [in, ref] sys64_task_state_t* taskstate);
+	/* 059 */ sys64_long_t	sys64_execve([in] sys64_context_t context, [in, string] const sys64_char_t* filename, [in] sys64_int_t argc, [in, string, size_is(argc + 1)] const sys64_char_t* argv[], [in] sys64_int_t envc, [in, string, size_is(envc + 1)] const sys64_char_t* envp[]);
 	/* 061 */ sys64_long_t	sys64_wait4([in] sys64_context_t context, [in] sys64_pid_t pid, [in, out, unique] sys64_int_t* status, [in] sys64_int_t options, [in, out, unique] linux_rusage64* rusage);
 	/* 063 */ sys64_long_t	sys64_newuname([in] sys64_context_t context, [out, ref] linux_new_utsname* buf);
 	/* 072 */ sys64_long_t	sys64_fcntl([in] sys64_context_t context, [in] sys64_int_t fd, [in] sys64_int_t cmd, [in] sys64_addr_t arg);

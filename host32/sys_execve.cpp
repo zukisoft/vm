@@ -42,15 +42,14 @@ extern __declspec(thread) sys32_context_t t_rpccontext;
 
 uapi::long_t sys_execve(const uapi::char_t* filename, const uapi::char_t* argv[], const uapi::char_t* envp[])
 {
-	int		argc = 1;		// Number of command-line argument strings (includes NULL)
-	int		envc = 1;		// Number of environment variables (includes NULL)
+	int				argc = 0;		// Number of command-line argument strings
+	int				envc = 0;		// Number of environment variables
 
 	// RPC doesn't have the capability to marshal multi-dimensional arrays, so
-	// they have to be scanned to get the element counts.  Include the final null
-	// string as part of the count so that is also sent to the server
+	// they have to be scanned to get the counts
 
-	for(const uapi::char_t** element = argv; *element; element++, argc++);
-	for(const uapi::char_t** element = envp; *element; element++, envc++);
+	for(const uapi::char_t** element = argv; *element; element++) argc++;
+	for(const uapi::char_t** element = envp; *element; element++) envc++;
 
 	// Execute the RPC function with the calculated argument and envvar count
 	return sys32_execve(t_rpccontext, filename, argc, argv, envc, envp);
