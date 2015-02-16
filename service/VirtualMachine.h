@@ -97,6 +97,15 @@ public:
 
 	virtual void CloseProcess(const std::shared_ptr<Process>& process) = 0;
 
+	// SpawnProcess
+	//
+	// Spawns a new process
+	virtual std::shared_ptr<Process> SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp) = 0;
+
+	//
+	///virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process>& process, CloneFlags flags);
+
+
 	// CreateDeviceId (static)
 	//
 	// Creates a device identifier from major and minor components

@@ -37,6 +37,7 @@
 #include "Bitmap.h"
 #include "ElfArguments.h"
 #include "ElfImage.h"
+#include "Executable.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
 #include "Host.h"
@@ -88,6 +89,11 @@ public:
 	static std::shared_ptr<Process> Create(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir,
 		const FileSystem::HandlePtr& handle, const uapi::char_t** argv, const uapi::char_t** envp, const tchar_t* hostpath, const tchar_t* hostargs);
 
+	// Execute
+	//
+	// Executes a new process by replacing the current one
+	void Execute(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const& argv, const char_t* const& envp);
+
 	// FindNativeThread
 	//
 	// Locates a thread instance based on its native thread id
@@ -97,6 +103,12 @@ public:
 	//
 	// Locates a thread instance based on it's tid
 	std::shared_ptr<Thread> FindThread(uapi::pid_t tid);
+
+	// FromFile (static)
+	//
+	// Creates a new process instance from a file
+	static std::shared_ptr<Process> FromFile(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, const char_t* const* argv,
+		const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdirectory, const std::shared_ptr<FileSystem::Alias>& workingdirectory);
 
 	// GetHandle
 	//
@@ -153,11 +165,6 @@ public:
 	// Sends a signal to the process
 	void Signal(int signal);
 	//void Signal(uapi::pid_t tgid, uapi::pid_t tid, int signal);
-
-	// Spawn (static)
-	//
-	// Creates a new process instance
-	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp);
 
 	// Start
 	//

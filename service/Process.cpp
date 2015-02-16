@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)
 
+// INTERPRETER_SCRIPT_MAGIC
+//
+// Magic number present at the head of an interpreter script
+static uint8_t INTERPRETER_SCRIPT_MAGIC[] = { 0x23, 0x21 };		// "#!"
+
 // Process::Create<Architecture::x86>
 //
 // Explicit Instantiation of template function
@@ -193,7 +198,6 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 	// Create the external host process (suspended by default) and verify the class/architecture
 	// as this will all go south very quickly if it's not the expected architecture
-	// todo: need the handles to stuff that are to be inherited (signals, etc)
 	std::unique_ptr<Host> host = Host::Create(hostpath, hostargs, nullptr, 0);
 	CheckHostArchitecture<architecture>(host->ProcessHandle);
 
@@ -288,6 +292,36 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 }
 
 //-----------------------------------------------------------------------------
+// Process::Execute
+//
+// Executes a new binary by replacing the contents of this process
+//
+
+void Process::Execute(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const& argv, const char_t* const& envp)
+{
+	m_host->Suspend();						// Suspend the native process
+
+	try {
+
+		// If the architecture is the same, can re-use the host process otherwise
+		// a new host process will need to be constructed
+
+		// Kill all threads
+		// ? do they need to be signaled
+
+		// Remove all file handles that are set for close-on-exec
+		m_handles->RemoveCloseOnExecute();
+		
+		// Release all allocated memory
+		m_host->ClearMemory();
+
+		// TODO: Actually implement this
+	}
+	
+	catch(...) { m_host->Resume(); throw; }
+}
+
+//-----------------------------------------------------------------------------
 // Process::FindNativeThread
 //
 // Locates a thread within this process based on its native thread identifier
@@ -324,6 +358,49 @@ std::shared_ptr<Thread> Process::FindThread(uapi::pid_t tid)
 	// Locate the thread within the collection
 	const auto found = m_threads.find(tid);
 	return (found != m_threads.end()) ? found->second : nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// Process::FromFile (static)
+//
+// Creates a new process from a file
+//
+// Arguments:
+//
+//	vm					- VirtualMachine instance creating the process
+//	pid					- PID to assign to the process
+//	filename			- Path to the executable image
+//	argv				- Command line arguments to pass to the process
+//	envp				- Environment variables for the process
+//	rootdirectory		- Root directory to assign to the process
+//	workingdirectory	- Working directory to assign to the process
+
+std::shared_ptr<Process> Process::FromFile(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, const char_t* const* argv, 
+	const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdirectory, const std::shared_ptr<FileSystem::Alias>& workingdirectory)
+{
+	std::tstring			hostpath;			// Path to the appropriate host executable
+
+	// Parse the filename and command line arguments into an Executable instance
+	auto executable = Executable::FromFile(vm, filename, argv, rootdirectory, workingdirectory);
+
+	// The native hosting process for the executable depends on the detected architecture type
+	if(executable->Architecture == Architecture::x86) hostpath = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32);
+#ifdef _M_X64
+	else if(executable->Architecture == Architecture::x86_64) hostpath = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary64);
+#endif
+	else throw LinuxException(LINUX_ENOEXEC);
+
+	// Attempt to instantiate the native host process
+	auto host = Host::Create(hostpath.c_str(), vm->GetProperty(VirtualMachine::Properties::HostProcessArguments).c_str());
+
+	try {
+
+	}
+
+	// should be LinuxException here
+	catch(...) { host->Terminate(E_FAIL); throw; }
+
+	return nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -631,37 +708,6 @@ void Process::Signal(int signal)
 
 	//// If the signal has been set to DEFAULT, use default behaviors
 	//if(action.sa_handler == LINUX_SIG_DFL) return; //{
-}
-
-//-----------------------------------------------------------------------------
-// Process::Spawn (static)
-//
-// Creates a new process
-//
-// Arguments:
-//
-//	vm			- VirtualMachine instance
-//	pid			- Optional PID to assign to the new process or -1
-//	filename	- Path to the executable to create the process from
-//	argv		- Arguments to pass to the new process
-//	envp		- Environment for the new process
-
-std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const uapi::char_t* filename,
-	const uapi::char_t** argv, const uapi::char_t** envp)
-{
-
-	(envp);
-	(argv);
-	(pid);
-
-	// When creating a process directly via this function, the root and working directory are the filesystem root
-	std::shared_ptr<FileSystem> rootfs = vm->RootFileSystem;
-
-	// Attempt to open a handle to the specified executable, relative to the file system root node
-	std::shared_ptr<FileSystem::Handle> handle = vm->OpenExecutable(rootfs->Root, rootfs->Root, filename);
-
-
-	return nullptr;
 }
 
 //-----------------------------------------------------------------------------

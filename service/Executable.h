@@ -102,7 +102,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	::Architecture						m_architecture;	// Architecture flag
+	const ::Architecture				m_architecture;	// Architecture flag
 	std::shared_ptr<FileSystem::Handle>	m_handle;		// File handle
 	std::vector<std::string>			m_arguments;	// Command-line arguments
 };

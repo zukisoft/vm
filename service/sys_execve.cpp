@@ -39,7 +39,7 @@
 
 uapi::long_t sys_execve(const Context* context, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp)
 {
-	return 0;
+	return -38;
 }
 
 // sys32_execve

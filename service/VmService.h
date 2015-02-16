@@ -80,6 +80,11 @@ public:
 	virtual void								CloseProcess(const std::shared_ptr<Process>& process);
 	virtual std::shared_ptr<Process>			FindNativeProcess(DWORD nativepid);
 
+	// SpawnProcess
+	//
+	// Spawns a new process
+	virtual std::shared_ptr<Process> SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
+
 	// updated file system api
 	virtual void								CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
 	virtual void								CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device);
@@ -168,6 +173,11 @@ private:
 	// 
 	using process_map_t = std::map<uapi::pid_t, std::shared_ptr<Process>>;
 
+	// process_map_lock_t
+	//
+	// Synchronization object used to control access to the property collection
+	using process_map_lock_t = Concurrency::reader_writer_lock;
+
 	// property_map_t
 	//
 	// Typedef for a concurrent map<> of property strings
@@ -193,6 +203,7 @@ private:
 	mount_map_t							m_mounts;		// Collection of mounted file systems
 
 	process_map_t						m_processes;
+	process_map_lock_t					m_processeslock;
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERVICEPARAMETERS CLASS

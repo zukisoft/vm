@@ -142,5 +142,29 @@ void ProcessHandles::Remove(int fd)
 }
 
 //-----------------------------------------------------------------------------
+// ProcessHandles::RemoveCloseOnExecute
+//
+// Closes all handles that are marked as close-on-exec
+//
+// Arguments:
+//
+//	NONE
+
+void ProcessHandles::RemoveCloseOnExecute(void)
+{
+	handle_lock_t::scoped_lock writer(m_handlelock);
+
+	// Iterate over all the contained file system handles to look for CLOEXEC
+	auto iterator = m_handles.begin();
+	while(iterator != m_handles.end()) {
+
+		// If the file handle is set to be closed on execute, remove it
+		// from the member collection
+		if(iterator->second->CloseOnExec) iterator = m_handles.erase(iterator);
+		else ++iterator;
+	}
+}
+
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

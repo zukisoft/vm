@@ -80,6 +80,11 @@ public:
 	// Removes a file system handle from the collection
 	void Remove(int fd);
 
+	// RemoveCloseOnExecute
+	//
+	// Releases all file system handles set for close-on-exec
+	void RemoveCloseOnExecute(void);
+
 private:
 
 	ProcessHandles(const ProcessHandles&)=delete;
