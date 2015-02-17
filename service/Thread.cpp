@@ -57,6 +57,9 @@ Thread::Thread(Architecture architecture, HANDLE processtemp, uapi::pid_t tid, H
 
 Thread::~Thread()
 {
+	// TODO: If parent process is alive and the tid doesn't match the pid,
+	// release the tid from the virtual machine
+
 	CloseHandle(m_nativehandle);
 }
 

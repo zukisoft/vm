@@ -365,9 +365,11 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Host.h" />
     <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="MountOptions.h" />
+    <ClInclude Include="NewProcess.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Architecture.h" />
     <ClInclude Include="ProcessHandles.h" />
+    <ClInclude Include="ProcessMemory.h" />
     <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="SignalActions.h" />
@@ -635,8 +637,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
+    <ClCompile Include="NewProcess.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessHandles.cpp" />
+    <ClCompile Include="ProcessMemory.cpp" />
     <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="SignalActions.cpp" />
     <ClCompile Include="sys_acquire_process.cpp" />

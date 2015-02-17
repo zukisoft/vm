@@ -101,15 +101,19 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// TODO: Architecture -> m_architecture
+
 	// NativeHandle
 	//
 	// Gets the native handle for the thread
+	// TODO: Can this be removed
 	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
 	HANDLE getNativeHandle(void) const;
 
 	// NativeThreadId
 	//
 	// Gets the native thread identifier
+	// TODO: Can this be removed
 	__declspec(property(get=getNativeThreadId)) DWORD NativeThreadId;
 	DWORD getNativeThreadId(void) const;
 

@@ -40,9 +40,9 @@
 //-----------------------------------------------------------------------------
 // Executable
 //
-// Represents an executable file handle and command line arguments, this breaks
-// out the functionality to deal with interpreter scripts and selection of the
-// process architecture
+// Represents an executable, including the command-line arguments, environment
+// variables, and initial root/working directories.  Recursively resolves any
+// interpreter scripts that represent the target executable.
 
 class Executable
 {
@@ -59,7 +59,7 @@ public:
 	//
 	// Creates an executable instance from a file system path
 	static std::unique_ptr<Executable> FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const* arguments,
-		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+		const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -82,11 +82,35 @@ public:
 	__declspec(property(get=getArgumentCount)) size_t ArgumentCount;
 	size_t getArgumentCount(void) const;
 
+	// EnvironmentVariable
+	//
+	// Accesses a single EnvironmentVariable in the contained EnvironmentVariable collection
+	__declspec(property(get=getEnvironmentVariable)) const char_t* EnvironmentVariable[];
+	const char_t* getEnvironmentVariable(int index) const;
+
+	// EnvironmentVariableCount
+	//
+	// Gets the number of command-line EnvironmentVariable strings
+	__declspec(property(get=getEnvironmentVariableCount)) size_t EnvironmentVariableCount;
+	size_t getEnvironmentVariableCount(void) const;
+
 	// Handle
 	//
 	// Gets a reference to the executable file handle
 	__declspec(property(get=getHandle)) std::shared_ptr<FileSystem::Handle> Handle;
 	std::shared_ptr<FileSystem::Handle> getHandle(void) const;
+
+	// RootDirectory
+	//
+	// Gets the root directory alias used to resolve the executable
+	__declspec(property(get=getRootDirectory)) std::shared_ptr<FileSystem::Alias> RootDirectory;
+	std::shared_ptr<FileSystem::Alias> getRootDirectory(void) const;
+
+	// WorkingDirectory
+	//
+	// Gets the working directory alias used to resolve the executable
+	__declspec(property(get=getWorkingDirectory)) std::shared_ptr<FileSystem::Alias> WorkingDirectory;
+	std::shared_ptr<FileSystem::Alias> getWorkingDirectory(void) const;
 
 private:
 
@@ -95,9 +119,12 @@ private:
 
 	// Instance Constructor
 	//
-	Executable(::Architecture architecture, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* const* arguments);
+	Executable(::Architecture architecture, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* const* arguments, const char_t* const* environment,
+		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
 	friend std::unique_ptr<Executable> std::make_unique<Executable, ::Architecture, std::shared_ptr<FileSystem::Handle>, 
-		const char_t*const *&>(::Architecture&&, std::shared_ptr<FileSystem::Handle>&&, const char_t *const *& arguments);
+		const char_t* const *&, const char_t* const*&, const std::shared_ptr<FileSystem::Alias>&, const std::shared_ptr<FileSystem::Alias>&>(::Architecture&&, 
+		std::shared_ptr<FileSystem::Handle>&&, const char_t* const *& arguments, const char_t* const*& environment, const std::shared_ptr<FileSystem::Alias>& rootdir,
+		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -105,6 +132,9 @@ private:
 	const ::Architecture				m_architecture;	// Architecture flag
 	std::shared_ptr<FileSystem::Handle>	m_handle;		// File handle
 	std::vector<std::string>			m_arguments;	// Command-line arguments
+	std::vector<std::string>			m_environment;	// Environment variables
+	std::shared_ptr<FileSystem::Alias>	m_rootdir;		// Root directory
+	std::shared_ptr<FileSystem::Alias>	m_workingdir;	// Working directory
 };
 
 //-----------------------------------------------------------------------------

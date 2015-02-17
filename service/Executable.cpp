@@ -43,15 +43,21 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	architecture	- Executable architecture flag
 //	handle			- File system handle open for execute access
 //	arguments		- Executable command-line arguments
+//	environment		- Executable environment variables
+//	rootdir			- Root directory used to resolve the executable
+//	workingdir		- Working directory used to resolve the executable
 
-Executable::Executable(::Architecture architecture, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* const* arguments) 
-	: m_architecture(architecture), m_handle(std::move(handle)) 
+Executable::Executable(::Architecture architecture, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* const* arguments, 
+	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
+	m_architecture(architecture), m_handle(std::move(handle)), m_rootdir(rootdir), m_workingdir(workingdir)
 {
-	_ASSERTE(arguments);
-
 	// Convert the argument array into a vector of string objects
-	const char_t* arg = arguments[0];
+	const char_t* arg = (arguments) ? arguments[0] : nullptr;
 	while((arg) && (*arg)) { m_arguments.push_back(arg); arguments++; }
+
+	// Convert the environment variable array into a vector of string objects
+	const char_t* var = (environment) ? environment[0] : nullptr;
+	while((var) && (*var)) { m_environment.push_back(var); environment++; }
 }
 
 //-----------------------------------------------------------------------------
@@ -88,20 +94,44 @@ size_t Executable::getArgumentCount(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Architecture::getEnvironmentVariable
+//
+// Gets a pointer to an environment variable string
+
+const char_t* Executable::getEnvironmentVariable(int index) const
+{
+	// The environment variable collection will exist without modification as long as
+	// this class is alive, can return a direct pointer to the string
+	if(index >= static_cast<int>(m_environment.size())) throw LinuxException(LINUX_EINVAL);
+	return m_environment[index].c_str();
+}
+
+//-----------------------------------------------------------------------------
+// Architecture::getEnvironmentVariableCount
+//
+// Gets the number of environment variable strings
+
+size_t Executable::getEnvironmentVariableCount(void) const
+{
+	return m_environment.size();
+}
+
+//-----------------------------------------------------------------------------
 // Executable::FromFile (static)
 //
 // Creates an executable instance from a file system file
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance creating the process
-//	filename	- Path to the executable image
-//	arguments	- Command line arguments for the executable
-//	rootdir		- Root directory to assign to the process
-//	workingdir	- Working directory to assign to the process
+//	vm				- VirtualMachine instance creating the process
+//	filename		- Path to the executable image
+//	arguments		- Command line arguments for the executable
+//	environment		- Environment variables to assign to the process
+//	rootdir			- Root directory to assign to the process
+//	workingdir		- Working directory to assign to the process
 
 std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const* arguments, 
-	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
+	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
 {
 	if(filename == nullptr) throw LinuxException(LINUX_EFAULT);
 
@@ -126,10 +156,10 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 		switch(magic[LINUX_EI_CLASS]) {
 
 			// ELFCLASS32 --> Architecture::x86
-			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, std::move(handle), arguments);
+			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, std::move(handle), arguments, environment, rootdir, workingdir);
 #ifdef _M_X64
 			// ELFCLASS64: --> Architecture::x86_64
-			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, std::move(handle), arguments);
+			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, std::move(handle), arguments, environment, rootdir, workingdir);
 #endif
 			// Unknown ELFCLASS --> ENOEXEC	
 			default: throw LinuxException(LINUX_ENOEXEC);
@@ -187,11 +217,11 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 	newarguments.push_back(nullptr);
 
 	// Recursively call back into FromFile with the interpreter path and modified arguments
-	return FromFile(vm, interpreter.c_str(), newarguments.data(), rootdir, workingdir);
+	return FromFile(vm, interpreter.c_str(), newarguments.data(), environment, rootdir, workingdir);
 }
 
 //-----------------------------------------------------------------------------
-// Architecture::getHandle
+// Executable::getHandle
 //
 // Gets the file system handle from which to load/execute the binary
 

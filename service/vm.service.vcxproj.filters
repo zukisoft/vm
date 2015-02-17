@@ -353,6 +353,12 @@
     <ClInclude Include="Executable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NewProcess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -770,6 +776,12 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="Executable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NewProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
