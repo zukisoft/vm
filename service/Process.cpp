@@ -299,6 +299,11 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 
 void Process::Execute(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const& argv, const char_t* const& envp)
 {
+	(argv);
+	(envp);
+	(filename);
+	(vm);
+
 	m_host->Suspend();						// Suspend the native process
 
 	try {
@@ -358,49 +363,6 @@ std::shared_ptr<Thread> Process::FindThread(uapi::pid_t tid)
 	// Locate the thread within the collection
 	const auto found = m_threads.find(tid);
 	return (found != m_threads.end()) ? found->second : nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// Process::FromFile (static)
-//
-// Creates a new process from a file
-//
-// Arguments:
-//
-//	vm					- VirtualMachine instance creating the process
-//	pid					- PID to assign to the process
-//	filename			- Path to the executable image
-//	argv				- Command line arguments to pass to the process
-//	envp				- Environment variables for the process
-//	rootdirectory		- Root directory to assign to the process
-//	workingdirectory	- Working directory to assign to the process
-
-std::shared_ptr<Process> Process::FromFile(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, const char_t* const* argv, 
-	const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdirectory, const std::shared_ptr<FileSystem::Alias>& workingdirectory)
-{
-	std::tstring			hostpath;			// Path to the appropriate host executable
-
-	// Parse the filename and command line arguments into an Executable instance
-	auto executable = Executable::FromFile(vm, filename, argv, rootdirectory, workingdirectory);
-
-	// The native hosting process for the executable depends on the detected architecture type
-	if(executable->Architecture == Architecture::x86) hostpath = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32);
-#ifdef _M_X64
-	else if(executable->Architecture == Architecture::x86_64) hostpath = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary64);
-#endif
-	else throw LinuxException(LINUX_ENOEXEC);
-
-	// Attempt to instantiate the native host process
-	auto host = Host::Create(hostpath.c_str(), vm->GetProperty(VirtualMachine::Properties::HostProcessArguments).c_str());
-
-	try {
-
-	}
-
-	// should be LinuxException here
-	catch(...) { host->Terminate(E_FAIL); throw; }
-
-	return nullptr;
 }
 
 //-----------------------------------------------------------------------------

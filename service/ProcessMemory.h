@@ -28,22 +28,20 @@
 #include <vector>
 #include <concrt.h>
 #include <linux/mman.h>
-//#include "HeapBuffer.h"
-//#include "NtApi.h"
 #include "LinuxException.h"
 #include "MemorySection.h"
+#include "NativeHandle.h"
+#include "NtApi.h"
 #include "StructuredException.h"
 #include "SystemInformation.h"
-//#include "Win32Exception.h"
 
 #pragma warning(push, 4)
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // Class ProcessMemory
 //
-// Manages the virtual address space of a process, which can be duplicated or
-// shared among multiple process instances.  Requires access to the native
-// process handle, but does not take ownership of it
+// Manages the virtual address space of a process
 
 class ProcessMemory
 {
@@ -52,6 +50,17 @@ public:
 	// Destructor
 	//
 	~ProcessMemory()=default;
+
+	// DuplicationMode
+	//
+	// Defines the address space duplication mode for FromProcessMemory(). Values
+	// are analogous to the MemorySection protection mode flags
+	enum class DuplicationMode {
+
+		Clone			= static_cast<int>(MemorySection::Mode::CopyOnWrite),
+		Share			= static_cast<int>(MemorySection::Mode::Shared),
+		Duplicate		= static_cast<int>(MemorySection::Mode::Private),
+	};
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -67,20 +76,15 @@ public:
 	// Removes all virtual memory allocations 
 	void Clear(void);
 
-	// Clone (static)
-	//
-	// Clones the virtual memory from an existing instance
-	static std::shared_ptr<ProcessMemory> Clone(const std::shared_ptr<ProcessMemory>& existing, HANDLE nativeprocess);
-
 	// Create (static)
 	//
 	// Creates a new empty process virtual address space
-	static std::shared_ptr<ProcessMemory> Create(HANDLE nativeprocess);
+	static std::unique_ptr<ProcessMemory> Create(const std::shared_ptr<NativeHandle>& process);
 
-	// Duplicate (static)
+	// FromProcessMemory (static)
 	//
-	// Duplicates the virtual memory from an existing instance
-	static std::shared_ptr<ProcessMemory> Duplicate(const std::shared_ptr<ProcessMemory>& existing, HANDLE nativeprocess);
+	// Duplicates the virtual address space from one process into another
+	static std::unique_ptr<ProcessMemory> FromProcessMemory(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, DuplicationMode mode);
 
 	// Protect
 	//
@@ -117,18 +121,18 @@ private:
 	// Collection of allocated memory section instances
 	using section_vector_t = std::vector<std::unique_ptr<MemorySection>>;
 
-	//-------------------------------------------------------------------------
 	// Instance Constructor
 	//
-	ProcessMemory(HANDLE process, section_vector_t&& sections);
-	friend class std::_Ref_count_obj<ProcessMemory>;
+	ProcessMemory(const std::shared_ptr<NativeHandle>& process, section_vector_t&& sections);
+	friend std::unique_ptr<ProcessMemory> std::make_unique<ProcessMemory, const std::shared_ptr<NativeHandle>&, section_vector_t>
+		(const std::shared_ptr<NativeHandle>& process, section_vector_t&& sections);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HANDLE					m_nativehandle;		// Native process handle
-	section_lock_t			m_sectionlock;		// Section collection lock
-	section_vector_t		m_sections;			// Memory section collection
+	std::shared_ptr<NativeHandle>	m_process;			// Native process handle
+	section_lock_t					m_sectionlock;		// Section collection lock
+	section_vector_t				m_sections;			// Memory section collection
 };
 
 //-----------------------------------------------------------------------------

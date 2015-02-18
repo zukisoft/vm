@@ -231,5 +231,25 @@ std::shared_ptr<FileSystem::Handle> Executable::getHandle(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Executable::getRootDirectory
+//
+// Gets the root directory used to resolve the executable binary
+
+std::shared_ptr<FileSystem::Alias> Executable::getRootDirectory(void) const
+{
+	return m_rootdir;
+}
+
+//-----------------------------------------------------------------------------
+// Executable::getWorkingDirectory
+//
+// Gets the working directory used to resolve the executable binary
+
+std::shared_ptr<FileSystem::Alias> Executable::getWorkingDirectory(void) const
+{
+	return m_rootdir;
+}
+
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

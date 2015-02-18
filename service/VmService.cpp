@@ -1016,22 +1016,27 @@ void VmService::OnStop(void)
 
 std::shared_ptr<Process> VmService::SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
 {
-	uapi::pid_t pid = m_pidpool.Allocate();			// Allocate a PID for the new process
+	(filename);
+	(argv);
+	(envp);
+	//uapi::pid_t pid = m_pidpool.Allocate();			// Allocate a PID for the new process
 
-	try { 
-		
-		// Attempt to spawn the new process
-		auto process = Process::FromFile(shared_from_this(), pid, filename, argv, envp, m_rootfs->Root, m_rootfs->Root);
+	//try { 
+	//	
+	//	// Attempt to spawn the new process
+	//	auto process = Process::FromFile(shared_from_this(), pid, filename, argv, envp, m_rootfs->Root, m_rootfs->Root);
 
-		// Take a writer lock on the process collection and add the new process to it.  The lock can be taken just
-		// prior to inserting the item since the key (PID) is already guaranteed to be unique via the pool class
-		process_map_lock_t::scoped_lock writer(m_processeslock);
-		m_processes.insert(std::make_pair(pid, process));
+	//	// Take a writer lock on the process collection and add the new process to it.  The lock can be taken just
+	//	// prior to inserting the item since the key (PID) is already guaranteed to be unique via the pool class
+	//	process_map_lock_t::scoped_lock writer(m_processeslock);
+	//	m_processes.insert(std::make_pair(pid, process));
 
-		return process;								// Return the newly created process instance
-	}
+	//	return process;								// Return the newly created process instance
+	//}
 
-	catch(...) { m_pidpool.Release(pid); throw; }
+	//catch(...) { m_pidpool.Release(pid); throw; }
+
+	return nullptr;
 }
 
 //---------------------------------------------------------------------------

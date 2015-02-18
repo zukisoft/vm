@@ -26,9 +26,29 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
+// ProcessMemory Constructor
+//
+// Arguments:
+//
+//	process		- NativeHandle for the operating system process
+//	section		- Collection of MemorySections to initialize the instance
+
+ProcessMemory::ProcessMemory(const std::shared_ptr<NativeHandle>& process, section_vector_t&& sections)
+	: m_process(process), m_sections(std::move(sections)) {}
+
+//------------------------------------------------------------------------------
+// ProcessMemory::Allocate
+//
+// Allocates virtual memory
+//
+// Arguments:
+//
+//	length			- Required allocation length
+//	prot			- Linux memory protection flags for the new region
 
 const void* ProcessMemory::Allocate(size_t length, int prot)
 {
+	// Let the native operating system decide where to allocate the section
 	return Allocate(nullptr, length, prot);
 }
 
@@ -56,7 +76,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 	// No specific address was requested, let the operating system decide where it should go
 	if(address == nullptr) {
 
-		std::unique_ptr<MemorySection> section = MemorySection::Create(m_nativehandle, align::up(length, SystemInformation::AllocationGranularity));
+		std::unique_ptr<MemorySection> section = MemorySection::Create(m_process->Handle, align::up(length, SystemInformation::AllocationGranularity));
 		address = section->Allocate(section->BaseAddress, length, uapi::LinuxProtToWindowsPageFlags(prot));
 		m_sections.push_back(std::move(section));
 		return address;
@@ -70,13 +90,13 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 	while(fillbegin < fillend) {
 
 		// Query the information about the virtual memory beginning at the current address
-		if(!VirtualQueryEx(m_nativehandle, reinterpret_cast<void*>(fillbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+		if(!VirtualQueryEx(m_process->Handle, reinterpret_cast<void*>(fillbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
 
 		// If the region is free (MEM_FREE), create a new memory section in the free space
 		if(meminfo.State == MEM_FREE) {
 
 			size_t filllength = min(meminfo.RegionSize, align::up(fillend - fillbegin, SystemInformation::AllocationGranularity));
-			m_sections.emplace_back(MemorySection::Create(m_nativehandle, meminfo.BaseAddress, filllength));
+			m_sections.emplace_back(MemorySection::Create(m_process->Handle, meminfo.BaseAddress, filllength));
 		}
 
 		fillbegin += meminfo.RegionSize;
@@ -128,62 +148,33 @@ void ProcessMemory::Clear(void)
 }
 
 //-----------------------------------------------------------------------------
-// ProcessMemory::Clone (static)
-//
-// Clones the virtual memory from an existing instance as copy-on-write
-//
-// Arguments:
-//
-//	existing		- Reference to an existing ProcessMemory instance
-//	nativeprocess	- Target native process handle
-
-std::shared_ptr<ProcessMemory> ProcessMemory::Clone(const std::shared_ptr<ProcessMemory>& existing, HANDLE nativeprocess)
-{
-	section_vector_t		newsections;			// New copy-on-write section collection
-
-	// Prevent changes to the existing process memory layout
-	section_lock_t::scoped_lock_read reader(existing->m_sectionlock);
-
-	// Iterate over the existing memory sections
-	for(auto iterator = existing->m_sections.begin(); iterator != existing->m_sections.end(); iterator++) {
-
-		// Clone the existing memory section as copy-on-write from the source
-		newsections.push_back(MemorySection::FromSection(*iterator, nativeprocess, MemorySection::Mode::CopyOnWrite));
-
-		// Ensure that the source section mode is also changed to copy-on-write
-		(*iterator)->ChangeMode(MemorySection::Mode::CopyOnWrite);
-	}
-
-	// Construct a new ProcessMemory instance, moving the new section collection into it
-	return std::make_shared<ProcessMemory>(nativeprocess, std::move(newsections));
-}
-
-//-----------------------------------------------------------------------------
 // ProcessMemory::Create (static)
 //
 // Creates a new native operating system process instance
 //
 // Arguments:
 //
-//	nativeprocess	- Target native process handle
+//	process		- Target native process handle
 
-std::shared_ptr<ProcessMemory> ProcessMemory::Create(HANDLE nativeprocess)
+std::unique_ptr<ProcessMemory> ProcessMemory::Create(const std::shared_ptr<NativeHandle>& process)
 {
 	// Use an empty collection to initialize the ProcessMemory instance
-	return std::make_shared<ProcessMemory>(nativeprocess, section_vector_t());
+	return std::make_unique<ProcessMemory>(process, section_vector_t());
 }
 
 //-----------------------------------------------------------------------------
-// ProcessMemory::Duplicate (static)
+// ProcessMemory::FromProcessMemory (static)
 //
-// Duplicates the virtual memory from an existing instance
+// Duplicates the address space from an existing ProcessMemory instance
 //
 // Arguments:
 //
+//	process			- Target native process handle
 //	existing		- Reference to an existing ProcessMemory instance
-//	nativeprocess	- Target native process handle
+//	mode			- Address space duplication mode
 
-std::shared_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<ProcessMemory>& existing, HANDLE nativeprocess)
+std::unique_ptr<ProcessMemory> ProcessMemory::FromProcessMemory(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, 
+	DuplicationMode mode)
 {
 	section_vector_t		newsections;			// New copy-on-write section collection
 
@@ -193,12 +184,12 @@ std::shared_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<Pr
 	// Iterate over the existing memory sections
 	for(auto iterator = existing->m_sections.begin(); iterator != existing->m_sections.end(); iterator++) {
 
-		// Duplicate the existing memory section into a new private section
-		newsections.push_back(MemorySection::FromSection(*iterator, nativeprocess, MemorySection::Mode::Private));
+		// Duplicate the existing memory section into a new memory section for the target process
+		newsections.push_back(MemorySection::FromSection(*iterator, process->Handle, static_cast<MemorySection::Mode>(mode)));
 	}
 
 	// Construct a new ProcessMemory instance, moving the new section collection into it
-	return std::make_shared<ProcessMemory>(nativeprocess, std::move(newsections));
+	return std::make_unique<ProcessMemory>(process, std::move(newsections));
 }
 
 //-----------------------------------------------------------------------------
@@ -264,7 +255,7 @@ size_t ProcessMemory::Read(const void* address, void* buffer, size_t length)
 	section_lock_t::scoped_lock_read reader(m_sectionlock);
 
 	// Attempt to read the requested data from the native process
-	NTSTATUS result = NtApi::NtReadVirtualMemory(m_nativehandle, address, buffer, length, &read);
+	NTSTATUS result = NtApi::NtReadVirtualMemory(m_process->Handle, address, buffer, length, &read);
 	if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
 
 	return static_cast<size_t>(read);
@@ -334,7 +325,7 @@ size_t ProcessMemory::Write(const void* address, const void* buffer, size_t leng
 	section_lock_t::scoped_lock_read reader(m_sectionlock);
 
 	// Attempt to write the requested data into the native process
-	NTSTATUS result = NtApi::NtWriteVirtualMemory(m_nativehandle, address, buffer, length, &written);
+	NTSTATUS result = NtApi::NtWriteVirtualMemory(m_process->Handle, address, buffer, length, &written);
 	if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
 
 	return written;

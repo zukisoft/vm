@@ -31,6 +31,7 @@
 #include "Executable.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
+#include "NativeHandle.h"
 #include "ProcessHandles.h"
 #include "ProcessMemory.h"
 #include "Thread.h"
@@ -94,14 +95,20 @@ private:
 	NewProcess(const NewProcess&)=delete;
 	NewProcess& operator=(const NewProcess&)=delete;
 
-	// Instance Constructor
+	// Instance Constructors
 	//
-	NewProcess(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, HANDLE nativehandle, DWORD nativepid, uapi::pid_t pid, 
-		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+	NewProcess(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, const std::shared_ptr<NativeHandle>& process, uapi::pid_t pid, 
+		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir, std::unique_ptr<ProcessMemory>&& memory);
 	friend class std::_Ref_count_obj<NewProcess>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
+
+	// CreateHostProcess<Architecture>
+	//
+	// Creates a new native operating system host process
+	template<::Architecture architecture>
+	static PROCESS_INFORMATION CreateHostProcess(const std::shared_ptr<VirtualMachine>& vm);
 
 	// FromExecutable<Architecture>
 	//
@@ -112,19 +119,19 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<VirtualMachine>	m_vm;				// Virtual machine instance
-	const ::Architecture			m_architecture;		// Process architecture
-	HANDLE							m_nativehandle;		// Native process handle
-	const DWORD						m_nativepid;		// Native process identifier
-	const uapi::pid_t				m_pid;				// Process identifier
+	std::shared_ptr<VirtualMachine>		m_vm;				// Virtual machine instance
+	const ::Architecture				m_architecture;		// Process architecture
+	std::shared_ptr<NativeHandle>		m_process;			// Native process handle
+	const uapi::pid_t					m_pid;				// Process identifier
+
+	// Memory
+	//
+	std::unique_ptr<ProcessMemory>		m_memory;			// Virtual address space
 
 	// File System
 	//
 	std::shared_ptr<FileSystem::Alias>	m_rootdir;
 	std::shared_ptr<FileSystem::Alias>	m_workingdir;
-
-	// Memory
-	//
 
 	// Threads
 	//

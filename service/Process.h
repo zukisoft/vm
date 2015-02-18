@@ -104,12 +104,6 @@ public:
 	// Locates a thread instance based on it's tid
 	std::shared_ptr<Thread> FindThread(uapi::pid_t tid);
 
-	// FromFile (static)
-	//
-	// Creates a new process instance from a file
-	static std::shared_ptr<Process> FromFile(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, const char_t* const* argv,
-		const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdirectory, const std::shared_ptr<FileSystem::Alias>& workingdirectory);
-
 	// GetHandle
 	//
 	// Accesses a file system handle referenced by the process
