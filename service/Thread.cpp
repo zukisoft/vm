@@ -25,16 +25,16 @@
 
 #pragma warning(push, 4)
 
-// Thread::FromHandle<Architecture::x86>
+// Thread::FromNativeHandle<Architecture::x86>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86>(HANDLE, uapi::pid_t, HANDLE, DWORD);
+template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
 
 #ifdef _M_X64
-// Thread::FromHandle<Architecture::x86_64>
+// Thread::FromNativeHandle<Architecture::x86_64>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(HANDLE, uapi::pid_t, HANDLE, DWORD);
+template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -42,25 +42,27 @@ template std::shared_ptr<Thread> Thread::FromHandle<Architecture::x86_64>(HANDLE
 //
 // Arguments:
 //
-//	tid			- Virtual thread identifier
+//	tid				- Virtual thread identifier
+//	architecture	- Process/thread architecture
+//	process			- Parent process handle
+//	thread			- Native thread handle
+//	threadid		- Native thread identifier
 
-Thread::Thread(Architecture architecture, HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
-	: m_architecture(architecture), m_tid(tid), m_nativehandle(nativehandle), m_nativetid(nativetid),
-	m_sigmask(0), m_processtemp(processtemp) // <-- needs to be passed in
+Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid)
+	: m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid)
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
 }
 
 //-----------------------------------------------------------------------------
-// Thread Destructor
+// Thread::getArchitecture
+//
+// Gets the process architecture type
 
-Thread::~Thread()
+::Architecture Thread::getArchitecture(void) const
 {
-	// TODO: If parent process is alive and the tid doesn't match the pid,
-	// release the tid from the virtual machine
-
-	CloseHandle(m_nativehandle);
+	return m_architecture;
 }
 
 //-----------------------------------------------------------------------------
@@ -187,13 +189,13 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	//  ... more stuff follows
 	uint32_t signo = signal.first;
 	stackpointer -= sizeof(uint32_t);
-	NtApi::NtWriteVirtualMemory(m_processtemp, reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t), nullptr);
+	NtApi::NtWriteVirtualMemory(m_process->Handle, reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t), nullptr);
 	
 	if(signal.second.sa_flags & LINUX_SA_RESTORER) {
 
 		// write the sa_restorer pointer to the stack
 		stackpointer -= sizeof(uint32_t);
-		NtApi::NtWriteVirtualMemory(m_processtemp, reinterpret_cast<void*>(stackpointer), &signal.second.sa_restorer, sizeof(uint32_t), nullptr);
+		NtApi::NtWriteVirtualMemory(m_process->Handle, reinterpret_cast<void*>(stackpointer), &signal.second.sa_restorer, sizeof(uint32_t), nullptr);
 	}
 	
 	newstate->StackPointer = reinterpret_cast<void*>(stackpointer);
@@ -247,14 +249,15 @@ void Thread::EndSignal(void)
 //
 // Arguments:
 //
-//	tid				- Thread ID to assign to the thread
-//	nativehandle	- Native operating system handle
-//	nativetid		- Native operating system thread identifier
+//	tid				- Virtual thread identifier
+//	process			- Parent process handle
+//	thread			- Native thread handle
+//	threadid		- Native thread identifier
 
 template<Architecture architecture>
-std::shared_ptr<Thread> Thread::FromHandle(HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid)
+std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid)
 {
-	return std::make_shared<Thread>(architecture, processtemp, tid, nativehandle, nativetid);
+	return std::make_shared<Thread>(tid, architecture, process, thread, threadid);
 }
 
 //-----------------------------------------------------------------------------
@@ -262,9 +265,9 @@ std::shared_ptr<Thread> Thread::FromHandle(HANDLE processtemp, uapi::pid_t tid, 
 //
 // Gets the native operating system handle for this thread
 
-HANDLE Thread::getNativeHandle(void) const
+std::shared_ptr<::NativeHandle> Thread::getNativeHandle(void) const
 {
-	return m_nativehandle;
+	return m_thread;
 }
 
 //-----------------------------------------------------------------------------
@@ -274,7 +277,7 @@ HANDLE Thread::getNativeHandle(void) const
 
 DWORD Thread::getNativeThreadId(void) const
 {
-	return m_nativetid;
+	return m_threadid;
 }
 
 //-----------------------------------------------------------------------------
@@ -293,11 +296,11 @@ void Thread::Resume(void)
 
 	// Repeatedly call ResumeThread until it has overcome all suspend
 	// operations.  If it returns zero, the thread was not suspended.
-	do { result = ResumeThread(m_nativehandle); }
+	do { result = ResumeThread(m_thread->Handle); }
 	while((result != -1) && (result > 1));
 
 	// A result of -1 (0xFFFFFFFF) indicates that an error occurred
-	if(result == -1) throw Win32Exception();
+	if(result == -1) throw Win32Exception();		// todo: linux exception?
 }
 
 //-----------------------------------------------------------------------------
@@ -312,7 +315,7 @@ void Thread::Resume(void)
 void Thread::ResumeTask(const std::unique_ptr<TaskState>& task)
 {
 	// Apply the specified task to the native thread
-	task->ToNativeThread(m_architecture, m_nativehandle);
+	task->ToNativeThread(m_architecture, m_thread->Handle);
 
 	Resume();					// Resume the thread
 }
@@ -394,8 +397,9 @@ uapi::sigset_t Thread::getSignalMask(void) const
 
 void Thread::Suspend(void)
 {
+	// todo: linux exceptions?
 #ifndef _M_X64
-	if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
+	if(SuspendThread(m_thread->Handle) == -1) throw Win32Exception();
 #else
 	// On 64-bit builds, Wow64SuspendThread() should be used for 32-bit threads
 	if(m_architecture == Architecture::x86) { if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception(); }
@@ -417,7 +421,7 @@ std::unique_ptr<TaskState> Thread::SuspendTask(void)
 	Suspend();						// Suspend the native operating system thread
 	
 	// Attempt to capture the task state for the thread, and resume on exception
-	try { return TaskState::FromNativeThread(m_architecture, m_nativehandle); }
+	try { return TaskState::FromNativeThread(m_architecture, m_thread->Handle); }
 	catch(...) { Resume(); throw; }
 }
 

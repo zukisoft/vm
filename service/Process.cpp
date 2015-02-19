@@ -145,7 +145,7 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 				std::shared_ptr<SignalActions> childactions = (flags & LINUX_CLONE_SIGHAND) ? m_sigactions : SignalActions::Duplicate(m_sigactions);
 						
 				Bitmap ldtslots(m_ldtslots);
-				// todo: Architecture is hard-coced
+				// todo: Architecture is hard-coded
 				std::shared_ptr<Thread> thread = Thread::FromHandle<Architecture::x86>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
 				child = std::make_shared<Process>(m_architecture, std::move(host), std::move(thread), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
 			}
@@ -339,9 +339,10 @@ std::shared_ptr<Thread> Process::FindNativeThread(DWORD nativetid)
 {
 	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
 
+	_ASSERTE(false);
 	// Iterate over the collection to find the native thread
-	for(const auto iterator : m_threads)
-		if(iterator.second->NativeThreadId == nativetid) return iterator.second;
+	//for(const auto iterator : m_threads)
+	//	if(iterator.second->NativeThreadId == nativetid) return iterator.second;
 
 	// Specified thread is not a thread within this process
 	return nullptr;

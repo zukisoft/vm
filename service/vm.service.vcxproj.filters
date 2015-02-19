@@ -359,7 +359,13 @@
     <ClInclude Include="ProcessMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NativeHandle.h">
+    <ClInclude Include="..\common\NativeHandle.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessHost.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -787,7 +793,13 @@
     <ClCompile Include="ProcessMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NativeHandle.cpp">
+    <ClCompile Include="..\common\NativeHandle.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessHost.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

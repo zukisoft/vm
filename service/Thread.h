@@ -29,8 +29,10 @@
 #include <memory>
 #include <linux/signal.h>
 #include "Architecture.h"
+#include "NativeHandle.h"
 #include "NtApi.h"
 #include "TaskState.h"
+#include "VirtualMachine.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -46,7 +48,7 @@ public:
 
 	// Destructor
 	//
-	~Thread();
+	~Thread()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -61,12 +63,11 @@ public:
 	// Completes execution of the current signal handler on this thread
 	void EndSignal(void);
 
-	// FromHandle
+	// FromNativeHandle
 	//
 	// Creates a new Thread instance from a native operating system handle
-	// todo: Remove processtemp
 	template<Architecture architecture>
-	static std::shared_ptr<Thread> FromHandle(HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
+	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
 
 	// Resume
 	//
@@ -101,21 +102,29 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// TODO: Architecture -> m_architecture
+	// Architecture
+	//
+	// Gets the architecture flag for the thread instance
+	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
+	::Architecture getArchitecture(void) const;
 
 	// NativeHandle
 	//
 	// Gets the native handle for the thread
-	// TODO: Can this be removed
-	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
-	HANDLE getNativeHandle(void) const;
+	__declspec(property(get=getNativeHandle)) std::shared_ptr<::NativeHandle> NativeHandle;
+	std::shared_ptr<::NativeHandle> getNativeHandle(void) const;
 
 	// NativeThreadId
 	//
 	// Gets the native thread identifier
-	// TODO: Can this be removed
 	__declspec(property(get=getNativeThreadId)) DWORD NativeThreadId;
 	DWORD getNativeThreadId(void) const;
+
+	// Process
+	//
+	// Gets a reference to the parent Process instance
+	__declspec(property(get=getProcess)) std::shared_ptr<::Process> Process;
+	std::shared_ptr<::Process> getProcess(void) const;
 
 	// SignalAlternateStack
 	//
@@ -201,7 +210,7 @@ private:
 
 	// Instance Constructor
 	//
-	Thread(Architecture architecture, HANDLE processtemp, uapi::pid_t tid, HANDLE nativehandle, DWORD nativetid);
+	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
 	friend class std::_Ref_count_obj<Thread>;
 
 	//-------------------------------------------------------------------------
@@ -215,22 +224,20 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	// temporary? may want weak_pointer to the Process instead here
-	HANDLE						m_processtemp;
-
-	const Architecture			m_architecture;		// Thread architecture
-	HANDLE						m_nativehandle;		// Native thread handle
-	const DWORD					m_nativetid;		// Native thread identifier
-	const uapi::pid_t			m_tid;				// Thread identifier
-	std::atomic<uapi::sigset_t>	m_sigmask;			// Current signal mask
-	std::atomic<uapi::stack_t>	m_sigaltstack;		// Alternate signal stack
+	const uapi::pid_t				m_tid;				// Thread identifier
+	const ::Architecture			m_architecture;		// Thread architecture
+	std::shared_ptr<::NativeHandle>	m_process;			// Native process handle
+	std::shared_ptr<::NativeHandle>	m_thread;			// Native thread handle
+	const DWORD						m_threadid;			// Native thread id
 
 	// Signal Management
 	//
-	signal_queue_t				m_pendingsignals;	// Pending signals
-	std::atomic<bool>			m_insignal = false;
-	std::unique_ptr<TaskState>	m_savedsigtask;		// Previous task state
-	uapi::sigset_t				m_savedsigmask;		// Previous signal mask
+	std::atomic<uapi::sigset_t>		m_sigmask = 0;		// Current signal mask
+	std::atomic<uapi::stack_t>		m_sigaltstack;		// Alternate signal stack
+	signal_queue_t					m_pendingsignals;	// Pending signals
+	std::atomic<bool>				m_insignal = false;
+	std::unique_ptr<TaskState>		m_savedsigtask;		// Previous task state
+	uapi::sigset_t					m_savedsigmask;		// Previous signal mask
 };
 
 //-----------------------------------------------------------------------------

@@ -44,6 +44,7 @@ NewProcess::NewProcess(const std::shared_ptr<VirtualMachine>& vm, ::Architecture
 
 NewProcess::~NewProcess()
 {
+	// Clear out the threads first?
 	m_vm->ReleasePID(m_pid);
 }
 
@@ -57,72 +58,6 @@ NewProcess::~NewProcess()
 	return m_architecture;
 }
 
-//-----------------------------------------------------------------------------
-// Process::CreateHostProcess<Architecture::x86> (private, static)
-//
-// Creates a 32-bit x86 native operating system host process
-//
-// Arguments:
-//
-//	vm			- Reference to the parent VirtualMachine instance
-
-template<>
-PROCESS_INFORMATION NewProcess::CreateHostProcess<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
-{
-	PROCESS_INFORMATION				procinfo;			// Process information
-
-	// Get the configured path to the host binary as well as the standard command-line arguments
-	const std::tstring path = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32);
-	const std::tstring arguments = vm->GetProperty(VirtualMachine::Properties::HostProcessArguments);
-
-	// Generate the command line for the child process, using the specifed path as argument zero
-	tchar_t commandline[MAX_PATH];
-	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\"%s"), path.c_str(), arguments.c_str());
-
-	// Generate the STARTUPINFO for the new native process
-	zero_init<STARTUPINFO> startinfo;
-	startinfo.cb = sizeof(STARTUPINFO);
-
-	// Attempt to launch the process using the CREATE_SUSPENDED flag
-	if(!CreateProcess(path.c_str(), commandline, nullptr, nullptr, TRUE, CREATE_SUSPENDED, nullptr, nullptr, &startinfo, &procinfo))
-		throw LinuxException(LINUX_EPERM, Win32Exception());
-
-	return procinfo;					// Return the process information
-}
-
-//-----------------------------------------------------------------------------
-// Process::CreateHostProcess<Architecture::x86_64> (private, static)
-//
-// Creates a 32-bit x86 native operating system host process
-//
-// Arguments:
-//
-//	vm			- Reference to the parent VirtualMachine instance
-#ifdef _M_X64
-template<>
-PROCESS_INFORMATION NewProcess::CreateHostProcess<Architecture::x86_64>(const std::shared_ptr<VirtualMachine>& vm)
-{
-	PROCESS_INFORMATION				procinfo;			// Process information
-
-	// Get the configured path to the host binary as well as the standard command-line arguments
-	const std::tstring path = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary64);
-	const std::tstring arguments = vm->GetProperty(VirtualMachine::Properties::HostProcessArguments);
-
-	// Generate the command line for the child process, using the specifed path as argument zero
-	tchar_t commandline[MAX_PATH];
-	_sntprintf_s(commandline, MAX_PATH, MAX_PATH, _T("\"%s\"%s"), path.c_str(), arguments.c_str());
-
-	// Generate the STARTUPINFO for the new native process
-	zero_init<STARTUPINFO> startinfo;
-	startinfo.cb = sizeof(STARTUPINFO);
-
-	// Attempt to launch the process using the CREATE_SUSPENDED flag
-	if(!CreateProcess(path.c_str(), commandline, nullptr, nullptr, TRUE, CREATE_SUSPENDED, nullptr, nullptr, &startinfo, &procinfo))
-		throw LinuxException(LINUX_EPERM, Win32Exception());
-
-	return procinfo;					// Return the process information
-}
-#endif
 //-----------------------------------------------------------------------------
 // Process::FromExecutable<Architecture> (private, static)
 //
@@ -139,28 +74,23 @@ std::shared_ptr<NewProcess> NewProcess::FromExecutable(const std::shared_ptr<Vir
 {
 	using elf = elf_traits<architecture>;
 
-	PROCESS_INFORMATION				hostprocinfo;		// Native host process information
 	std::unique_ptr<ElfImage>		binary;				// The main ELF binary image to be loaded
 	std::unique_ptr<ElfImage>		interpreter;		// Optional interpreter image to be loaded
 
-	// Create the native operating system host process for the specified architecture and wrap
-	// the handles into shared pointers for passing around
-	hostprocinfo = CreateHostProcess<architecture>(vm);
-	std::shared_ptr<NativeHandle> hostprocess = NativeHandle::FromHandle(hostprocinfo.hProcess);
-	std::shared_ptr<NativeHandle> hostthread = NativeHandle::FromHandle(hostprocinfo.hThread);
+	// Create a host process for the specified architecture
+	std::unique_ptr<ProcessHost> host = ProcessHost::Create<architecture>(vm);
 
 	try {
 
-		// Create a virtual address space for the process; ProcessMemory does not take ownership of the handle
-		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(hostprocess);
+		// Create a new virtual address space for the process
+		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
 
 		// Wrap the main process thread in a Thread instance
-		std::shared_ptr<Thread> thread = Thread::FromHandle<architecture>(hostprocess->Handle, pid, hostthread->Handle, hostprocinfo.dwThreadId);
+		// (this can probably just move to the make_shared call)
+		std::shared_ptr<Thread> mainthread = Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId);
 
-		// I MAY WANT TO ROLL ELFIMAGE BACK INTO THIS CLASS AND DO SOMETHING LIKE THIS:
-		// LoadBinary<architecture>(executable->Handle, memory);
-		// LoadBinary<architecture>(interpreter, memory);
-		// ALSO ELFARGUMENTS --> PROCESSARGUMENTS (perhaps shareable, perhaps not)
+		// ElfImage->ProcessImage?
+		// ElfArguments->ProcessArguments?
 
 		// Load the binary and any top-level interpreter image that it specifies into the native process
 		// TODO: should these take ProcessMemory instead? I think yes
@@ -171,10 +101,10 @@ std::shared_ptr<NewProcess> NewProcess::FromExecutable(const std::shared_ptr<Vir
 		// NEW PROCESS INITIALIZATION HERE
 		//
 
-		return std::make_shared<NewProcess>(vm, architecture, hostprocess, pid, executable->RootDirectory, executable->WorkingDirectory, std::move(memory));
+		return std::make_shared<NewProcess>(vm, architecture, host->Process, pid, executable->RootDirectory, executable->WorkingDirectory, std::move(memory));
 	}
 
-	catch(...) { /* terminate native process and close handles */ throw; }
+	catch(...) { /* terminate native process; don't close handles */ throw; }
 }
 	
 //-----------------------------------------------------------------------------

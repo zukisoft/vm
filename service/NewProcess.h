@@ -33,6 +33,7 @@
 #include "LinuxException.h"
 #include "NativeHandle.h"
 #include "ProcessHandles.h"
+#include "ProcessHost.h"
 #include "ProcessMemory.h"
 #include "Thread.h"
 #include "VirtualMachine.h"
@@ -43,6 +44,9 @@
 // Process
 //
 // Process represents a virtual machine process/thread group instance
+//
+//	POINTERS:		SHARED
+//	EXCEPTIONS:		LINUXEXCEPTION
 
 class NewProcess
 {
@@ -103,12 +107,6 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
-
-	// CreateHostProcess<Architecture>
-	//
-	// Creates a new native operating system host process
-	template<::Architecture architecture>
-	static PROCESS_INFORMATION CreateHostProcess(const std::shared_ptr<VirtualMachine>& vm);
 
 	// FromExecutable<Architecture>
 	//
