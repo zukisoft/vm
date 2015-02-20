@@ -720,7 +720,12 @@ FileSystem::HandlePtr HostFileSystem::DirectoryHandle::Duplicate(int flags)
 //	buffer		- Pointer to the output buffer
 //	count		- Number of bytes to read from the file, also minimum size of buffer
 
-uapi::size_t HostFileSystem::DirectoryHandle::Read(void*, uapi::size_t )
+uapi::size_t HostFileSystem::DirectoryHandle::Read(void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+}
+
+uapi::size_t HostFileSystem::DirectoryHandle::ReadAt(uapi::loff_t, void*, uapi::size_t)
 {
 	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
 }
@@ -783,6 +788,11 @@ uapi::size_t HostFileSystem::DirectoryHandle::Write(const void*, uapi::size_t)
 	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
 }
 
+uapi::size_t HostFileSystem::DirectoryHandle::WriteAt(uapi::loff_t, const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+}
+
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::EXECUTEHANDLE IMPLEMENTATION
 //-----------------------------------------------------------------------------
@@ -824,6 +834,30 @@ uapi::size_t HostFileSystem::ExecuteHandle::Read(void* buffer, uapi::size_t coun
 	if(!ReadFile(m_handle, buffer, static_cast<DWORD>(count), &read, nullptr)) throw MapHostException();
 
 	return static_cast<uapi::size_t>(read);
+}
+
+// just hacked in for now
+uapi::size_t HostFileSystem::ExecuteHandle::ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count)
+{
+	LARGE_INTEGER			oldposition;
+	LARGE_INTEGER			newposition;
+
+	oldposition.QuadPart = 0;
+	newposition.QuadPart = offset;
+
+	// Get the current position
+	if(!SetFilePointerEx(m_handle, oldposition, &oldposition, FILE_CURRENT)) throw MapHostException();
+
+	// Set the new position
+	if(!SetFilePointerEx(m_handle, newposition, nullptr, FILE_BEGIN)) throw MapHostException();
+
+	size_t result;
+	
+	try { result = Read(buffer, count); }
+	catch(...) { SetFilePointerEx(m_handle, oldposition, nullptr, FILE_BEGIN); throw; }
+
+	SetFilePointerEx(m_handle, oldposition, nullptr, FILE_BEGIN);
+	return result;	
 }
 
 //-----------------------------------------------------------------------------
@@ -887,6 +921,11 @@ void HostFileSystem::ExecuteHandle::SyncData(void)
 //	count			- Unused, number of bytes to write from the input buffer
 
 uapi::size_t HostFileSystem::ExecuteHandle::Write(const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
+}
+
+uapi::size_t HostFileSystem::ExecuteHandle::WriteAt(uapi::loff_t, const void*, uapi::size_t)
 {
 	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
 }
@@ -958,6 +997,30 @@ uapi::size_t HostFileSystem::FileHandle::Read(void* buffer, uapi::size_t count)
 	if(!ReadFile(m_handle, buffer, static_cast<DWORD>(count), &read, nullptr)) throw MapHostException();
 
 	return static_cast<uapi::size_t>(read);
+}
+
+// just hacked in for now
+uapi::size_t HostFileSystem::FileHandle::ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count)
+{
+	LARGE_INTEGER			oldposition;
+	LARGE_INTEGER			newposition;
+
+	oldposition.QuadPart = 0;
+	newposition.QuadPart = offset;
+
+	// Get the current position
+	if(!SetFilePointerEx(m_handle, oldposition, &oldposition, FILE_CURRENT)) throw MapHostException();
+
+	// Set the new position
+	if(!SetFilePointerEx(m_handle, newposition, nullptr, FILE_BEGIN)) throw MapHostException();
+
+	size_t result;
+	
+	try { result = Read(buffer, count); }
+	catch(...) { SetFilePointerEx(m_handle, oldposition, nullptr, FILE_BEGIN); throw; }
+
+	SetFilePointerEx(m_handle, oldposition, nullptr, FILE_BEGIN);
+	return result;	
 }
 
 //-----------------------------------------------------------------------------
@@ -1069,6 +1132,32 @@ uapi::size_t HostFileSystem::FileHandle::Write(const void* buffer, uapi::size_t 
 	return static_cast<uapi::size_t>(written);
 }
 
+// just hacked in for now
+uapi::size_t HostFileSystem::FileHandle::WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count)
+{
+	// can't do this in append mode
+	if(m_flags & LINUX_O_APPEND) throw LinuxException(LINUX_EINVAL);
+
+	LARGE_INTEGER			oldposition;
+	LARGE_INTEGER			newposition;
+
+	oldposition.QuadPart = 0;
+	newposition.QuadPart = offset;
+
+	// Get the current position
+	if(!SetFilePointerEx(m_handle, oldposition, &oldposition, FILE_CURRENT)) throw MapHostException();
+
+	// Set the new position
+	if(!SetFilePointerEx(m_handle, newposition, nullptr, FILE_BEGIN)) throw MapHostException();
+
+	size_t result;
+	
+	try { result = Write(buffer, count); }
+	catch(...) { SetFilePointerEx(m_handle, oldposition, nullptr, FILE_BEGIN); throw; }
+
+	SetFilePointerEx(m_handle, oldposition, nullptr, FILE_BEGIN);
+	return result;	
+}
 //-----------------------------------------------------------------------------
 // HOSTFILESYSTEM::FILENODE IMPLEMENTATION
 //-----------------------------------------------------------------------------
@@ -1290,6 +1379,11 @@ uapi::size_t HostFileSystem::PathHandle::Read(void*, uapi::size_t)
 	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
 }
 
+uapi::size_t HostFileSystem::PathHandle::ReadAt(uapi::loff_t, void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
 //-----------------------------------------------------------------------------
 // HostFileSystem::PathHandle::Seek
 //
@@ -1344,6 +1438,11 @@ void HostFileSystem::PathHandle::SyncData(void)
 //	count			- Unused, number of bytes to write from the input buffer
 
 uapi::size_t HostFileSystem::PathHandle::Write(const void*, uapi::size_t)
+{
+	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+}
+
+uapi::size_t HostFileSystem::PathHandle::WriteAt(uapi::loff_t, const void*, uapi::size_t)
 {
 	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
 }

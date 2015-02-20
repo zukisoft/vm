@@ -223,10 +223,12 @@ private:
 		//
 		virtual FileSystem::HandlePtr	Duplicate(int)						{ throw LinuxException(LINUX_EBADF); }	// <-- TODO: This should be able to work
 		virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
+		virtual uapi::size_t			ReadAt(uapi::loff_t, void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 		virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
 		virtual void					Sync(void)							{ throw LinuxException(LINUX_EBADF); }
 		virtual void					SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
 		virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+		virtual uapi::size_t			WriteAt(uapi::loff_t, const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
 		virtual FileSystem::AliasPtr	getAlias(void)				{ return m_alias; }
 		virtual bool					getCloseOnExec(void)		{ return (m_flags & LINUX_O_CLOEXEC) == LINUX_O_CLOEXEC; }
@@ -307,10 +309,12 @@ private:
 			//
 			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EISDIR); }
+			virtual uapi::size_t			ReadAt(uapi::loff_t, void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
 			virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EISDIR); }
 			virtual void					Sync(void)							{ /* do nothing */ }
 			virtual void					SyncData(void)						{ /* do nothing */ }
 			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
+			virtual uapi::size_t			WriteAt(uapi::loff_t, const void*, uapi::size_t)	{ throw LinuxException(LINUX_EISDIR); }
 
 			virtual FileSystem::AliasPtr	getAlias(void)				{ return m_alias; }
 			virtual bool					getCloseOnExec(void)		{ return (m_flags & LINUX_O_CLOEXEC) == LINUX_O_CLOEXEC; }
@@ -401,10 +405,12 @@ private:
 			//
 			virtual FileSystem::HandlePtr	Duplicate(int flags)	{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
+			virtual uapi::size_t			ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count);
 			virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
 			virtual void					Sync(void)				{ /* do nothing */ }
 			virtual void					SyncData(void)			{ /* do nothing */ }
 			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
+			virtual uapi::size_t			WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count);
 
 			virtual FileSystem::AliasPtr	getAlias(void)				{ return m_alias; }
 			virtual bool					getCloseOnExec(void)		{ return (m_flags & LINUX_O_CLOEXEC) == LINUX_O_CLOEXEC; }
@@ -490,10 +496,12 @@ private:
 			//
 			virtual FileSystem::HandlePtr	Duplicate(int flags)				{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
+			virtual uapi::size_t			ReadAt(uapi::loff_t, void*, uapi::size_t)			{ throw LinuxException(LINUX_EBADF); }
 			virtual uapi::loff_t			Seek(uapi::loff_t, int)				{ throw LinuxException(LINUX_EBADF); }
 			virtual void					Sync(void)							{ throw LinuxException(LINUX_EBADF); }
 			virtual void					SyncData(void)						{ throw LinuxException(LINUX_EBADF); }
 			virtual uapi::size_t			Write(const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
+			virtual uapi::size_t			WriteAt(uapi::loff_t, const void*, uapi::size_t)	{ throw LinuxException(LINUX_EBADF); }
 
 			virtual FileSystem::AliasPtr	getAlias(void)				{ return m_alias; }
 			virtual bool					getCloseOnExec(void)		{ return (m_flags & LINUX_O_CLOEXEC) == LINUX_O_CLOEXEC; }
@@ -572,10 +580,12 @@ private:
 			//
 			virtual FileSystem::HandlePtr	Duplicate(int flags)	{ return m_node->Open(m_alias, flags); }
 			virtual uapi::size_t			Read(void* buffer, uapi::size_t count);
+			virtual uapi::size_t			ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count);
 			virtual uapi::loff_t			Seek(uapi::loff_t offset, int whence);
 			virtual void					Sync(void)				{ /* do nothing */ }
 			virtual void					SyncData(void)			{ /* do nothing */ }
 			virtual uapi::size_t			Write(const void* buffer, uapi::size_t count);
+			virtual uapi::size_t			WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count);
 
 			virtual FileSystem::AliasPtr	getAlias(void)				{ return m_alias; }
 			virtual bool					getCloseOnExec(void)		{ return (m_flags & LINUX_O_CLOEXEC) == LINUX_O_CLOEXEC; }

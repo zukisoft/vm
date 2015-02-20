@@ -25,33 +25,95 @@
 
 #pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// ProcessImage::FlagsToProtection (static, private)
+// Explicit Template Instantiations
 //
-// Converts an ELF program header p_flags into VirtualAlloc[Ex] protection flags
+template std::unique_ptr<ProcessImage> ProcessImage::LoadELF<Architecture::x86>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
+#ifdef _M_X64
+template std::unique_ptr<ProcessImage> ProcessImage::LoadELF<Architecture::x86_64>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
+#endif
+
+//-----------------------------------------------------------------------------
+// ElfProtectionToLinuxProtection (local)
+//
+// Converts ELF memory protection flags into standard Linux protection flags
 //
 // Arguments:
 //
-//	flags		- ELF program header p_flags value
+//	flags		- ELF memory protection flags to convert
 
-DWORD ProcessImage::FlagsToProtection(uint32_t flags)
+inline int ElfProtectionToLinuxProtection(uint32_t flags)
 {
-	switch(flags) {
+	int result = LINUX_PROT_NONE;		// Default to PROT_NONE (0x00)
 
-		case LINUX_PF_X : return PAGE_EXECUTE;
-		case LINUX_PF_W : return PAGE_READWRITE;
-		case LINUX_PF_R : return PAGE_READONLY;
-		case LINUX_PF_X | LINUX_PF_W : return PAGE_EXECUTE_READWRITE;
-		case LINUX_PF_X | LINUX_PF_R : return PAGE_EXECUTE_READ;
-		case LINUX_PF_W | LINUX_PF_R : return PAGE_READWRITE;
-		case LINUX_PF_X | LINUX_PF_W | LINUX_PF_R :	return PAGE_EXECUTE_READWRITE;
-	}
+	// The ELF flags are the same as the Linux flags, but the bitmask values
+	// are different.  Accumulate flags in the result based on source
+	if(flags & LINUX_PF_R) result |= LINUX_PROT_READ;
+	if(flags & LINUX_PF_W) result |= LINUX_PROT_WRITE;
+	if(flags & LINUX_PF_X) result |= LINUX_PROT_EXEC;
 
-	return PAGE_NOACCESS;
+	return result;
+}
+
+// todo: I really want this to go away, but this operation does need to exist somewhere.  Allowing
+// direct access to the data buffer for TempFileSystem would work, but only for TempFileSystem
+inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory, size_t offset, void* destination, size_t count)
+{
+	uintptr_t			dest = uintptr_t(destination);		// Easier pointer math as uintptr_t
+	size_t				total = 0;							// Total bytes written
+	
+	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
+	HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);
+
+	// Seek the file handle to the specified offset value, if unable to assume that it's truncated
+	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
+
+	while(count) {
+
+		// Read the next chunk of memory into the heap buffer, break early if there is no more
+		size_t read = handle->Read(buffer, min(count, buffer.Size));
+		if(read == 0) break;
+
+		// Write the data into the target native operating system process
+		total += memory->Write(reinterpret_cast<void*>(dest + total), buffer, read);
+
+		count -= read;					// Decrement bytes left to be read
+	};
+
+	return total;						// Return total bytes written
 }
 
 //-----------------------------------------------------------------------------
-// ProcessImage::Load (static)
+// ProcessImage::getBaseAddress
+//
+// Gets the virtual memory base address of the loaded image
+
+const void* ProcessImage::getBaseAddress(void) const 
+{ 
+	return m_metadata.BaseAddress;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessImage::getEntryPoint
+//
+// Gets the entry point for the image
+
+const void* ProcessImage::getEntryPoint(void) const 
+{ 
+	return m_metadata.EntryPoint;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessImage::getInterpreter
+//
+// Gets the path to the program interpreter, if one is present
+
+const uapi::char_t* ProcessImage::getInterpreter(void) const 
+{ 
+	return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str();
+}
+
+//-----------------------------------------------------------------------------
+// ProcessImage::LoadELF(static)
 //
 // Loads an ELF binary image into a process' virtual address space
 //
@@ -61,7 +123,7 @@ DWORD ProcessImage::FlagsToProtection(uint32_t flags)
 //	memory		- Target process' virtual address space manager
 
 template <Architecture architecture>
-std::unique_ptr<ProcessImage> ProcessImage::Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory)
+std::unique_ptr<ProcessImage> ProcessImage::LoadELF(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory)
 {
 	using elf = elf_traits<architecture>;
 
@@ -69,15 +131,14 @@ std::unique_ptr<ProcessImage> ProcessImage::Load(const std::shared_ptr<FileSyste
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
 
 	// Acquire a copy of the ELF header from the binary file and validate it
-	// Add ReadAt() and WriteAt() functions to Handle -- make this easier
-	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
+	size_t read = handle->ReadAt(0, &elfheader, sizeof(typename elf::elfheader_t));
 	if(read != sizeof(typename elf::elfheader_t)) throw Exception(E_ELFTRUNCATEDHEADER);
 	ValidateHeader<architecture>(&elfheader);
 
 	// Read all of the program headers from the binary image file into a heap buffer
 	HeapBuffer<typename elf::progheader_t> progheaders(elfheader.e_phnum);
-	read = InProcessRead(handle, elfheader.e_phoff, &progheaders, progheaders.Size);
-	if(read != progheaders.Size) throw Exception(E_ProcessImageTRUNCATED);
+	read = handle->ReadAt(elfheader.e_phoff, &progheaders, progheaders.Size);
+	if(read != progheaders.Size) throw Exception(E_ELFIMAGETRUNCATED);
 
 	// PROGRAM HEADERS PASS ONE - GET MEMORY FOOTPRINT AND CHECK INVARIANTS
 	uintptr_t minvaddr = UINTPTR_MAX, maxvaddr = 0;
@@ -109,8 +170,8 @@ std::unique_ptr<ProcessImage> ProcessImage::Load(const std::shared_ptr<FileSyste
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so
 		// reserve them at the highest available virtual address to allow for as much heap space as possible.
 		// Note that the section length is aligned to the allocation granularity of the system to prevent holes
-		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = host->AllocateMemory(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, PAGE_NOACCESS);
-		else metadata.BaseAddress = host->AllocateMemory(maxvaddr - minvaddr, PAGE_NOACCESS);
+		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = memory->Allocate(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, LINUX_PROT_NONE);
+		else metadata.BaseAddress = memory->Allocate(maxvaddr - minvaddr, LINUX_PROT_NONE);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
@@ -136,21 +197,21 @@ std::unique_ptr<ProcessImage> ProcessImage::Load(const std::shared_ptr<FileSyste
 
 			// Get the base address of the loadable segment and set it as PAGE_READWRITE to load it
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
+			try { memory->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, LINUX_PROT_READ | LINUX_PROT_WRITE); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(progheader.p_filesz) {
 
 				// Read the data from the input stream into the target process address space at segbase
-				try { read = OutOfProcessRead(handle, host, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
+				try { read = OutOfProcessRead(handle, memory, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
 				catch(Exception& ex) { throw Exception(E_ELFWRITESEGMENT, ex); }
 
-				if(read != progheader.p_filesz) throw Exception(E_ProcessImageTRUNCATED);
+				if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 			}
 
 			// Attempt to apply the proper virtual memory protection flags to the segment now that it's been written
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
+			try { memory->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, ElfProtectionToLinuxProtection(progheader.p_flags)); }
 			catch(Exception& ex) { throw Exception(E_ELFPROTECTSEGMENT, ex); }
 		}
 
@@ -161,8 +222,8 @@ std::unique_ptr<ProcessImage> ProcessImage::Load(const std::shared_ptr<FileSyste
 
 			// Allocate a heap buffer to temporarily store the interpreter string
 			HeapBuffer<char_t> interpreter(progheader.p_filesz);
-			read = InProcessRead(handle, progheader.p_offset, &interpreter, interpreter.Size);
-			if(read != progheader.p_filesz) throw Exception(E_ProcessImageTRUNCATED);
+			read = handle->ReadAt(progheader.p_offset, &interpreter, interpreter.Size);
+			if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 
 			// Ensure that the string is NULL terminated and convert it into an std::tstring
 			if(interpreter[interpreter.Count - 1] != 0) throw Exception(E_ELFINVALIDINTERPRETER);
@@ -178,6 +239,36 @@ std::unique_ptr<ProcessImage> ProcessImage::Load(const std::shared_ptr<FileSyste
 
 	// Construct and return a new ProcessImage instance from the section and metadata
 	return std::make_unique<ProcessImage>(std::move(metadata));
+}
+
+//-----------------------------------------------------------------------------
+// ProcessImage::getProgramBreak
+//
+// Gets the pointer to the initial program break address
+
+const void* ProcessImage::getProgramBreak(void) const 
+{ 
+	return m_metadata.ProgramBreak;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessImage::getNumProgramHeaders
+//
+// Gets the number of program headers defined as part of the loaded image
+
+size_t ProcessImage::getNumProgramHeaders(void) const 
+{ 
+	return m_metadata.NumProgramHeaders;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessImage::getProgramHeaders
+//
+// Gets the pointer to program headers that were defined as part of the loaded image
+
+const void* ProcessImage::getProgramHeaders(void) const 
+{ 
+	return m_metadata.ProgramHeaders;
 }
 
 //-----------------------------------------------------------------------------

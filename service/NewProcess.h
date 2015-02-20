@@ -25,15 +25,15 @@
 #pragma once
 
 #include <memory>
-#include "elf_traits.h"
 #include "Architecture.h"
-#include "ElfImage.h"
 #include "Executable.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
 #include "NativeHandle.h"
+#include "ProcessArguments.h"
 #include "ProcessHandles.h"
 #include "ProcessHost.h"
+#include "ProcessImage.h"
 #include "ProcessMemory.h"
 #include "Thread.h"
 #include "VirtualMachine.h"

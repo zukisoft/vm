@@ -39,9 +39,6 @@
 // Class ProcessHost
 //
 // Creates a new native operating system host process instance
-//
-//	POINTERS:		UNIQUE
-//	EXCEPTIONS:		WIN32EXCEPTION
 
 class ProcessHost
 {

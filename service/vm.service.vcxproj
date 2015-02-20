@@ -369,6 +369,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="NewProcess.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Architecture.h" />
+    <ClInclude Include="ProcessArguments.h" />
     <ClInclude Include="ProcessHandles.h" />
     <ClInclude Include="ProcessHost.h" />
     <ClInclude Include="ProcessImage.h" />
@@ -643,6 +644,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="NewProcess.cpp" />
     <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcessArguments.cpp" />
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="ProcessHost.cpp" />
     <ClCompile Include="ProcessImage.cpp" />

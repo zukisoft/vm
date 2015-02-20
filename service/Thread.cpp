@@ -245,7 +245,7 @@ void Thread::EndSignal(void)
 }
 
 //-----------------------------------------------------------------------------
-// Thread::FromHandle (static)
+// Thread::FromNativeHandle (static)
 //
 // Arguments:
 //

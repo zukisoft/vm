@@ -146,8 +146,11 @@ std::shared_ptr<Process> Process::Clone(const std::shared_ptr<VirtualMachine>& v
 						
 				Bitmap ldtslots(m_ldtslots);
 				// todo: Architecture is hard-coded
-				std::shared_ptr<Thread> thread = Thread::FromHandle<Architecture::x86>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
-				child = std::make_shared<Process>(m_architecture, std::move(host), std::move(thread), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
+				
+				/// removed temporarily
+				///std::shared_ptr<Thread> thread = Thread::FromHandle<Architecture::x86>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
+				//child = std::make_shared<Process>(m_architecture, std::move(host), std::move(thread), pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
+				child = std::make_shared<Process>(m_architecture, std::move(host), nullptr, pid, m_rootdir, m_workingdir, std::move(ts), m_ldt, std::move(ldtslots), childhandles, childactions, m_programbreak);
 			}
 
 			catch(...) { vm->ReleasePID(pid); throw; }
@@ -272,7 +275,10 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		const void* ldt = host->AllocateMemory(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), PAGE_READWRITE);
 
 		// Create the main thread for the process, the initial thread's TID will always match the process PID
-		std::shared_ptr<Thread> thread = Thread::FromHandle<architecture>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
+
+		/// removed temporarily
+		//std::shared_ptr<Thread> thread = Thread::FromHandle<architecture>(host->ProcessHandle, pid, host->ThreadHandle, host->ThreadId);
+
 		// this should abort on bad handle for now
 
 		// TODO TESTING NEW STARTUP INFORMATION
@@ -281,7 +287,8 @@ std::shared_ptr<Process> Process::Create(const std::shared_ptr<VirtualMachine>& 
 		std::shared_ptr<SignalActions> actions = SignalActions::Create();
 
 		// Create the Process object, transferring the host, startup information and allocated memory sections
-		return std::make_shared<Process>(architecture, std::move(host), std::move(thread), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
+		//return std::make_shared<Process>(architecture, std::move(host), std::move(thread), pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
+		return std::make_shared<Process>(architecture, std::move(host), nullptr, pid, rootdir, workingdir, std::move(ts), ldt, Bitmap(LINUX_LDT_ENTRIES), handles, actions, program_break);
 	}
 
 	// Terminate the host process on exception since it doesn't get killed by the Host destructor

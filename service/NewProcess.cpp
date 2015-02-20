@@ -72,30 +72,29 @@ NewProcess::~NewProcess()
 template<::Architecture architecture>
 std::shared_ptr<NewProcess> NewProcess::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::unique_ptr<Executable>& executable)
 {
-	using elf = elf_traits<architecture>;
-
-	std::unique_ptr<ElfImage>		binary;				// The main ELF binary image to be loaded
-	std::unique_ptr<ElfImage>		interpreter;		// Optional interpreter image to be loaded
+	std::unique_ptr<ProcessImage>		binary;				// The main ELF binary image to be loaded
+	std::unique_ptr<ProcessImage>		interpreter;		// Optional interpreter image to be loaded
 
 	// Create a host process for the specified architecture
 	std::unique_ptr<ProcessHost> host = ProcessHost::Create<architecture>(vm);
 
 	try {
 
+		// Wrap the main process thread in a Thread instance
+		std::shared_ptr<Thread> mainthread = Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId);
+
 		// Create a new virtual address space for the process
 		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
 
-		// Wrap the main process thread in a Thread instance
-		// (this can probably just move to the make_shared call)
-		std::shared_ptr<Thread> mainthread = Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId);
+		// Load the primary executable image and any required interpreter image that it specifies
+		binary = ProcessImage::LoadELF<architecture>(executable->Handle, memory);
+		if(binary->Interpreter) interpreter = ProcessImage::LoadELF<architecture>(vm->OpenExecutable(executable->RootDirectory, executable->WorkingDirectory, binary->Interpreter), memory);
 
-		// ElfImage->ProcessImage?
-		// ElfArguments->ProcessArguments?
-
-		// Load the binary and any top-level interpreter image that it specifies into the native process
-		// TODO: should these take ProcessMemory instead? I think yes
-		binary = ElfImage::Load<architecture>(executable->Handle, /* host */ nullptr);
-		if(binary->Interpreter) interpreter = ElfImage::Load<architecture>(vm->OpenExecutable(executable->RootDirectory, executable->WorkingDirectory, binary->Interpreter), /* host */ nullptr);
+		// TODO: is this the model I still want to use?  ProcessHost and ProcessArguments may be better
+		// served as private classes within this class, they have no value outside of here
+		ProcessArguments args;
+		for(size_t index = 0; index < executable->ArgumentCount; index++) args.AppendArgument(executable->Argument[index]);
+		for(size_t index = 0; index < executable->EnvironmentVariableCount; index++) args.AppendEnvironmentVariable(executable->EnvironmentVariable[index]);
 
 		//
 		// NEW PROCESS INITIALIZATION HERE

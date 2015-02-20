@@ -279,6 +279,11 @@ struct __declspec(novtable) FileSystem
 		// Synchronously reads data from the underlying node into a buffer
 		virtual uapi::size_t Read(void* buffer, uapi::size_t count) = 0;
 
+		// ReadAt
+		//
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count) = 0;
+
 		// Seek
 		//
 		// Changes the file position
@@ -298,6 +303,11 @@ struct __declspec(novtable) FileSystem
 		//
 		// Synchronously writes data from a buffer to the underlying node
 		virtual uapi::size_t Write(const void* buffer, uapi::size_t count) = 0;
+
+		// WriteAt
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count) = 0;
 
 		// Alias
 		//

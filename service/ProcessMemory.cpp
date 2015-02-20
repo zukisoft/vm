@@ -68,7 +68,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 	MEMORY_BASIC_INFORMATION					meminfo;		// Virtual memory information
 
 	// Allocations cannot be zero-length
-	if(length == 0) throw Win32Exception(ERROR_INVALID_PARAMETER);
+	if(length == 0) throw LinuxException(LINUX_EINVAL);
 
 	// Prevent changes to the process memory layout while this is operating
 	section_lock_t::scoped_lock writer(m_sectionlock);
@@ -90,7 +90,8 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 	while(fillbegin < fillend) {
 
 		// Query the information about the virtual memory beginning at the current address
-		if(!VirtualQueryEx(m_process->Handle, reinterpret_cast<void*>(fillbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+		if(!VirtualQueryEx(m_process->Handle, reinterpret_cast<void*>(fillbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) 
+			throw LinuxException(LINUX_EACCES, Win32Exception());
 
 		// If the region is free (MEM_FREE), create a new memory section in the free space
 		if(meminfo.State == MEM_FREE) {
@@ -113,8 +114,8 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 			return ((allocbegin >= uintptr_t(section->BaseAddress)) && (allocbegin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
-		// No matching section object exists, throw ERROR_INVALID_ADDRESS
-		if(found == m_sections.end()) throw Win32Exception(ERROR_INVALID_ADDRESS);
+		// No matching section object exists, throw EINVAL/ERROR_INVALID_ADDRESS
+		if(found == m_sections.end()) throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_INVALID_ADDRESS));
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
@@ -219,8 +220,8 @@ void ProcessMemory::Protect(const void* address, size_t length, int prot)
 			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
-		// No matching section object exists, throw ERROR_INVALID_ADDRESS
-		if(found == m_sections.end()) throw Win32Exception(ERROR_INVALID_ADDRESS);
+		// No matching section object exists, throw EINVAL/ERROR_INVALID_ADDRESS
+		if(found == m_sections.end()) throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_INVALID_ADDRESS));
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
@@ -286,7 +287,7 @@ void ProcessMemory::Release(const void* address, size_t length)
 			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
-		// No matching section object exists, treat this as a no-op -- don't throw an exception
+		// No matching section object exists, treat this as a no-op
 		if(found == m_sections.end()) return;
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below

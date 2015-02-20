@@ -368,6 +368,9 @@
     <ClInclude Include="ProcessImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ProcessArguments.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -800,6 +803,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProcessImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessArguments.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

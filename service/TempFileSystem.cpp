@@ -265,6 +265,17 @@ uapi::size_t TempFileSystem::CharacterDeviceNode::Handle::Read(void* buffer, uap
 	return 0;
 }
 
+uapi::size_t TempFileSystem::CharacterDeviceNode::Handle::ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count)
+{
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+	(buffer);
+	(count);
+	(offset);
+
+	// TODO: IMPLEMENT ME
+	return 0;
+}
+
 // CharacterDeviceNode::Handle::Seek
 //
 uapi::loff_t TempFileSystem::CharacterDeviceNode::Handle::Seek(uapi::loff_t offset, int whence)
@@ -295,6 +306,17 @@ uapi::size_t TempFileSystem::CharacterDeviceNode::Handle::Write(const void* buff
 	delete[] temp;
 
 	return count;
+}
+
+uapi::size_t TempFileSystem::CharacterDeviceNode::Handle::WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count)
+{
+	if(!buffer) throw LinuxException(LINUX_EFAULT);
+	(offset);
+	(count);
+
+	// TODO: IMPLEMENT ME
+
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -624,6 +646,24 @@ uapi::size_t TempFileSystem::FileNode::Handle::Read(void* buffer, uapi::size_t c
 	return count;					// Return number of bytes read
 }
 
+uapi::size_t TempFileSystem::FileNode::Handle::ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count)
+{
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+
+	m_permission.Demand(FilePermission::Access::Read);
+	Concurrency::reader_writer_lock::scoped_lock_read reader(m_node->m_datalock);
+
+	// If the offset is beyond the end of the data buffer, return zero
+	if(offset >= m_node->m_data.size()) return 0;
+
+	// fix warning later
+	count = min(count, m_node->m_data.size() - offset);
+	if(count) memcpy(buffer, m_node->m_data.data() + offset, count);
+
+	// Do not update the file pointer
+	return count;
+}
+
 // FileNode::Handle::Seek
 //
 uapi::loff_t TempFileSystem::FileNode::Handle::Seek(uapi::loff_t offset, int whence)
@@ -692,6 +732,30 @@ uapi::size_t TempFileSystem::FileNode::Handle::Write(const void* buffer, uapi::s
 
 	m_position += count;				// Advance the file pointer
 	return count;						// Return number of bytes written
+}
+
+uapi::size_t TempFileSystem::FileNode::Handle::WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count)
+{
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+
+	if(m_flags & LINUX_O_APPEND) throw LinuxException(LINUX_EINVAL);
+
+#ifndef _M_X64
+	uint64_t finalsize = offset;
+	if(finalsize + count > MAXSIZE_T) throw LinuxException(LINUX_EFBIG);
+#endif
+
+	m_permission.Demand(FilePermission::Access::Write);
+	Concurrency::reader_writer_lock::scoped_lock writer(m_node->m_datalock);
+
+	// fix warning later
+	try { m_node->m_data.resize(max(m_node->m_data.size(), offset + count)); }
+	catch(std::bad_alloc&) { throw LinuxException(LINUX_ENOSPC); }
+
+	if(count) memcpy(m_node->m_data.data() + offset, buffer, count);
+
+	// Do not update the file pointer
+	return count;
 }
 
 //

@@ -42,6 +42,8 @@
 #include "SystemLog.h"
 #include "VirtualMachine.h"
 
+#include "NewProcess.h"
+
 // File systems
 //
 #include "HostFileSystem.h"

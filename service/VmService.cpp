@@ -254,6 +254,10 @@ std::shared_ptr<Process> VmService::CreateProcess(uapi::pid_t pid, const FileSys
 			// ELFCLASS32: Create a 32-bit host process for the binary
 			// TODO: clean up the arguments, I hate c_str(). need to work on svctl::parameter
 			case LINUX_ELFCLASS32: 
+
+				/// TESTING
+				NewProcess::Spawn(shared_from_this(), pid, path, arguments, environment, rootdir, workingdir);
+
 				return Process::Create<Architecture::x86>(shared_from_this(), pid, rootdir, workingdir, handle, arguments, environment,
 					GetProperty(Properties::HostProcessBinary32).c_str(), GetProperty(Properties::HostProcessArguments).c_str());
 #ifdef _M_X64

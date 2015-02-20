@@ -51,13 +51,9 @@ Executable::Executable(::Architecture architecture, std::shared_ptr<FileSystem::
 	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
 	m_architecture(architecture), m_handle(std::move(handle)), m_rootdir(rootdir), m_workingdir(workingdir)
 {
-	// Convert the argument array into a vector of string objects
-	const char_t* arg = (arguments) ? arguments[0] : nullptr;
-	while((arg) && (*arg)) { m_arguments.push_back(arg); arguments++; }
-
-	// Convert the environment variable array into a vector of string objects
-	const char_t* var = (environment) ? environment[0] : nullptr;
-	while((var) && (*var)) { m_environment.push_back(var); environment++; }
+	// Convert the argument and environment variable arrays into vectors of string objects
+	while((arguments) && (*arguments)) { m_arguments.push_back(*arguments); arguments++; }
+	while((environment) && (*environment)) { m_environment.push_back(*environment); environment++; }
 }
 
 //-----------------------------------------------------------------------------

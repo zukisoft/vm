@@ -40,10 +40,7 @@
 //-----------------------------------------------------------------------------
 // ProcessImage
 //
-// Loads an ELF binary image into a native operating system host process
-//
-//	POINTERS:		UNIQUE
-//	EXCEPTIONS:		WIN32EXCEPTION
+// Loads a binary image into a native operating system host process
 
 class ProcessImage
 {
@@ -56,11 +53,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Load (static)
+	// LoadElf (static)
 	//
 	// Loads an ELF image into a process' virtual address space
 	template<Architecture architecture>
-	static std::unique_ptr<ProcessImage> Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
+	static std::unique_ptr<ProcessImage> LoadELF(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -127,11 +124,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// FlagsToProtection
-	//
-	// Converts ELF p_flags into VirtualAlloc(Ex) protection flags
-	static DWORD FlagsToProtection(uint32_t flags);
-
 	// ValidateHeader
 	//
 	// Validates the contents of an ELF binary header
@@ -141,7 +133,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	Metadata						m_metadata;		// Loaded image metadata
+	metadata_t				m_metadata;			// Loaded image metadata
 };
 
 //-----------------------------------------------------------------------------
