@@ -36,20 +36,24 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_ANSI[] = { 0x23, 0x21 };
 static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 };
 
 //-----------------------------------------------------------------------------
-// Executable Constructor
+// Executable Constructor (private)
 //
 // Arguments:
 //
 //	architecture	- Executable architecture flag
+//	format			- Executable binary format
+//	vm				- VirtualMachine instance
 //	handle			- File system handle open for execute access
+//	filename		- Original file name provided for the executable
 //	arguments		- Executable command-line arguments
 //	environment		- Executable environment variables
 //	rootdir			- Root directory used to resolve the executable
 //	workingdir		- Working directory used to resolve the executable
 
-Executable::Executable(::Architecture architecture, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* const* arguments, 
-	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
-	m_architecture(architecture), m_handle(std::move(handle)), m_rootdir(rootdir), m_workingdir(workingdir)
+Executable::Executable(::Architecture architecture, BinaryFormat format, const std::shared_ptr<VirtualMachine>& vm, std::shared_ptr<FileSystem::Handle>&& handle, 
+	const char_t* filename, const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	const std::shared_ptr<FileSystem::Alias>& workingdir) : m_architecture(architecture), m_format(format), m_vm(vm), m_handle(std::move(handle)), 
+	m_filename(filename), m_rootdir(rootdir), m_workingdir(workingdir)
 {
 	// Convert the argument and environment variable arrays into vectors of string objects
 	while((arguments) && (*arguments)) { m_arguments.push_back(*arguments); arguments++; }
@@ -57,7 +61,7 @@ Executable::Executable(::Architecture architecture, std::shared_ptr<FileSystem::
 }
 
 //-----------------------------------------------------------------------------
-// Architecture::getArchitecture
+// Executable::getArchitecture
 //
 // Gets the architecture flag for the referenced executable
 
@@ -67,7 +71,7 @@ Executable::Executable(::Architecture architecture, std::shared_ptr<FileSystem::
 }
 
 //-----------------------------------------------------------------------------
-// Architecture::getArgument
+// Executable::getArgument
 //
 // Gets a pointer to a command line argument string
 
@@ -80,7 +84,7 @@ const char_t* Executable::getArgument(int index) const
 }
 
 //-----------------------------------------------------------------------------
-// Architecture::getArgumentCount
+// Executable::getArgumentCount
 //
 // Gets the number of command line argument strings
 
@@ -90,7 +94,7 @@ size_t Executable::getArgumentCount(void) const
 }
 
 //-----------------------------------------------------------------------------
-// Architecture::getEnvironmentVariable
+// Executable::getEnvironmentVariable
 //
 // Gets a pointer to an environment variable string
 
@@ -103,13 +107,33 @@ const char_t* Executable::getEnvironmentVariable(int index) const
 }
 
 //-----------------------------------------------------------------------------
-// Architecture::getEnvironmentVariableCount
+// Executable::getEnvironmentVariableCount
 //
 // Gets the number of environment variable strings
 
 size_t Executable::getEnvironmentVariableCount(void) const
 {
 	return m_environment.size();
+}
+
+//-----------------------------------------------------------------------------
+// Executable::getFileName
+//
+// Gets the original file name provided for the executable
+
+const char_t* Executable::getFileName(void) const
+{
+	return m_filename.c_str();
+}
+
+//-----------------------------------------------------------------------------
+// Executable::getFormat
+//
+// Gets the format of the referenced executable
+
+Executable::BinaryFormat Executable::getFormat(void) const
+{
+	return m_format;
 }
 
 //-----------------------------------------------------------------------------
@@ -128,6 +152,30 @@ size_t Executable::getEnvironmentVariableCount(void) const
 
 std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const* arguments, 
 	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
+{
+	// Invoke the private version using the provided file name as the 'original' file name.  This needs to be
+	// tracked in order to support the ELF AT_EXECFN auxiliary vector value
+	return FromFile(vm, filename, filename, arguments, environment, rootdir, workingdir);
+}
+
+//-----------------------------------------------------------------------------
+// Executable::FromFile (private, static)
+//
+// Creates an executable instance from a file system file
+//
+// Arguments:
+//
+//	vm					- VirtualMachine instance creating the process
+//	originalfilename	- Original file name passed into public FromFile()
+//	filename			- Path to the executable image
+//	arguments			- Command line arguments for the executable
+//	environment			- Environment variables to assign to the process
+//	rootdir				- Root directory to assign to the process
+//	workingdir			- Working directory to assign to the process
+
+std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* originalfilename, const char_t* filename, 
+	const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	const std::shared_ptr<FileSystem::Alias>& workingdir)
 {
 	if(filename == nullptr) throw LinuxException(LINUX_EFAULT);
 
@@ -152,15 +200,20 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 		switch(magic[LINUX_EI_CLASS]) {
 
 			// ELFCLASS32 --> Architecture::x86
-			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, std::move(handle), arguments, environment, rootdir, workingdir);
+			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, BinaryFormat::ELF, vm, std::move(handle), 
+				originalfilename, arguments, environment, rootdir, workingdir);
 #ifdef _M_X64
 			// ELFCLASS64: --> Architecture::x86_64
-			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, std::move(handle), arguments, environment, rootdir, workingdir);
+			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, BinaryFormat::ELF, vm, std::move(handle), 
+				originalfilename, arguments, environment, rootdir, workingdir);
 #endif
 			// Unknown ELFCLASS --> ENOEXEC	
 			default: throw LinuxException(LINUX_ENOEXEC);
 		}
 	}
+
+	// A.OUT BINARY
+	// TODO
 
 	// INTERPRETER SCRIPT (UTF-8)
 	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC_UTF8, sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8)) == 0)) {
@@ -213,7 +266,7 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 	newarguments.push_back(nullptr);
 
 	// Recursively call back into FromFile with the interpreter path and modified arguments
-	return FromFile(vm, interpreter.c_str(), newarguments.data(), environment, rootdir, workingdir);
+	return FromFile(vm, originalfilename, interpreter.c_str(), newarguments.data(), environment, rootdir, workingdir);
 }
 
 //-----------------------------------------------------------------------------
@@ -224,6 +277,123 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 std::shared_ptr<FileSystem::Handle> Executable::getHandle(void) const
 {
 	return m_handle;
+}
+
+//-----------------------------------------------------------------------------
+// Executable::Load
+//
+// Loads the executable into a process virtual address space
+//
+// Arguments:
+//
+//	memory			- ProcessMemory instance for the target process
+//	stackpointer	- Pointer to the stack to be initialized
+
+Executable::LoadResult Executable::Load(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const
+{
+	// Invoke the format-specific load function
+	switch(m_format) {
+
+		// ELF -> LoadELF
+		case BinaryFormat::ELF: return LoadELF(memory, stackpointer);
+	}
+
+	// Unsupported binary file format
+	throw LinuxException(LINUX_ENOEXEC);
+}
+
+//-----------------------------------------------------------------------------
+// Executable::LoadELF (private)
+//
+// Loads an ELF binary into a process virtual address space
+//
+// Arguments:
+//
+//	memory			- ProcessMemory instance for the target process
+//	stackpointer	- Pointer to the stack to be initialized
+
+Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const
+{
+	// Architecture::x86 --> 32-bit ELF binary
+	if(m_architecture == Architecture::x86) return LoadELF<Architecture::x86>(memory, stackpointer);
+
+#ifdef _M_X64
+	// Architecture::x86_64 --> 64-bit ELF binary
+	else if(m_architecture == Architecture::x86_64) return LoadELF<Architecture::x86_64>(memory, stackpointer;
+#endif
+
+	// Unsupported architecture
+	throw LinuxException(LINUX_ENOEXEC);
+}
+
+//-----------------------------------------------------------------------------
+// Executable::LoadELF<Architecture> (private)
+//
+// Loads an ELF binary into a process virtual address space
+//
+// Arguments:
+//
+//	memory			- ProcessMemory instance for the target process
+//	stackpointer	- Pointer to the stack to be initialized
+
+template <::Architecture architecture>
+Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const
+{
+	using elf = elf_traits<architecture>;
+
+	std::unique_ptr<ElfImage>	executable;			// Main executable image
+	std::unique_ptr<ElfImage>	interpreter;		// Optional interpreter image
+	uint8_t						random[16];			// Random data for AT_RANDOM
+	LoadResult					result;				// Result from load operation
+
+	// Load the main executable image into the process
+	executable = ElfImage::Load<architecture>(m_handle, memory);
+
+	// If an interpreter is specified by the main executable, open and load that into the process
+	if(executable->Interpreter) interpreter = ElfImage::Load<architecture>(m_vm->OpenExecutable(m_rootdir, m_workingdir, executable->Interpreter), memory);
+
+	// Generate the AT_RANDOM auxiliary vector data
+	Random::Generate(random, sizeof(random));
+
+	// Construct the ELF arguments to write into the specified stack
+	ElfArguments arguments(m_arguments, m_environment);
+
+	(LINUX_AT_EXECFD);																			//  2 - TODO MAY NOT NEED TO IMPLEMENT
+	if(executable->ProgramHeaders) {
+
+		arguments.AppendAuxiliaryVector(LINUX_AT_PHDR, executable->ProgramHeaders);				//  3
+		arguments.AppendAuxiliaryVector(LINUX_AT_PHENT, sizeof(typename elf::progheader_t));	//  4
+		arguments.AppendAuxiliaryVector(LINUX_AT_PHNUM, executable->NumProgramHeaders);			//  5
+	}
+
+	arguments.AppendAuxiliaryVector(LINUX_AT_PAGESZ, SystemInformation::PageSize);				//  6
+	if(interpreter) arguments.AppendAuxiliaryVector(LINUX_AT_BASE, interpreter->BaseAddress);	//  7
+	arguments.AppendAuxiliaryVector(LINUX_AT_FLAGS, 0);											//  8
+	arguments.AppendAuxiliaryVector(LINUX_AT_ENTRY, executable->EntryPoint);					//  9
+	(LINUX_AT_NOTELF);																			// 10 - NOT IMPLEMENTED
+	(LINUX_AT_UID);																				// 11 - TODO
+	(LINUX_AT_EUID);																			// 12 - TODO
+	(LINUX_AT_GID);																				// 13 - TODO
+	(LINUX_AT_EGID);																			// 14 - TODO
+	arguments.AppendAuxiliaryVector(LINUX_AT_PLATFORM, elf::platform);							// 15
+	(LINUX_AT_HWCAP);																			// 16 - TODO
+	(LINUX_AT_CLKTCK);																			// 17 - TODO
+	arguments.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);										// 23
+	(LINUX_AT_BASE_PLATFORM);																	// 24 - NOT IMPLEMENTED
+	arguments.AppendAuxiliaryVector(LINUX_AT_RANDOM, random, sizeof(random));					// 25
+	(LINUX_AT_HWCAP2);																			// 26 - TODO
+	arguments.AppendAuxiliaryVector(LINUX_AT_EXECFN, m_filename.c_str());						// 31
+	(LINUX_AT_SYSINFO);																			// 32 - TODO MAY NOT IMPLEMENT?
+	(LINUX_AT_SYSINFO_EHDR);																	// 33 - TODO NEEDS VDSO
+
+	// Set the entry point and program break information from the load operation
+	result.EntryPoint = (interpreter) ? interpreter->EntryPoint : executable->EntryPoint;
+	result.ProgramBreak = executable->ProgramBreak;
+
+	// Write the ELF arguments to the provided stack and set the adjusted stack pointer
+	result.StackPointer = arguments.WriteStack<architecture>(memory, stackpointer);
+
+	return result;
 }
 
 //-----------------------------------------------------------------------------

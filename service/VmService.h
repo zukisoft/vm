@@ -42,8 +42,6 @@
 #include "SystemLog.h"
 #include "VirtualMachine.h"
 
-#include "NewProcess.h"
-
 // File systems
 //
 #include "HostFileSystem.h"
@@ -128,12 +126,6 @@ private:
 	BEGIN_CONTROL_HANDLER_MAP(VmService)
 		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
 	END_CONTROL_HANDLER_MAP()
-
-	// CreateProcess
-	//
-	// Creates a new hosted process instance from a file system binary
-	std::shared_ptr<Process> CreateProcess(uapi::pid_t pid, const FileSystem::AliasPtr& rootdir, const FileSystem::AliasPtr& workingdir, 
-		const uapi::char_t* path, const uapi::char_t** arguments, const uapi::char_t** environment);
 
 	// LoadInitialFileSystem
 	//

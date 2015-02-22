@@ -86,6 +86,11 @@ public:
 	// Duplicates the virtual address space from one process into another
 	static std::unique_ptr<ProcessMemory> FromProcessMemory(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, DuplicationMode mode);
 
+	// Guard
+	//
+	// Sets up guard pages within a virtual memory region
+	void Guard(const void* address, size_t length, int prot);
+
 	// Protect
 	//
 	// Sets the memory protection flags for a virtual memory region

@@ -41,7 +41,7 @@ uapi::long_t sys_fcntl(const Context* context, int fd, int cmd, void* arg)
 {
 	(arg);
 
-	auto handle = context->Process->GetHandle(fd);
+	auto handle = context->Process->Handle[fd];
 
 	// Commands are listed in the order described in the man page, not numerically
 	switch(cmd) {

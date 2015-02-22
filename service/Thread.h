@@ -144,6 +144,12 @@ public:
 	__declspec(property(get=getThreadId)) uapi::pid_t ThreadId;
 	uapi::pid_t getThreadId(void) const;
 
+	// Zombie
+	//
+	// Gets flag indicating if this thread is a 'zombie' or not
+	__declspec(property(get=getZombie)) bool Zombie;
+	bool getZombie(void) const;
+
 private:
 
 	Thread(const Thread&)=delete;

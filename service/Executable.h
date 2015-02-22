@@ -29,9 +29,14 @@
 #include <linux/elf.h>
 #include <linux/fs.h>
 #include "Architecture.h"
+#include "ElfArguments.h"
+#include "ElfImage.h"
 #include "HeapBuffer.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
+#include "ProcessMemory.h"
+#include "Random.h"
+#include "SystemInformation.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
@@ -43,10 +48,32 @@
 // Represents an executable, including the command-line arguments, environment
 // variables, and initial root/working directories.  Recursively resolves any
 // interpreter scripts that represent the target executable.
+//
+// todo this needs more words, this has become a rather crazy class to offload all
+// this crap from Process
 
 class Executable
 {
 public:
+
+	// BinaryFormat
+	//
+	// Defines the binary format of the executable
+	enum class BinaryFormat
+	{
+		ELF			= 0,			// ELF binary format
+		//AOut		= 1,			// A.OUT binary format
+	};
+
+	// LoadResult
+	//
+	// Information about a loaded executable image
+	struct LoadResult
+	{
+		const void*	EntryPoint;		// Executable entry point
+		const void*	ProgramBreak;	// Program break address (heap)
+		const void*	StackPointer;	// Adjusted stack pointer
+	};
 
 	// Destructor
 	//
@@ -60,6 +87,11 @@ public:
 	// Creates an executable instance from a file system path
 	static std::unique_ptr<Executable> FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const* arguments,
 		const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+
+	// Load
+	//
+	// Loads the executable into a process virtual address space and initializes a stack
+	LoadResult Load(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -94,6 +126,18 @@ public:
 	__declspec(property(get=getEnvironmentVariableCount)) size_t EnvironmentVariableCount;
 	size_t getEnvironmentVariableCount(void) const;
 
+	// FileName
+	//
+	// Gets the original filename provided for the executable
+	__declspec(property(get=getFileName)) const char_t* FileName;
+	const char_t* getFileName(void) const;
+
+	// Format
+	//
+	// Gets the binary format of the exectable
+	__declspec(property(get=getFormat)) BinaryFormat Format;
+	BinaryFormat getFormat(void) const;
+
 	// Handle
 	//
 	// Gets a reference to the executable file handle
@@ -119,22 +163,49 @@ private:
 
 	// Instance Constructor
 	//
-	Executable(::Architecture architecture, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* const* arguments, const char_t* const* environment,
-		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
-	friend std::unique_ptr<Executable> std::make_unique<Executable, ::Architecture, std::shared_ptr<FileSystem::Handle>, 
-		const char_t* const *&, const char_t* const*&, const std::shared_ptr<FileSystem::Alias>&, const std::shared_ptr<FileSystem::Alias>&>(::Architecture&&, 
-		std::shared_ptr<FileSystem::Handle>&&, const char_t* const *& arguments, const char_t* const*& environment, const std::shared_ptr<FileSystem::Alias>& rootdir,
+	Executable(::Architecture architecture, BinaryFormat format, const std::shared_ptr<VirtualMachine>& vm, std::shared_ptr<FileSystem::Handle>&& handle, 
+		const char_t* filename, const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
+
+	friend std::unique_ptr<Executable> std::make_unique<Executable, ::Architecture, BinaryFormat, const std::shared_ptr<VirtualMachine>&, 
+		std::shared_ptr<FileSystem::Handle>, const char_t*&, const char_t* const *&, const char_t* const*&, const std::shared_ptr<FileSystem::Alias>&, 
+		const std::shared_ptr<FileSystem::Alias>&>(::Architecture&&, BinaryFormat&& format, const std::shared_ptr<VirtualMachine>& vm, 
+		std::shared_ptr<FileSystem::Handle>&&, const char_t*& filename, const char_t* const *& arguments, const char_t* const*& environment, 
+		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// FromFile (static)
+	//
+	// Creates an executable instance from a file system path
+	static std::unique_ptr<Executable> FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* originalfilename, const char_t* filename, 
+		const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+		const std::shared_ptr<FileSystem::Alias>& workingdir);
+
+	// LoadELF
+	//
+	// Loads an ELF binary into a process virtual address space
+	LoadResult LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
+
+	// LoadELF<Architecture>
+	//
+	// Loads an ELF binary into a process virtual address space
+	template<::Architecture architecture>
+	LoadResult LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const ::Architecture				m_architecture;	// Architecture flag
-	std::shared_ptr<FileSystem::Handle>	m_handle;		// File handle
-	std::vector<std::string>			m_arguments;	// Command-line arguments
-	std::vector<std::string>			m_environment;	// Environment variables
-	std::shared_ptr<FileSystem::Alias>	m_rootdir;		// Root directory
-	std::shared_ptr<FileSystem::Alias>	m_workingdir;	// Working directory
+	const ::Architecture				m_architecture;		// Architecture flag
+	const BinaryFormat					m_format;			// Binary file format
+	std::shared_ptr<VirtualMachine>		m_vm;				// VirtualMachine instance
+	std::shared_ptr<FileSystem::Handle>	m_handle;			// File handle
+	std::string							m_filename;			// Original file name
+	std::vector<std::string>			m_arguments;		// Command-line arguments
+	std::vector<std::string>			m_environment;		// Environment variables
+	std::shared_ptr<FileSystem::Alias>	m_rootdir;			// Root directory
+	std::shared_ptr<FileSystem::Alias>	m_workingdir;		// Working directory
 };
 
 //-----------------------------------------------------------------------------

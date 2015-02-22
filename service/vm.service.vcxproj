@@ -360,19 +360,15 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClInclude>
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="elf_traits.h" />
-    <ClInclude Include="ElfImage.h" />
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="Host.h" />
     <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="MountOptions.h" />
-    <ClInclude Include="NewProcess.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Architecture.h" />
-    <ClInclude Include="ProcessArguments.h" />
     <ClInclude Include="ProcessHandles.h" />
-    <ClInclude Include="ProcessHost.h" />
-    <ClInclude Include="ProcessImage.h" />
+    <ClInclude Include="NativeProcess.h" />
+    <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ProcessMemory.h" />
     <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="Context.h" />
@@ -635,19 +631,15 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClCompile>
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
-    <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="Executable.cpp" />
     <ClCompile Include="FilePermission.cpp" />
-    <ClCompile Include="Host.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
-    <ClCompile Include="NewProcess.cpp" />
     <ClCompile Include="Process.cpp" />
-    <ClCompile Include="ProcessArguments.cpp" />
     <ClCompile Include="ProcessHandles.cpp" />
-    <ClCompile Include="ProcessHost.cpp" />
-    <ClCompile Include="ProcessImage.cpp" />
+    <ClCompile Include="NativeProcess.cpp" />
+    <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="ProcessMemory.cpp" />
     <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="SignalActions.cpp" />

@@ -50,7 +50,7 @@ uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* p
 
 	// Determine the base alias from which to resolve the path
 	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-		((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(fd)->Alias);
+		((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[fd]->Alias);
 
 	// Base for path resolution must be a directory if LINUX_AT_EMPTY_PATH is not specified
 	if(((flags & LINUX_AT_EMPTY_PATH) != LINUX_AT_EMPTY_PATH) && (base->Node->Type != FileSystem::NodeType::Directory))

@@ -436,5 +436,17 @@ uapi::pid_t Thread::getThreadId(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Thread::getZombie
+//
+// Gets a flag indicating if this thread is a zombie or not, which means the
+// actual thread has terminated but this class instance still exists
+
+bool Thread::getZombie(void) const
+{
+	// If the native process has terminated, this process is a zombie
+	return (WaitForSingleObject(m_thread->Handle, 0) == WAIT_OBJECT_0);
+}
+
+//-----------------------------------------------------------------------------
 
 #pragma warning(pop)

@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __PROCESSHOST_H_
-#define __PROCESSHOST_H_
+#ifndef __NATIVEPROCESS_H_
+#define __NATIVEPROCESS_H_
 #pragma once
 
 #include <memory>
@@ -36,26 +36,26 @@
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
-// Class ProcessHost
+// Class NativeProcess
 //
-// Creates a new native operating system host process instance
+// Creates a new native operating system host process
 
-class ProcessHost
+class NativeProcess
 {
 public:
 
 	// Destructor
 	//
-	~ProcessHost()=default;
+	~NativeProcess()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
 	// Create (static)
 	//
-	// Creates a new ProcessHost instance for the specified architecture
+	// Creates a new NativeProcess instance for the specified architecture
 	template<Architecture architecture>
-	static std::unique_ptr<ProcessHost> Create(const std::shared_ptr<VirtualMachine>& vm);
+	static std::unique_ptr<NativeProcess> Create(const std::shared_ptr<VirtualMachine>& vm);
 	
 	//-------------------------------------------------------------------------
 	// Properties
@@ -86,13 +86,13 @@ public:
 
 private:
 
-	ProcessHost(const ProcessHost&)=delete;
-	ProcessHost& operator=(const ProcessHost&)=delete;
+	NativeProcess(const NativeProcess&)=delete;
+	NativeProcess& operator=(const NativeProcess&)=delete;
 
 	// Instance Constructor
 	//
-	ProcessHost(std::shared_ptr<NativeHandle>&& process, DWORD processid, std::shared_ptr<NativeHandle>&& thread, DWORD threadid);
-	friend std::unique_ptr<ProcessHost> std::make_unique<ProcessHost, std::shared_ptr<NativeHandle>, DWORD&, std::shared_ptr<NativeHandle>, DWORD&>
+	NativeProcess(std::shared_ptr<NativeHandle>&& process, DWORD processid, std::shared_ptr<NativeHandle>&& thread, DWORD threadid);
+	friend std::unique_ptr<NativeProcess> std::make_unique<NativeProcess, std::shared_ptr<NativeHandle>, DWORD&, std::shared_ptr<NativeHandle>, DWORD&>
 		 (std::shared_ptr<NativeHandle>&&, DWORD&, std::shared_ptr<NativeHandle>&&, DWORD&);
 
 	//-------------------------------------------------------------------------
@@ -102,12 +102,12 @@ private:
 	//
 	// Checks the architecture of a constructed host process instance
 	template<Architecture architecture>
-	static void CheckArchitecture(const std::unique_ptr<ProcessHost>& instance);
+	static void CheckArchitecture(const std::unique_ptr<NativeProcess>& instance);
 
 	// Create (static)
 	//
-	// Creates a new ProcessHost instance
-	static std::unique_ptr<ProcessHost> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
+	// Creates a new NativeProcess instance
+	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -122,4 +122,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __PROCESSHOST_H_
+#endif	// __NATIVEPROCESS_H_

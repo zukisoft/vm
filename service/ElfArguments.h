@@ -30,10 +30,7 @@
 #include "Architecture.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
-#include "MemoryRegion.h"
-#include "NtApi.h"
-#include "StructuredException.h"
-#include "Win32Exception.h"
+#include "ProcessMemory.h"
 
 #pragma warning(push, 4)				
 
@@ -41,8 +38,7 @@
 // ElfArguments
 //
 // ELF arguments on the x86/x64 platform are provided by pushing a vector of
-// values/pointers onto the stack prior to jumping to the entry point.  The
-// typical memory format is as follows:
+// values/pointers onto the stack prior to jumping to the entry point:
 //
 //  STACK POINTER --->  argc          number of arguments
 //                      argv[0-n]     pointers to command line arguments
@@ -66,6 +62,7 @@ public:
 	//
 	ElfArguments() : ElfArguments(nullptr, nullptr) {}
 	ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp);
+	ElfArguments(const std::vector<std::string>& argv, const std::vector<std::string>& envp);
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -90,10 +87,10 @@ public:
 	void AppendEnvironmentVariable(const uapi::char_t* keyandvalue);
 	void AppendEnvironmentVariable(const uapi::char_t* key, const uapi::char_t* value);
 
-	// GenerateProcessStack
+	// WriteStack
 	//
-	// Generates a stack from the collected ELF arguments
-	template <Architecture architecture> void* GenerateProcessStack(HANDLE process, void* base, size_t length);
+	// Writes the collected ELF arguments to a process stack
+	template <Architecture architecture> const void* WriteStack(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer);
 
 private:
 

@@ -39,7 +39,7 @@
 uapi::long_t sys_fstatfs(const Context* context, int fd, uapi::statfs* buf)
 {
 	if(buf == nullptr) return -LINUX_EFAULT;
-	*buf = context->Process->GetHandle(fd)->Node->FileSystem->Status;
+	*buf = context->Process->Handle[fd]->Node->FileSystem->Status;
 
 	return 0;
 }

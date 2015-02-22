@@ -44,7 +44,7 @@ uapi::long_t sys_writev(const Context* context, int fd, uapi::iovec* iov, int io
 	if(iovcnt <= 0) return -LINUX_EINVAL;
 
 	// Get the handle represented by the file descriptor
-	auto handle = context->Process->GetHandle(fd);
+	auto handle = context->Process->Handle[fd];
 
 	// Calcluate the maximum required intermediate data buffer for the operation
 	size_t max = 0;

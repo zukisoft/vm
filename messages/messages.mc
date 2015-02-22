@@ -1267,6 +1267,13 @@ Language=English
 The remote thread entry point provided for a hosted process is invalid.
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_PROCESSINVALIDSTACKSIZE
+Language=English
+The thread stack size virtual machine property is invalid.
+.
+
 ;//----------------------------------------------------------------------------
 ;// Thread
 ;//

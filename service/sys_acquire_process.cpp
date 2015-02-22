@@ -68,7 +68,7 @@ HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32
 		if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 		
 		// Use the process virtual PID to locate the thread, the first thread will match
-		auto thread = proc->FindThread(proc->ProcessId);
+		auto thread = proc->Thread[proc->ProcessId];
 		if(thread == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
 		// Set the provided address as the native thread entry point for the process

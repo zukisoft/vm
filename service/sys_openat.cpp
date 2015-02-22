@@ -45,7 +45,7 @@ uapi::long_t sys_openat(const Context* context, int dirfd, const uapi::char_t* p
 
 	// Determine the base alias from which to resolve the path
 	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->GetHandle(dirfd)->Alias);
+		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
 
 	// Apply the process' current umask to the provided creation mode flags
 	mode &= ~context->Process->FileCreationModeMask;

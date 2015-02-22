@@ -27,9 +27,9 @@
 
 // Explicit Instantiations
 //
-template void* ElfArguments::GenerateProcessStack<Architecture::x86>(HANDLE, void*, size_t);
+template const void* ElfArguments::WriteStack<Architecture::x86>(const std::unique_ptr<ProcessMemory>&, const void*);
 #ifdef _M_X64
-template void* ElfArguments::GenerateProcessStack<Architecture::x86_64>(HANDLE, void*, size_t);
+template const void* ElfArguments::WriteStack<Architecture::x86_64>(const std::unique_ptr<ProcessMemory>&, const void*);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -63,6 +63,20 @@ ElfArguments::ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp)
 	// Iterate over any provided arguments/variables and append them
 	while(argv && *argv) { AppendArgument(*argv); ++argv; }
 	while(envp && *envp) { AppendEnvironmentVariable(*envp); ++envp; }
+}
+
+//---------------------------------------------------------------------------
+// ElfArguments Constructor
+//
+// Arguments:
+//
+//	argc		- Collection of initial command line arguments
+//	envp		- Collection of initial environment variables
+
+ElfArguments::ElfArguments(const std::vector<std::string>& argv, const std::vector<std::string>& envp)
+{
+	for(const auto iterator : argv) AppendArgument(iterator.c_str());
+	for(const auto iterator : envp) AppendEnvironmentVariable(iterator.c_str());
 }
 
 //-----------------------------------------------------------------------------
@@ -203,43 +217,39 @@ uint32_t ElfArguments::AppendInfo(const void* buffer, size_t length)
 }
 
 //-----------------------------------------------------------------------------
-// ElfArguments::GenerateProcessStack
+// ElfArguments::WriteStack
 //
-// Generates a process stack from the collected ELF arguments
+// Writes the collected ELF arguments to a process stack
 //
 // Arguments:
 //
-//	process		- Handle to the target process
-//	base		- Base address of the process stack
-//	length		- Length of the process stack
+//	memory			- ProcessMemory instance
+//	stackpointer	- Current stack pointer within the ProcessMemory
 
 template <Architecture architecture>
-void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t length)
+const void* ElfArguments::WriteStack(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer)
 {
 	using elf = elf_traits<architecture>;
 
 	size_t				infolen;				// Length of the information block
-	size_t				stacklen;				// Length of the entire stack
+	size_t				imagelen;				// Length of the entire stack image
 
-	infolen = stacklen = align::up(m_info.size(), 16);
+	infolen = imagelen = align::up(m_info.size(), 16);
 
-	stacklen += sizeof(typename elf::addr_t);							// argc
-	stacklen += sizeof(typename elf::addr_t) * (m_argv.size() + 1);		// argv + NULL
-	stacklen += sizeof(typename elf::addr_t) * (m_envp.size() + 1);		// envp + NULL
-	stacklen += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);		// auxv + AT_NULL
-	stacklen += sizeof(typename elf::addr_t);							// NULL
-	stacklen = align::up(stacklen, 16);									// alignment
+	imagelen += sizeof(typename elf::addr_t);							// argc
+	imagelen += sizeof(typename elf::addr_t) * (m_argv.size() + 1);		// argv + NULL
+	imagelen += sizeof(typename elf::addr_t) * (m_envp.size() + 1);		// envp + NULL
+	imagelen += sizeof(typename elf::auxv_t) * (m_auxv.size() + 1);		// auxv + AT_NULL
+	imagelen += sizeof(typename elf::addr_t);							// NULL
+	imagelen = align::up(imagelen, 16);									// alignment
 
-	// Make sure that the arguments will fit in the allocated stack space for the process
-	_ASSERTE(stacklen <= length);
-	if(stacklen > length) throw Exception(E_ELFARGUMENTSEXCEEDSTACK, stacklen, length);
+	// Calculate the address of the information block and the new stack pointer
+	stackpointer = align::down(stackpointer, 16);
+	typename elf::addr_t infoptr = static_cast<elf::addr_t>(uintptr_t(stackpointer) - infolen);
+	stackpointer = reinterpret_cast<void*>(uintptr_t(stackpointer) - imagelen);
 
-	// Calculate the stack pointer and the address of the information block
-	void* stackpointer = reinterpret_cast<void*>((uintptr_t(base) + length) - stacklen);
-	typename elf::addr_t infoptr = static_cast<elf::addr_t>((uintptr_t(base) + length) - infolen);
-
-	// Use a heap buffer to collect the information so only one call to NtWriteVirtualMemory is needed
-	HeapBuffer<uint8_t> stackimage(stacklen);
+	// Use a heap buffer to collect the information so only one call to write is needed
+	HeapBuffer<uint8_t> stackimage(imagelen);
 	memset(stackimage, 0, stackimage.Size);
 
 	// ARGC
@@ -271,16 +281,15 @@ void* ElfArguments::GenerateProcessStack(HANDLE process, void* base, size_t leng
 	// INFORMATION BLOCK
 	if(m_info.size()) memcpy(&stackimage[stackimage.Size - infolen], m_info.data(), m_info.size());
 
-	try { 
-		
-		// Copy the generated stack image from the local heap buffer into the target process' memory
-		NTSTATUS result = NtApi::NtWriteVirtualMemory(process, stackpointer, stackimage, stackimage.Size, nullptr);
-		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
-	}
-	
-	catch(Exception& ex) { throw Exception(E_ELFWRITEARGUMENTS, ex); }
+	//
+	// TODO: This can be done in 2 calls to write to shrink the HeapBuffer and remove the memcpy above
+	//
 
-	return stackpointer;				// Return the process stack pointer
+	// Write the stack image into the process memory at the calcuated address
+	size_t written = memory->Write(stackpointer, stackimage, stackimage.Size);
+	if(written != stackimage.Size) throw Exception(E_ELFWRITEARGUMENTS);
+
+	return stackpointer;				// Return the new stack pointer
 }
 
 //-----------------------------------------------------------------------------

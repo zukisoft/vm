@@ -21,12 +21,12 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ProcessHost.h"
+#include "NativeProcess.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ProcessHost Constructor
+// NativeProcess Constructor
 //
 // Arguments:
 //
@@ -35,20 +35,20 @@
 //	thread			- Thread handle instance
 //	threadid		- Native thread identifier
 
-ProcessHost::ProcessHost(std::shared_ptr<NativeHandle>&& process, DWORD processid, std::shared_ptr<NativeHandle>&& thread, DWORD threadid) :
+NativeProcess::NativeProcess(std::shared_ptr<NativeHandle>&& process, DWORD processid, std::shared_ptr<NativeHandle>&& thread, DWORD threadid) :
 	m_process(std::move(process)), m_processid(processid), m_thread(std::move(thread)), m_threadid(threadid) {}
 
 //-----------------------------------------------------------------------------
-// ProcessHost::CheckArchitecture<x86> (private, static)
+// NativeProcess::CheckArchitecture<x86> (private, static)
 //
 // Checks that the created host process is 32-bit
 //
 // Arguments:
 //
-//	instance		- ProcessHost instance to be validated
+//	instance		- NativeProcess instance to be validated
 
 template<> 
-void ProcessHost::CheckArchitecture<Architecture::x86>(const std::unique_ptr<ProcessHost>& instance)
+void NativeProcess::CheckArchitecture<Architecture::x86>(const std::unique_ptr<NativeProcess>& instance)
 {
 	BOOL			result;				// Result from IsWow64Process
 
@@ -67,11 +67,11 @@ void ProcessHost::CheckArchitecture<Architecture::x86>(const std::unique_ptr<Pro
 //
 // Arguments:
 //
-//	instance		- ProcessHost instance to be validated
+//	instance		- NativeProcess instance to be validated
 
 #ifdef _M_X64
 template<>
-void ProcessHost::CheckArchitecture<Architecture::x86_64>(const std::unique_ptr<ProcessHost>& instance)
+void NativeProcess::CheckArchitecture<Architecture::x86_64>(const std::unique_ptr<NativeProcess>& instance)
 {
 	BOOL				result;				// Result from IsWow64Process
 
@@ -82,28 +82,28 @@ void ProcessHost::CheckArchitecture<Architecture::x86_64>(const std::unique_ptr<
 #endif
 
 //-----------------------------------------------------------------------------
-// ProcessHost::Create<Architecture::x86>
+// NativeProcess::Create<Architecture::x86>
 //
 // Arguments:
 //
 //	vm			- Parent virtual machine instance
 
 template<>
-std::unique_ptr<ProcessHost> ProcessHost::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
+std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
 {
 	// Get the architecture-specific filename and arguments from the virtual machine instance
 	std::tstring filename = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32);
 	std::tstring arguments = vm->GetProperty(VirtualMachine::Properties::HostProcessArguments);
 
 	// Construct the specified process and validate that it's Architecture::x86
-	std::unique_ptr<ProcessHost> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
+	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
 	CheckArchitecture<Architecture::x86>(host);
 
 	return host;
 }
 
 //-----------------------------------------------------------------------------
-// ProcessHost::Create<Architecture::x86_64>
+// NativeProcess::Create<Architecture::x86_64>
 //
 // Arguments:
 //
@@ -111,14 +111,14 @@ std::unique_ptr<ProcessHost> ProcessHost::Create<Architecture::x86>(const std::s
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<ProcessHost> ProcessHost::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
+std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
 {
 	// Get the architecture-specific filename and arguments from the virtual machine instance
 	std::tstring filename = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary64);
 	std::tstring arguments = vm->GetProperty(VirtualMachine::Properties::HostProcessArguments);
 
 	// Construct the specified process and validate that it's Architecture::x86
-	std::unique_ptr<ProcessHost> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
+	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
 	CheckArchitecture<Architecture::x86_64>(host);
 
 	return host;
@@ -126,7 +126,7 @@ std::unique_ptr<ProcessHost> ProcessHost::Create<Architecture::x86>(const std::s
 #endif
 
 //-----------------------------------------------------------------------------
-// ProcessHost::Create (private, static)
+// NativeProcess::Create (private, static)
 //
 // Creates a new native operating system process instance
 //
@@ -137,7 +137,7 @@ std::unique_ptr<ProcessHost> ProcessHost::Create<Architecture::x86>(const std::s
 //	handles			- Optional array of inheritable handle objects
 //	numhandles		- Number of elements in the handles array
 
-std::unique_ptr<ProcessHost> ProcessHost::Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles)
+std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles)
 {
 	PROCESS_INFORMATION				procinfo;			// Process information
 
@@ -180,47 +180,47 @@ std::unique_ptr<ProcessHost> ProcessHost::Create(const tchar_t* path, const tcha
 
 	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
 
-	// Process was successfully created and initialized, construct the ProcessHost instance
-	return std::make_unique<ProcessHost>(NativeHandle::FromHandle(procinfo.hProcess), procinfo.dwProcessId,
+	// Process was successfully created and initialized, construct the NativeProcess instance
+	return std::make_unique<NativeProcess>(NativeHandle::FromHandle(procinfo.hProcess), procinfo.dwProcessId,
 		NativeHandle::FromHandle(procinfo.hThread), procinfo.dwThreadId);
 }
 
 //-----------------------------------------------------------------------------
-// ProcessHost::Process
+// NativeProcess::Process
 //
 // Gets the host process handle
 
-std::shared_ptr<NativeHandle> ProcessHost::getProcess(void) const
+std::shared_ptr<NativeHandle> NativeProcess::getProcess(void) const
 {
 	return m_process;
 }
 
 //-----------------------------------------------------------------------------
-// ProcessHost::ProcessId
+// NativeProcess::ProcessId
 //
 // Gets the host process identifier
 
-DWORD ProcessHost::getProcessId(void) const
+DWORD NativeProcess::getProcessId(void) const
 {
 	return m_processid;
 }
 
 //-----------------------------------------------------------------------------
-// ProcessHost::Thread
+// NativeProcess::Thread
 //
 // Gets the host main thread handle
 
-std::shared_ptr<NativeHandle> ProcessHost::getThread(void) const
+std::shared_ptr<NativeHandle> NativeProcess::getThread(void) const
 {
 	return m_thread;
 }
 
 //-----------------------------------------------------------------------------
-// ProcessHost::ThreadId
+// NativeProcess::ThreadId
 //
 // Gets the host main thread identifier
 
-DWORD ProcessHost::getThreadId(void) const
+DWORD NativeProcess::getThreadId(void) const
 {
 	return m_threadid;
 }

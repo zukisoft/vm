@@ -80,6 +80,8 @@ public:
 #ifdef _M_X64
 		HostProcessBinary64,		// Path to the 64-bit host process executable
 #endif
+
+		ThreadStackSize,			// Default size of a new thread stack
 	};
 	
 	// PROCESSID_INIT

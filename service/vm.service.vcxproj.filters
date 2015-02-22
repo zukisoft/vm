@@ -212,9 +212,6 @@
     <ClInclude Include="FilePermission.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Process.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\RpcInterface.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -248,16 +245,10 @@
     <ClInclude Include="..\common\linux\signal.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="Host.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\auxvec.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
     <ClInclude Include="ElfArguments.h">
-      <Filter>Header Files\Elf</Filter>
-    </ClInclude>
-    <ClInclude Include="ElfImage.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
     <ClInclude Include="..\common\Random.h">
@@ -353,23 +344,20 @@
     <ClInclude Include="Executable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NewProcess.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ProcessMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\NativeHandle.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="ProcessHost.h">
+    <ClInclude Include="NativeProcess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ProcessImage.h">
+    <ClInclude Include="Process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ProcessArguments.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="ElfImage.h">
+      <Filter>Header Files\Elf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -538,16 +526,7 @@
     <ClCompile Include="..\tmp\vm.service\x64\syscalls64_s.c">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="Process.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Host.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ElfArguments.cpp">
-      <Filter>Source Files\Elf</Filter>
-    </ClCompile>
-    <ClCompile Include="ElfImage.cpp">
       <Filter>Source Files\Elf</Filter>
     </ClCompile>
     <ClCompile Include="..\common\Random.cpp">
@@ -790,22 +769,19 @@
     <ClCompile Include="Executable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NewProcess.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProcessMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\common\NativeHandle.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessHost.cpp">
+    <ClCompile Include="NativeProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessImage.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="ElfImage.cpp">
+      <Filter>Source Files\Elf</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessArguments.cpp">
+    <ClCompile Include="Process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
