@@ -51,7 +51,7 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Create (static)
+	// Create<Architecture> (static)
 	//
 	// Creates a new NativeProcess instance for the specified architecture
 	template<Architecture architecture>

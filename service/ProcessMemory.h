@@ -91,6 +91,11 @@ public:
 	// Sets up guard pages within a virtual memory region
 	void Guard(const void* address, size_t length, int prot);
 
+	// Lock
+	//
+	// Attempts to lock a region into the process working set
+	void Lock(const void* address, size_t length) const;
+
 	// Protect
 	//
 	// Sets the memory protection flags for a virtual memory region
@@ -105,6 +110,11 @@ public:
 	//
 	// Releases virtual memory
 	void Release(const void* address, size_t length);
+
+	// Unlock
+	//
+	// Attempts to unlock a region from the process working set
+	void Unlock(const void* address, size_t length) const;
 
 	// Write
 	//

@@ -194,6 +194,9 @@ public:
 	__declspec(property(get=getInstanceID)) const uuid_t& InstanceID;
 	const uuid_t& getInstanceID(void) const { return m_instanceid; }
 
+	__declspec(property(get=getRootProcess)) std::shared_ptr<Process> RootProcess;
+	virtual std::shared_ptr<Process> getRootProcess(void) const;
+
 	__declspec(property(get=getRootFileSystem)) std::shared_ptr<FileSystem> RootFileSystem;
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) = 0;
 

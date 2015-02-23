@@ -33,19 +33,22 @@
 //	vm				- Virtual machine instance
 //	architecture	- Process architecture
 //	pid				- Virtual process identifier
+//	parent			- Parent Process instance
 //	process			- Native process handle
 //	processid		- Native process identifier
 //	memory			- ProcessMemory virtual memory manager
 //	ldt				- Address of allocated local descriptor table
+//	ldtslots		- Local descriptor table allocation bitmap
 //	programbreak	- Address of initial program break
 //	mainthread		- Main/initial process thread instance
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<NativeHandle>& process,
-	DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, const void* programbreak, const std::shared_ptr<::Thread>& mainthread,
-	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : Process(vm, architecture, pid, process, 
-	processid, std::move(memory), ldt, programbreak, ProcessHandles::Create(), SignalActions::Create(), mainthread, rootdir, workingdir) {}
+Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+	const void* programbreak, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	const std::shared_ptr<FileSystem::Alias>& workingdir) : Process(vm, architecture, pid, parent, process, processid, std::move(memory), ldt, 
+	std::move(ldtslots), programbreak, ProcessHandles::Create(), SignalActions::Create(), mainthread, rootdir, workingdir) {}
 
 //-----------------------------------------------------------------------------
 // Process Constructor
@@ -55,10 +58,12 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 //	vm				- Virtual machine instance
 //	architecture	- Process architecture
 //	pid				- Virtual process identifier
+//	parent			- Parent Process instance
 //	process			- Native process handle
 //	processid		- Native process identifier
 //	memory			- ProcessMemory virtual memory manager
 //	ldt				- Address of allocated local descriptor table
+//	ldtslots		- Local descriptor table allocation bitmap
 //	programbreak	- Address of initial program break
 //	handles			- Initial file system handles collection
 //	sigactions		- Initial set of signal actions
@@ -66,11 +71,12 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<NativeHandle>& process,
-	DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, 
-	const std::shared_ptr<SignalActions>& sigactions, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-	const std::shared_ptr<FileSystem::Alias>& workingdir) : m_vm(vm), m_architecture(architecture), m_pid(pid), m_process(process), m_processid(processid),
-	m_memory(std::move(memory)), m_ldt(ldt), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_rootdir(rootdir), m_workingdir(workingdir)
+Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
+	const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
+	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), m_ldt(ldt), 
+	m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_rootdir(rootdir), m_workingdir(workingdir)
 {
 	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
 
@@ -129,6 +135,156 @@ int Process::AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle
 }
 
 //-----------------------------------------------------------------------------
+// Process::Clone
+//
+// Clones this process into a new child process
+//
+// Arguments:
+//
+//	flags		- Flags indicating the desired operations
+
+std::shared_ptr<Process> Process::Clone(int flags)
+{
+	// Allocate the PID for the cloned process
+	uapi::pid_t pid = m_vm->AllocatePID();
+
+	try {
+
+		// Architecture::x86 --> 32 bit clone operation
+		if(m_architecture == Architecture::x86) return Clone<Architecture::x86>(pid, flags);
+
+#ifdef _M_X64
+		// Architecture::x86_64 --> 64 bit clone operation
+		else if(m_architecture == Architecture::x86_64) return Clone<Architecture::x86_64>(pid, flags);
+#endif
+
+		// Unsupported architecture
+		throw LinuxException(LINUX_EPERM);
+	}
+
+	// Release the allocated PID upon exception
+	catch(...) { m_vm->ReleasePID(pid); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// Process::Clone<Architecture> (private)
+//
+// Forks this process into a new child process
+//
+// Arguments:
+//
+//	pid			- PID to assign to the new child process
+//	flags		- Flags indicating the desired operations
+
+template<::Architecture architecture>
+std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags)
+{
+	// FLAGS TO DEAL WITH:
+	//
+	//CLONE_CHILD_CLEARTID
+	//CLONE_CHILD_SETTID
+	//CLONE_FS
+	//CLONE_IO
+	//CLONE_NEWIPC
+	//CLONE_NEWNET
+	//CLONE_NEWNS
+	//CLONE_NEWPID
+	//CLONE_NEWUSER
+	//CLONE_NEWUTS
+	//CLONE_PARENT_SETTID
+	//CLONE_PTRACE
+	//CLONE_SETTLS
+	//CLONE_STOPPED
+	//CLONE_SYSVSEM
+	//CLONE_UNTRACED
+	//CLONE_VFORK
+
+	// CLONE_THREAD should not be specified when creating a new child process
+	if(flags & LINUX_CLONE_THREAD) throw LinuxException(LINUX_EINVAL);
+
+	// CLONE_VM is not currently supported when creating a new child process, it requires the two
+	// processes to literally share memory, including allocations and releases. The section objects
+	// can be shared, but each process would still control it's own ability to map/unmap them.
+	if(flags & LINUX_CLONE_VM) throw LinuxException(LINUX_EINVAL);
+
+	// Create a new host process for the current process architecture
+	std::unique_ptr<NativeProcess> childhost = NativeProcess::Create<architecture>(m_vm);
+
+	try {
+
+		// Clone the current process memory as copy-on-write into the new process
+		// todo: rename that to Duplicate() to match the rest
+		std::unique_ptr<ProcessMemory> childmemory = ProcessMemory::FromProcessMemory(childhost->Process, m_memory, ProcessMemory::DuplicationMode::Clone);
+
+		// Create the file system handle collection for the child process, which may be shared or duplicated (CLONE_FILES)
+		std::shared_ptr<ProcessHandles> childhandles = (flags & LINUX_CLONE_FILES) ? m_handles : ProcessHandles::Duplicate(m_handles);
+
+		// Create the signal actions collection for the child process, which may be shared or duplicated (CLONE_SIGHAND)
+		std::shared_ptr<SignalActions> childsigactions = (flags & LINUX_CLONE_SIGHAND) ? m_sigactions : SignalActions::Duplicate(m_sigactions);
+
+		// Determine the parent process for the child, which is either this process or this process' parent (CLONE_PARENT)
+		std::shared_ptr<Process> childparent = (flags & LINUX_CLONE_PARENT) ? this->Parent : shared_from_this();
+
+		// Create the main thread instance for the child process
+		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId);
+
+		// Create and return the child Process instance
+		return std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
+			m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir);
+	}
+
+	// Kill the native operating system process if any exceptions occurred during creation
+	catch(...) { TerminateProcess(childhost->Process->Handle, static_cast<UINT>(E_UNEXPECTED)); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// Process::CreateThread
+//
+// Creates a new thread within the process instance
+//
+// Arguments:
+//
+//	flags		- Flags indicating the desired operations
+
+std::shared_ptr<Thread> Process::CreateThread(int flags) const
+{
+	// CLONE_THREAD must have been specified in the flags for this operation
+	if((flags & LINUX_CLONE_THREAD) == 0) throw LinuxException(LINUX_EINVAL);
+
+	// CLONE_VM must have been specified in the flags for this operation
+	if((flags & LINUX_CLONE_VM) == 0) throw LinuxException(LINUX_EINVAL);
+
+	// It would be easier to make a mask for all the valid/invalid flags, there aren't
+	// many valid 'options' when creating a thread
+
+	// FLAGS TO DEAL WITH:
+	//
+	//CLONE_CHILD_CLEARTID
+	//CLONE_CHILD_SETTID
+	//CLONE_FILES
+	//CLONE_FS
+	//CLONE_IO
+	//CLONE_NEWIPC
+	//CLONE_NEWNET
+	//CLONE_NEWNS
+	//CLONE_NEWPID
+	//CLONE_NEWUSER
+	//CLONE_NEWUTS
+	//CLONE_PARENT
+	//CLONE_PARENT_SETTID
+	//CLONE_PTRACE
+	//CLONE_SETTLS
+	//CLONE_SIGHAND
+	//CLONE_STOPPED
+	//CLONE_SYSVSEM
+	//CLONE_UNTRACED
+	//CLONE_VFORK
+
+	// TODO: IMPLEMENT
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
 // Process::CreateThreadStack (private, static)
 //
 // Creates the stack for a new thread
@@ -140,6 +296,11 @@ int Process::AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle
 
 const void* Process::CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory)
 {
+	//
+	// TODO: THIS MAY BE BETTER SERVED AS A STATIC METHOD ON THREAD CLASS, THE PROCESS
+	// DOESN'T REALLY HAVE A STACK, NOT ITS PROBLEM TO CREATE ONE
+	//
+
 	// Get the default thread stack size from the VirtualMachine instance and convert it 
 	size_t stacklen;
 	try { stacklen = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadStackSize)); }
@@ -154,6 +315,48 @@ const void* Process::CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm
 	memory->Guard(stackpointer, SystemInformation::PageSize, LINUX_PROT_READ | LINUX_PROT_WRITE);
 
 	return stackpointer;			// Return the stack pointer address
+}
+
+//-----------------------------------------------------------------------------
+// Process::Execute
+//
+// Replaces the process with a new executable image
+//
+// Arguments:
+//
+//	filename	- Name of the file system executable
+//	argv		- Command-line arguments
+//	envp		- Environment variables
+
+void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
+{
+	// Parse the filename and command line arguments into an Executable instance
+	auto executable = Executable::FromFile(m_vm, filename, argv, envp, m_rootdir, m_workingdir);
+
+	Suspend();							// Suspend the entire native process
+
+	try {
+
+		// If the architecture of the executable is the same as this process, it can
+		// be cleared out and replaced without spawning a new native process
+		if(executable->Architecture == m_architecture) {
+
+			// TODO
+		}
+
+		// Otherwise, the native process has to be replaced with a new one that
+		// supports the target architecture
+		else {
+
+			// TODO
+		}
+
+		// (RE)START THE PROCESS WHEN DONE
+	} 
+	
+	// Resume the unmodified process on exception so the system call will
+	// return the appropriate error code back to the caller
+	catch(...) { Resume(); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -198,8 +401,13 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMa
 		// Create a new virtual address space for the process
 		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
 
-		// Allocate a new local descriptor table for the process
+		// Allocate a new local descriptor table for the process and its slot tracking bitmap
+
+		// TODO: this can be done in the constructor, but could throw, which *should* be ok.  Clone 
+		// constructor will still need to accept the pointer and bitmap instance of course
+
 		const void* ldt = nullptr;
+		Bitmap ldtslots(LINUX_LDT_ENTRIES);
 		try { ldt = memory->Allocate(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
 		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
@@ -216,11 +424,12 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMa
 		
 		// Wrap the main process thread in a Thread instance
 		// needs entry point and stack pointer, aka the task
-		std::shared_ptr<Thread> mainthread = Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId);
+		std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId);
 
 		// Construct and return the new Process instance
-		return std::make_shared<Process>(vm, architecture, pid, host->Process, host->ProcessId, std::move(memory), ldt, loaded.ProgramBreak,
-			mainthread, executable->RootDirectory, executable->WorkingDirectory);
+		// TODO: PARENT?
+		return std::make_shared<Process>(vm, architecture, pid, nullptr, host->Process, host->ProcessId, std::move(memory), ldt, std::move(ldtslots), 
+			loaded.ProgramBreak, mainthread, executable->RootDirectory, executable->WorkingDirectory);
 	}
 
 	catch(...) { /* TODO terminate native process; don't close handles */ throw; }
@@ -247,6 +456,78 @@ const void* Process::getLocalDescriptorTable(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Process::MapMemory
+//
+// Allocates/maps process virtual address space
+//
+// Arguments:
+//
+//	address		- Optional fixed address to use for the mapping
+//	length		- Length of the requested mapping
+//	prot		- Memory protection flags
+//	flags		- Memory mapping flags, must include MAP_PRIVATE
+//	fd			- Optional file descriptor from which to map
+//	offset		- Optional offset into fd from which to map
+
+const void* Process::MapMemory(const void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset)
+{
+	std::shared_ptr<FileSystem::Handle>	handle = nullptr;		// Handle to the file object
+
+	// MAP_HUGETLB is not currently supported, but may be possible in the future
+	if(flags & LINUX_MAP_HUGETLB) throw LinuxException(LINUX_EINVAL);
+
+	// MAP_GROWSDOWN is not supported
+	if(flags & LINUX_MAP_GROWSDOWN) throw LinuxException(LINUX_EINVAL);
+
+	// Suggested base addresses are not supported, switch the address to NULL if MAP_FIXED is not set
+	if((flags & LINUX_MAP_FIXED) == 0) address = nullptr;
+
+	// Non-anonymous mappings require a valid file descriptor to be specified
+	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) throw LinuxException(LINUX_EBADF);
+	if(fd > 0) handle = m_handles->Get(fd)->Duplicate(LINUX_O_RDONLY);
+
+	// Attempt to allocate the process memory and adjust address to that base if it was NULL
+	const void* base = m_memory->Allocate(address, length, prot);
+	if(address == nullptr) address = base;
+
+	// If a file handle was specified, copy data from the file into the allocated region,
+	// private mappings need not be concerned with writing this data back to the file
+	if(handle != nullptr) {
+
+		uintptr_t	dest = uintptr_t(address);			// Easier pointer math as uintptr_t
+		size_t		read = 0;							// Data read from the file object
+
+		// TODO: Both tempfs and hostfs should be able to handle memory mappings now with
+		// the introduction of sections; this would be much more efficient that way.  Such
+		// a call would need to fail for FS that can't support it, and fall back to this
+		// type of implementation.  Also evaluate the same in ElfImage, mapping the source
+		// file would be much better than having to read it from a stream
+
+		HeapBuffer<uint8_t> buffer(SystemInformation::AllocationGranularity);	// 64K buffer
+
+		// Seek the file handle to the specified offset
+		if(handle->Seek(offset, LINUX_SEEK_SET) != offset) throw LinuxException(LINUX_EINVAL);
+
+		do {
+			
+			// Copy the next chunk of bytes from the source file into the process address space
+			read = handle->Read(buffer, min(length, buffer.Size));
+			size_t written = m_memory->Write(reinterpret_cast<void*>(dest), buffer, read);
+
+			dest += written;						// Increment destination pointer
+			length -= read;							// Decrement remaining bytes to be copied
+
+		} while((length > 0) && (read > 0));
+	};
+
+	// MAP_LOCKED - Attempt to lock the memory into the process working set.  This operation
+	// will not throw an exception if it fails, its considered a hint in this implementation
+	if(flags & LINUX_MAP_LOCKED) m_memory->Lock(address, length);
+
+	return address;
+}
+
+//-----------------------------------------------------------------------------
 // Process::getNativeProcessId
 //
 // Gets the native operating system process identifier
@@ -254,6 +535,19 @@ const void* Process::getLocalDescriptorTable(void) const
 DWORD Process::getNativeProcessId(void) const
 {
 	return m_processid;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getParent
+//
+// Gets the parent of this process, or the root process if an orphan
+
+std::shared_ptr<Process> Process::getParent(void) const
+{
+	// Try to get the parent instance, which may have disappeared orphaning
+	// this process.  In that case, use the root/init process as the parent
+	std::shared_ptr<Process> parent = m_parent.lock();
+	return (parent) ? parent : m_vm->RootProcess;
 }
 	
 //-----------------------------------------------------------------------------
@@ -325,6 +619,21 @@ void Process::RemoveHandle(int fd)
 }
 
 //-----------------------------------------------------------------------------
+// Process::Resume (private)
+//
+// Resumes the native operating system process from a suspended state
+//
+// Arguments:
+//
+//	NONE
+
+void Process::Resume(void) const
+{
+	NTSTATUS result = NtApi::NtResumeProcess(m_process->Handle);
+	if(result != 0) throw StructuredException(result);
+}
+
+//-----------------------------------------------------------------------------
 // Process::getRootDirectory
 //
 // Gets the process root directory alias instance
@@ -387,6 +696,45 @@ const void* Process::SetProgramBreak(const void* address)
 }
 
 //-----------------------------------------------------------------------------
+// Process::SetSignalAction
+//
+// Adds or updates a signal action entry for the process
+//
+// Arguments:
+//
+//	signal		- Signal to be added or updated
+//	action		- Specifies the new signal action structure
+//	oldaction	- Optionally receives the previously set signal action structure
+
+void Process::SetSignalAction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction)
+{
+	// SignalActions has a matching method for this operation
+	m_sigactions->Set(signal, action, oldaction);
+}
+
+//-----------------------------------------------------------------------------
+// Process::getSignalAction
+//
+// Gets the action set for a signal to the process
+
+uapi::sigaction Process::getSignalAction(int signal) const
+{
+	// SignalActions has a matching method for this operation
+	return m_sigactions->Get(signal);
+}
+
+//-----------------------------------------------------------------------------
+// Process::putSignalAction
+//
+// Sets the action to be taken for a signal to the process
+
+void Process::putSignalAction(int signal, uapi::sigaction action)
+{
+	// SignalActions has a matching method for this operation
+	m_sigactions->Set(signal, &action, nullptr);
+}
+
+//-----------------------------------------------------------------------------
 // Process::Spawn (static)
 //
 // Creates a new process instance from an executable in the file system
@@ -417,6 +765,21 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 }
 
 //-----------------------------------------------------------------------------
+// Process::Suspend
+//
+// Suspends the native operating system process
+//
+// Arguments:
+//
+//	NONE
+
+void Process::Suspend(void) const
+{
+	NTSTATUS result = NtApi::NtSuspendProcess(m_process->Handle);
+	if(result != 0) throw StructuredException(result);
+}
+
+//-----------------------------------------------------------------------------
 // Process::getThread
 //
 // Gets a Thread instance from its virtual thread identifier
@@ -428,6 +791,22 @@ std::shared_ptr<Thread> Process::getThread(uapi::pid_t tid)
 	// Attempt to locate the thread within the collection
 	const auto found = m_threads.find(tid);
 	return (found != m_threads.end()) ? found->second : nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// Process::UnmapMemory
+//
+// Releases process virtual address space
+//
+// Arguments:
+//
+//	address		- Base address of the memory to be released
+//	length		- Length of the memory region to be released
+
+void Process::UnmapMemory(const void* address, size_t length)
+{
+	// Releasing memory is taken care of by ProcessMemory
+	m_memory->Release(address, length);
 }
 
 //-----------------------------------------------------------------------------

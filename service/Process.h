@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <concrt.h>
 #include <linux/ldt.h>
+#include <linux/sched.h>
 #include <linux/stat.h>
 #include "Architecture.h"
 #include "Bitmap.h"
@@ -36,8 +37,9 @@
 #include "FileSystem.h"
 #include "LinuxException.h"
 #include "NativeHandle.h"
-#include "ProcessHandles.h"
 #include "NativeProcess.h"
+#include "NtApi.h"
+#include "ProcessHandles.h"
 #include "ProcessMemory.h"
 #include "SignalActions.h"
 #include "TaskState.h"
@@ -51,7 +53,7 @@
 //
 // Process represents a virtual machine process/thread group instance
 
-class Process
+class Process : public std::enable_shared_from_this<Process>
 {
 public:
 
@@ -65,8 +67,30 @@ public:
 	// AddHandle
 	//
 	// Adds a file system handle to the process
-	int AddHandle(const FileSystem::HandlePtr& handle);
-	int AddHandle(int fd, const FileSystem::HandlePtr& handle);
+	int AddHandle(const std::shared_ptr<FileSystem::Handle>& handle);
+	int AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle);
+
+	// Clone
+	//
+	// Clones this process into a new child process
+	std::shared_ptr<Process> Clone(int flags /* need task */);
+
+	// CreateThread
+	//
+	// Creates a new Thread in this process
+	std::shared_ptr<Thread> CreateThread(int flags /* need task */) const;
+
+	// Execute
+	//
+	// Replaces the process with a new executable image
+	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
+
+	// MapMemory
+	//
+	// Allocates/maps process virtual address space
+	const void* MapMemory(size_t length, int prot, int flags);
+	const void* MapMemory(const void* address, size_t length, int prot, int flags);
+	const void* MapMemory(const void* address, size_t length, int prot, int flags, int fd, uapi::loff_t offset);
 
 	// ProtectMemory
 	//
@@ -93,6 +117,16 @@ public:
 	//
 	// Sets the program break address to increase or decrease data segment length
 	const void* SetProgramBreak(const void* address);
+
+	// SetSignalAction
+	//
+	// Assigns an action to be taken for a process signal
+	void SetSignalAction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction);
+
+	// UnmapMemory
+	//
+	// Releases process virtual address space
+	void UnmapMemory(const void* address, size_t length);
 
 	// WriteMemory
 	//
@@ -133,6 +167,12 @@ public:
 	__declspec(property(get=getNativeProcessId)) DWORD NativeProcessId;
 	DWORD getNativeProcessId(void) const;
 
+	// Parent
+	//
+	// Gets the parent process for this process
+	__declspec(property(get=getParent)) std::shared_ptr<Process> Parent;
+	std::shared_ptr<Process> getParent(void) const;
+
 	// ProcessId
 	//
 	// Gets the virtual process identifier
@@ -151,6 +191,13 @@ public:
 	__declspec(property(get=getRootDirectory, put=putRootDirectory)) std::shared_ptr<FileSystem::Alias> RootDirectory;
 	std::shared_ptr<FileSystem::Alias> getRootDirectory(void) const;
 	void putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value);
+
+	// SignalAction
+	//
+	// Gets/sets the action associated with a signal
+	__declspec(property(get=getSignalAction, put=putSignalAction)) uapi::sigaction SignalAction[];
+	uapi::sigaction getSignalAction(int signal) const;
+	void putSignalAction(int signal, uapi::sigaction action);
 
 	// Thread
 	//
@@ -193,19 +240,26 @@ private:
 
 	// Instance Constructors
 	//
-	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<NativeHandle>& process,
-		DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, const void* programbreak, const std::shared_ptr<::Thread>& mainthread,
-		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
-
-	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<NativeHandle>& process,
-		DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, 
-		const std::shared_ptr<SignalActions>& sigactions, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+		const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+		const void* programbreak, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
+
+	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+		const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+		const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
+		const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
+
+	// Clone<Architecture>
+	//
+	// Clones this process into a new child process
+	template<::Architecture architecture>
+	std::shared_ptr<Process> Clone(uapi::pid_t pid, int flags /* task */);
 
 	// CreateThreadStack
 	//
@@ -218,6 +272,16 @@ private:
 	template<::Architecture architecture>
 	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::unique_ptr<Executable>& executable);
 
+	// Resume
+	//
+	// Resumes the process from a suspended state
+	void Resume(void) const;
+
+	// Suspend
+	//
+	// Suspends the process
+	void Suspend(void) const;
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
@@ -226,6 +290,10 @@ private:
 	const uapi::pid_t					m_pid;				// Process identifier
 	std::shared_ptr<NativeHandle>		m_process;			// Native process handle
 	const DWORD							m_processid;		// Native process identifier
+
+	// Parent and Child Processes
+	//
+	std::weak_ptr<Process>				m_parent;			// Weak reference to parent
 
 	// Memory
 	//

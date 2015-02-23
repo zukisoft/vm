@@ -36,8 +36,7 @@
 
 uapi::long_t sys_getppid(const Context* context)
 {
-	(context);
-	return context->Process->ParentProcessId;
+	return context->Process->Parent->ProcessId;
 }
 
 // sys32_getppid

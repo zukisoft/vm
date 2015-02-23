@@ -99,6 +99,7 @@ public:
 	virtual std::shared_ptr<FileSystem::Alias>	ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags);
 
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) { return m_rootfs; }
+	virtual std::shared_ptr<Process> getRootProcess(void) const { return m_initprocess; }
 
 	virtual const std::tstring&	GetProperty(VirtualMachine::Properties id);
 	virtual size_t				GetProperty(VirtualMachine::Properties id, char_t* value, size_t length);

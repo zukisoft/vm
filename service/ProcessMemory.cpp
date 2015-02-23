@@ -238,6 +238,27 @@ void ProcessMemory::Guard(const void* address, size_t length, int prot)
 }
 
 //-----------------------------------------------------------------------------
+// ProcessMemory::Lock
+//
+// Attempts to lock a region of data into the process working set, does not throw 
+// an exception if it fails
+//
+// Arguments:
+//
+//	address		- Base address of the region to be locked
+//	length		- Length of the region to be locked
+
+void ProcessMemory::Lock(const void* address, size_t length) const
+{
+	// todo: I want to see if this ever works, assert to remind myself
+	_ASSERTE(false);
+
+	// Attempt to lock the requested region into the process working set
+	LPVOID addr = const_cast<void*>(address);
+	NtApi::NtLockVirtualMemory(m_process->Handle, &addr, reinterpret_cast<PSIZE_T>(&length), NtApi::MAP_PROCESS);
+}
+
+//-----------------------------------------------------------------------------
 // ProcessMemory::Protect
 //
 // Assigns memory protection flags for an allocated region of memory
@@ -346,6 +367,24 @@ void ProcessMemory::Release(const void* address, size_t length)
 
 		begin += freelength;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// ProcessMemory::Unlock
+//
+// Attempts to unlock a region of data from the process working set, does not 
+// throw an exception if it fails
+//
+// Arguments:
+//
+//	address		- Base address of the region to be unlocked
+//	length		- Length of the region to be unlocked
+
+void ProcessMemory::Unlock(const void* address, size_t length) const
+{
+	// Attempt to unlock the requested region from the process working set
+	LPVOID addr = const_cast<void*>(address);
+	NtApi::NtUnlockVirtualMemory(m_process->Handle, &addr, reinterpret_cast<PSIZE_T>(&length), NtApi::MAP_PROCESS);
 }
 
 //-----------------------------------------------------------------------------

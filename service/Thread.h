@@ -69,6 +69,9 @@ public:
 	template<Architecture architecture>
 	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
 
+	//template<Architecture architecture>
+	//static std::shared_ptr<Thread> NewThing(const std::shared_ptr<Process>& process, 
+
 	// Resume
 	//
 	// Resumes the thread
