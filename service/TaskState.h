@@ -25,7 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <linux/ptrace.h>
 #include "Architecture.h"
 #include "Exception.h"
 #include "Win32Exception.h"
@@ -45,113 +44,114 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// CopyTo
+	// Capture (static)
 	//
-	// Copies the task state, the size must match exactly
-	void CopyTo(void* taskstate, size_t length) const;
+	// Captures a TaskState from a suspended native thread
+	template<::Architecture architecture>
+	static std::unique_ptr<TaskState> Capture(HANDLE nativethread);
 
 	// Create (static)
 	//
 	// Creates a new TaskState for the specified architecture
-	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* entrypoint, const void* stackpointer);
+	template<::Architecture architecture>
+	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
 
-	// Create (static)
+	// FromExisting (static)
 	//
-	// Creates a new TaskState from an existing task state
-	static std::unique_ptr<TaskState> Create(Architecture architecture, const void* existing, size_t length);
+	// Creates a TaskState from an existing task state
+	template <::Architecture architecture>
+	static std::unique_ptr<TaskState> FromExisting(const void* existing, size_t length);
 
-	// Duplicate
+	// Restore
 	//
-	// Creates a duplicate task state
-	std::unique_ptr<TaskState> Duplicate(void) const;
-
-	// FromNativeThread (static)
-	//
-	// Captures the task state of a native operating system thread
-	static std::unique_ptr<TaskState> FromNativeThread(Architecture architecture, HANDLE nativehandle);
-
-	// ToNativeThread
-	//
-	// Applies this task state to a native operating system thread
-	void ToNativeThread(Architecture architecture, HANDLE nativehandle);
+	// Restores this task state to a suspended native thread
+	template<::Architecture architecture>
+	void Restore(HANDLE nativehandle) const;
 
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// Architecture
+	//
+	// Gets the architecture associated with the task state
+	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
+	::Architecture getArchitecture(void) const;
+
+	// Data
+	//
+	// Gets a pointer to the contained task state
+	__declspec(property(get=getData)) const void* Data;
+	const void* getData(void) const;
+
 	// InstructionPointer
 	//
 	// Gets/sets the instruction pointer contained by the task state
-	__declspec(property(get=getInstructionPointer, put=putInstructionPointer)) void* InstructionPointer;
-	void* getInstructionPointer(void) const;
-	void putInstructionPointer(void* value);
+	__declspec(property(get=getInstructionPointer, put=putInstructionPointer)) const void* InstructionPointer;
+	const void* getInstructionPointer(void) const;
+	void putInstructionPointer(const void* value);
 
-	// AX
-	// TODO: needs better name; don't use int3264
-	// Gets/sets the result register value (EAX/RAX)
-	__declspec(property(get=getAX, put=putAX)) unsigned __int3264 AX;
-	unsigned __int3264 getAX(void) const;
-	void putAX(unsigned __int3264 value);
+	// Length
+	//
+	// Gets the length of the contained task state
+	__declspec(property(get=getLength)) size_t Length;
+	size_t getLength(void) const;
+
+	// ReturnValue
+	//
+	// Gets/sets the return value register contained by the task state
+	__declspec(property(get=getReturnValue, put=putReturnValue)) unsigned __int3264 ReturnValue;
+	unsigned __int3264 getReturnValue(void) const;
+	void putReturnValue(unsigned __int3264 value);
 
 	// StackPointer
 	//
 	// Gets/sets the stack pointer contained by the task state
-	__declspec(property(get=getStackPointer, put=putStackPointer)) void* StackPointer;
-	void* getStackPointer(void) const;
-	void putStackPointer(void* value);
+	__declspec(property(get=getStackPointer, put=putStackPointer)) const void* StackPointer;
+	const void* getStackPointer(void) const;
+	void putStackPointer(const void* value);
 
 private:
 
 	TaskState(const TaskState&)=delete;
 	TaskState& operator=(const TaskState&)=delete;
 
-	// pt_regs_t
+	// context32_t
 	//
-	// Union of the available register sets to store for the task state
-	union pt_regs_t {
+	// Structure used to hold a 32-bit thread context
+#ifndef _M_X64
+	using context32_t = CONTEXT;
+#else
+	using context32_t = WOW64_CONTEXT;
+#endif
 
-		uapi::pt_regs32		x86;				// 32-bit register set
+	// context64_t
+	//
+	// Structure used to hold a 64-bit thread context
 #ifdef _M_X64
-		uapi::pt_regs64		x86_64;				// 64-bit register set
+	using context64_t = CONTEXT;
+#endif
+
+	// context_t
+	//
+	// Union of the available context structures to store the task state
+	union context_t {
+
+		context32_t			x86;			// 32-bit context
+#ifdef _M_X64
+		context64_t			x86_64;			// 64-bit context
 #endif
 	};
 
 	// Instance Constructor
 	//
-	TaskState(Architecture architecture, pt_regs_t&& regs) : m_architecture(std::move(architecture)), m_regs(std::move(regs)) {}
-	friend std::unique_ptr<TaskState> std::make_unique<TaskState, Architecture, pt_regs_t>(Architecture&&, pt_regs_t&&);
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
-
-	// Create (static)
-	//
-	// Creates a new TaskState blob with the provided entry and stack pointers
-	template <Architecture architecture> 
-	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
-
-	// Create (static)
-	//
-	// Creates a new TaskState blob from an existing task state blob
-	template <Architecture architecture> 
-	static std::unique_ptr<TaskState> Create(const void* existing, size_t length);
-
-	// FromNativeThread (static)
-	//
-	// Captures the task state from a native operating system thread
-	template <Architecture architecture>
-	static std::unique_ptr<TaskState> FromNativeThread(HANDLE nativehandle);
-
-	// ToNativeThread
-	//
-	// Applies this task state to a native operating system thread
-	template <Architecture architecture>
-	void ToNativeThread(HANDLE nativehandle);
+	TaskState(::Architecture architecture, context_t&& context) : m_architecture(std::move(architecture)), m_context(std::move(context)) {}
+	friend std::unique_ptr<TaskState> std::make_unique<TaskState, ::Architecture, context_t>(::Architecture&&, context_t&&);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 	
-	Architecture			m_architecture;			// Selected architecture
-	pt_regs_t				m_regs;					// Contained register data
+	::Architecture			m_architecture;			// Selected architecture
+	context_t				m_context;				// Contained context data
 };
 
 //-----------------------------------------------------------------------------

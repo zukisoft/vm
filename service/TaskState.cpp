@@ -25,430 +25,392 @@
 
 #pragma warning(push, 4)
 
-unsigned __int3264 TaskState::getAX(void) const
-{
-	if(m_architecture == Architecture::x86) return m_regs.x86.eax;
-#ifdef _M_X64
-	else if(m_architecture == Architecture::x86_64) return m_regs.x86_64.rax;
-#endif
-	else return 0;
-}
+//-----------------------------------------------------------------------------
+// TaskState::getArchitecture
+//
+// Gets the architecture code for the contained task state
 
-void TaskState::putAX(unsigned __int3264 value)
+::Architecture TaskState::getArchitecture(void) const
 {
-	if(m_architecture == Architecture::x86) {
-#ifdef _M_X64
-		if(value > UINT32_MAX) throw Exception(E_FAIL); // todo: Exception
-#endif
-		m_regs.x86.eax = (value & 0xFFFFFFFF);
-	}
-#ifdef _M_X64
-	else if(m_architecture == Architecture::x86_64) m_regs.x86_64.rax = value;
-#endif
-	else throw Exception(E_FAIL);	// todo: exception
+	return m_architecture;
 }
 
 //-----------------------------------------------------------------------------
-// TaskState::CopyTo
+// TaskState::Capture<Architecture::x86> (static)
 //
-// Copies the task state information from the internal buffer, the destination
-// size must be an exact match to the internal buffer's size to ensure that the
-// process class is accurate
+// Captures context from a suspended 32-bit thread
 //
 // Arguments:
 //
-//	taskstate		- Output buffer to receive the task state information
-//	length			- Length of the output buffer, in bytes
+//	nativethread	- Native thread handle; should be suspended
 
-void TaskState::CopyTo(void* taskstate, size_t length) const
+template<>
+std::unique_ptr<TaskState> TaskState::Capture<::Architecture::x86>(HANDLE nativethread)
 {
-	if(taskstate == nullptr) throw Exception(E_POINTER);
+	context_t				context;			// Context acquired from the thread
+
+	// When capturing context, retrieve everything (CONTEXT_ALL)
+	memset(&context, 0, sizeof(context_t));
+	context.x86.ContextFlags = CONTEXT_ALL;
+
+#ifndef _M_X64
+	// Attempt to capture the context information for the specified thread
+	if(!GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
+#else
+	// Attempt to capture the context information for the specified thread
+	if(!Wow64GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
+#endif
+
+	// Construct the TaskState from the acquired context information
+	return std::make_unique<TaskState>(Architecture::x86, std::move(context));
+}
 	
-	if((m_architecture == Architecture::x86) && (length != sizeof(uapi::pt_regs32))) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(uapi::pt_regs32));
+//-----------------------------------------------------------------------------
+// TaskState::Capture<Architecture::x86_64> (static)
+//
+// Captures context from a suspended 64-bit thread
+//
+// Arguments:
+//
+//	nativethread	- Native thread handle; should be suspended
+
 #ifdef _M_X64
-	if((m_architecture == Architecture::x86_64) && (length != sizeof(uapi::pt_regs64))) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(uapi::pt_regs64));
+template<>
+std::unique_ptr<TaskState> TaskState::Capture<::Architecture::x86_64>(HANDLE nativethread)
+{
+	context_t				context;			// Context acquired from the thread
+
+	// When capturing context, retrieve everything (CONTEXT_ALL)
+	memset(&context, 0, sizeof(context_t));
+	context.x86_64.ContextFlags = CONTEXT_ALL;
+
+	// Attempt to capture the context information for the specified thread
+	if(!GetThreadContext(nativethread, &context.x86_64)) throw Win32Exception();
+
+	// Construct the TaskState from the acquired context information
+	return std::make_unique<TaskState>(Architecture::x86_64, std::move(context));
+}
 #endif
-
-	// The size matches, just copy the data from the contained buffer
-	// TODO: When this is redone, don't do things like this, hit the .x86 or .x86_64 fields
-	memcpy(taskstate, &m_regs, length);
-}
-
-//-----------------------------------------------------------------------------
-// TaskState::Create<Architecture::x86> (static, private)
-//
-// Constructs a TaskState for a new process or thread
-//
-// Arguments:
-//
-//	entrypoint		- Address of the process/thread entry point
-//	stackpointer	- Address of the process/thread stack pointer
-
-template <>
-std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* entrypoint, const void* stackpointer)
-{
-	pt_regs_t registers;
-
-	// Integer Registers
-	registers.x86.eax = 0;
-	registers.x86.ebx = 0;
-	registers.x86.ecx = 0;
-	registers.x86.edx = 0;
-	registers.x86.edi = 0;
-	registers.x86.esi = 0;
-
-	// Control Registers
-	registers.x86.eip = reinterpret_cast<uint32_t>(entrypoint);
-	registers.x86.ebp = reinterpret_cast<uint32_t>(stackpointer);
-	registers.x86.esp = reinterpret_cast<uint32_t>(stackpointer);
-	registers.x86.eflags = 0;
-
-	// Segment Registers
-	registers.x86.gs = 0;
-
-	return std::make_unique<TaskState>(Architecture::x86, std::move(registers));
-}
-
-//-----------------------------------------------------------------------------
-// TaskState::Create<Architecture::x86> (static, private)
-//
-// Constructs a TaskState from an existing task state blob
-//
-// Arguments:
-//
-//	existing		- Pointer to the existing task state blob
-//	length			- Length of the existing task state blob
-
-template <>
-std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* existing, size_t length)
-{
-	if(existing == nullptr) throw Exception(E_POINTER);
-	if(length != sizeof(uapi::pt_regs32)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(uapi::pt_regs32));
-
-	// Copy the existing task information
-	pt_regs_t registers;
-	memcpy(&registers.x86, existing, length);
-
-	return std::make_unique<TaskState>(Architecture::x86, std::move(registers));
-}
-
-#ifdef _M_X64
-
-//-----------------------------------------------------------------------------
-// TaskState::Create<Architecture::x86_64> (static, private)
-//
-// Constructs a TaskState for a new process or thread
-//
-// Arguments:
-//
-//	entrypoint		- Address of the process/thread entry point
-//	stackpointer	- Address of the process/thread stack pointer
-
-template <>
-std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* entrypoint, const void* stackpointer)
-{
-	pt_regs_t registers;
-
-	// Integer Registers
-	registers.x86_64.rax = 0;
-	registers.x86_64.rbx = 0;
-	registers.x86_64.rcx = 0;
-	registers.x86_64.rdx = 0;
-	registers.x86_64.rdi = 0;
-	registers.x86_64.rsi = 0;
-	registers.x86_64.r8 = 0;
-	registers.x86_64.r9 = 0;
-	registers.x86_64.r10 = 0;
-	registers.x86_64.r11 = 0;
-	registers.x86_64.r12 = 0;
-	registers.x86_64.r13 = 0;
-	registers.x86_64.r14 = 0;
-	registers.x86_64.r15 = 0;
 	
-	// Control Registers
-	registers.x86_64.rip = reinterpret_cast<uint64_t>(entrypoint);
-	registers.x86_64.rbp = reinterpret_cast<uint64_t>(stackpointer);
-	registers.x86_64.rsp = reinterpret_cast<uint64_t>(stackpointer);
-	registers.x86_64.eflags = 0;
-
-	return std::make_unique<TaskState>(Architecture::x86_64, std::move(registers));
-}
-
 //-----------------------------------------------------------------------------
-// TaskState::Create<Architecture::x86_64> (static, private)
+// TaskState::Create<Architecture::x86> (static)
 //
-// Constructs a TaskState from an existing task state blob
+// Creates a new 32-bit task state
 //
 // Arguments:
 //
-//	existing		- Pointer to the existing task state blob
-//	length			- Length of the existing task state blob
+//	entrypoint		- Initial instruction pointer value
+//	stackpointer	- Initial stack pointer value
 
-template <>
-std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* existing, size_t length)
+template<>
+std::unique_ptr<TaskState> TaskState::Create<::Architecture::x86>(const void* entrypoint, const void* stackpointer)
 {
+	context_t				context;			// New context information
+
+#ifdef _M_X64
+	// On x64, the pointers need to be validated as within the 32-bit address space
+	if(uintptr_t(entrypoint) > UINT32_MAX) throw Exception(E_TASKSTATEOVERFLOW, uintptr_t(entrypoint));
+	if(uintptr_t(stackpointer) > UINT32_MAX) throw Exception(E_TASKSTATEOVERFLOW, uintptr_t(entrypoint));
+#endif
+
+	// When creating new context, only the integer and control registers are set
+	memset(&context, 0, sizeof(context_t));
+	context.x86.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+
+	// entrypoint -> EIP
+	context.x86.Eip = reinterpret_cast<DWORD>(entrypoint);
+
+	// stackpointer -> ESP/EBP
+	context.x86.Esp = reinterpret_cast<DWORD>(stackpointer);
+	context.x86.Ebp = reinterpret_cast<DWORD>(stackpointer);
+
+	// Construct the TaskState from the generated context information
+	return std::make_unique<TaskState>(Architecture::x86, std::move(context));
+}
+
+//-----------------------------------------------------------------------------
+// TaskState::Create<Architecture::x86_64> (static)
+//
+// Creates a new 32-bit task state
+//
+// Arguments:
+//
+//	entrypoint		- Initial instruction pointer value
+//	stackpointer	- Initial stack pointer value
+
+#ifdef _M_X64
+template<>
+std::unique_ptr<TaskState> TaskState::Create<::Architecture::x86_64>(const void* entrypoint, const void* stackpointer)
+{
+	context_t				context;			// New context information
+
+	// When creating new context, only the integer and control registers are set
+	memset(&context, 0, sizeof(context_t));
+	context.x86_64.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+
+	// entrypoint -> RIP
+	context.x86_64.Rip = reinterpret_cast<DWORD64>(entrypoint);
+
+	// stackpointer -> RSP/RBP
+	context.x86_64.Rsp = reinterpret_cast<DWORD64>(stackpointer);
+	context.x86_64.Rbp = reinterpret_cast<DWORD64>(stackpointer);
+
+	// Construct the TaskState from the generated context information
+	return std::make_unique<TaskState>(Architecture::x86_64, std::move(context));
+}
+#endif
+
+//-----------------------------------------------------------------------------
+// TaskState::getData
+//
+// Gets a pointer to the underlying context information structure
+
+const void* TaskState::getData(void) const
+{
+	// Architecture::x86 --> 32-bit context
+	if(m_architecture == Architecture::x86) return &m_context.x86;
+
+#ifdef _M_X64
+	// Architecture::x86_64 --> 64-bit context
+	else if(m_architecture == Architecture::x86_64) return &m_context.x86_64;
+#endif
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
+}
+
+//-----------------------------------------------------------------------------
+// TaskState::FromExisting<Architecture::x86> (static)
+//
+// Copies the task state information from an existing context structure
+//
+// Arguments:
+//
+//	existing		- Pointer to the existing task information
+//	length			- Length of the existing task information
+
+template<>
+std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86>(const void* existing, size_t length)
+{
+	context_t				context;			// Context information
+
 	if(existing == nullptr) throw Exception(E_POINTER);
-	if(length != sizeof(uapi::pt_regs64)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(uapi::pt_regs64));
+	if(length != sizeof(context32_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(context32_t));
 
-	// Copy the existing task information
-	pt_regs_t registers;
-	memcpy(&registers.x86_64, existing, length);
+	// Copy the context information and flags from the existing structure
+	memcpy(&context.x86, existing, length);
 
-	return std::make_unique<TaskState>(Architecture::x86_64, std::move(registers));
-}
-
-#endif	// _M_X64
-
-//-----------------------------------------------------------------------------
-// TaskState::Create (static)
-//
-// Constructs a new TaskState for the provided process class
-//
-// Arguments:
-//
-//	architecture	- Process architecture
-//	entrypoint		- Entry point for the new process or thread
-//	stackpointer	- Stack pointer for the new process or thread
-
-std::unique_ptr<TaskState> TaskState::Create(Architecture architecture, const void* entrypoint, const void* stackpointer)
-{
-	// Select the correct internal function based on the process class
-	switch(architecture) {
-
-		// x86 - sys32_task_state_t
-		case Architecture::x86: return TaskState::Create<Architecture::x86>(entrypoint, stackpointer);
-
-#ifdef _M_X64
-		// x86_64 - sys64_task_state_t
-		case Architecture::x86_64: return TaskState::Create<Architecture::x86_64>(entrypoint, stackpointer);
-#endif
-	}
-
-	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
+	// Construct the TaskState from the copied context information
+	return std::make_unique<TaskState>(::Architecture::x86, std::move(context));
 }
 
 //-----------------------------------------------------------------------------
-// TaskState::Create (static)
+// TaskState::FromExisting<Architecture::x86_64> (static)
 //
-// Constructs a new TaskState for the provided process class
+// Copies the task state information from an existing context structure
 //
 // Arguments:
 //
-//	architecture	- Process architecture
-//	existing		- Pointer to the existing blob of task state
-//	length			- Length of the existing blob of task state
-
-std::unique_ptr<TaskState> TaskState::Create(Architecture architecture, const void* existing, size_t length)
-{
-	// Select the correct internal function based on the process class
-	switch(architecture) {
-
-		// x86 - pt_regs32
-		case Architecture::x86: return TaskState::Create<Architecture::x86>(existing, length);
+//	existing		- Pointer to the existing task information
+//	length			- Length of the existing task information
 
 #ifdef _M_X64
-		// x86_64 - pt_regs64
-		case Architecture::x86_64: return TaskState::Create<Architecture::x86_64>(existing, length);
-#endif
-	}
-
-	throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
-}
-
-std::unique_ptr<TaskState> TaskState::Duplicate(void) const
+template<>
+std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86_64>(const void* existing, size_t length)
 {
-	// need copy ctor for these, std::move is dumb here
-	Architecture arch = m_architecture;
-	pt_regs_t registers = m_regs;
-	return std::make_unique<TaskState>(std::move(arch), std::move(registers));
-}
+	context_t				context;			// Context information
 
-// todo: document
-template <>
-std::unique_ptr<TaskState> TaskState::FromNativeThread<Architecture::x86>(HANDLE nativethread)
-{
-#ifndef _M_X64
-	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
-	if(!GetThreadContext(nativethread, &context)) throw Win32Exception();
-#else
-	WOW64_CONTEXT context { WOW64_CONTEXT_INTEGER | WOW64_CONTEXT_CONTROL };
-	if(!Wow64GetThreadContext(nativethread, &context)) throw Win32Exception();
+	if(existing == nullptr) throw Exception(E_POINTER);
+	if(length != sizeof(context64_t)) throw Exception(E_TASKSTATEINVALIDLENGTH, length, sizeof(context64_t));
+
+	// Copy the context information and flags from the existing structure
+	memcpy(&context.x86_64, existing, length);
+
+	// Construct the TaskState from the copied context information
+	return std::make_unique<TaskState>(::Architecture::x86_64, std::move(context));
+}
 #endif
 
-	// Convert the 32-bit CONTEXT into pt_regs
-	pt_regs_t registers;
-	registers.x86.eax = context.Eax;
-	registers.x86.ebx = context.Ebx;
-	registers.x86.ecx = context.Ecx;
-	registers.x86.edx = context.Edx;
-	registers.x86.edi = context.Edi;
-	registers.x86.esi = context.Esi;
-	registers.x86.ebp = context.Ebp;
-	registers.x86.eip = context.Eip;
-	registers.x86.esp = context.Esp;
-	registers.x86.eflags = context.EFlags;
+//-----------------------------------------------------------------------------
+// TaskState::getInstructionPointer
+//
+// Gets the contained xIP register value
 
-	// todo - this is pointless to capture/set, it will never work anyway
-	// registers.x86.gs = static_cast<uint16_t>(context.SegGs);
+const void* TaskState::getInstructionPointer(void) const
+{
+	// Architecture::x86 --> EIP
+	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_context.x86.Eip);
 
-	return std::make_unique<TaskState>(Architecture::x86, std::move(registers));
-}
-
-// todo: document
 #ifdef _M_X64
-template <>
-std::unique_ptr<TaskState> TaskState::FromNativeThread<Architecture::x86_64>(HANDLE nativethread)
-{
-	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
-	if(!GetThreadContext(nativethread, &context)) throw Win32Exception();
-
-	// Convert the 64-bit CONTEXT into pt_regs
-	pt_regs_t registers;
-	registers.x86_64.rax = context.Rax;
-	registers.x86_64.rbx = context.Rbx;
-	registers.x86_64.rcx = context.Rcx;
-	registers.x86_64.rdx = context.Rdx;
-	registers.x86_64.rdi = context.Rdi;
-	registers.x86_64.rsi = context.Rsi;
-	registers.x86_64.rbp = context.Rbp;
-	registers.x86_64.r8  = context.R8;
-	registers.x86_64.r9  = context.R9;
-	registers.x86_64.r10 = context.R10;
-	registers.x86_64.r11 = context.R11;
-	registers.x86_64.r12 = context.R12;
-	registers.x86_64.r13 = context.R13;
-	registers.x86_64.r14 = context.R14;
-	registers.x86_64.r15 = context.R15;
-	registers.x86_64.rip = context.Rip;
-	registers.x86_64.rsp = context.Rsp;
-	registers.x86_64.eflags = context.EFlags;
-
-	return std::make_unique<TaskState>(Architecture::x86_64, std::move(registers));
-}
+	// Architecture::x86_64 --> RIP
+	else if(m_architecture == Architecture::x86_64) return reinterpret_cast<void*>(m_context.x86_64.Rip);
 #endif
 
-// generic
-std::unique_ptr<TaskState> TaskState::FromNativeThread(Architecture architecture, HANDLE nativethread)
-{
-	if(architecture == Architecture::x86) return FromNativeThread<Architecture::x86>(nativethread);
-#ifdef _M_X64
-	else if(architecture == Architecture::x86_64) return FromNativeThread<Architecture::x86_64>(nativethread);
-#endif
-	else throw Exception(E_FAIL);			// todo: Exception
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
 }
 
-void* TaskState::getInstructionPointer(void) const
-{
-	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_regs.x86.eip);
-#ifdef _M_X64
-	else if(m_architecture == Architecture::x86_64) return reinterpret_cast<void*>(m_regs.x86_64.rip);
-#endif
-	else return nullptr;
-}
+//-----------------------------------------------------------------------------
+// TaskState::putInstructionPointer
+//
+// Sets the contained xIP register value
 
-void TaskState::putInstructionPointer(void* value)
+void TaskState::putInstructionPointer(const void* value)
 {
+	// Architecture::x86 --> EIP
 	if(m_architecture == Architecture::x86) {
-#ifdef _M_X64
-		if(uintptr_t(value) > UINT32_MAX) throw Exception(E_POINTER);	// todo: exception
-#endif
-		m_regs.x86.eip = reinterpret_cast<uint32_t>(value);
+
+		if(uintptr_t(value) > UINT32_MAX) throw Exception(E_TASKSTATEOVERFLOW, uintptr_t(value));
+		m_context.x86.Eip = reinterpret_cast<DWORD>(value);
 	}
+
 #ifdef _M_X64
-	else if(m_architecture == Architecture::x86_64) m_regs.x86_64.rip = reinterpret_cast<uint64_t>(value);
+	// Architecture::x86_64 ---> RIP
+	else if(m_architecture == Architecture::x86_64) m_context.x86_64.Rip = reinterpret_cast<DWORD64>(value);
 #endif
-	else throw Exception(E_FAIL);	// todo: exception
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
 }
 
-void* TaskState::getStackPointer(void) const
+//-----------------------------------------------------------------------------
+// TaskState::getLength
+//
+// Gets the length of the contained context information
+
+size_t TaskState::getLength(void) const
 {
-	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_regs.x86.esp);
+	// Architecture::x86 --> 32-bit context
+	if(m_architecture == Architecture::x86) return sizeof(context32_t);
+
 #ifdef _M_X64
-	else if(m_architecture == Architecture::x86_64) return reinterpret_cast<void*>(m_regs.x86_64.rsp);
+	// Architecture::x86_64 --> 64-bit context
+	else if(m_architecture == Architecture::x86_64) return sizeof(context64_t);
 #endif
-	else return nullptr;
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
 }
 
-void TaskState::putStackPointer(void* value)
+//----------------------------------------------------------------------------
+// TaskState::Restore<Architecture::x86>
+//
+// Restores the task state to a suspended 32-bit thread
+//
+// Arguments:
+//
+//	nativethread	- Native thread handle; should be suspended
+
+template<>
+void TaskState::Restore<::Architecture::x86>(HANDLE nativethread) const
 {
+#ifndef _M_X64
+	// Attempt to restore the context information for the specified thread
+	if(!SetThreadContext(nativethread, &m_context.x86)) throw Win32Exception();
+#else
+	// Attempt to set the context information for the specified thread
+	if(!Wow64GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
+#endif
+}
+
+//----------------------------------------------------------------------------
+// TaskState::Restore<Architecture::x86_64>
+//
+// Restores the task state to a suspended 64-bit thread
+//
+// Arguments:
+//
+//	nativethread	- Native thread handle; should be suspended
+
+#ifdef _M_X64
+template<>
+void TaskState::Restore<::Architecture::x86_64>(HANDLE nativethread) const
+{
+	// Attempt to restore the context information for the specified thread
+	if(!SetThreadContext(nativethread, &m_context.x86_64)) throw Win32Exception();
+}
+#endif
+
+//-----------------------------------------------------------------------------
+// TaskState::getReturnValue
+//
+// Gets the contained return value register value (EAX/RAX)
+
+unsigned __int3264 TaskState::getReturnValue(void) const
+{
+	if(m_architecture == Architecture::x86) return m_context.x86.Eax;
+
+#ifdef _M_X64
+	else if(m_architecture == Architecture::x86_64) return m_context.x86_64.Rax;
+#endif
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
+}
+
+//-----------------------------------------------------------------------------
+// TaskState::putReturnValue
+//
+// Sets the contained return value register value (EAX/RAX)
+
+void TaskState::putReturnValue(unsigned __int3264 value)
+{
+	// Architecture::x86 --> EAX
 	if(m_architecture == Architecture::x86) {
-#ifdef _M_X64
-		if(uintptr_t(value) > UINT32_MAX) throw Exception(E_POINTER);	// todo: exception
-#endif
-		m_regs.x86.esp = reinterpret_cast<uint32_t>(value);
+
+		if(value > UINT32_MAX) throw Exception(E_TASKSTATEOVERFLOW, value);
+		m_context.x86.Eax = (value & 0xFFFFFFFF);
 	}
-#ifdef _M_X64
-	else if(m_architecture == Architecture::x86_64) m_regs.x86_64.rsp = reinterpret_cast<uint64_t>(value);
-#endif
-	else throw Exception(E_FAIL);	// todo: exception
-}
-
-// todo: document
-template<> 
-void TaskState::ToNativeThread<Architecture::x86>(HANDLE nativethread)
-{
-#ifndef _M_X64
-	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
-#else
-	WOW64_CONTEXT context { WOW64_CONTEXT_INTEGER | WOW64_CONTEXT_CONTROL };
-#endif
-
-	context.Eax = m_regs.x86.eax;
-	context.Ebx = m_regs.x86.ebx;
-	context.Ecx = m_regs.x86.ecx;
-	context.Edx = m_regs.x86.edx;
-	context.Edi = m_regs.x86.edi;
-	context.Esi = m_regs.x86.esi;
-	context.Ebp = m_regs.x86.ebp;
-	context.Eip = m_regs.x86.eip;
-	context.Esp = m_regs.x86.esp;
-	context.EFlags = m_regs.x86.eflags;
-
-#ifndef _M_X64
-	if(!SetThreadContext(nativethread, &context)) throw Win32Exception();
-#else
-	if(!Wow64SetThreadContext(nativethread, &context)) throw Win32Exception();
-#endif
-}
 
 #ifdef _M_X64
-// todo: document
-template<> 
-void TaskState::ToNativeThread<Architecture::x86_64>(HANDLE nativethread)
-{
-	CONTEXT context { CONTEXT_INTEGER | CONTEXT_CONTROL };
+	// Architecture::x86_64 --> RAX
+	else if(m_architecture == Architecture::x86_64) m_context.x86_64.Rax = value;
+#endif
 
-	context.Rax = m_regs.x86_64.rax;
-	context.Rbx = m_regs.x86_64.rbx;
-	context.Rcx = m_regs.x86_64.rcx;
-	context.Rdx = m_regs.x86_64.rdx;
-	context.Rdi = m_regs.x86_64.rdi;
-	context.Rsi = m_regs.x86_64.rsi;
-	context.R8  = m_regs.x86_64.r8;
-	context.R9  = m_regs.x86_64.r9;
-	context.R10	= m_regs.x86_64.r10;
-	context.R11	= m_regs.x86_64.r11;
-	context.R12	= m_regs.x86_64.r12;
-	context.R13	= m_regs.x86_64.r13;
-	context.R14	= m_regs.x86_64.r14;
-	context.R15	= m_regs.x86_64.r15;
-	context.Rbp = m_regs.x86_64.rbp;
-	context.Rip = m_regs.x86_64.rip;
-	context.Rsp = m_regs.x86_64.rsp;
-	context.EFlags = m_regs.x86_64.eflags;
-
-	if(!SetThreadContext(nativethread, &context)) throw Win32Exception();
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
 }
+
+//-----------------------------------------------------------------------------
+// TaskState::getStackPointer
+//
+// Gets the contained xSP register value
+
+const void* TaskState::getStackPointer(void) const
+{
+	// Architecture::x86 --> ESP
+	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_context.x86.Esp);
+
+#ifdef _M_X64
+	// Architecture::x86_64 --> RSP
+	else if(m_architecture == Architecture::x86_64) return reinterpret_cast<void*>(m_context.x86_64.Rsp);
 #endif
 
-// generic
-void TaskState::ToNativeThread(Architecture architecture, HANDLE nativethread)
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
+}
+
+//-----------------------------------------------------------------------------
+// TaskState::putStackPointer
+//
+// Sets the contained xSP register value
+
+void TaskState::putStackPointer(const void* value)
 {
-	if(architecture == Architecture::x86) ToNativeThread<Architecture::x86>(nativethread);
+	// Architecture::x86 --> ESP
+	if(m_architecture == Architecture::x86) {
+
+		if(uintptr_t(value) > UINT32_MAX) throw Exception(E_TASKSTATEOVERFLOW, uintptr_t(value));
+		m_context.x86.Esp = reinterpret_cast<DWORD>(value);
+	}
+
 #ifdef _M_X64
-	else if(architecture == Architecture::x86_64) ToNativeThread<Architecture::x86_64>(nativethread);
+	// Architecture::x86_64 ---> RSP
+	else if(m_architecture == Architecture::x86_64) m_context.x86_64.Risp = reinterpret_cast<DWORD64>(value);
 #endif
-	else throw Exception(E_FAIL);			// todo: Exception
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
 }
 
 //-----------------------------------------------------------------------------

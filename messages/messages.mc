@@ -1230,14 +1230,21 @@ Severity=Error
 Facility=TaskState
 SymbolicName=E_TASKSTATEUNSUPPORTEDCLASS
 Language=English
-The specified process architecture class (%1!d!) is not supported.
+The specified thread architecture class (%1!d!) is not supported.
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_TASKSTATEOVERFLOW
+Language=English
+The specified value (%1!d!) would overflow a 32-bit context task register.
 .
 
 MessageId=
 Severity=Error
 SymbolicName=E_TASKSTATEINVALIDLENGTH
 Language=English
-The length of the specified existing task state (%1!d! bytes) does not match the expected length for the process architecture class (%2!d!).
+The length of the specified existing task state (%1!d! bytes) does not match the expected length for the thread architecture class (%2!d!).
 .
 
 ;//----------------------------------------------------------------------------
