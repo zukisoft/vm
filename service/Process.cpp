@@ -231,13 +231,8 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		// Determine the parent process for the child, which is either this process or this process' parent (CLONE_PARENT)
 		std::shared_ptr<Process> childparent = (flags & LINUX_CLONE_PARENT) ? this->Parent : shared_from_this();
 
-		// Write the task information into the cloned thread's stack below the actual stack pointer
-		uintptr_t taskptr = align::down(uintptr_t(task->StackPointer) - task->Length, 16);
-		childmemory->Write(reinterpret_cast<void*>(taskptr), task->Data, task->Length);
-
 		// Create the main thread instance for the child process
-		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId,
-			std::move(task));
+		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId, std::move(task));
 
 		// Create and return the child Process instance
 		return std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),

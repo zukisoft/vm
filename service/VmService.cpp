@@ -215,6 +215,8 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 	std::shared_ptr<Process> child = process->Clone(flags, TaskState::FromExisting<Architecture::x86>(tss, tsslen));
 	m_processes.insert(std::make_pair(child->ProcessId, child));
 
+	child->Start();
+
 	return child;
 }
 
@@ -910,6 +912,9 @@ void VmService::OnStop(void)
 {
 	// TODO: TESTING
 	TerminateJobObject(m_nativejob->Handle, static_cast<UINT>(E_UNEXPECTED));
+
+	// TODO: TESTING
+	m_initprocess.reset();
 
 #ifdef _M_X64
 	// Remove the 64-bit system calls RPC interface
