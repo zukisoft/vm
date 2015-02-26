@@ -36,6 +36,7 @@
 #include "File.h"
 #include "FileSystem.h"
 #include "IndexPool.h"
+#include "NativeHandle.h"
 #include "PathSplitter.h"
 #include "Process.h"
 #include "RpcInterface.h"
@@ -100,6 +101,7 @@ public:
 
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) { return m_rootfs; }
 	virtual std::shared_ptr<Process> getRootProcess(void) const { return m_initprocess; }
+	virtual HANDLE getNativeJob(void) const { return (m_nativejob) ? m_nativejob->Handle : nullptr; }
 
 	virtual const std::tstring&	GetProperty(VirtualMachine::Properties id);
 	virtual size_t				GetProperty(VirtualMachine::Properties id, char_t* value, size_t length);
@@ -189,6 +191,7 @@ private:
 	//
 	IndexPool<int32_t>					m_pidpool;		// Process/thread id pool
 	std::shared_ptr<Process>			m_initprocess;	// initial process object
+	std::shared_ptr<NativeHandle>		m_nativejob;	
 
 	// FILE SYSTEMS
 	//

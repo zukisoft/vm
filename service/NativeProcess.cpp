@@ -99,6 +99,11 @@ std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const st
 	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
 	CheckArchitecture<Architecture::x86>(host);
 
+	// TODO: THIS NEEDS TO KILL THE PROCESS IF CHECKARCHITECTURE FAILS
+
+	// TODO: TESTING
+	AssignProcessToJobObject(vm->NativeJob, host->Process->Handle);
+
 	return host;
 }
 
@@ -120,6 +125,11 @@ std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const st
 	// Construct the specified process and validate that it's Architecture::x86
 	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
 	CheckArchitecture<Architecture::x86_64>(host);
+
+	// TODO: THIS NEEDS TO KILL THE PROCESS IF CHECKARCHITECTURE FAILS
+
+	// TODO: TESTING
+	AssignProcessToJobObject(vm->NativeJob, host->Process->Handle);
 
 	return host;
 }

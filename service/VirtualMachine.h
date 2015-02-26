@@ -200,6 +200,9 @@ public:
 	__declspec(property(get=getRootFileSystem)) std::shared_ptr<FileSystem> RootFileSystem;
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) = 0;
 
+	__declspec(property(get=getNativeJob)) HANDLE NativeJob;
+	virtual HANDLE getNativeJob(void) const = 0;
+
 protected:
 
 	// Instance Constructor

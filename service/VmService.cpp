@@ -763,6 +763,11 @@ void VmService::OnStart(int, LPTSTR*)
 	try {
 
 		//
+		// NATIVE JOB
+		//
+		m_nativejob = NativeHandle::FromHandle(CreateJobObject(nullptr, nullptr));
+
+		//
 		// PROPERTIES
 		//
 		SetProperty(Properties::DomainName, "DOMAIN NAME");
@@ -903,6 +908,8 @@ void VmService::OnStart(int, LPTSTR*)
 
 void VmService::OnStop(void)
 {
+	// TODO: TESTING
+	TerminateJobObject(m_nativejob->Handle, static_cast<UINT>(E_UNEXPECTED));
 
 #ifdef _M_X64
 	// Remove the 64-bit system calls RPC interface
