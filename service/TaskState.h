@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include <linux/utask.h>
 #include "Architecture.h"
 #include "Exception.h"
 #include "Win32Exception.h"
@@ -118,32 +119,25 @@ private:
 	TaskState(const TaskState&)=delete;
 	TaskState& operator=(const TaskState&)=delete;
 
-	// context32_t
-	//
-	// Structure used to hold a 32-bit thread context
-#ifndef _M_X64
-	using context32_t = CONTEXT;
-#else
-	using context32_t = WOW64_CONTEXT;
-#endif
-
-	// context64_t
-	//
-	// Structure used to hold a 64-bit thread context
-#ifdef _M_X64
-	using context64_t = CONTEXT;
-#endif
-
 	// context_t
 	//
 	// Union of the available context structures to store the task state
 	union context_t {
 
-		context32_t			x86;			// 32-bit context
+		uapi::utask32		x86;			// 32-bit context
 #ifdef _M_X64
-		context64_t			x86_64;			// 64-bit context
+		uapi::utask64		x86_64;			// 64-bit context
 #endif
 	};
+
+	// Windows API
+	//
+	using GetThreadContext32Func = BOOL(WINAPI*)(HANDLE, uapi::utask32*);
+	using SetThreadContext32Func = BOOL(WINAPI*)(HANDLE, const uapi::utask32*);
+#ifdef _M_X64
+	using GetThreadContext64Func = BOOL(WINAPI*)(HANDLE, uapi::utask64*);
+	using SetThreadContext64Func = BOOL(WINAPI*)(HANDLE, const uapi::utask64*);
+#endif
 
 	// Instance Constructor
 	//
@@ -155,6 +149,15 @@ private:
 	
 	::Architecture			m_architecture;			// Selected architecture
 	context_t				m_context;				// Contained context data
+
+	// Windows API
+	//
+	static const GetThreadContext32Func GetThreadContext32;
+	static const SetThreadContext32Func SetThreadContext32;
+#ifdef _M_X64
+	static const GetThreadContext64Func GetThreadContext64;
+	static const SetThreadContext64Func SetThreadContext64;
+#endif
 };
 
 //-----------------------------------------------------------------------------
