@@ -39,15 +39,15 @@ static inline uint32_t AdjustProtectionForMode(uint32_t protection, MemorySectio
 	// Copy-on-write mode sections get READWRITE access swapped to WRITECOPY access
 	if(mode == MemorySection::Mode::CopyOnWrite) {
 
-		if(protection == PAGE_READWRITE) protection = PAGE_WRITECOPY;
-		else if(protection == PAGE_EXECUTE_READWRITE) protection = PAGE_EXECUTE_WRITECOPY;
+		if(protection & PAGE_READWRITE) protection = ((protection & ~PAGE_READWRITE) | PAGE_WRITECOPY);
+		else if(protection == PAGE_EXECUTE_READWRITE) protection = ((protection & ~PAGE_EXECUTE_READWRITE) | PAGE_EXECUTE_WRITECOPY);
 	}
 
 	// Private and shared sections get WRITECOPY access swapped to READWRITE access
 	else {
 
-		if(protection == PAGE_WRITECOPY) protection = PAGE_READWRITE;
-		else if(protection == PAGE_EXECUTE_WRITECOPY) protection = PAGE_EXECUTE_READWRITE;
+		if(protection == PAGE_WRITECOPY) protection = ((protection & ~PAGE_WRITECOPY) | PAGE_READWRITE);
+		else if(protection == PAGE_EXECUTE_WRITECOPY) protection = ((protection & ~PAGE_EXECUTE_WRITECOPY) | PAGE_EXECUTE_READWRITE);
 	}
 
 	return protection;
