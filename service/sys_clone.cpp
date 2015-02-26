@@ -68,7 +68,8 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	// CLONE_CHILD_CLEARTID
 	//
 	// Sets a pointer to the thread id in the child process.  See set_tid_address(2) for more details.
-	if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) child->TidAddress = reinterpret_cast<void*>(ctid);
+	auto thread = child->Thread[newpid];
+	if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) thread->TidAddress = reinterpret_cast<void*>(ctid);
 
 	// CLONE_SETTLS
 	//

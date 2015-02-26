@@ -73,12 +73,12 @@ public:
 	// Clone
 	//
 	// Clones this process into a new child process
-	std::shared_ptr<Process> Clone(int flags /* need task */);
+	std::shared_ptr<Process> Clone(int flags, std::unique_ptr<TaskState>&& task);
 
 	// CreateThread
 	//
 	// Creates a new Thread in this process
-	std::shared_ptr<Thread> CreateThread(int flags /* need task */) const;
+	std::shared_ptr<Thread> CreateThread(int flags, const std::unique_ptr<TaskState>& task) const;
 
 	// Execute
 	//
@@ -102,6 +102,11 @@ public:
 	// Spawns a new process instance
 	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, const char_t* const* argv,
 		const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+
+	// Start
+	//
+	// Starts the process execution
+	void Start(void) const;
 
 	// ReadMemory
 	//
@@ -167,6 +172,19 @@ public:
 	__declspec(property(get=getNativeProcessId)) DWORD NativeProcessId;
 	DWORD getNativeProcessId(void) const;
 
+	// NativeThread
+	//
+	// Gets a Thread instance by native thread identifier
+	__declspec(property(get=getNativeThread)) std::shared_ptr<Thread> NativeThread[];
+	std::shared_ptr<::Thread> getNativeThread(DWORD tid);
+
+	// NativeThreadProc
+	//
+	// Gets/sets the address of the native process thread entry point
+	__declspec(property(get=getNativeThreadProc, put=putNativeThreadProc)) const void* NativeThreadProc;
+	const void* getNativeThreadProc(void) const;
+	void putNativeThreadProc(const void* value);
+
 	// Parent
 	//
 	// Gets the parent process for this process
@@ -191,6 +209,13 @@ public:
 	__declspec(property(get=getRootDirectory, put=putRootDirectory)) std::shared_ptr<FileSystem::Alias> RootDirectory;
 	std::shared_ptr<FileSystem::Alias> getRootDirectory(void) const;
 	void putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value);
+
+	// SetLocalDescriptor
+	//
+	// Sets a local descriptor table entry
+	// todo: how to handle x64
+	void SetLocalDescriptor(uapi::user_desc32* u_info);
+	void SetLocalDescriptor(uapi::user_desc64* u_info);
 
 	// SignalAction
 	//
@@ -259,7 +284,7 @@ private:
 	//
 	// Clones this process into a new child process
 	template<::Architecture architecture>
-	std::shared_ptr<Process> Clone(uapi::pid_t pid, int flags /* task */);
+	std::shared_ptr<Process> Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task);
 
 	// CreateThreadStack
 	//
@@ -319,6 +344,7 @@ private:
 
 	// Threads
 	//
+	const void*							m_threadproc;		// Native thread entry point
 	thread_map_t						m_threads;			// Collection of threads
 	thread_map_lock_t					m_threadslock;		// Synchronization object
 };

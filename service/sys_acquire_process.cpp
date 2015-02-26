@@ -45,6 +45,10 @@ HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32
 	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
 	RPC_STATUS					rpcresult;			// Result from RPC function call
 
+	// sys32_task_t should be equivalent to CONTEXT/WOW64_CONTEXT
+	// TODO: move me, deal with WOW64_CONTEXT
+	static_assert(sizeof(sys32_task_t) == sizeof(CONTEXT), "uapi::utask32 is not equivalent to CONTEXT");
+
 	// Acquire the object id for the interface connected to by the client
 	rpcresult = RpcBindingInqObject(rpchandle, &objectid);
 	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
@@ -75,9 +79,9 @@ HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32
 		proc->NativeThreadProc = reinterpret_cast<void*>(threadproc);
 
 		// Acquire the necessary information for the process
-		proc->GetInitialTaskState(&process->task, sizeof(sys32_task_t));
 		process->ldt = reinterpret_cast<sys32_addr_t>(proc->LocalDescriptorTable);
-		
+		thread->PopInitialTask(&process->task, sizeof(sys32_task_t));
+
 		// Allocate the context handle by referencing the acquired objects
 		handle = Context::Allocate(vm, proc, thread);
 	}

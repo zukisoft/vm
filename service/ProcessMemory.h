@@ -143,6 +143,14 @@ private:
 		(const std::shared_ptr<NativeHandle>& process, section_vector_t&& sections);
 
 	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// ProtectInternal
+	//
+	// Backing function for Protect() and Guard() methods
+	void ProtectInternal(const void* address, size_t length, uint32_t winprot);
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
 	std::shared_ptr<NativeHandle>	m_process;			// Native process handle

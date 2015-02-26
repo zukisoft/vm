@@ -20,33 +20,72 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Interface LinuxTypes
-//
-// Dummy interface used to bring the <linux/types.h> header file into the IDL
-// without MIDL dumping all of the declarations themselves into the output
-//
-// See "Importing System Header Files" MSDN topic:
-// http://msdn.microsoft.com/en-us/library/windows/desktop/aa367049(v=vs.85).aspx
-//
-// This file should be excluded from compilation, it's for import purposes only
+#ifndef __LINUX_UTASK_H_
+#define __LINUX_UTASK_H_
+#pragma once
 
-[ local ]
-interface LinuxTypes
-{
-	#include "linux/types.h"
-	#include "linux/fcntl.h"
-	#include "linux/ldt.h"
-	#include "linux/ptrace.h"
-	#include "linux/resource.h"
-	#include "linux/sched.h"
-	#include "linux/signal.h"
-	#include "linux/stat.h"
-	#include "linux/statfs.h"
-	#include "linux/time.h"
-	#include "linux/uio.h"
-	#include "linux/utask.h"
-	#include "linux/utsname.h"
-}
+#include "types.h"
 
 //-----------------------------------------------------------------------------
+// linux_utask32
+//
+// Clone of the 32-bit CONTEXT structure, used to collect and manipulate
+// user-mode task state information
+//-----------------------------------------------------------------------------
+
+#define UTASK32_FLAGS_CONTROL		(0x000100000L | 0x00000001L)		// CONTEXT_CONTROL
+#define UTASK32_FLAGS_INTEGER		(0x000100000L | 0x00000002L)		// CONTEXT_INTEGER
+#define UTASK32_FLAGS_SEGMENTS		(0x000100000L | 0x00000004L)		// CONTEXT_SEGMENTS
+#define UTASK32_FLAGS_FULL			(0x000100000L | 0x00000007L)		// CONTEXT_FULL
+
+#pragma pack(push, 4)
+typedef struct {
+
+	uint32_t		flags;
+	uint32_t		dr0;
+	uint32_t		dr1;
+	uint32_t		dr2;
+	uint32_t		dr3;
+	uint32_t		dr6;
+	uint32_t		dr7;
+	uint8_t			floatsave[112];
+	uint32_t		gs;
+	uint32_t		fs;
+	uint32_t		es;
+	uint32_t		ds;
+	uint32_t		edi;
+	uint32_t		esi;
+	uint32_t		ebx;
+	uint32_t		edx;
+	uint32_t		ecx;
+	uint32_t		eax;
+	uint32_t		ebp;
+	uint32_t		eip;
+	uint32_t		cs;
+	uint32_t		eflags;
+	uint32_t		esp;
+	uint32_t		ss;
+	uint8_t			extendedregs[512];
+
+} linux_utask32;
+#pragma pack(pop)
+
+typedef struct {
+
+	uint64_t dummy;
+
+} linux_utask64;
+
+
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
+
+	typedef linux_utask32		utask32;
+	typedef linux_utask64		utask64;
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
+
+//-----------------------------------------------------------------------------
+
+#endif		// __LINUX_UTASK_H_

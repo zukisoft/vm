@@ -80,6 +80,10 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 {
 	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
 
+	// The address of the thread entry point must be provided by the host process
+	// when it acquires the RPC process/thread context handle
+	m_threadproc = nullptr;
+
 	// Initialize the threads collection with just the main thread instance
 	m_threads[mainthread->ThreadId] = std::move(mainthread);
 }
@@ -142,8 +146,9 @@ int Process::AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle
 // Arguments:
 //
 //	flags		- Flags indicating the desired operations
+//	task		- Task state for the new process
 
-std::shared_ptr<Process> Process::Clone(int flags)
+std::shared_ptr<Process> Process::Clone(int flags, std::unique_ptr<TaskState>&& task)
 {
 	// Allocate the PID for the cloned process
 	uapi::pid_t pid = m_vm->AllocatePID();
@@ -151,11 +156,11 @@ std::shared_ptr<Process> Process::Clone(int flags)
 	try {
 
 		// Architecture::x86 --> 32 bit clone operation
-		if(m_architecture == Architecture::x86) return Clone<Architecture::x86>(pid, flags);
+		if(m_architecture == Architecture::x86) return Clone<Architecture::x86>(pid, flags, std::move(task));
 
 #ifdef _M_X64
 		// Architecture::x86_64 --> 64 bit clone operation
-		else if(m_architecture == Architecture::x86_64) return Clone<Architecture::x86_64>(pid, flags);
+		else if(m_architecture == Architecture::x86_64) return Clone<Architecture::x86_64>(pid, flags, std::move(task));
 #endif
 
 		// Unsupported architecture
@@ -175,9 +180,10 @@ std::shared_ptr<Process> Process::Clone(int flags)
 //
 //	pid			- PID to assign to the new child process
 //	flags		- Flags indicating the desired operations
+//	task		- Task state for the new process
 
 template<::Architecture architecture>
-std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags)
+std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task)
 {
 	// FLAGS TO DEAL WITH:
 	//
@@ -225,8 +231,13 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags)
 		// Determine the parent process for the child, which is either this process or this process' parent (CLONE_PARENT)
 		std::shared_ptr<Process> childparent = (flags & LINUX_CLONE_PARENT) ? this->Parent : shared_from_this();
 
+		// Write the task information into the cloned thread's stack below the actual stack pointer
+		uintptr_t taskptr = align::down(uintptr_t(task->StackPointer) - task->Length, 16);
+		childmemory->Write(reinterpret_cast<void*>(taskptr), task->Data, task->Length);
+
 		// Create the main thread instance for the child process
-		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId);
+		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId,
+			std::move(task));
 
 		// Create and return the child Process instance
 		return std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
@@ -245,14 +256,19 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags)
 // Arguments:
 //
 //	flags		- Flags indicating the desired operations
+//	task		- Task state for the new thread
 
-std::shared_ptr<Thread> Process::CreateThread(int flags) const
+std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<TaskState>& task) const
 {
 	// CLONE_THREAD must have been specified in the flags for this operation
 	if((flags & LINUX_CLONE_THREAD) == 0) throw LinuxException(LINUX_EINVAL);
 
 	// CLONE_VM must have been specified in the flags for this operation
 	if((flags & LINUX_CLONE_VM) == 0) throw LinuxException(LINUX_EINVAL);
+
+	(task);
+	// need a new stack or does pthreads create it, either way write the task there
+	// but need to watch for overflow somehow
 
 	// It would be easier to make a mask for all the valid/invalid flags, there aren't
 	// many valid 'options' when creating a thread
@@ -419,12 +435,9 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMa
 		// Load the executable image into the process address space and set up the thread stack
 		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
 
-		// Create the task state for the main thread based on the load result
-		std::unique_ptr<TaskState> ts = TaskState::Create(architecture, loaded.EntryPoint, loaded.StackPointer);
-		
-		// Wrap the main process thread in a Thread instance
-		// needs entry point and stack pointer, aka the task
-		std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId);
+		// Create a Thread instance for the main thread of the new process, using a new TaskState
+		std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
+			TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
 
 		// Construct and return the new Process instance
 		// TODO: PARENT?
@@ -535,6 +548,39 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 DWORD Process::getNativeProcessId(void) const
 {
 	return m_processid;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getThread
+//
+// Gets a Thread instance from its native thread identifier
+
+std::shared_ptr<Thread> Process::getNativeThread(DWORD tid)
+{
+	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
+
+	for(auto iterator : m_threads) if(iterator.second->NativeThreadId == tid) return iterator.second;
+	throw Exception(E_FAIL);	// todo: Exception
+}
+
+//-----------------------------------------------------------------------------
+// Process::getNativeThreadProc
+//
+// Gets the address of the thread entry point in the native process
+
+const void* Process::getNativeThreadProc(void) const
+{
+	return m_threadproc;
+}
+
+//-----------------------------------------------------------------------------
+// Process::putNativeThreadProc
+//
+// Sets the address of the thread entry point in the native process
+
+void Process::putNativeThreadProc(const void* value)
+{
+	m_threadproc = value;
 }
 
 //-----------------------------------------------------------------------------
@@ -654,6 +700,47 @@ void Process::putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value)
 }
 
 //-----------------------------------------------------------------------------
+// Process::SetLocalDescriptor
+//
+// Creates or updates an entry in the process local descriptor table
+//
+// Arguments:
+//
+//	u_info		- user_desc structure describing the LDT to be updated
+
+void Process::SetLocalDescriptor(uapi::user_desc32* u_info)
+{
+	// Grab the requested slot number from the user_desc structure
+	uint32_t slot = u_info->entry_number;
+
+	ldt_lock_t::scoped_lock writer(m_ldtlock);
+
+	if(slot == -1) {
+
+		// Attempt to locate a free slot in the LDT allocation bitmap
+		slot = m_ldtslots.FindClear();
+		if(slot == Bitmap::NotFound) throw LinuxException(LINUX_ESRCH);
+
+		// From the caller's perspective, the slot will have bit 13 (0x1000) set
+		// to help ensure that a real LDT won't get accessed
+		slot |= LINUX_LDT_ENTRIES;
+	}
+
+	// The slot number must fall between LINUX_LDT_ENTRIES and (LINUX_LDT_ENTRIES << 1)
+	if((slot < LINUX_LDT_ENTRIES) || (slot >= (LINUX_LDT_ENTRIES << 1))) throw LinuxException(LINUX_EINVAL);
+
+	// Attempt to update the entry in the process local descriptor table memory region
+	uintptr_t destination = uintptr_t(m_ldt) + ((slot & ~LINUX_LDT_ENTRIES) * sizeof(uapi::user_desc32));
+	m_memory->Write(reinterpret_cast<void*>(destination), u_info, sizeof(uapi::user_desc32));
+
+	// Provide the allocated/updated slot number back to the caller in the user_desc structure
+	u_info->entry_number = slot;
+
+	// Track the slot allocation in the zero-based LDT allocation bitmap
+	m_ldtslots.Set(slot & ~LINUX_LDT_ENTRIES);
+}
+
+//-----------------------------------------------------------------------------
 // Process::SetProgramBreak
 //
 // Adjusts the program break address by increasing or decreasing the number
@@ -765,7 +852,23 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 }
 
 //-----------------------------------------------------------------------------
-// Process::Suspend
+// Process::Start
+//
+// Starts a newly created process instance, provided to allow the creator to
+// add it to any collections or tracking mechanisms before it begins execution
+//
+// Arguments:
+//
+//	NONE
+
+void Process::Start(void) const
+{
+	// Just resume the process, it would have been created suspended
+	Resume();
+}
+
+//-----------------------------------------------------------------------------
+// Process::Suspend (private)
 //
 // Suspends the native operating system process
 //

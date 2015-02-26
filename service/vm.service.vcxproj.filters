@@ -359,6 +359,9 @@
     <ClInclude Include="ElfImage.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\utask.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -716,12 +719,6 @@
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys_fork.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="sys_register_thread.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="sys_unregister_thread.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
     <ClCompile Include="sys_rt_sigaction.cpp">

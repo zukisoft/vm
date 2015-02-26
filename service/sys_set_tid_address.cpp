@@ -37,8 +37,8 @@
 
 uapi::long_t sys_set_tid_address(const Context* context, void* tidptr)
 {
-	context->Process->TidAddress = tidptr;
-	return context->Process->ProcessId;
+	context->Thread->TidAddress = tidptr;
+	return context->Thread->ThreadId;
 }
 
 // sys32_set_tid_address

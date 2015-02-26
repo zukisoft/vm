@@ -325,6 +325,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\linux\time.h" />
     <ClInclude Include="..\common\linux\types.h" />
     <ClInclude Include="..\common\linux\uio.h" />
+    <ClInclude Include="..\common\linux\utask.h" />
     <ClInclude Include="..\common\linux\utsname.h" />
     <ClInclude Include="..\common\Lz4StreamReader.h" />
     <ClInclude Include="..\common\LzmaStreamReader.h" />
@@ -680,7 +681,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_openat.cpp" />
     <ClCompile Include="sys_prctl.cpp" />
     <ClCompile Include="sys_read.cpp" />
-    <ClCompile Include="sys_register_thread.cpp" />
     <ClCompile Include="sys_release_context.cpp" />
     <ClCompile Include="sys_rt_sigaction.cpp" />
     <ClCompile Include="sys_rt_sigprocmask.cpp" />
@@ -702,7 +702,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_readlink.cpp" />
     <ClCompile Include="sys_set_tid_address.cpp" />
     <ClCompile Include="sys_newuname.cpp" />
-    <ClCompile Include="sys_unregister_thread.cpp" />
     <ClCompile Include="sys_vfork.cpp" />
     <ClCompile Include="sys_wait4.cpp" />
     <ClCompile Include="sys_waitpid.cpp" />

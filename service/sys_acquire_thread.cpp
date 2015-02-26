@@ -34,10 +34,10 @@
 //
 //	rpchandle		- RPC binding handle
 //	tid				- [in] native thread id within the host process
-//	task			- [out] set to the thread task information
+//	thread			- [out] set to the thread startup information
 //	context			- [out] set to the newly allocated context handle
 
-HRESULT sys32_acquire_thread(handle_t rpchandle, sys32_uint_t tid, sys32_task_t* task, sys32_context_exclusive_t* context)
+HRESULT sys32_acquire_thread(handle_t rpchandle, sys32_uint_t tid, sys32_thread_t* thread, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
 	Context*					handle = nullptr;	// System call context handle
@@ -67,15 +67,14 @@ HRESULT sys32_acquire_thread(handle_t rpchandle, sys32_uint_t tid, sys32_task_t*
 		if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 		
 		// Use the native thread identifier to locate the thread within the process
-		auto thread = proc->FindNativeThread(tid);
-		if(thread == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+		auto thd = proc->NativeThread[tid];
+		if(thd == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
-		// Acquire the necessary information for the process
-		// TODO: THIS NEEDS TO COME FROM THE THREAD
-		proc->GetInitialTaskState(&task, sizeof(sys32_task_t));
+		// Acquire the initial task information for the thread
+		thd->PopInitialTask(&thread->task, sizeof(sys32_task_t));
 		
 		// Allocate the context handle by referencing the acquired objects
-		handle = Context::Allocate(vm, proc, thread);
+		handle = Context::Allocate(vm, proc, thd);
 	}
 
 	catch(const Exception& ex) { Context::Release(handle); return ex.HResult; }

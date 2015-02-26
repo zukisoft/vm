@@ -35,6 +35,7 @@
 #include <linux/statfs.h>
 #include <linux/time.h>
 #include <linux/uio.h>
+#include <linux/utask.h>
 #include <linux/utsname.h>
 
 #endif		// __UAPI_H_

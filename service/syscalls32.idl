@@ -89,11 +89,7 @@ typedef struct _sys32_stack_t {
 // sys32_task_t
 //
 // Structure used to define a thread task
-typedef linux_pt_regs32 sys32_task_t;
-
-//
-// TODO: sys32_thread_t that contains task_t, process below will contain thread_t and ldt
-//
+typedef linux_utask32 sys32_task_t;
 
 // sys32_process_t
 //
@@ -107,6 +103,16 @@ typedef struct _sys32_process {
 	sys32_task_t		task;
 
 } sys32_process_t;
+
+// sys32_thread_t
+//
+// Structure used to initialize a new thread
+typedef struct _sys32_thread_t {
+
+	// Initial thread task
+	sys32_task_t		task;
+
+} sys32_thread_t;
 
 // sys32_sigset_t
 //
@@ -149,7 +155,7 @@ interface SystemCalls32
 	// sys32_acquire_thread (synchronous)
 	//
 	// Allocates a new context handle and startup information for a thread
-	HRESULT sys32_acquire_thread([in] sys32_uint_t tid, [out, ref] sys32_task_t* task, [out, ref] sys32_context_exclusive_t* context);
+	HRESULT sys32_acquire_thread([in] sys32_uint_t tid, [out, ref] sys32_thread_t* thread, [out, ref] sys32_context_exclusive_t* context);
 
 	// sys32_release_context (synchronous)
 	//

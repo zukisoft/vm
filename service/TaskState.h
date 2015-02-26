@@ -47,14 +47,18 @@ public:
 	// Capture (static)
 	//
 	// Captures a TaskState from a suspended native thread
-	template<::Architecture architecture>
-	static std::unique_ptr<TaskState> Capture(HANDLE nativethread);
+	static std::unique_ptr<TaskState> Capture(::Architecture architecture, HANDLE nativethread);
 
 	// Create (static)
 	//
 	// Creates a new TaskState for the specified architecture
 	template<::Architecture architecture>
 	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
+
+	// Duplicate (static)
+	//
+	// Duplicates an existing TaskState instance
+	static std::unique_ptr<TaskState> Duplicate(const std::unique_ptr<TaskState>& existing);
 
 	// FromExisting (static)
 	//
@@ -65,8 +69,7 @@ public:
 	// Restore
 	//
 	// Restores this task state to a suspended native thread
-	template<::Architecture architecture>
-	void Restore(HANDLE nativehandle) const;
+	void Restore(::Architecture architecture, HANDLE nativehandle) const;
 
 	//-------------------------------------------------------------------------
 	// Properties

@@ -67,20 +67,23 @@ public:
 	//
 	// Creates a new Thread instance from a native operating system handle
 	template<Architecture architecture>
-	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
+	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
+		DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
 
-	//template<Architecture architecture>
-	//static std::shared_ptr<Thread> NewThing(const std::shared_ptr<Process>& process, 
+	// PopInitialTask
+	//
+	// Pops the initial task information for the thread and clears it
+	void PopInitialTask(void* task, size_t tasklength);
 
 	// Resume
 	//
 	// Resumes the thread
-	void Resume(void);
+	void Resume(void) const;
 
 	// ResumeTask
 	//
 	// Resumes the thread after application of a task state
-	void ResumeTask(const std::unique_ptr<TaskState>& task);
+	void ResumeTask(const std::unique_ptr<TaskState>& initialtask) const;
 
 	// SetSignalAlternateStack
 	//
@@ -95,7 +98,7 @@ public:
 	// Suspend
 	//
 	// Suspends the thread
-	void Suspend(void);
+	void Suspend(void) const;
 
 	// SuspendTask
 	//
@@ -146,6 +149,14 @@ public:
 	// Gets the virtual thread identifier
 	__declspec(property(get=getThreadId)) uapi::pid_t ThreadId;
 	uapi::pid_t getThreadId(void) const;
+
+	// TidAddress
+	//
+	// TODO: This is used for set_tid_address; needs to have a futex associated with 
+	// it as well, stubbing this out so that sys_set_tid_address can be implemented
+	__declspec(property(get=getTidAddress, put=putTidAddress)) void* TidAddress;
+	void* getTidAddress(void) const { return m_tidaddress; }
+	void putTidAddress(void* value) { m_tidaddress = value; }
 
 	// Zombie
 	//
@@ -219,7 +230,8 @@ private:
 
 	// Instance Constructor
 	//
-	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
+	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
+		std::unique_ptr<TaskState>&& initialtask);
 	friend class std::_Ref_count_obj<Thread>;
 
 	//-------------------------------------------------------------------------
@@ -238,6 +250,9 @@ private:
 	std::shared_ptr<::NativeHandle>	m_process;			// Native process handle
 	std::shared_ptr<::NativeHandle>	m_thread;			// Native thread handle
 	const DWORD						m_threadid;			// Native thread id
+	std::unique_ptr<TaskState>		m_initialtask;		// Initial task state
+
+	void*					m_tidaddress = nullptr;
 
 	// Signal Management
 	//

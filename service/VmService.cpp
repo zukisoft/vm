@@ -207,9 +207,14 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 
 	else throw Exception(E_INVALIDARG);				// <-- TODO: Exception
 
+	// TODO: x64
+	// this should move into the system call where the architecture is implied
+	// Context::CreateTask<Architecture>(void*, length) ? something like that
+	// task can be part of context
 
-	std::shared_ptr<Process> child = process->Clone(shared_from_this(), flags, tss, tsslen);
+	std::shared_ptr<Process> child = process->Clone(flags, TaskState::FromExisting<Architecture::x86>(tss, tsslen));
 	m_processes.insert(std::make_pair(child->ProcessId, child));
+
 	return child;
 }
 

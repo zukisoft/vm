@@ -200,43 +200,16 @@ std::unique_ptr<ProcessMemory> ProcessMemory::FromProcessMemory(const std::share
 //
 // Arguments:
 //
-//	address		- Base address of the region to be protected
-//	length		- Length of the region to be protected
-
-//
-// TODO: This and Protect() can be combined into a private method
-//
+//	address		- Base address of the guard page region
+//	length		- Length of the guard page region
+//	prot		- Linux memory protection flags for the region
 
 void ProcessMemory::Guard(const void* address, size_t length, int prot)
 {
-	// Determine the starting and ending points for the operation
-	uintptr_t begin = uintptr_t(address);
-	uintptr_t end = begin + length;
-
-	// Prevent changes to the process memory layout while this is operating
-	section_lock_t::scoped_lock_read reader(m_sectionlock);
-
-	while(begin < end) {
-
-		// Locate the section object that matches the current base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
-			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
-		});
-
-		// No matching section object exists, throw EINVAL/ERROR_INVALID_ADDRESS
-		if(found == m_sections.end()) throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_INVALID_ADDRESS));
-
-		// Cast out the std::unique_ptr<MemorySection>& for clarity below
-		const auto& section = *found;
-
-		// Determine the length of the allocation to request from this section and request it
-		size_t protectlen = min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
-		section->Protect(reinterpret_cast<void*>(begin), protectlen, uapi::LinuxProtToWindowsPageFlags(prot) | PAGE_GUARD);
-
-		begin += protectlen;
-	}
+	// Use the common internal version that accepts windows page flags
+	return ProtectInternal(address, length, uapi::LinuxProtToWindowsPageFlags(prot) | PAGE_GUARD);
 }
-
+	
 //-----------------------------------------------------------------------------
 // ProcessMemory::Lock
 //
@@ -271,6 +244,23 @@ void ProcessMemory::Lock(const void* address, size_t length) const
 
 void ProcessMemory::Protect(const void* address, size_t length, int prot)
 {
+	// Use the common internal version that accepts windows page flags
+	return ProtectInternal(address, length, uapi::LinuxProtToWindowsPageFlags(prot));
+}
+
+//-----------------------------------------------------------------------------
+// ProcessMemory::ProtectInternal (private)
+//
+// Assigns memory protection flags for an allocated region of memory
+//
+// Arguments:
+//
+//	address		- Base address of the region to be protected
+//	length		- Length of the region to be protected
+//	winprot		- Windows memory protection flags for the region
+
+void ProcessMemory::ProtectInternal(const void* address, size_t length, uint32_t winprot)
+{
 	// Determine the starting and ending points for the operation
 	uintptr_t begin = uintptr_t(address);
 	uintptr_t end = begin + length;
@@ -293,7 +283,7 @@ void ProcessMemory::Protect(const void* address, size_t length, int prot)
 
 		// Determine the length of the allocation to request from this section and request it
 		size_t protectlen = min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
-		section->Protect(reinterpret_cast<void*>(begin), protectlen, uapi::LinuxProtToWindowsPageFlags(prot));
+		section->Protect(reinterpret_cast<void*>(begin), protectlen, winprot);
 
 		begin += protectlen;
 	}

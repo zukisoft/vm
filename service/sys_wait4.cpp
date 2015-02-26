@@ -45,10 +45,14 @@ uapi::long_t sys_wait4(const Context* context, uapi::pid_t pid, int* status, int
 	(status);
 	(options);
 	(rusage);
+	(pid);
+	(context);
 
-	uapi::long_t result = static_cast<uapi::pid_t>(context->Process->WaitChild_TEST(pid, &exitstatus));
-	if(status) *status = exitstatus;
-	return result;
+	//uapi::long_t result = static_cast<uapi::pid_t>(context->Process->WaitChild_TEST(pid, &exitstatus));
+	//if(status) *status = exitstatus;
+	//return result;
+
+	return -38;
 }
 
 // sys32_wait4

@@ -36,62 +36,49 @@
 }
 
 //-----------------------------------------------------------------------------
-// TaskState::Capture<Architecture::x86> (static)
+// TaskState::Capture (static)
 //
-// Captures context from a suspended 32-bit thread
+// Captures context from a suspended thread
 //
 // Arguments:
 //
+//	architecture	- Thread architecture
 //	nativethread	- Native thread handle; should be suspended
 
-template<>
-std::unique_ptr<TaskState> TaskState::Capture<::Architecture::x86>(HANDLE nativethread)
+std::unique_ptr<TaskState> TaskState::Capture(::Architecture architecture, HANDLE nativethread)
 {
-	context_t				context;			// Context acquired from the thread
+	context_t					context;		// Context acquired from the thread
 
-	// When capturing context, retrieve everything (CONTEXT_ALL)
-	memset(&context, 0, sizeof(context_t));
-	context.x86.ContextFlags = CONTEXT_ALL;
+	if(architecture == ::Architecture::x86) {
+
+		// When capturing context, retrieve everything (CONTEXT_ALL)
+		context.x86.ContextFlags = CONTEXT_ALL;
 
 #ifndef _M_X64
-	// Attempt to capture the context information for the specified thread
-	if(!GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
+		// Attempt to capture the context information for the specified thread
+		if(!GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
 #else
-	// Attempt to capture the context information for the specified thread
-	if(!Wow64GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
+		// Attempt to capture the context information for the specified thread
+		if(!Wow64GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
 #endif
+	}
+
+#ifdef _M_X64
+	else if(architecture == ::Architecture::x86_64) {
+
+		// When capturing context, retrieve everything (CONTEXT_ALL)
+		context.x86_64.ContextFlags = CONTEXT_ALL;
+		if(!GetThreadContext(nativethread, &context.x86_64)) throw Win32Exception();
+	}
+#endif
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(architecture));
 
 	// Construct the TaskState from the acquired context information
 	return std::make_unique<TaskState>(Architecture::x86, std::move(context));
 }
-	
-//-----------------------------------------------------------------------------
-// TaskState::Capture<Architecture::x86_64> (static)
-//
-// Captures context from a suspended 64-bit thread
-//
-// Arguments:
-//
-//	nativethread	- Native thread handle; should be suspended
 
-#ifdef _M_X64
-template<>
-std::unique_ptr<TaskState> TaskState::Capture<::Architecture::x86_64>(HANDLE nativethread)
-{
-	context_t				context;			// Context acquired from the thread
-
-	// When capturing context, retrieve everything (CONTEXT_ALL)
-	memset(&context, 0, sizeof(context_t));
-	context.x86_64.ContextFlags = CONTEXT_ALL;
-
-	// Attempt to capture the context information for the specified thread
-	if(!GetThreadContext(nativethread, &context.x86_64)) throw Win32Exception();
-
-	// Construct the TaskState from the acquired context information
-	return std::make_unique<TaskState>(Architecture::x86_64, std::move(context));
-}
-#endif
-	
 //-----------------------------------------------------------------------------
 // TaskState::Create<Architecture::x86> (static)
 //
@@ -177,6 +164,22 @@ const void* TaskState::getData(void) const
 
 	// Unsupported architecture
 	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
+}
+
+//-----------------------------------------------------------------------------
+// TaskState::Duplicate (static)
+//
+// Duplicates an existing TaskState instance
+//
+// Arguments:
+//
+//	existing		- Existing task state to be duplicated
+
+std::unique_ptr<TaskState> TaskState::Duplicate(const std::unique_ptr<TaskState>& existing)
+{
+	// Copy the existing context structure and construct a new TaskState instance
+	context_t context = existing->m_context;
+	return std::make_unique<TaskState>(existing->Architecture, std::move(context));
 }
 
 //-----------------------------------------------------------------------------
@@ -299,37 +302,38 @@ size_t TaskState::getLength(void) const
 //
 // Arguments:
 //
+//	architecture	- Architecture of the target thread for verification
 //	nativethread	- Native thread handle; should be suspended
 
-template<>
-void TaskState::Restore<::Architecture::x86>(HANDLE nativethread) const
+void TaskState::Restore(::Architecture architecture, HANDLE nativethread) const
 {
-#ifndef _M_X64
-	// Attempt to restore the context information for the specified thread
-	if(!SetThreadContext(nativethread, &m_context.x86)) throw Win32Exception();
-#else
-	// Attempt to set the context information for the specified thread
-	if(!Wow64GetThreadContext(nativethread, &context.x86)) throw Win32Exception();
-#endif
-}
+	// Perform a sanity check to ensure that the target thread architecture
+	// is the same as when this task state was captured or created
+	if(architecture != m_architecture) 
+		throw Exception(E_TASKSTATEWRONGCLASS, static_cast<int>(architecture), static_cast<int>(m_architecture));
 
-//----------------------------------------------------------------------------
-// TaskState::Restore<Architecture::x86_64>
-//
-// Restores the task state to a suspended 64-bit thread
-//
-// Arguments:
-//
-//	nativethread	- Native thread handle; should be suspended
+	// Architecture::x86 --> 32-bit context
+	if(m_architecture == Architecture::x86) {
+
+#ifndef _M_X64
+		if(!SetThreadContext(nativethread, &m_context.x86)) throw Win32Exception();
+#else
+		if(!Wow64SetThreadContext(nativethread, &m_context.x86)) throw Win32Exception();
+#endif
+	}
 
 #ifdef _M_X64
-template<>
-void TaskState::Restore<::Architecture::x86_64>(HANDLE nativethread) const
-{
-	// Attempt to restore the context information for the specified thread
-	if(!SetThreadContext(nativethread, &m_context.x86_64)) throw Win32Exception();
-}
+	// Architecture::x86_64 --> 64-bit context
+	else if(m_architecture == Architecture::x86_64) {
+
+		// Restore the thread context using the same flags as when it was captured
+		if(!SetThreadContext(nativethread, &m_context.x86_64)) throw Win32Exception();
+	}
 #endif
+
+	// Unsupported architecture
+	else throw Exception(E_TASKSTATEUNSUPPORTEDCLASS, static_cast<int>(m_architecture));
+}
 
 //-----------------------------------------------------------------------------
 // TaskState::getReturnValue

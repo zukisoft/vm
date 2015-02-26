@@ -1247,6 +1247,13 @@ Language=English
 The length of the specified existing task state (%1!d! bytes) does not match the expected length for the thread architecture class (%2!d!).
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_TASKSTATEWRONGCLASS
+Language=English
+The specified thread architecture class (%1!d!) does not match that from which a task state was created (%2!d!).  This task state cannot be applied to the specified thread.
+.
+
 ;//----------------------------------------------------------------------------
 ;// Process
 ;//

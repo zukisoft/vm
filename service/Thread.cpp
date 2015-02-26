@@ -28,13 +28,15 @@
 // Thread::FromNativeHandle<Architecture::x86>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
+template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, 
+	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
 
 #ifdef _M_X64
 // Thread::FromNativeHandle<Architecture::x86_64>
 //
 // Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid);
+template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, 
+	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -47,9 +49,11 @@ template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(
 //	process			- Parent process handle
 //	thread			- Native thread handle
 //	threadid		- Native thread identifier
+//	initialtask		- Initial thread task information
 
-Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid)
-	: m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid)
+Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
+	std::unique_ptr<TaskState>&& initialtask) : m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid), 
+	m_initialtask(std::move(initialtask))
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
@@ -145,10 +149,10 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	// context
 
 	// start a signal handler callback
-	auto newstate = m_savedsigtask->Duplicate();
+	auto newstate = TaskState::Duplicate(m_savedsigtask);
 	
 	// signal number in E/RAX
-	newstate->AX = signal.first;
+	newstate->ReturnValue = signal.first;
 
 	// instruction pointer
 	newstate->InstructionPointer = signal.second.sa_handler;
@@ -253,11 +257,13 @@ void Thread::EndSignal(void)
 //	process			- Parent process handle
 //	thread			- Native thread handle
 //	threadid		- Native thread identifier
+//	initialtask		- Initial task for the thread
 
 template<Architecture architecture>
-std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid)
+std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
+	DWORD threadid, std::unique_ptr<TaskState>&& initialtask)
 {
-	return std::make_shared<Thread>(tid, architecture, process, thread, threadid);
+	return std::make_shared<Thread>(tid, architecture, process, thread, threadid, std::move(initialtask));
 }
 
 //-----------------------------------------------------------------------------
@@ -281,6 +287,29 @@ DWORD Thread::getNativeThreadId(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Thread::PopInitialTask
+//
+// Pops the initial thread task information. This is only accessed once when
+// the thread is getting itself ready to run, therefore the data is released
+// after that occurs
+//
+// Arguments:
+//
+//	task		- Buffer to receive the task information
+//	tasklen		- Length of the buffer to receive the task information
+
+void Thread::PopInitialTask(void* task, size_t tasklen)
+{
+	if(!m_initialtask) throw Exception(E_FAIL);	// todo: Exception
+
+	if(tasklen != m_initialtask->Length) throw Exception(E_FAIL); // todo: exception
+	memcpy(task, m_initialtask->Data, m_initialtask->Length);
+
+	// The task state for the thread can only be accessed one time
+	m_initialtask.reset(nullptr);
+}
+
+//-----------------------------------------------------------------------------
 // Thread::Resume
 //
 // Resumes the thread from a suspended state; forces a thread that has been
@@ -290,7 +319,7 @@ DWORD Thread::getNativeThreadId(void) const
 //
 //	NONE
 
-void Thread::Resume(void)
+void Thread::Resume(void) const
 {
 	DWORD result;				// Result from function call
 
@@ -312,10 +341,10 @@ void Thread::Resume(void)
 //
 //	task		- Task state to be applied to the thread
 
-void Thread::ResumeTask(const std::unique_ptr<TaskState>& task)
+void Thread::ResumeTask(const std::unique_ptr<TaskState>& task) const
 {
 	// Apply the specified task to the native thread
-	task->ToNativeThread(m_architecture, m_thread->Handle);
+	task->Restore(m_architecture, m_thread->Handle);
 
 	Resume();					// Resume the thread
 }
@@ -395,7 +424,7 @@ uapi::sigset_t Thread::getSignalMask(void) const
 //
 //	NONE
 
-void Thread::Suspend(void)
+void Thread::Suspend(void) const
 {
 	// todo: linux exceptions?
 #ifndef _M_X64
@@ -421,7 +450,7 @@ std::unique_ptr<TaskState> Thread::SuspendTask(void)
 	Suspend();						// Suspend the native operating system thread
 	
 	// Attempt to capture the task state for the thread, and resume on exception
-	try { return TaskState::FromNativeThread(m_architecture, m_thread->Handle); }
+	try { return TaskState::Capture(m_architecture, m_thread->Handle); }
 	catch(...) { Resume(); throw; }
 }
 

@@ -72,7 +72,7 @@ DWORD ExecuteTask(sys32_task_t* task)
 	uint32_t		result;						// Result from the task (EAX)
 
 	// Set the emulated GS segment register first
-	t_gs = task->gs;
+	t_gs = static_cast<uint16_t>(task->gs & 0xFFFF);
 
 	// Use the EDI register as the pointer to the destination task state
 	__asm push edi;
@@ -135,15 +135,15 @@ threadexit:
 
 DWORD WINAPI ThreadMain(void*)
 {
-	zero_init<sys32_task_t>		task;			// Task information for this thread
+	zero_init<sys32_thread_t>	thread;			// Thread information from service
 	DWORD						exitcode;		// Thread exit code
 
 	// Attempt to acquire the task information and context handle from the server
-	HRESULT hresult = sys32_acquire_thread(g_rpcbinding, GetCurrentThreadId(), &task, &t_rpccontext);
+	HRESULT hresult = sys32_acquire_thread(g_rpcbinding, GetCurrentThreadId(), &thread, &t_rpccontext);
 	if(FAILED(hresult)) return static_cast<DWORD>(hresult);
 
 	// Execute the task provided in the thread startup information
-	exitcode = ExecuteTask(&task);
+	exitcode = ExecuteTask(&thread.task);
 
 	// Release the server context handle for this thread
 	sys32_release_context(&t_rpccontext);
