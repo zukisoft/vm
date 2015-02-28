@@ -26,48 +26,53 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys32_context_exclusive_t_rundown
+// sys_rundown_context
 //
-// Releases a context handle allocated by a client process but was not released
-// prior to the process terminating
+// Releases a context object allocated by a client process/thread but was not 
+// released prior to that process/thread terminating
 //
 // Arguments:
 //
-//	context			- [in] RPC context handle to be rundown
+//	context		- System call context object to be rundown
 
-void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t context)
+void sys_rundown_context(Context* context)
 {
-	_ASSERTE(context);
 	if(context == nullptr) return;
 
-	// TODO: CLEAN ME UP - TESTING CLOSEPROCESS - same pointer needed below
-	Context* syscallcontext = reinterpret_cast<Context*>(context);
-	syscallcontext->VirtualMachine->CloseProcess(syscallcontext->Process);
+	// TESTING
+	context->VirtualMachine->CloseProcess(context->Process);
 
-	// Cast the context handle back into a Context handle and destroy it
-	Context::Release(syscallcontext);
+	// Destroy the context handle
+	Context::Release(context);
+}
+
+// sys32_context_t_rundown
+//
+void __RPC_USER sys32_context_t_rundown(sys32_context_t context)
+{
+	sys_rundown_context(reinterpret_cast<Context*>(context));
+}
+
+// sys32_context_exclusive_t_rundown
+//
+void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t context)
+{
+	sys_rundown_context(reinterpret_cast<Context*>(context));
 }
 
 #ifdef _M_X64
-//-----------------------------------------------------------------------------
+// sys64_context_t_rundown
+//
+void __RPC_USER sys32_context_t_rundown(sys64_context_t context)
+{
+	sys_rundown_context(reinterpret_cast<Context*>(context));
+}
+
 // sys64_context_exclusive_t_rundown
 //
-// Releases a context handle allocated by a client process but was not released
-// prior to the process terminating
-//
-// Arguments:
-//
-//	context			- [in] RPC context handle to be rundown
-
 void __RPC_USER sys64_context_exclusive_t_rundown(sys64_context_exclusive_t context)
 {
-	_ASSERTE(context);
-	if(context == nullptr) return;
-
-	Context* syscallcontext = reinterpret_cast<Context*>(context);
-
-	// Cast the context handle back into a Context handle and destroy it
-	Context::Release(syscallcontext);
+	sys_rundown_context(reinterpret_cast<Context*>(context));
 }
 #endif	// _M_X64
 

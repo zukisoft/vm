@@ -164,7 +164,7 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Create(const std::shared_ptr<Nativ
 }
 
 //-----------------------------------------------------------------------------
-// ProcessMemory::FromProcessMemory (static)
+// ProcessMemory::Duplicate (static)
 //
 // Duplicates the address space from an existing ProcessMemory instance
 //
@@ -174,7 +174,7 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Create(const std::shared_ptr<Nativ
 //	existing		- Reference to an existing ProcessMemory instance
 //	mode			- Address space duplication mode
 
-std::unique_ptr<ProcessMemory> ProcessMemory::FromProcessMemory(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, 
+std::unique_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, 
 	DuplicationMode mode)
 {
 	section_vector_t		newsections;			// New copy-on-write section collection

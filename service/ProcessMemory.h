@@ -81,10 +81,10 @@ public:
 	// Creates a new empty process virtual address space
 	static std::unique_ptr<ProcessMemory> Create(const std::shared_ptr<NativeHandle>& process);
 
-	// FromProcessMemory (static)
+	// Duplicate (static)
 	//
 	// Duplicates the virtual address space from one process into another
-	static std::unique_ptr<ProcessMemory> FromProcessMemory(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, DuplicationMode mode);
+	static std::unique_ptr<ProcessMemory> Duplicate(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, DuplicationMode mode);
 
 	// Guard
 	//

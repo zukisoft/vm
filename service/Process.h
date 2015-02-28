@@ -25,12 +25,13 @@
 #pragma once
 
 #include <atomic>
+#include <map>
 #include <memory>
-#include <unordered_map>
 #include <concrt.h>
 #include <linux/ldt.h>
 #include <linux/sched.h>
 #include <linux/stat.h>
+#include <linux/wait.h>
 #include "Architecture.h"
 #include "Bitmap.h"
 #include "Executable.h"
@@ -133,6 +134,11 @@ public:
 	// Releases process virtual address space
 	void UnmapMemory(const void* address, size_t length);
 
+	// WaitChild
+	//
+	// Waits for one or more child processes to terminate
+	uapi::pid_t WaitChild(uapi::pid_t pid, int* status, int options);
+
 	// WriteMemory
 	//
 	// Writes data into the process virtual address space
@@ -165,6 +171,12 @@ public:
 	// Gets the address of the process local descriptor table
 	__declspec(property(get=getLocalDescriptorTable)) const void* LocalDescriptorTable;
 	const void* getLocalDescriptorTable(void) const;
+
+	// NativeHandle
+	//
+	// Gets the native handle for the process
+	__declspec(property(get=getNativeHandle)) std::shared_ptr<::NativeHandle> NativeHandle;
+	std::shared_ptr<::NativeHandle> getNativeHandle(void) const;
 
 	// NativeProcessId
 	//
@@ -253,10 +265,20 @@ private:
 	// Synchronization object for the local descriptor table
 	using ldt_lock_t = Concurrency::reader_writer_lock;
 
+	// process_map_t
+	//
+	// Collection of contained Process instances, keyed on the process identifier
+	using process_map_t = std::map<uapi::pid_t, std::shared_ptr<Process>>;
+
+	// process_map_lock_t
+	//
+	// Synchronization object for process_map_t
+	using process_map_lock_t = Concurrency::reader_writer_lock;
+
 	// thread_map_t
 	//
 	// Collection of contained Thread instances, keyed on the thread identifier
-	using thread_map_t = std::unordered_map<uapi::pid_t, std::shared_ptr<::Thread>>;
+	using thread_map_t = std::map<uapi::pid_t, std::shared_ptr<::Thread>>;
 
 	// thread_map_lock_t
 	//
@@ -266,12 +288,12 @@ private:
 	// Instance Constructors
 	//
 	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+		const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 		const void* programbreak, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+		const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 		const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
 		const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
 
@@ -297,6 +319,12 @@ private:
 	template<::Architecture architecture>
 	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::unique_ptr<Executable>& executable);
 
+	// WaitHandle
+	//
+	// Gets a duplicated native process/thread handle for a wait operation
+	template<class _type>
+	HANDLE WaitHandle(const std::shared_ptr<_type>& object);
+
 	// Resume
 	//
 	// Resumes the process from a suspended state
@@ -313,12 +341,14 @@ private:
 	std::shared_ptr<VirtualMachine>		m_vm;				// Virtual machine instance
 	const ::Architecture				m_architecture;		// Process architecture
 	const uapi::pid_t					m_pid;				// Process identifier
-	std::shared_ptr<NativeHandle>		m_process;			// Native process handle
+	std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
 	const DWORD							m_processid;		// Native process identifier
 
-	// Parent and Child Processes
+	// Parent and Children
 	//
 	std::weak_ptr<Process>				m_parent;			// Weak reference to parent
+	process_map_t						m_children;			// Collection of child processes
+	process_map_lock_t					m_childlock;		// Synchronization object
 
 	// Memory
 	//

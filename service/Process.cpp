@@ -45,7 +45,7 @@
 //	workingdir		- Initial process working directory
 
 Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 	const std::shared_ptr<FileSystem::Alias>& workingdir) : Process(vm, architecture, pid, parent, process, processid, std::move(memory), ldt, 
 	std::move(ldtslots), programbreak, ProcessHandles::Create(), SignalActions::Create(), mainthread, rootdir, workingdir) {}
@@ -72,7 +72,7 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 //	workingdir		- Initial process working directory
 
 Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	const std::shared_ptr<NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
 	const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
 	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), m_ldt(ldt), 
@@ -219,8 +219,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 	try {
 
 		// Clone the current process memory as copy-on-write into the new process
-		// todo: rename that to Duplicate() to match the rest
-		std::unique_ptr<ProcessMemory> childmemory = ProcessMemory::FromProcessMemory(childhost->Process, m_memory, ProcessMemory::DuplicationMode::Clone);
+		std::unique_ptr<ProcessMemory> childmemory = ProcessMemory::Duplicate(childhost->Process, m_memory, ProcessMemory::DuplicationMode::Clone);
 
 		// Create the file system handle collection for the child process, which may be shared or duplicated (CLONE_FILES)
 		std::shared_ptr<ProcessHandles> childhandles = (flags & LINUX_CLONE_FILES) ? m_handles : ProcessHandles::Duplicate(m_handles);
@@ -235,8 +234,16 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId, std::move(task));
 
 		// Create and return the child Process instance
-		return std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
+		//return std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
+		//	m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir);
+
+		// TODO: ADD TO CHILDREN
+		std::shared_ptr<Process> proc = std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
 			m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir);
+
+		process_map_lock_t::scoped_lock writer(m_childlock);
+		m_children[pid] = proc;	// todo: insert() instead
+		return proc;
 	}
 
 	// Kill the native operating system process if any exceptions occurred during creation
@@ -533,6 +540,16 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 	if(flags & LINUX_MAP_LOCKED) m_memory->Lock(address, length);
 
 	return address;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getNativeHandle
+//
+// Gets the native operating system handle for this process
+
+std::shared_ptr<::NativeHandle> Process::getNativeHandle(void) const
+{
+	return m_process;
 }
 
 //-----------------------------------------------------------------------------
@@ -905,6 +922,155 @@ void Process::UnmapMemory(const void* address, size_t length)
 {
 	// Releasing memory is taken care of by ProcessMemory
 	m_memory->Release(address, length);
+}
+
+//-----------------------------------------------------------------------------
+// Process::WaitChild
+//
+// Waits for a child process/thread to terminate
+//
+// Arguments:
+//
+//	pid			- Specific PID to wait for, or flag for a multiple wait
+//	status		- Optionaly receives the exit status
+//	options		- Wait operation operations
+
+uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
+{
+	// Cannot wait for your own process or main thread to terminate
+	if(pid == m_pid) throw LinuxException(LINUX_ECHILD);
+
+	std::vector<HANDLE>			handles;	// Handles to wait for
+	std::vector<uapi::pid_t>	pids;		// Associated pid mappings
+
+	try {
+
+		// Not _WCLONE -> Wait for child processes
+		if((options & LINUX__WCLONE) == 0) {
+	
+			// TODO: This seems to only apply if the child process hasn't set
+			// SIGCHILD to ignore -- more research on that needed
+
+			process_map_lock_t::scoped_lock_read reader(m_childlock);
+			for(auto iterator : m_children) {
+
+				// TODO (pid < -1) -- specified process group (use absolute value)
+				if(false) {
+
+					int pgroup = -pid;
+					(pgroup);
+				}
+
+				// TODO (pid == 0) -- this process group
+				else if(false) {
+				}
+
+				// (pid == -1)  --> any child process
+				else if(pid == -1) { 
+			
+					handles.push_back(WaitHandle(iterator.second)); 
+					pids.push_back(iterator.second->ProcessId); 
+				}
+
+				// (pid == pid) --> specific child process
+				else if(iterator.second->ProcessId == pid) {
+			
+					handles.push_back(WaitHandle(iterator.second)); 
+					pids.push_back(iterator.second->ProcessId); 
+				}
+			}
+		}
+
+		// _WALL | _WCLONE -> Wait for thread objects as well
+		if((options & LINUX__WALL) || (options && LINUX__WCLONE)) {
+
+			thread_map_lock_t::scoped_lock_read reader(m_threadslock);
+			for(auto iterator: m_threads) {
+
+				// Don't wait for the process main thread, this operation only
+				// applies to threads explicitly created by Clone()
+				if(iterator.second->ThreadId == m_pid) continue;
+
+				// TODO
+			}
+		}
+
+		// If no PIDs were located based on the options, throw ECHILD
+		if(handles.size() == 0) throw LinuxException(LINUX_ECHILD);
+
+		// TODO:WTF IS THIS TAKING SO LONG TO EXECUTE
+		DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, 
+			(options & LINUX_WNOHANG) ? 0 : INFINITE);
+
+		// ZERO IS WAIT_TIMEOUT YOU IDIOT
+
+		// todo: if nothing was signaled and WNOHANG was set, return zero instead
+		if(result == WAIT_FAILED) throw LinuxException(LINUX_ECHILD);
+
+		// WAIT_TIMEOUT will only be sent if nothing was signaled after a zero timeout
+		if(result == WAIT_TIMEOUT) return 0;
+
+		else {
+
+			// Remove the specified PID from the process collection
+			process_map_lock_t::scoped_lock procwriter(m_childlock);
+
+			if(options & LINUX__WALL) m_children.clear();
+			else m_children.erase(pids[result - WAIT_OBJECT_0]);
+
+			// Remove the specified PID from the thread collection
+			// todo: if _WALL, clear all but main thread (pid == tid)
+			process_map_lock_t::scoped_lock threadwriter(m_threadslock);
+			m_threads.erase(pids[result - WAIT_OBJECT_0]);
+
+			// TODO: GetExitCodeProcess / GetExitCodeThread before closing the handles
+			// Close all of the duplicated native object handles and erase the collection
+			for(auto iterator : handles) CloseHandle(iterator);
+			handles.clear();
+		}
+
+		// Return the PID of the object that was signaled
+		return pids[result - WAIT_OBJECT_0];
+	}
+
+	// Close all of the duplicated native object handles on an exception
+	catch(...) { for(auto iterator : handles) CloseHandle(iterator); throw; }
+
+//#define LINUX_WNOHANG				0x00000001
+//#define LINUX_WUNTRACED				0x00000002
+//#define LINUX_WSTOPPED				WUNTRACED
+//#define LINUX_WEXITED				0x00000004
+//#define LINUX_WCONTINUED			0x00000008
+//#define LINUX_WNOWAIT				0x01000000		/* Don't reap, just poll status.  */
+//
+//#define LINUX__WNOTHREAD			0x20000000		/* Don't wait on children of other threads in this group */
+//#define LINUX__WALL					0x40000000		/* Wait on all children, regardless of type */
+//#define LINUX__WCLONE				0x80000000		/* Wait only on non-SIGCHLD children */
+//#define LINUX_P_ALL				0
+//#define LINUX_P_PID				1
+//#define LINUX_P_PGID			2
+}
+
+//-----------------------------------------------------------------------------
+// Process::WaitHandle<_type> (private)
+//
+// Duplicates a source process/thread native handle for a wait operation.  The
+// resultant handle must be closed with the CloseHandle() Win32 API function
+//
+// Arguments:
+//
+//	object		- Object from which to duplicate the native handle
+
+template<typename _type>
+HANDLE Process::WaitHandle(const std::shared_ptr<_type>& object)
+{
+	HANDLE			result;				// Duplicated object handle
+
+	// Attempt to duplicate the native operating system handle with the same access
+	if(!DuplicateHandle(GetCurrentProcess(), object->NativeHandle->Handle, GetCurrentProcess(), &result, 0, 
+		FALSE, DUPLICATE_SAME_ACCESS)) throw Win32Exception();
+
+	return result;						// Return the duplicated handle
 }
 
 //-----------------------------------------------------------------------------

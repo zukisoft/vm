@@ -40,19 +40,10 @@
 
 uapi::long_t sys_wait4(const Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
 {
-	int					exitstatus;
+	(rusage);		// TODO
 
-	(status);
-	(options);
-	(rusage);
-	(pid);
-	(context);
-
-	//uapi::long_t result = static_cast<uapi::pid_t>(context->Process->WaitChild_TEST(pid, &exitstatus));
-	//if(status) *status = exitstatus;
-	//return result;
-
-	return -38;
+	// Ask the current process to wait for the specified child/children
+	return context->Process->WaitChild(pid, status, options);
 }
 
 // sys32_wait4
