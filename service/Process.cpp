@@ -342,11 +342,13 @@ const void* Process::CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm
 //
 // Arguments:
 //
-//	filename	- Name of the file system executable
-//	argv		- Command-line arguments
-//	envp		- Environment variables
+//	filename		- Name of the file system executable
+//	argv			- Command-line arguments
+//	envp			- Environment variables
+//	taskstate		- Pointer to receive the new task state
+//	taskstatelen	- Length of the task state information buffer
 
-void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
+void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp, void* taskstate, size_t taskstatelen)
 {
 	// Parse the filename and command line arguments into an Executable instance
 	auto executable = Executable::FromFile(m_vm, filename, argv, envp, m_rootdir, m_workingdir);
@@ -369,13 +371,55 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 			// TODO
 		}
 
-		// (RE)START THE PROCESS WHEN DONE
-		Resume();
+		//
+		// TODO: WHAT GETS INHERITED AND WHAT DOESN'T
+		//
+
+		// KILL ALL THREADS EXCEPT THE ONE CALLING US
+		// TODO
+
+		// Remove all file handles that are set for close-on-exec
+		m_handles->RemoveCloseOnExecute();
+
+		// Remove all existing memory sections from the current process
+		m_memory->Clear();
+
+		//
+		// PROBLEM: CAN'T REMOVE THE STACK FOR THE CALLING THREAD, IT WILL ABEND AFTER THE RPC CALL
+		// MAY NEED TO SET THAT UP IN HOST RATHER THAN HERE; THE ORIGINAL WIN32 STACK WILL STILL BE INTACT
+		//
+
+		// Reallocate the local descriptor table for the process at the original address
+		try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+		// The local descriptor table is new, remove all set slot bits
+		m_ldtslots.Clear();
+
+		// Allocate the stack for the new main process thread
+		const void* stackpointer = nullptr;
+		try { stackpointer = CreateThreadStack(m_vm, m_memory); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+		// Load the executable image into the process address space and set up the thread stack
+		Executable::LoadResult loaded = executable->Load(m_memory, stackpointer);
+
+		// Create and return a new task state for the calling thread to apply
+		std::unique_ptr<TaskState> task = TaskState::Create<Architecture::x86>(loaded.EntryPoint, loaded.StackPointer);
+		if(task->Length != taskstatelen) { /* TODO: EXCEPTION */ }
+		memcpy(taskstate, task->Data, task->Length);
+
+		Resume();						// Resume the calling process
 	} 
 	
 	// Resume the unmodified process on exception so the system call will
 	// return the appropriate error code back to the caller
 	catch(...) { Resume(); throw; }
+
+	//
+	// HOW TO HANDLE EXCEPTIONS HERE -- SHOULD THE CALLING PROCESS JUST BE
+	// KILLED? THERE IS NO WAY TO BRING IT BACK ONCE THE MEMORY HAS BEEN CLEARED
+	//
 }
 
 //-----------------------------------------------------------------------------
@@ -999,11 +1043,9 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 		// If no PIDs were located based on the options, throw ECHILD
 		if(handles.size() == 0) throw LinuxException(LINUX_ECHILD);
 
-		//
+		// Wait for any or all of the collected handles to become signaled
 		DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, 
 			(options & LINUX_WNOHANG) ? 0 : INFINITE);
-
-		// ZERO IS WAIT_TIMEOUT YOU IDIOT
 
 		// todo: if nothing was signaled and WNOHANG was set, return zero instead
 		if(result == WAIT_FAILED) throw LinuxException(LINUX_ECHILD);

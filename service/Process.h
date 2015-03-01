@@ -84,7 +84,7 @@ public:
 	// Execute
 	//
 	// Replaces the process with a new executable image
-	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
+	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp, void* taskstate, size_t taskstatelen);
 
 	// MapMemory
 	//
