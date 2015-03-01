@@ -50,10 +50,10 @@ public:
 	//-------------------------------------------------------------------------
 	// Type Declarations
 
-	// Mode
+	// SectionMode
 	//
-	// Defines the protection behavior of the section
-	enum class Mode {
+	// Defines the page protection behavior of the section
+	enum class SectionMode {
 
 		Private			= 0,		// Mapping is private to the process
 		Shared,						// Mapping is shared with another process
@@ -68,26 +68,26 @@ public:
 	// Allocates pages within the virtual memory section
 	void* Allocate(void* address, size_t length, uint32_t protection);
 
-	// ChangeMode
+	// Clone
 	//
-	// Alters the protection behavior mode of the section
-	void ChangeMode(Mode mode);
+	// Clones this section into another process
+	std::unique_ptr<MemorySection> Clone(HANDLE process);
 
 	// Create (static)
 	//
 	// Creates a new virtual memory section and mapping
-	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length) { return Create(process, nullptr, length, Mode::Private, 0); }
-	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length, Mode mode) { return Create(process, nullptr, length, mode, 0); }
-	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length, uint32_t flags) { return Create(process, nullptr, length, Mode::Private, flags); }
-	static std::unique_ptr<MemorySection> Create(HANDLE process, size_t length, Mode mode, uint32_t flags) { return Create(process, nullptr, length, mode, flags); }
-	static std::unique_ptr<MemorySection> Create(HANDLE process, void* address, size_t length) { return Create(process, address, length, Mode::Private, 0); }
-	static std::unique_ptr<MemorySection> Create(HANDLE process, void* address, size_t length, Mode mode) { return Create(process, address, length, mode, 0); }
-	static std::unique_ptr<MemorySection> Create(HANDLE process, void* address, size_t length, Mode mode, uint32_t flags);
+	static std::unique_ptr<MemorySection> Create(HANDLE target, size_t length) { return Create(target, nullptr, length, SectionMode::Private, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE target, size_t length, SectionMode mode) { return Create(target, nullptr, length, mode, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE target, size_t length, uint32_t flags) { return Create(target, nullptr, length, SectionMode::Private, flags); }
+	static std::unique_ptr<MemorySection> Create(HANDLE target, size_t length, SectionMode mode, uint32_t flags) { return Create(target, nullptr, length, mode, flags); }
+	static std::unique_ptr<MemorySection> Create(HANDLE target, void* address, size_t length) { return Create(target, address, length, SectionMode::Private, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE target, void* address, size_t length, SectionMode mode) { return Create(target, address, length, mode, 0); }
+	static std::unique_ptr<MemorySection> Create(HANDLE target, void* address, size_t length, SectionMode mode, uint32_t flags);
 
-	// FromSection (static)
+	// Duplicate
 	//
-	// Creates a duplicate of this memory section for another process
-	static std::unique_ptr<MemorySection> FromSection(const std::unique_ptr<MemorySection>& section, HANDLE process, Mode mode);
+	// Duplicates this section into another process
+	std::unique_ptr<MemorySection> Duplicate(HANDLE process);
 	
 	// Protect
 	//
@@ -106,19 +106,25 @@ public:
 	//
 	// The base address of the mapped section
 	__declspec(property(get=getBaseAddress)) void* const BaseAddress;
-	void* const getBaseAddress(void) const { return m_address; }
+	void* const getBaseAddress(void) const;
 
 	// Empty
 	//
 	// Determines if the entire section is empty
 	__declspec(property(get=getEmpty)) bool Empty;
-	bool getEmpty(void) const { return m_allocmap.Empty; }
+	bool getEmpty(void) const;
 
 	// Length
 	//
 	// Length of the mapped Section
 	__declspec(property(get=getLength)) size_t Length;
-	size_t getLength(void) const { return m_length; }
+	size_t getLength(void) const;
+
+	// Mode
+	//
+	// Gets the page protection mode for this section
+	__declspec(property(get=getMode)) SectionMode Mode;
+	SectionMode getMode(void) const;
 
 private:
 
@@ -127,24 +133,19 @@ private:
 
 	// Instance Constructors
 	//
-	MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, Mode mode);
-	MemorySection(HANDLE process, HANDLE section, void* const baseaddress, size_t length, Mode mode, const Bitmap& bitmap);
+	MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, SectionMode mode);
+	MemorySection(HANDLE process, HANDLE section, void* const baseaddress, size_t length, SectionMode mode, const Bitmap& bitmap);
 
-	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&, Mode&>(HANDLE&, HANDLE&, void*&, size_t&, Mode&);
-	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&, Mode&, Bitmap&>(HANDLE&, HANDLE&, void*&, size_t&, Mode&, Bitmap&);
+	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&, SectionMode&>(HANDLE&, HANDLE&, void*&, size_t&, SectionMode&);
+	friend std::unique_ptr<MemorySection> std::make_unique<MemorySection, HANDLE&, HANDLE&, void*&, size_t&, SectionMode&, Bitmap&>(HANDLE&, HANDLE&, void*&, size_t&, SectionMode&, Bitmap&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// Clone
+	// ChangeMode
 	//
-	// Clones this process memory section into another process
-	static std::unique_ptr<MemorySection> Clone(const std::unique_ptr<MemorySection>& rhs, HANDLE process, Mode mode);
-
-	// Duplicate
-	//
-	// Creates a duplicate (Mode::Private) of this process memory section
-	static std::unique_ptr<MemorySection> Duplicate(const std::unique_ptr<MemorySection>& rhs, HANDLE process);
+	// Alters the protection behavior mode of the section
+	void ChangeMode(SectionMode mode);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -153,7 +154,7 @@ private:
 	HANDLE					m_section;			// The section object handle
 	void*					m_address;			// Mapped section base address
 	size_t					m_length;			// Length of the mapped section
-	Mode					m_mode;				// The current section mode
+	SectionMode				m_mode;				// The current section mode
 	Bitmap					m_allocmap;			// Page allocation bitmap
 };
 

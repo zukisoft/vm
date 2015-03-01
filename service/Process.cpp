@@ -218,8 +218,8 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 
 	try {
 
-		// Clone the current process memory as copy-on-write into the new process
-		std::unique_ptr<ProcessMemory> childmemory = ProcessMemory::Duplicate(childhost->Process, m_memory, ProcessMemory::DuplicationMode::Clone);
+		// Clone the current process memory into the new process
+		std::unique_ptr<ProcessMemory> childmemory = m_memory->Clone(childhost->Process);
 
 		// Create the file system handle collection for the child process, which may be shared or duplicated (CLONE_FILES)
 		std::shared_ptr<ProcessHandles> childhandles = (flags & LINUX_CLONE_FILES) ? m_handles : ProcessHandles::Duplicate(m_handles);

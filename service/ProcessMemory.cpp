@@ -149,6 +149,29 @@ void ProcessMemory::Clear(void)
 }
 
 //-----------------------------------------------------------------------------
+// ProcessMemory::Clone
+//
+// Clones the address space from one process into another
+//
+// Arguments:
+//
+//	target		- Target process handle
+
+std::unique_ptr<ProcessMemory> ProcessMemory::Clone(const std::shared_ptr<NativeHandle>& target)
+{
+	section_vector_t		newsections;			// New memory section collection
+
+	// Prevent changes to the existing process memory layout
+	section_lock_t::scoped_lock_read reader(m_sectionlock);
+
+	// Iterate over the existing memory sections and clone them into the target process
+	for(auto iterator = m_sections.begin(); iterator != m_sections.end(); iterator++) newsections.push_back((*iterator)->Clone(target->Handle));
+
+	// Construct a new ProcessMemory instance, moving the new section collection into it
+	return std::make_unique<ProcessMemory>(target, std::move(newsections));
+}
+
+//-----------------------------------------------------------------------------
 // ProcessMemory::Create (static)
 //
 // Creates a new native operating system process instance
@@ -164,40 +187,26 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Create(const std::shared_ptr<Nativ
 }
 
 //-----------------------------------------------------------------------------
-// ProcessMemory::Duplicate (static)
+// ProcessMemory::Duplicate
 //
-// Duplicates the address space from an existing ProcessMemory instance
+// Duplicates the address space from one process to another
 //
 // Arguments:
 //
-//	process			- Target native process handle
-//	existing		- Reference to an existing ProcessMemory instance
-//	mode			- Address space duplication mode
+//	target			- Target process handle
 
-std::unique_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, 
-	DuplicationMode mode)
+std::unique_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<NativeHandle>& target)
 {
-	section_vector_t		newsections;			// New copy-on-write section collection
+	section_vector_t		newsections;			// New memory section collection
 
 	// Prevent changes to the existing process memory layout
-	section_lock_t::scoped_lock_read reader(existing->m_sectionlock);
+	section_lock_t::scoped_lock_read reader(m_sectionlock);
 
-	// Iterate over the existing memory sections
-	for(auto iterator = existing->m_sections.begin(); iterator != existing->m_sections.end(); iterator++) {
-
-		// Duplicate the existing memory section into a new memory section for the target process
-		newsections.push_back(MemorySection::FromSection(*iterator, process->Handle, static_cast<MemorySection::Mode>(mode)));
-
-		//
-		// TODO: REMOVE THIS WITH A BETTER PLAN -- NEED TO CHOOSE BASED ON THE SECTION TYPE FOR SHARED MMAPS
-		// but ... if you don't change the parent mode appropriately, bad things will happen
-		//
-
-		(*iterator)->ChangeMode(MemorySection::Mode::CopyOnWrite);
-	}
+	// Iterate over the existing memory sections and duplicate them in the target process
+	for(auto iterator = m_sections.begin(); iterator != m_sections.end(); iterator++) newsections.push_back((*iterator)->Duplicate(target->Handle));
 
 	// Construct a new ProcessMemory instance, moving the new section collection into it
-	return std::make_unique<ProcessMemory>(process, std::move(newsections));
+	return std::make_unique<ProcessMemory>(target, std::move(newsections));
 }
 
 //-----------------------------------------------------------------------------

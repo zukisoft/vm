@@ -34,10 +34,10 @@
 //
 //	protection		- Protection flags to check/adjust based on mode
 
-static inline uint32_t AdjustProtectionForMode(uint32_t protection, MemorySection::Mode mode)
+static inline uint32_t AdjustProtectionForMode(uint32_t protection, MemorySection::SectionMode mode)
 {
 	// Copy-on-write mode sections get READWRITE access swapped to WRITECOPY access
-	if(mode == MemorySection::Mode::CopyOnWrite) {
+	if(mode == MemorySection::SectionMode::CopyOnWrite) {
 
 		if(protection & PAGE_READWRITE) protection = ((protection & ~PAGE_READWRITE) | PAGE_WRITECOPY);
 		else if(protection == PAGE_EXECUTE_READWRITE) protection = ((protection & ~PAGE_EXECUTE_READWRITE) | PAGE_EXECUTE_WRITECOPY);
@@ -58,13 +58,13 @@ static inline uint32_t AdjustProtectionForMode(uint32_t protection, MemorySectio
 //
 // Arguments:
 //
-//	process			- Target process handle
+//	process			- Target process handle (takes ownership)
 //	section			- Section object handle
 //	baseaddress		- Base address of the mapping
 //	length			- Length of the section
 //	mode			- Initial section protection behavior mode
 
-MemorySection::MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, Mode mode) :
+MemorySection::MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, SectionMode mode) :
 	m_process(process), m_section(section), m_address(baseaddress), m_length(length), m_mode(mode), m_allocmap(length / SystemInformation::PageSize)
 {
 	// The length of the section should align to the system allocation granularity
@@ -76,14 +76,14 @@ MemorySection::MemorySection(HANDLE process, HANDLE section, void* baseaddress, 
 //
 // Arguments:
 //
-//	process			- Target process handle
+//	process			- Target process handle (takes ownership)
 //	section			- Section object handle
 //	baseaddress		- Base address of the mapping
 //	length			- Length of the section
 //	mode			- Initial section protection behavior mode
 //	bitmap			- Reference to an existing allocation bitmap to copy
 
-MemorySection::MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, Mode mode, const Bitmap& bitmap) :
+MemorySection::MemorySection(HANDLE process, HANDLE section, void* baseaddress, size_t length, SectionMode mode, const Bitmap& bitmap) :
 	m_process(process), m_section(section), m_address(baseaddress), m_length(length), m_mode(mode), m_allocmap(bitmap)
 {
 	// The length of the section should align to the system allocation granularity
@@ -98,6 +98,7 @@ MemorySection::~MemorySection()
 	// Unmap the view from the process address space and close the section handle
 	if(m_address) NtApi::NtUnmapViewOfSection(m_process, m_address);
 	if(m_section) NtApi::NtClose(m_section);
+	if(m_process) CloseHandle(m_process);
 }
 
 //-----------------------------------------------------------------------------
@@ -131,7 +132,17 @@ void* MemorySection::Allocate(void* address, size_t length, uint32_t protection)
 }
 
 //-----------------------------------------------------------------------------
-// MemorySection::ChangeMode
+// MemorySection::getBaseAddress
+//
+// Gets the base address of the mapped section
+
+void* const MemorySection::getBaseAddress(void) const 
+{ 
+	return m_address; 
+}
+
+//-----------------------------------------------------------------------------
+// MemorySection::ChangeMode (private)
 //
 // Alters the page protection behavior mode for the memory section
 //
@@ -139,7 +150,7 @@ void* MemorySection::Allocate(void* address, size_t length, uint32_t protection)
 //
 //	mode			- New mode to set
 
-void MemorySection::ChangeMode(Mode mode)
+void MemorySection::ChangeMode(SectionMode mode)
 {
 	MEMORY_BASIC_INFORMATION		meminfo;			// Information about a range of pages
 	ULONG							previous;			// Previously set protection flags
@@ -170,81 +181,94 @@ void MemorySection::ChangeMode(Mode mode)
 			}
 		}
 
-		begin += meminfo.RegionSize;							// Move to the next region within the original section
+		// Move to the next region in the address space
+		begin += meminfo.RegionSize;
 	}
 
+	// Update the stored page protection mode flag
 	m_mode = mode;
 }
 
 //-----------------------------------------------------------------------------
-// MemorySection::Clone (static, private)
+// MemorySection::Clone
 //
-// Creates a new MemorySection by sharing an existing MemorySection instance
+// Clones the section into another process
 //
 // Arguments:
 //
-//	rhs			- Existing section to be cloned
-//	process		- Destination process handle
-//	mode		- Clone operation mode
+//	target		- Target process handle
 
-std::unique_ptr<MemorySection> MemorySection::Clone(const std::unique_ptr<MemorySection>& rhs, HANDLE process, Mode mode)
+std::unique_ptr<MemorySection> MemorySection::Clone(HANDLE target)
 {
-	HANDLE						section;						// Duplicated section handle
-	void*						mapbase = rhs->m_address;		// Same mapping address
-	SIZE_T						maplength = 0;					// Same mapping length
-	MEMORY_BASIC_INFORMATION	meminfo;						// Virtual memory region information
-	ULONG						previous;						// Previously set protection flags
-	NTSTATUS					result;							// Result from function call
+	HANDLE						process;					// Duplicated process handle
+	HANDLE						section;					// Duplicated section handle
+	void*						mapbase = m_address;		// Same mapping address
+	SIZE_T						maplength = 0;				// Same mapping length
+	MEMORY_BASIC_INFORMATION	meminfo;					// Virtual memory region information
+	ULONG						previous;					// Previously set protection flags
+	NTSTATUS					result;						// Result from function call
 
-	// PRIVATE sections should be generated by Duplicate(), this function clones/shares the section
-	_ASSERTE(mode != Mode::Private);
+	// Determine what the new mode for the section will be.  If it's currenly set to Private, it
+	// will be changed to CopyOnWrite.  Shared and CopyOnWrite sections stay the same
+	SectionMode newmode = (m_mode == SectionMode::Private) ? SectionMode::CopyOnWrite : m_mode;
 
-	// Set the new section handle's access mask based on the protection behavior mode.  Shared sections
-	// get a handle with full access to the section, copy on write sections get read/execute access to it
-	ACCESS_MASK mask = (mode == Mode::CopyOnWrite) ? STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_READ | SECTION_MAP_EXECUTE : SECTION_ALL_ACCESS;
-
-	// Duplicate the section handle with the same attributes as the original and the calculated access mask
-	result = NtApi::NtDuplicateObject(NtApi::NtCurrentProcess, rhs->m_section, NtApi::NtCurrentProcess, &section, mask, 0, NtApi::DUPLICATE_SAME_ATTRIBUTES);
-	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+	// Duplicate the provided process handle; will take ownership of it
+	if(!DuplicateHandle(GetCurrentProcess(), target, GetCurrentProcess(), &process, 0, FALSE, DUPLICATE_SAME_ACCESS)) throw Win32Exception();
 
 	try {
 
-		// Attempt to map the original section into the target process, enabling copy-on-write as necessary
-		ULONG prot = (mode == Mode::CopyOnWrite) ? PAGE_EXECUTE_WRITECOPY : PAGE_EXECUTE_READWRITE;
-		result = NtApi::NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, NtApi::ViewUnmap, 0, prot);
+		// Set the new section handle's access mask based on the protection behavior mode.  Shared sections get a 
+		// handle with full access to the section, copy on write sections get read/execute access to it
+		ACCESS_MASK mask = (newmode == SectionMode::CopyOnWrite) ? STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_READ | SECTION_MAP_EXECUTE : SECTION_ALL_ACCESS;
+
+		// Duplicate the section handle with the same attributes as the original and the calculated access mask
+		result = NtApi::NtDuplicateObject(NtApi::NtCurrentProcess, m_section, NtApi::NtCurrentProcess, &section, mask, 0, NtApi::DUPLICATE_SAME_ATTRIBUTES);
 		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
 		try {
 
-			uintptr_t begin = uintptr_t(rhs->m_address);
-			uintptr_t end = begin + rhs->m_length;
+			// Attempt to map the original section into the target process, enabling copy-on-write as necessary
+			ULONG prot = (newmode == SectionMode::CopyOnWrite) ? PAGE_EXECUTE_WRITECOPY : PAGE_EXECUTE_READWRITE;
+			result = NtApi::NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, NtApi::ViewUnmap, 0, prot);
+			if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
-			// Iterate over the source section to apply the same protection flags to the cloned section
-			while(begin < end) {
+			try {
 
-				// Get information about the current region in the source section
-				if(!VirtualQueryEx(rhs->m_process, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+				uintptr_t begin = uintptr_t(m_address);
+				uintptr_t end = begin + m_length;
 
-				// If this region was committed in the source section, it will have been committed in the new mapping
-				if(meminfo.State == MEM_COMMIT) {
+				while(begin < end) {
 
-					// Adjust and apply the protection flags to the auto-committed region in the cloned mapping
-					result = NtApi::NtProtectVirtualMemory(process, &meminfo.BaseAddress, &meminfo.RegionSize, AdjustProtectionForMode(meminfo.Protect, mode), &previous);
-					if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+					// Get information about the current region in the source section
+					if(!VirtualQueryEx(m_process, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+
+					// If this region was committed in the source section, it will have been committed in the new mapping
+					if(meminfo.State == MEM_COMMIT) {
+
+						// Adjust and apply the protection flags to the auto-committed region in the cloned mapping
+						result = NtApi::NtProtectVirtualMemory(process, &meminfo.BaseAddress, &meminfo.RegionSize, AdjustProtectionForMode(meminfo.Protect, newmode), &previous);
+						if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+					}
+
+					begin += meminfo.RegionSize;				// Move to the next region in the source section
 				}
-
-				begin += meminfo.RegionSize;				// Move to the next region in the source section
 			}
+
+			catch(...) { NtApi::NtUnmapViewOfSection(process, mapbase); throw; }
 		}
 
-		catch(...) { NtApi::NtUnmapViewOfSection(process, mapbase); throw; }
+		catch(...) { NtApi::NtClose(section); throw; }
+
+		// Section has been successfully created in the target process, change this section's page
+		// protection mode to match; this is necessary for copy-on-write to actually work
+		ChangeMode(newmode);
 	}
 
-	catch(...) { NtApi::NtClose(section); throw; }
+	catch(...) { CloseHandle(process); throw; }
 
 	// Construct the cloned MemorySection instance with a copy of the existing allocation bitmap
 	size_t length = maplength;
-	return std::make_unique<MemorySection>(process, section, mapbase, length, mode, rhs->m_allocmap);
+	return std::make_unique<MemorySection>(process, section, mapbase, length, newmode, m_allocmap);
 }
 
 //-----------------------------------------------------------------------------
@@ -254,18 +278,23 @@ std::unique_ptr<MemorySection> MemorySection::Clone(const std::unique_ptr<Memory
 //
 // Arguments:
 //
-//	process			- Target process handle
+//	target			- Target process handle
 //	address			- Optional base address for the section
 //	length			- Length of the section and mapping
 //	mode			- Initial section protection behavior mode
 //	flags			- Optional section flags
 
-std::unique_ptr<MemorySection> MemorySection::Create(HANDLE process, void* address, size_t length, Mode mode, uint32_t flags)
+std::unique_ptr<MemorySection> MemorySection::Create(HANDLE target, void* address, size_t length, SectionMode mode, uint32_t flags)
 {
+	HANDLE					process;			// Duplicated process handle
 	HANDLE					section;			// Section handle
 	LARGE_INTEGER			sectionlength;		// Section length
 	SIZE_T					maplength = 0;		// Mapping length
 	NTSTATUS				result;				// Result from function call
+
+	// SectionMode::CopyOnWrite is not valid for newly created sections, they should be
+	// set to SectionMode::Private or SectionMode::Shared
+	if(mode == SectionMode::CopyOnWrite) throw Win32Exception(ERROR_INVALID_PARAMETER);
 
 	// The only flag currently supported is MEM_TOP_DOWN, which places the mapping
 	// at the highest available virtual address in the process
@@ -275,104 +304,131 @@ std::unique_ptr<MemorySection> MemorySection::Create(HANDLE process, void* addre
 	void* mapbase = align::down(address, SystemInformation::AllocationGranularity);
 	length = align::up(length + (uintptr_t(address) - uintptr_t(mapbase)), SystemInformation::AllocationGranularity);
 
-	// Copy-on-write sections get read-only access to the section object, otherwise full access is provided
-	ACCESS_MASK mask = (mode == Mode::CopyOnWrite) ? STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_READ | SECTION_MAP_EXECUTE : SECTION_ALL_ACCESS;
-
-	// Copy-on-write sections get PAGE_EXECUTE_WRITECOPY by default, otherwise PAGE_EXECUTE_READWRITE
-	ULONG protection = (mode == Mode::CopyOnWrite) ? PAGE_EXECUTE_WRITECOPY : PAGE_EXECUTE_READWRITE;
-
-	// Create the section with the calculated access mask and base protection flags
-	sectionlength.QuadPart = length;
-	result = NtApi::NtCreateSection(&section, mask, nullptr, &sectionlength, protection, SEC_RESERVE, nullptr);
-	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+	// Duplicate the provided process handle; will take ownership of it
+	if(!DuplicateHandle(GetCurrentProcess(), target, GetCurrentProcess(), &process, 0, FALSE, DUPLICATE_SAME_ACCESS)) throw Win32Exception();
 
 	try {
 
-		// Attempt to map the section into the target process' address space with the specified protection
-		result = NtApi::NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, NtApi::ViewUnmap, flags, protection);
+		// Create the section with the an ALL_ACCESS mask and PAGE_EXECUTE_READWRITE protection
+		sectionlength.QuadPart = length;
+		result = NtApi::NtCreateSection(&section, SECTION_ALL_ACCESS, nullptr, &sectionlength, PAGE_EXECUTE_READWRITE, SEC_RESERVE, nullptr);
 		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+
+		try {
+
+			// Attempt to map the section into the target process' address space with PAGE_EXECUTE_READWRITE protection
+			result = NtApi::NtMapViewOfSection(section, process, &mapbase, 0, 0, nullptr, &maplength, NtApi::ViewUnmap, flags, PAGE_EXECUTE_READWRITE);
+			if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+		}
+
+		catch(...) { NtApi::NtClose(section); throw; }
 	}
 
-	catch(...) { NtApi::NtClose(section); throw; }
+	catch(...) { CloseHandle(process); throw; }
 
 	// Construct the MemorySection instance with the new section and mapping attributes
 	return std::make_unique<MemorySection>(process, section, mapbase, length, mode);
 }
 
 //-----------------------------------------------------------------------------
-// MemorySection::Duplicate (private, static)
+// MemorySection::Duplicate
 //
-// Creates a new private section in a target process that will contain the same
-// data and same protection flags as the source section
+// Copies this section into another process at the same address
 //
 // Arguments:
 //
-//	rhs			- Existing section to be duplicated
-//	process		- Destination process handle
+//	target		- Target process handle
 
-std::unique_ptr<MemorySection> MemorySection::Duplicate(const std::unique_ptr<MemorySection>& rhs, HANDLE process)
+std::unique_ptr<MemorySection> MemorySection::Duplicate(HANDLE target)
 {
+	HANDLE						process;					// Duplicate of target process handle
 	void*						localaddress = nullptr;		// Local in-process mapping to copy from
 	SIZE_T						locallength = 0;			// Local mapping length
 	MEMORY_BASIC_INFORMATION	meminfo;					// Virtual memory region information
 	NTSTATUS					result;						// Result from function call
 
-	// Create a new section reservation with the same address and length as the original
-	std::unique_ptr<MemorySection> duplicate = Create(process, rhs->m_address, rhs->m_length, Mode::Private);
+	// Determine what the mode of the section should be, if this section is CopyOnWrite, it switches
+	// back to Private.  Otherwise it stays the same as the current section mode
+	SectionMode mode = (m_mode == SectionMode::CopyOnWrite) ? SectionMode::Private : m_mode;
 
-	// Map the section into the current process as READONLY so that the data can be copied into the new section
-	result = NtApi::NtMapViewOfSection(rhs->m_section, NtApi::NtCurrentProcess, &localaddress, 0, 0, nullptr, &locallength, NtApi::ViewUnmap, 0, PAGE_READONLY);
-	if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+	// Duplicate the provided process handle; will take ownership of it
+	if(!DuplicateHandle(GetCurrentProcess(), target, GetCurrentProcess(), &process, 0, FALSE, DUPLICATE_SAME_ACCESS)) throw Win32Exception();
 
 	try {
 
-		uintptr_t begin = uintptr_t(rhs->m_address);
-		uintptr_t end = begin + rhs->m_length;
+		// Create a new section reservation with the same address and length as the original
+		std::unique_ptr<MemorySection> duplicate = Create(process, m_address, m_length, mode);
 
-		// Iterate over the source section to apply the same status and protection flags to the new section
-		while(begin < end) {
+		// Map the section into the current process as READONLY so that the data can be copied into the new section
+		result = NtApi::NtMapViewOfSection(m_section, NtApi::NtCurrentProcess, &localaddress, 0, 0, nullptr, &locallength, NtApi::ViewUnmap, 0, PAGE_READONLY);
+		if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
 
-			// Get information about the current region within the source section
-			if(!VirtualQueryEx(rhs->m_process, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
+		try {
 
-			// If the region is committed, copy the data from the source region to the destination region
-			if(meminfo.State == MEM_COMMIT) {
+			uintptr_t begin = uintptr_t(m_address);
+			uintptr_t end = begin + m_length;
 
-				// Allocate/commit the duplicate region with READWRITE access in order to write into it
-				duplicate->Allocate(meminfo.BaseAddress, meminfo.RegionSize, PAGE_READWRITE);
+			while(begin < end) {
 
-				// Use NtWriteVirtualMemory to copy the region from the local mapping into the duplicate mapping
-				void* sourceaddress = reinterpret_cast<void*>(uintptr_t(localaddress) + (uintptr_t(meminfo.BaseAddress) - uintptr_t(rhs->m_address)));
-				result = NtApi::NtWriteVirtualMemory(process, meminfo.BaseAddress, sourceaddress, meminfo.RegionSize, nullptr);
-				if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+				// Get information about the current region within the source section
+				if(!VirtualQueryEx(m_process, reinterpret_cast<void*>(begin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) throw Win32Exception();
 
-				// Apply the source region protection flags to the destination region
-				duplicate->Protect(meminfo.BaseAddress, meminfo.RegionSize, meminfo.Protect);
+				// If the region is committed, copy the data from the source region to the destination region
+				if(meminfo.State == MEM_COMMIT) {
+
+					// Allocate/commit the duplicate region with READWRITE access in order to write into it
+					duplicate->Allocate(meminfo.BaseAddress, meminfo.RegionSize, PAGE_READWRITE);
+
+					// Use NtWriteVirtualMemory to copy the region from the local mapping into the duplicate mapping
+					void* sourceaddress = reinterpret_cast<void*>(uintptr_t(localaddress) + (uintptr_t(meminfo.BaseAddress) - uintptr_t(m_address)));
+					result = NtApi::NtWriteVirtualMemory(process, meminfo.BaseAddress, sourceaddress, meminfo.RegionSize, nullptr);
+					if(result != NtApi::STATUS_SUCCESS) throw StructuredException(result);
+
+					// Apply source region protection flags to the destination region after adjusting
+					duplicate->Protect(meminfo.BaseAddress, meminfo.RegionSize, AdjustProtectionForMode(meminfo.Protect, mode));
+				}
+
+				begin += meminfo.RegionSize;							// Move to the next region within the original section
 			}
-
-			begin += meminfo.RegionSize;							// Move to the next region within the original section
 		}
+
+		catch(...) { NtApi::NtUnmapViewOfSection(NtApi::NtCurrentProcess, localaddress); throw; }
+
+		NtApi::NtUnmapViewOfSection(NtApi::NtCurrentProcess, localaddress);		// Remove the local process mapping
+		return duplicate;														// Return duplicated section
 	}
 
-	catch(...) { NtApi::NtUnmapViewOfSection(NtApi::NtCurrentProcess, localaddress); throw; }
-
-	NtApi::NtUnmapViewOfSection(NtApi::NtCurrentProcess, localaddress);		// Remove the local process mapping
-
-	return duplicate;
+	catch(...) { CloseHandle(process); throw; }
 }
 
 //-----------------------------------------------------------------------------
-// MemorySection::FromSection (static)
+// MemorySection::getEmpty
 //
-// Creates a new MemorySection in another process
+// Determines if the entire section is empty
 
-std::unique_ptr<MemorySection> MemorySection::FromSection(const std::unique_ptr<MemorySection>& rhs, HANDLE process, Mode mode)
-{
-	// PRIVATE: Duplicate the section in the target process
-	if(mode == Mode::Private) return Duplicate(rhs, process);
+bool MemorySection::getEmpty(void) const 
+{ 
+	return m_allocmap.Empty; 
+}
 
-	// SHARED/COPY-ON-WRITE: Clone the section in the target process
-	else return Clone(rhs, process, mode);
+//-----------------------------------------------------------------------------
+// MemorySection::getLength
+//
+// Gets the length of the mapped Section
+
+size_t MemorySection::getLength(void) const 
+{ 
+	return m_length; 
+}
+
+//-----------------------------------------------------------------------------
+// MemorySection::getMode
+//
+// Gets the current page protection mode of the section
+
+MemorySection::SectionMode MemorySection::getMode(void) const
+{ 
+	return m_mode;
 }
 
 //-----------------------------------------------------------------------------

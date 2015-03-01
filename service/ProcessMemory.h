@@ -51,17 +51,6 @@ public:
 	//
 	~ProcessMemory()=default;
 
-	// DuplicationMode
-	//
-	// Defines the address space duplication mode for FromProcessMemory(). Values
-	// are analogous to the MemorySection protection mode flags
-	enum class DuplicationMode {
-
-		Clone			= static_cast<int>(MemorySection::Mode::CopyOnWrite),
-		Share			= static_cast<int>(MemorySection::Mode::Shared),
-		Duplicate		= static_cast<int>(MemorySection::Mode::Private),
-	};
-
 	//-------------------------------------------------------------------------
 	// Member Functions
 
@@ -76,15 +65,20 @@ public:
 	// Removes all virtual memory allocations 
 	void Clear(void);
 
+	// Clone
+	//
+	// Clones the virtual address space from one process into another
+	std::unique_ptr<ProcessMemory> Clone(const std::shared_ptr<NativeHandle>& target);
+
 	// Create (static)
 	//
 	// Creates a new empty process virtual address space
 	static std::unique_ptr<ProcessMemory> Create(const std::shared_ptr<NativeHandle>& process);
 
-	// Duplicate (static)
+	// Duplicate
 	//
 	// Duplicates the virtual address space from one process into another
-	static std::unique_ptr<ProcessMemory> Duplicate(const std::shared_ptr<NativeHandle>& process, const std::unique_ptr<ProcessMemory>& existing, DuplicationMode mode);
+	std::unique_ptr<ProcessMemory> Duplicate(const std::shared_ptr<NativeHandle>& target);
 
 	// Guard
 	//
