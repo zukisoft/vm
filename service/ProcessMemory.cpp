@@ -187,6 +187,13 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<Na
 
 		// Duplicate the existing memory section into a new memory section for the target process
 		newsections.push_back(MemorySection::FromSection(*iterator, process->Handle, static_cast<MemorySection::Mode>(mode)));
+
+		//
+		// TODO: REMOVE THIS WITH A BETTER PLAN -- NEED TO CHOOSE BASED ON THE SECTION TYPE FOR SHARED MMAPS
+		// but ... if you don't change the parent mode appropriately, bad things will happen
+		//
+
+		(*iterator)->ChangeMode(MemorySection::Mode::CopyOnWrite);
 	}
 
 	// Construct a new ProcessMemory instance, moving the new section collection into it

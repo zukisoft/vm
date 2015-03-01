@@ -370,6 +370,7 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 		}
 
 		// (RE)START THE PROCESS WHEN DONE
+		Resume();
 	} 
 	
 	// Resume the unmodified process on exception so the system call will
@@ -998,7 +999,7 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 		// If no PIDs were located based on the options, throw ECHILD
 		if(handles.size() == 0) throw LinuxException(LINUX_ECHILD);
 
-		// TODO:WTF IS THIS TAKING SO LONG TO EXECUTE
+		//
 		DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, 
 			(options & LINUX_WNOHANG) ? 0 : INFINITE);
 
