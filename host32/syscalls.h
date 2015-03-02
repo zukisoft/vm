@@ -45,7 +45,7 @@ extern uapi::long_t sys_noentry(PCONTEXT);
 
 /* 001 */ extern uapi::long_t sys_exit(PCONTEXT);
 /* 002 */ extern uapi::long_t sys_fork(PCONTEXT);
-/* 011 */ extern uapi::long_t sys_execve(PCONTEXT);
+/* 011 */ extern uapi::long_t sys_execve(const uapi::char_t*, const uapi::char_t* argv[], const uapi::char_t* envp[]);
 /* 120 */ extern uapi::long_t sys_clone(PCONTEXT);
 /* 190 */ extern uapi::long_t sys_vfork(PCONTEXT);
 /* 252 */ extern uapi::long_t sys_exit_group(int status);

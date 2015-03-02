@@ -117,8 +117,8 @@ public:
 	// NativeHandle
 	//
 	// Gets the native handle for the thread
-	__declspec(property(get=getNativeHandle)) std::shared_ptr<::NativeHandle> NativeHandle;
-	std::shared_ptr<::NativeHandle> getNativeHandle(void) const;
+	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
+	HANDLE getNativeHandle(void) const;
 
 	// NativeThreadId
 	//

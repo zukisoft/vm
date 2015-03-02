@@ -162,7 +162,7 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	frame.pretcode = reinterpret_cast<uint32_t>(&signal.second.sa_restorer);
 
 	// retcode
-	// the embedded pointer to sigreturn can't be specified - no idea where sys_sigreturn will be in the hot
+	// the embedded pointer to sigreturn can't be specified - no idea where sys_sigreturn will be in the host
 	// pop eax; mov eax, XXXXXXXXh; int 80h
 	//frame.retcode = { 0x58, 0xB8, 0x00, 0x00, 0x00, 0x00, 0xCD, 0x80 };
 
@@ -271,9 +271,9 @@ std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::sha
 //
 // Gets the native operating system handle for this thread
 
-std::shared_ptr<::NativeHandle> Thread::getNativeHandle(void) const
+HANDLE Thread::getNativeHandle(void) const
 {
-	return m_thread;
+	return m_thread->Handle;
 }
 
 //-----------------------------------------------------------------------------

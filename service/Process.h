@@ -84,7 +84,7 @@ public:
 	// Execute
 	//
 	// Replaces the process with a new executable image
-	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp, void* taskstate, size_t taskstatelen);
+	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
 
 	// MapMemory
 	//
@@ -175,8 +175,8 @@ public:
 	// NativeHandle
 	//
 	// Gets the native handle for the process
-	__declspec(property(get=getNativeHandle)) std::shared_ptr<::NativeHandle> NativeHandle;
-	std::shared_ptr<::NativeHandle> getNativeHandle(void) const;
+	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
+	HANDLE getNativeHandle(void) const;
 
 	// NativeProcessId
 	//

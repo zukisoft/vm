@@ -115,7 +115,7 @@ syscall_t g_syscalls[512] = {
 /* 008 */	REMOTE_SYSCALL_2(sys32_creat, const sys32_char_t*, sys32_mode_t),
 /* 009 */	sys_noentry,
 /* 010 */	sys_noentry,
-/* 011 */	CONTEXT_SYSCALL(sys_execve),
+/* 011 */	LOCAL_SYSCALL_3(sys_execve, const uapi::char_t*, const uapi::char_t**, const uapi::char_t**),
 /* 012 */	sys_noentry,
 /* 013 */	sys_noentry,
 /* 014 */	REMOTE_SYSCALL_3(sys32_mknod, const sys32_char_t*, sys32_mode_t, sys32_dev_t),

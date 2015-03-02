@@ -36,25 +36,23 @@
 //	filename		- Path to the binary file to be executed
 //	argv			- Command-line argument array
 //	envp			- Environment variable array
-//	taskstate		- Receives the new task information
-//	taskstatelen	- Length of the task state information buffer
 
-uapi::long_t sys_execve(const Context* context, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp, void* taskstate, size_t taskstatelen)
+uapi::long_t sys_execve(const Context* context, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp)
 {
-	// Replace the process with the specified image and acquire the new task state information
-	context->Process->Execute(filename, argv, envp, taskstate, taskstatelen);
+	// Replace the process with the specified image
+	context->Process->Execute(filename, argv, envp);
 	return 0;
 }
 
 // sys32_execve
 //
-sys32_long_t sys32_execve(sys32_context_t context, const sys32_char_t* filename, sys32_int_t argc, const sys32_char_t* argv[], sys32_int_t envc, const sys32_char_t* envp[], sys32_task_t* task)
+sys32_long_t sys32_execve(sys32_context_t context, const sys32_char_t* filename, sys32_int_t argc, const sys32_char_t* argv[], sys32_int_t envc, const sys32_char_t* envp[])
 {
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(envc);
 
 	// argc and envp are for RPC only, don't pass onto the system call
-	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_execve, context, filename, argv, envp, task, sizeof(sys32_task_t)));
+	return static_cast<sys32_long_t>(SystemCall::Invoke(sys_execve, context, filename, argv, envp));
 }
 
 #ifdef _M_X64

@@ -183,7 +183,7 @@ interface SystemCalls32
 	/* 006 */ sys32_long_t	sys32_close([in] sys32_context_t context, [in] sys32_int_t fd);
 	/* 007 */ sys32_long_t	sys32_waitpid([in] sys32_context_t context, [in] sys32_pid_t pid, [in, out, unique] sys32_int_t* status, [in] sys32_int_t options);
 	/* 008 */ sys32_long_t	sys32_creat([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode);
-	/* 011 */ sys32_long_t	sys32_execve([in] sys32_context_t context, [in, string] const sys32_char_t* filename, [in] sys32_int_t argc, [in, string, size_is(argc + 1)] const sys32_char_t* argv[], [in] sys32_int_t envc, [in, string, size_is(envc + 1)] const sys32_char_t* envp[], [out, ref] sys32_task_t* task);
+	/* 011 */ sys32_long_t	sys32_execve([in] sys32_context_t context, [in, string] const sys32_char_t* filename, [in] sys32_int_t argc, [in, string, size_is(argc + 1)] const sys32_char_t* argv[], [in] sys32_int_t envc, [in, string, size_is(envc + 1)] const sys32_char_t* envp[]);
 	/* 014 */ sys32_long_t	sys32_mknod([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [in] sys32_mode_t mode, [in] sys32_dev_t device);
 	/* 020 */ sys32_long_t	sys32_getpid([in] sys32_context_t context);
 	/* 021 */ sys32_long_t	sys32_mount([in] sys32_context_t context, [in, string] const sys32_char_t* source, [in, string] const sys32_char_t* target, [in, string] const sys32_char_t* filesystem, [in] sys32_ulong_t flags, [in] sys32_addr_t data);

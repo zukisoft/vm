@@ -345,49 +345,40 @@ const void* Process::CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm
 //	filename		- Name of the file system executable
 //	argv			- Command-line arguments
 //	envp			- Environment variables
-//	taskstate		- Pointer to receive the new task state
-//	taskstatelen	- Length of the task state information buffer
 
-void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp, void* taskstate, size_t taskstatelen)
+void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
 {
+	DWORD					threadid;				// New thread identifier
+
 	// Parse the filename and command line arguments into an Executable instance
 	auto executable = Executable::FromFile(m_vm, filename, argv, envp, m_rootdir, m_workingdir);
 
-	Suspend();							// Suspend the entire native process
+	// Suspend the process
+	Suspend();
+
+	// Create a new thread in the process using the address provided at process registration.  Use the minimum
+	// allowed thread stack size, it will be overcome by the stack allocated below
+	auto thread = ::NativeHandle::FromHandle(CreateRemoteThread(m_process->Handle, nullptr, SystemInformation::AllocationGranularity, 
+		reinterpret_cast<LPTHREAD_START_ROUTINE>(m_threadproc), nullptr, CREATE_SUSPENDED, &threadid));
+
+	// Terminate all existing threads within the process and clear out the local collection
+	for(auto iterator : m_threads) TerminateThread(iterator.second->NativeHandle, (DWORD)E_ABORT);		// todo: return value
+	m_threads.clear();
+
+	//
+	// AFTER THIS, ANY EXCEPTION MUST KILL AND CLEAN OUT THE PROCESS -- THE CALLING THREAD IS DEAD
+	// (HOW DOES THIS SITUATION GET REPORTED?)
 
 	try {
-
-		// If the architecture of the executable is the same as this process, it can
-		// be cleared out and replaced without spawning a new native process
-		if(executable->Architecture == m_architecture) {
-
-			// TODO
-		}
-
-		// Otherwise, the native process has to be replaced with a new one that
-		// supports the target architecture
-		else {
-
-			// TODO
-		}
-
 		//
 		// TODO: WHAT GETS INHERITED AND WHAT DOESN'T
 		//
-
-		// KILL ALL THREADS EXCEPT THE ONE CALLING US
-		// TODO
 
 		// Remove all file handles that are set for close-on-exec
 		m_handles->RemoveCloseOnExecute();
 
 		// Remove all existing memory sections from the current process
 		m_memory->Clear();
-
-		//
-		// PROBLEM: CAN'T REMOVE THE STACK FOR THE CALLING THREAD, IT WILL ABEND AFTER THE RPC CALL
-		// MAY NEED TO SET THAT UP IN HOST RATHER THAN HERE; THE ORIGINAL WIN32 STACK WILL STILL BE INTACT
-		//
 
 		// Reallocate the local descriptor table for the process at the original address
 		try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
@@ -404,22 +395,14 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 		// Load the executable image into the process address space and set up the thread stack
 		Executable::LoadResult loaded = executable->Load(m_memory, stackpointer);
 
-		// Create and return a new task state for the calling thread to apply
-		std::unique_ptr<TaskState> task = TaskState::Create<Architecture::x86>(loaded.EntryPoint, loaded.StackPointer);
-		if(task->Length != taskstatelen) { /* TODO: EXCEPTION */ }
-		memcpy(taskstate, task->Data, task->Length);
+		// hard-coded to x86 for testing
+		auto thd = Thread::FromNativeHandle<::Architecture::x86>(m_pid, m_process, thread, threadid, TaskState::Create<Architecture::x86>(loaded.EntryPoint, loaded.StackPointer));
+		m_threads[m_pid] = thd;
 
-		Resume();						// Resume the calling process
-	} 
-	
-	// Resume the unmodified process on exception so the system call will
-	// return the appropriate error code back to the caller
-	catch(...) { Resume(); throw; }
+		Resume();		// Resume the process; this will start the thread as well
+	}
 
-	//
-	// HOW TO HANDLE EXCEPTIONS HERE -- SHOULD THE CALLING PROCESS JUST BE
-	// KILLED? THERE IS NO WAY TO BRING IT BACK ONCE THE MEMORY HAS BEEN CLEARED
-	//
+	catch(...) { /* KILL PROCESS AND REMOVE FROM COLLECTIONS HERE */ }
 }
 
 //-----------------------------------------------------------------------------
@@ -592,9 +575,9 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 //
 // Gets the native operating system handle for this process
 
-std::shared_ptr<::NativeHandle> Process::getNativeHandle(void) const
+HANDLE Process::getNativeHandle(void) const
 {
-	return m_process;
+	return m_process->Handle;
 }
 
 //-----------------------------------------------------------------------------
@@ -1110,7 +1093,7 @@ HANDLE Process::WaitHandle(const std::shared_ptr<_type>& object)
 	HANDLE			result;				// Duplicated object handle
 
 	// Attempt to duplicate the native operating system handle with the same access
-	if(!DuplicateHandle(GetCurrentProcess(), object->NativeHandle->Handle, GetCurrentProcess(), &result, 0, 
+	if(!DuplicateHandle(GetCurrentProcess(), object->NativeHandle, GetCurrentProcess(), &result, 0, 
 		FALSE, DUPLICATE_SAME_ACCESS)) throw Win32Exception();
 
 	return result;						// Return the duplicated handle
