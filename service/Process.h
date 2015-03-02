@@ -313,6 +313,12 @@ private:
 	// Creates the stack memory for a thread
 	static const void* CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory);
 
+	// Execute<Architecture>
+	//
+	// Replaces the process with a new executable image
+	template<::Architecture>
+	void Execute(const std::unique_ptr<Executable>& executable);
+
 	// FromExecutable<Architecture>
 	//
 	// Creates a new process instance from an Executable

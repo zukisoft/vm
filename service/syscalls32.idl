@@ -221,6 +221,7 @@ interface SystemCalls32
 	/* 197 */ sys32_long_t	sys32_fstat64([in] sys32_context_t context, [in] sys32_int_t fd, [out, ref] linux_stat3264* buf);
 	/* 199 */ sys32_long_t	sys32_getuid([in] sys32_context_t context);
 	/* 200 */ sys32_long_t	sys32_getgid([in] sys32_context_t context);
+	/* 201 */ sys32_long_t	sys32_geteuid([in] sys32_context_t context);
 	/* 219 */ sys32_long_t	sys32_madvise([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t advice);
 	/* 221 */ sys32_long_t	sys32_fcntl64([in] sys32_context_t context, [in] sys32_int_t fd, [in] sys32_int_t cmd, [in] sys32_addr_t arg);
 	/* 243 */ sys32_long_t	sys32_set_thread_area([in] sys32_context_t context, [in, out, ref] linux_user_desc32* u_info);

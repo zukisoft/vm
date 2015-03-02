@@ -305,7 +305,7 @@ syscall_t g_syscalls[512] = {
 /* 198 */	sys_noentry,
 /* 199 */	REMOTE_SYSCALL_0(sys32_getuid),
 /* 200 */	REMOTE_SYSCALL_0(sys32_getgid),
-/* 201 */	sys_noentry,
+/* 201 */	REMOTE_SYSCALL_0(sys32_geteuid),
 /* 202 */	sys_noentry,
 /* 203 */	sys_noentry,
 /* 204 */	sys_noentry,

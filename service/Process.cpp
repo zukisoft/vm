@@ -348,13 +348,38 @@ const void* Process::CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm
 
 void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
 {
-	DWORD					threadid;				// New thread identifier
-
 	// Parse the filename and command line arguments into an Executable instance
 	auto executable = Executable::FromFile(m_vm, filename, argv, envp, m_rootdir, m_workingdir);
 
-	// Suspend the process
-	Suspend();
+	// Architecture::x86 --> 32-bit executable
+	if(executable->Architecture == ::Architecture::x86) Execute<Architecture::x86>(executable);
+
+	// Architecture::x86_64 --> 64-bit executable
+#ifdef _M_X64
+	else if(executable->Architecture == ::Architecture::x86_64) Execute<Architecture::x86_64>(executable);
+#endif
+	
+	// Unsupported architecture
+	else throw LinuxException(LINUX_EPERM);
+}
+
+//-----------------------------------------------------------------------------
+// Process::Execute<Architecture> (private)
+//
+// Replaces the process with a new executable image
+//
+// Arguments:
+//
+//	filename		- Name of the file system executable
+//	argv			- Command-line arguments
+//	envp			- Environment variables
+
+template<::Architecture architecture>
+void Process::Execute(const std::unique_ptr<Executable>& executable)
+{
+	DWORD				threadid;				// New thread identifier
+
+	Suspend();									// Suspend the entire process
 
 	// Create a new thread in the process using the address provided at process registration.  Use the minimum
 	// allowed thread stack size, it will be overcome by the stack allocated below
@@ -395,8 +420,7 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 		// Load the executable image into the process address space and set up the thread stack
 		Executable::LoadResult loaded = executable->Load(m_memory, stackpointer);
 
-		// hard-coded to x86 for testing
-		auto thd = Thread::FromNativeHandle<::Architecture::x86>(m_pid, m_process, thread, threadid, TaskState::Create<Architecture::x86>(loaded.EntryPoint, loaded.StackPointer));
+		auto thd = Thread::FromNativeHandle<architecture>(m_pid, m_process, thread, threadid, TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
 		m_threads[m_pid] = thd;
 
 		Resume();		// Resume the process; this will start the thread as well
