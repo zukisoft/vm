@@ -101,8 +101,9 @@ public:
 	// Spawn (static)
 	//
 	// Spawns a new process instance
-	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, const char_t* const* argv,
-		const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+		const char_t* filename, const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	// Start
 	//
@@ -308,10 +309,10 @@ private:
 	template<::Architecture architecture>
 	std::shared_ptr<Process> Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task);
 
-	// CreateThreadStack
+	// CreateStack
 	//
-	// Creates the stack memory for a thread
-	static const void* CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory);
+	// Allocates a new stack in the process
+	static const void* CreateStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory);
 
 	// Execute<Architecture>
 	//
@@ -319,11 +320,12 @@ private:
 	template<::Architecture>
 	void Execute(const std::unique_ptr<Executable>& executable);
 
-	// FromExecutable<Architecture>
+	// Spawn<Architecture>
 	//
-	// Creates a new process instance from an Executable
+	// Creates a new process instance from an executable image
 	template<::Architecture architecture>
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::unique_ptr<Executable>& executable);
+	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent,
+		const std::unique_ptr<Executable>& executable);
 
 	// WaitHandle
 	//

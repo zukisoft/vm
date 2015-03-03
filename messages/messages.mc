@@ -1288,6 +1288,13 @@ Language=English
 The thread stack size virtual machine property is invalid.
 .
 
+MessageId=
+Severity=Error
+SymbolicName=E_PROCESSDUPLICATEPID
+Language=English
+The provided pid (%1!d!) cannot be inserted as a child for process (%2!d!); the pid has already been added.
+.
+
 ;//----------------------------------------------------------------------------
 ;// Thread
 ;//

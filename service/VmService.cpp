@@ -877,7 +877,8 @@ void VmService::OnStart(int, LPTSTR*)
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
 	// TODO: NEED INITIAL ENVIRONMENT
-	m_initprocess = Process::Spawn(shared_from_this(), 1, initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
+	// note: no parent
+	m_initprocess = Process::Spawn(shared_from_this(), 1, nullptr, initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
 	
 	// stdout/stderr test
 	m_initprocess->AddHandle(1, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));

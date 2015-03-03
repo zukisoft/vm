@@ -93,7 +93,10 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 
 Process::~Process()
 {
-	// TODO: clear out the threads first?
+	// Release all held references to child Thread instances
+	m_threads.clear();
+
+	// Release the PID
 	m_vm->ReleasePID(m_pid);
 }
 
@@ -233,17 +236,14 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		// Create the main thread instance for the child process
 		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId, std::move(task));
 
-		// Create and return the child Process instance
-		//return std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
-		//	m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir);
-
-		// TODO: ADD TO CHILDREN
-		std::shared_ptr<Process> proc = std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId, std::move(childmemory),
-			m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir);
-
+		// Construct and insert a new Process instance to the child collection
 		process_map_lock_t::scoped_lock writer(m_childlock);
-		m_children[pid] = proc;	// todo: insert() instead
-		return proc;
+		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId,
+			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir));
+
+		// Verify that the new Process instance was added to the collection and return the shared_ptr
+		if(!emplaced.second) throw Exception(E_PROCESSDUPLICATEPID, pid, m_pid);
+		return emplaced.first->second;
 	}
 
 	// Kill the native operating system process if any exceptions occurred during creation
@@ -305,20 +305,15 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 //-----------------------------------------------------------------------------
 // Process::CreateThreadStack (private, static)
 //
-// Creates the stack for a new thread
+// Allocates a new stack in the process
 //
 // Arguments:
 //
 //	vm			- Parent VirtualMachine instance
 //	memory		- ProcessMemory instance to use for allocation
 
-const void* Process::CreateThreadStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory)
+const void* Process::CreateStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory)
 {
-	//
-	// TODO: THIS MAY BE BETTER SERVED AS A STATIC METHOD ON THREAD CLASS, THE PROCESS
-	// DOESN'T REALLY HAVE A STACK, NOT ITS PROBLEM TO CREATE ONE
-	//
-
 	// Get the default thread stack size from the VirtualMachine instance and convert it 
 	size_t stacklen;
 	try { stacklen = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadStackSize)); }
@@ -414,7 +409,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 
 		// Allocate the stack for the new main process thread
 		const void* stackpointer = nullptr;
-		try { stackpointer = CreateThreadStack(m_vm, m_memory); }
+		try { stackpointer = CreateStack(m_vm, m_memory); }
 		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
 		// Load the executable image into the process address space and set up the thread stack
@@ -449,59 +444,6 @@ void Process::putFileCreationModeMask(uapi::mode_t value)
 	m_umask = (value & LINUX_S_IRWXUGO);
 }
 
-//-----------------------------------------------------------------------------
-// Process::FromExecutable<Architecture> (private, static)
-//
-// Creates a new process based on an Executable instance
-//
-// Arguments:
-//
-//	vm				- Parent virtual machine instance
-//	pid				- Virtual process identifier to assign
-//	executable		- Executable instance
-
-template<::Architecture architecture>
-std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::unique_ptr<Executable>& executable)
-{
-	// Create a host process for the specified architecture
-	std::unique_ptr<NativeProcess> host = NativeProcess::Create<architecture>(vm);
-
-	try {
-
-		// Create a new virtual address space for the process
-		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
-
-		// Allocate a new local descriptor table for the process and its slot tracking bitmap
-
-		// TODO: this can be done in the constructor, but could throw, which *should* be ok.  Clone 
-		// constructor will still need to accept the pointer and bitmap instance of course
-
-		const void* ldt = nullptr;
-		Bitmap ldtslots(LINUX_LDT_ENTRIES);
-		try { ldt = memory->Allocate(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
-		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
-
-		// Allocate the stack for the main process thread
-		const void* stackpointer = nullptr;
-		try { stackpointer = CreateThreadStack(vm, memory); }
-		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
-
-		// Load the executable image into the process address space and set up the thread stack
-		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
-
-		// Create a Thread instance for the main thread of the new process, using a new TaskState
-		std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
-			TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
-
-		// Construct and return the new Process instance
-		// TODO: PARENT?
-		return std::make_shared<Process>(vm, architecture, pid, nullptr, host->Process, host->ProcessId, std::move(memory), ldt, std::move(ldtslots), 
-			loaded.ProgramBreak, mainthread, executable->RootDirectory, executable->WorkingDirectory);
-	}
-
-	catch(...) { /* TODO terminate native process; don't close handles */ throw; }
-}
-	
 //-----------------------------------------------------------------------------
 // Process::getHandle
 //
@@ -895,26 +837,79 @@ void Process::putSignalAction(int signal, uapi::sigaction action)
 //	vm			- Parent virtual machine instance
 //	pid			- Virtual process identifier to assign
 //	filename	- Name of the file system executable
+//	parent		- Optional parent process to assign to the process
 //	argv		- Command-line arguments
 //	envp		- Environment variables
 //	rootdir		- Process root directory
 //	workingdir	- Process working directory
 
-std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const char_t* filename, 
-	const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
+std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	const char_t* filename, const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	const std::shared_ptr<FileSystem::Alias>& workingdir)
 {
 	// Parse the filename and command line arguments into an Executable instance
 	auto executable = Executable::FromFile(vm, filename, argv, envp, rootdir, workingdir);
 
-	// Use FromExecutable<> to spawn the process against the resolved binary file system object
-	if(executable->Architecture == Architecture::x86) return FromExecutable<Architecture::x86>(vm, pid, executable);
+	// Architecture::x86 --> 32-bit executable
+	if(executable->Architecture == Architecture::x86) return Spawn<Architecture::x86>(vm, pid, parent, executable);
+
 #ifdef _M_X64
-	else if(executable->Architecture == Architecture::x86_64) return FromExecutable<Architecture::x86_64>(vm, pid, executable);
+	// Architecture::x86_64 --> 64-bit executable
+	else if(executable->Architecture == Architecture::x86_64) return Spawn<Architecture::x86_64>(vm, pid, parent, executable);
 #endif
 	
 	throw LinuxException(LINUX_ENOEXEC);
 }
 
+//-----------------------------------------------------------------------------
+// Process::Spawn<Architecture> (private, static)
+//
+// Creates a new process based on an Executable instance
+//
+// Arguments:
+//
+//	vm				- Parent virtual machine instance
+//	pid				- Virtual process identifier to assign
+//	parent			- Optional parent process to assign to the process
+//	executable		- Executable instance
+
+template<::Architecture architecture>
+std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	const std::unique_ptr<Executable>& executable)
+{
+	// Create a host process for the specified architecture
+	std::unique_ptr<NativeProcess> host = NativeProcess::Create<architecture>(vm);
+
+	try {
+
+		// Create a new virtual address space for the process
+		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
+
+		// Allocate a new local descriptor table for the process
+		const void* ldt = nullptr;
+		try { ldt = memory->Allocate(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+		// Allocate the stack for the main process thread
+		const void* stackpointer = nullptr;
+		try { stackpointer = CreateStack(vm, memory); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+		// Load the executable image into the process address space and set up the thread stack
+		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
+
+		// Create a Thread instance for the main thread of the new process, using a new TaskState
+		std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
+			TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
+
+		// Construct and return the new Process instance
+		return std::make_shared<Process>(vm, architecture, pid, parent, host->Process, host->ProcessId, std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), 
+			loaded.ProgramBreak, mainthread, executable->RootDirectory, executable->WorkingDirectory);
+	}
+
+	catch(...) { /* TODO terminate native process; don't close handles */ throw; }
+}
+	
 //-----------------------------------------------------------------------------
 // Process::Start
 //
