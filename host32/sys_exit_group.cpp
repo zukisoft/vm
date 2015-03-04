@@ -40,8 +40,12 @@ extern __declspec(thread) sys32_context_t t_rpccontext;
 
 uapi::long_t sys_exit_group(int status)
 {
-	(status);
-	return -38;
+	// Unlike sys_exit, sys_exit_group terminates the entire process
+	ExitProcess((status & 0xFF) << 8);
+
+	// Ideally the RPC context(s) should be released, but the context
+	// rundown routine will pick them up and close them automatically
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

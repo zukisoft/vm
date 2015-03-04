@@ -70,6 +70,11 @@ public:
 	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
 		DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
 
+	// Kill
+	//
+	// Kills (terminates) the thread
+	void Kill(int status) const;
+
 	// PopInitialTask
 	//
 	// Pops the initial task information for the thread and clears it

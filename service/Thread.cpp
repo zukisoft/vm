@@ -267,6 +267,21 @@ std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::sha
 }
 
 //-----------------------------------------------------------------------------
+// Thread::Kill
+//
+// Kills (terminates) the thread
+//
+// Arguments:
+//
+//	exitcode		- Exit code for the thread
+
+void Thread::Kill(int exitcode) const
+{
+	// Terminate the thread indicating SIGKILL as the reason
+	TerminateThread(m_thread->Handle, ((exitcode & 0xFF) << 8) | LINUX_SIGKILL);
+}
+
+//-----------------------------------------------------------------------------
 // Thread::getNativeHandle
 //
 // Gets the native operating system handle for this thread

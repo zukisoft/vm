@@ -86,6 +86,11 @@ public:
 	// Replaces the process with a new executable image
 	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
 
+	// Kill
+	//
+	// Kills (terminates) the process
+	void Kill(int exitcode) const;
+
 	// MapMemory
 	//
 	// Allocates/maps process virtual address space
@@ -320,6 +325,11 @@ private:
 	template<::Architecture>
 	void Execute(const std::unique_ptr<Executable>& executable);
 
+	// Resume
+	//
+	// Resumes the process from a suspended state
+	void Resume(void) const;
+
 	// Spawn<Architecture>
 	//
 	// Creates a new process instance from an executable image
@@ -327,21 +337,16 @@ private:
 	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent,
 		const std::unique_ptr<Executable>& executable);
 
+	// Suspend
+	//
+	// Suspends the process
+	void Suspend(void) const;
+
 	// WaitHandle
 	//
 	// Gets a duplicated native process/thread handle for a wait operation
 	template<class _type>
 	HANDLE WaitHandle(const std::shared_ptr<_type>& object);
-
-	// Resume
-	//
-	// Resumes the process from a suspended state
-	void Resume(void) const;
-
-	// Suspend
-	//
-	// Suspends the process
-	void Suspend(void) const;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

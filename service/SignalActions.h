@@ -64,9 +64,8 @@ public:
 
 	// Reset
 	//
-	// TODO: Needed by execve(), will default all handler actions except ignored ones,
-	// be careful to reset the restorer as well, the address will become invalid after execve()
-	//void Reset(void);
+	// Resets the collection of signal actions
+	void Reset(void);
 	
 	// Set
 	//

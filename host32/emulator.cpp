@@ -299,7 +299,7 @@ LONG CALLBACK EmulationExceptionHandler(PEXCEPTION_POINTERS exception)
 
 		// TODO: This happens when HLT is called; should likely be removed once proper exiting
 		// of the hosted application has been established
-		ExitThread(0xC0000096);
+		ExitThread(LINUX_SIGILL);
 	}
 
 	// TODO: This should kill a virtual machine thread as an unhandled exception,

@@ -46,7 +46,11 @@ extern __declspec(thread) sys32_context_t t_rpccontext;
 uapi::long_t sys_exit(PCONTEXT context)
 {
 	// Cast out the arguments to sys_exit
-	sys32_ulong_t status = static_cast<sys32_ulong_t>(context->Ebx);	
+	sys32_ulong_t status = static_cast<sys32_ulong_t>(context->Ebx);
+
+	// Convert the exit code into a process exit code, lower byte remains zero
+	// to indicate that the process terminated normally rather than by signal
+	status = ((status & 0xFF) << 8);
 
 	// Restore the saved task information, this will cause the thread to jump back
 	// to the original point where it was forked when the CONTEXT is reapplied

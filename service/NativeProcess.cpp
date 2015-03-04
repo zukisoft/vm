@@ -218,6 +218,20 @@ DWORD NativeProcess::getProcessId(void) const
 }
 
 //-----------------------------------------------------------------------------
+// NativeProcess::Terminate
+//
+// Terminates the native process
+//
+// Arguments:
+//
+//	exitcode		- Exit code for the process
+
+void NativeProcess::Terminate(uint16_t exitcode) const
+{
+	TerminateProcess(m_process->Handle, static_cast<UINT>(exitcode));
+}
+
+//-----------------------------------------------------------------------------
 // NativeProcess::Thread
 //
 // Gets the host main thread handle

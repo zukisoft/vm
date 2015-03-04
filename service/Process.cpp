@@ -203,7 +203,6 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 	//CLONE_PARENT_SETTID
 	//CLONE_PTRACE
 	//CLONE_SETTLS
-	//CLONE_STOPPED
 	//CLONE_SYSVSEM
 	//CLONE_UNTRACED
 	//CLONE_VFORK
@@ -247,7 +246,35 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 	}
 
 	// Kill the native operating system process if any exceptions occurred during creation
-	catch(...) { TerminateProcess(childhost->Process->Handle, static_cast<UINT>(E_UNEXPECTED)); throw; }
+	catch(...) { childhost->Terminate(LINUX_SIGKILL); throw; }
+}
+
+//-----------------------------------------------------------------------------
+// Process::CreateThreadStack (private, static)
+//
+// Allocates a new stack in the process
+//
+// Arguments:
+//
+//	vm			- Parent VirtualMachine instance
+//	memory		- ProcessMemory instance to use for allocation
+
+const void* Process::CreateStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory)
+{
+	// Get the default thread stack size from the VirtualMachine instance and convert it 
+	size_t stacklen;
+	try { stacklen = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadStackSize)); }
+	catch(...) { throw Exception(E_PROCESSINVALIDSTACKSIZE); }
+		
+	// Allocate the stack memory and calculate the stack pointer, which will be reduced by the length of a guard page
+	const void* stack = memory->Allocate(stacklen, LINUX_PROT_READ | LINUX_PROT_WRITE);
+	const void* stackpointer = reinterpret_cast<void*>(uintptr_t(stack) + stacklen - SystemInformation::PageSize);
+
+	// Install read/write guard pages at both ends of the stack memory region
+	memory->Guard(stack, SystemInformation::PageSize, LINUX_PROT_READ | LINUX_PROT_WRITE);
+	memory->Guard(stackpointer, SystemInformation::PageSize, LINUX_PROT_READ | LINUX_PROT_WRITE);
+
+	return stackpointer;			// Return the stack pointer address
 }
 
 //-----------------------------------------------------------------------------
@@ -293,41 +320,12 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 	//CLONE_PTRACE
 	//CLONE_SETTLS
 	//CLONE_SIGHAND
-	//CLONE_STOPPED
 	//CLONE_SYSVSEM
 	//CLONE_UNTRACED
 	//CLONE_VFORK
 
 	// TODO: IMPLEMENT
 	return nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// Process::CreateThreadStack (private, static)
-//
-// Allocates a new stack in the process
-//
-// Arguments:
-//
-//	vm			- Parent VirtualMachine instance
-//	memory		- ProcessMemory instance to use for allocation
-
-const void* Process::CreateStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory)
-{
-	// Get the default thread stack size from the VirtualMachine instance and convert it 
-	size_t stacklen;
-	try { stacklen = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadStackSize)); }
-	catch(...) { throw Exception(E_PROCESSINVALIDSTACKSIZE); }
-		
-	// Allocate the stack memory and calculate the stack pointer, which will be reduced by the length of a guard page
-	const void* stack = memory->Allocate(stacklen, LINUX_PROT_READ | LINUX_PROT_WRITE);
-	const void* stackpointer = reinterpret_cast<void*>(uintptr_t(stack) + stacklen - SystemInformation::PageSize);
-
-	// Install read/write guard pages at both ends of the stack memory region
-	memory->Guard(stack, SystemInformation::PageSize, LINUX_PROT_READ | LINUX_PROT_WRITE);
-	memory->Guard(stackpointer, SystemInformation::PageSize, LINUX_PROT_READ | LINUX_PROT_WRITE);
-
-	return stackpointer;			// Return the stack pointer address
 }
 
 //-----------------------------------------------------------------------------
@@ -381,47 +379,65 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 	auto thread = ::NativeHandle::FromHandle(CreateRemoteThread(m_process->Handle, nullptr, SystemInformation::AllocationGranularity, 
 		reinterpret_cast<LPTHREAD_START_ROUTINE>(m_threadproc), nullptr, CREATE_SUSPENDED, &threadid));
 
-	// Terminate all existing threads within the process and clear out the local collection
-	for(auto iterator : m_threads) TerminateThread(iterator.second->NativeHandle, (DWORD)E_ABORT);		// todo: return value
-	m_threads.clear();
-
-	//
-	// AFTER THIS, ANY EXCEPTION MUST KILL AND CLEAN OUT THE PROCESS -- THE CALLING THREAD IS DEAD
-	// (HOW DOES THIS SITUATION GET REPORTED?)
-
 	try {
-		//
-		// TODO: WHAT GETS INHERITED AND WHAT DOESN'T
-		//
 
-		// Remove all file handles that are set for close-on-exec
-		m_handles->RemoveCloseOnExecute();
+		// Take an exclusive lock against the threads collection
+		thread_map_lock_t::scoped_lock writer(m_threadslock);
 
-		// Remove all existing memory sections from the current process
-		m_memory->Clear();
+		// Terminate all existing threads and clear out the local collection
+		for(auto iterator : m_threads) iterator.second->Kill(0);
+		m_threads.clear();
 
-		// Reallocate the local descriptor table for the process at the original address
-		try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
-		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+		try {
+		
+			// TODO (+ more, see execve(2))
+			// Architecture
+			// Termination Signal -> SIGCHLD
 
-		// The local descriptor table is new, remove all set slot bits
-		m_ldtslots.Clear();
+			// Unshare the process file handles by creating a duplicate collection and then
+			// close all file descriptors that were set for close-on-exec
+			m_handles = ProcessHandles::Duplicate(m_handles);
+			m_handles->RemoveCloseOnExecute();
 
-		// Allocate the stack for the new main process thread
-		const void* stackpointer = nullptr;
-		try { stackpointer = CreateStack(m_vm, m_memory); }
-		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+			// Unshare the signal actions by creating a duplicate collection and then resetting
+			// all non-ignored signal actions back to their defaults
+			m_sigactions = SignalActions::Duplicate(m_sigactions);
+			m_sigactions->Reset();
 
-		// Load the executable image into the process address space and set up the thread stack
-		Executable::LoadResult loaded = executable->Load(m_memory, stackpointer);
+			// Remove all existing memory sections from the current process
+			m_memory->Clear();
 
-		auto thd = Thread::FromNativeHandle<architecture>(m_pid, m_process, thread, threadid, TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
-		m_threads[m_pid] = thd;
+			// Reallocate the local descriptor table for the process at the original address
+			try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
+			catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
-		Resume();		// Resume the process; this will start the thread as well
+			// The local descriptor table is new, remove all set slot bits
+			m_ldtslots.Clear();
+
+			// Allocate the stack for the new main process thread
+			const void* stackpointer = nullptr;
+			try { stackpointer = CreateStack(m_vm, m_memory); }
+			catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+			// Load the executable image into the process address space and set up the thread stack
+			Executable::LoadResult loaded = executable->Load(m_memory, stackpointer);
+
+			// Reset the program break address based on the loaded executable 
+			m_programbreak = loaded.ProgramBreak;
+
+			// Make the new thread inherit the process pid and become the thread group leader
+			m_threads.emplace(m_pid, Thread::FromNativeHandle<architecture>(m_pid, m_process, thread, threadid, 
+				TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer)));
+
+			Resume();		// Resume the process; this will start the thread as well
+		}
+
+		// Kill the entire process on exception
+		catch(...) { Kill(0); throw; }
 	}
 
-	catch(...) { /* KILL PROCESS AND REMOVE FROM COLLECTIONS HERE */ }
+	// Kill just the newly created remote thread on exception
+	catch(...) { TerminateThread(thread->Handle, LINUX_SIGKILL); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -462,6 +478,21 @@ std::shared_ptr<FileSystem::Handle> Process::getHandle(int fd) const
 const void* Process::getLocalDescriptorTable(void) const
 {
 	return m_ldt;
+}
+
+//-----------------------------------------------------------------------------
+// Process::Kill
+//
+// Kills (terminates) the process
+//
+// Arguments:
+//
+//	exitcode	- Exit code for the process
+
+void Process::Kill(int exitcode) const
+{
+	// Terminate the process indicating SIGKILL as the reason
+	TerminateProcess(m_process->Handle, ((exitcode & 0xFF) << 8) | LINUX_SIGKILL);
 }
 
 //-----------------------------------------------------------------------------
@@ -907,7 +938,8 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 			loaded.ProgramBreak, mainthread, executable->RootDirectory, executable->WorkingDirectory);
 	}
 
-	catch(...) { /* TODO terminate native process; don't close handles */ throw; }
+	// Terminate the created host process on exception
+	catch(...) { host->Terminate(LINUX_SIGKILL); throw; }
 }
 	
 //-----------------------------------------------------------------------------
@@ -1048,6 +1080,10 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 		// Wait for any or all of the collected handles to become signaled
 		DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, 
 			(options & LINUX_WNOHANG) ? 0 : INFINITE);
+		
+		// need to know if thread or process to get this
+		if(status) *status = 0;
+		if(status) GetExitCodeProcess(handles[result - WAIT_OBJECT_0], (DWORD*)status);
 
 		// todo: if nothing was signaled and WNOHANG was set, return zero instead
 		if(result == WAIT_FAILED) throw LinuxException(LINUX_ECHILD);

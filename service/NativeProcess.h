@@ -56,6 +56,11 @@ public:
 	// Creates a new NativeProcess instance for the specified architecture
 	template<Architecture architecture>
 	static std::unique_ptr<NativeProcess> Create(const std::shared_ptr<VirtualMachine>& vm);
+
+	// Terminate
+	//
+	// Terminates the native process
+	void Terminate(uint16_t exitcode) const;
 	
 	//-------------------------------------------------------------------------
 	// Properties
