@@ -100,6 +100,16 @@ SystemInformation::Architecture const SystemInformation::ProcessorArchitecture =
 	return static_cast<SystemInformation::Architecture>(g_sysinfo.wProcessorArchitecture);
 }();
 
+// SystemInformation::ProcessorFeatureMask
+//
+uint32_t const SystemInformation::ProcessorFeatureMask = []() -> uint32_t {
+
+	int cpuinfo[4];				// Gets EAX, EBX, ECX, EDX
+	__cpuid(&cpuinfo[0], 1);	// Use the compiler intrinsic __cpuid
+
+	return cpuinfo[3];			// EDX has the bitmask we're looking for
+}();
+
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)

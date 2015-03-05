@@ -376,12 +376,12 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 	(LINUX_AT_GID);																				// 13 - TODO
 	(LINUX_AT_EGID);																			// 14 - TODO
 	arguments.AppendAuxiliaryVector(LINUX_AT_PLATFORM, elf::platform);							// 15
-	(LINUX_AT_HWCAP);																			// 16 - TODO
+	arguments.AppendAuxiliaryVector(LINUX_AT_HWCAP, SystemInformation::ProcessorFeatureMask);	// 16
 	arguments.AppendAuxiliaryVector(LINUX_AT_CLKTCK, 100);										// 17
 	arguments.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);										// 23
 	(LINUX_AT_BASE_PLATFORM);																	// 24 - NOT IMPLEMENTED
 	arguments.AppendAuxiliaryVector(LINUX_AT_RANDOM, random, sizeof(random));					// 25
-	(LINUX_AT_HWCAP2);																			// 26 - TODO
+	(LINUX_AT_HWCAP2);																			// 26 - NOT IMPLEMENTED
 	arguments.AppendAuxiliaryVector(LINUX_AT_EXECFN, m_filename.c_str());						// 31
 	(LINUX_AT_SYSINFO);																			// 32 - TODO MAY NOT IMPLEMENT?
 	(LINUX_AT_SYSINFO_EHDR);																	// 33 - TODO NEEDS VDSO

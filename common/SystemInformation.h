@@ -96,6 +96,11 @@ public:
 	// The processor architecture of the installed operating system
 	static Architecture const ProcessorArchitecture;
 
+	// ProcessorFeatureMask
+	//
+	// Acquires the CPUID processor feature bitmask
+	static uint32_t const ProcessorFeatureMask;
+
 private:
 
 	SystemInformation()=delete;
