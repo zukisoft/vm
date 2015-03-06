@@ -190,8 +190,6 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 {
 	// FLAGS TO DEAL WITH:
 	//
-	//CLONE_CHILD_CLEARTID
-	//CLONE_CHILD_SETTID
 	//CLONE_FS
 	//CLONE_IO
 	//CLONE_NEWIPC
@@ -200,9 +198,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 	//CLONE_NEWPID
 	//CLONE_NEWUSER
 	//CLONE_NEWUTS
-	//CLONE_PARENT_SETTID
 	//CLONE_PTRACE
-	//CLONE_SETTLS
 	//CLONE_SYSVSEM
 	//CLONE_UNTRACED
 	//CLONE_VFORK
@@ -250,7 +246,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 }
 
 //-----------------------------------------------------------------------------
-// Process::CreateThreadStack (private, static)
+// Process::CreateStack (private, static)
 //
 // Allocates a new stack in the process
 //
@@ -304,8 +300,6 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 
 	// FLAGS TO DEAL WITH:
 	//
-	//CLONE_CHILD_CLEARTID
-	//CLONE_CHILD_SETTID
 	//CLONE_FILES
 	//CLONE_FS
 	//CLONE_IO
@@ -316,9 +310,7 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 	//CLONE_NEWUSER
 	//CLONE_NEWUTS
 	//CLONE_PARENT
-	//CLONE_PARENT_SETTID
 	//CLONE_PTRACE
-	//CLONE_SETTLS
 	//CLONE_SIGHAND
 	//CLONE_SYSVSEM
 	//CLONE_UNTRACED
@@ -597,7 +589,7 @@ std::shared_ptr<Thread> Process::getNativeThread(DWORD tid)
 	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
 
 	for(auto iterator : m_threads) if(iterator.second->NativeThreadId == tid) return iterator.second;
-	throw Exception(E_FAIL);	// todo: Exception
+	return nullptr;
 }
 
 //-----------------------------------------------------------------------------

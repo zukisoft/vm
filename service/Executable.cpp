@@ -378,7 +378,7 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 	arguments.AppendAuxiliaryVector(LINUX_AT_PLATFORM, elf::platform);							// 15
 	arguments.AppendAuxiliaryVector(LINUX_AT_HWCAP, SystemInformation::ProcessorFeatureMask);	// 16
 	arguments.AppendAuxiliaryVector(LINUX_AT_CLKTCK, 100);										// 17
-	arguments.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);										// 23
+	arguments.AppendAuxiliaryVector(LINUX_AT_SECURE, 0);										// 23 - TODO (SUID) SEE GETAUXVAL(3)
 	(LINUX_AT_BASE_PLATFORM);																	// 24 - NOT IMPLEMENTED
 	arguments.AppendAuxiliaryVector(LINUX_AT_RANDOM, random, sizeof(random));					// 25
 	(LINUX_AT_HWCAP2);																			// 26 - NOT IMPLEMENTED
