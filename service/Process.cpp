@@ -41,14 +41,15 @@
 //	ldtslots		- Local descriptor table allocation bitmap
 //	programbreak	- Address of initial program break
 //	mainthread		- Main/initial process thread instance
+//	termsignal		- Signal to send to parent on termination
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
 Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-	const void* programbreak, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	const void* programbreak, const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 	const std::shared_ptr<FileSystem::Alias>& workingdir) : Process(vm, architecture, pid, parent, process, processid, std::move(memory), ldt, 
-	std::move(ldtslots), programbreak, ProcessHandles::Create(), SignalActions::Create(), mainthread, rootdir, workingdir) {}
+	std::move(ldtslots), programbreak, ProcessHandles::Create(), SignalActions::Create(), mainthread, termsignal, rootdir, workingdir) {}
 
 //-----------------------------------------------------------------------------
 // Process Constructor
@@ -68,15 +69,17 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 //	handles			- Initial file system handles collection
 //	sigactions		- Initial set of signal actions
 //	mainthread		- Main/initial process thread instance
+//	termsignal		- Signal to send to parent on termination
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
 Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
-	const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
+	const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
 	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), m_ldt(ldt), 
-	m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_rootdir(rootdir), m_workingdir(workingdir)
+	m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), m_rootdir(rootdir), 
+	m_workingdir(workingdir)
 {
 	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
 
@@ -231,10 +234,13 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		// Create the main thread instance for the child process
 		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId, std::move(task));
 
+		// Determine the child termination signal from the low byte of the flags
+		int childtermsig = (flags & 0xFF);
+
 		// Construct and insert a new Process instance to the child collection
 		process_map_lock_t::scoped_lock writer(m_childlock);
 		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId,
-			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, m_rootdir, m_workingdir));
+			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, childtermsig, m_rootdir, m_workingdir));
 
 		// Verify that the new Process instance was added to the collection and return the shared_ptr
 		if(!emplaced.second) throw Exception(E_PROCESSDUPLICATEPID, pid, m_pid);
@@ -288,6 +294,9 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 	// CLONE_THREAD must have been specified in the flags for this operation
 	if((flags & LINUX_CLONE_THREAD) == 0) throw LinuxException(LINUX_EINVAL);
 
+	// CLONE_SIGHAND must have been specified in the flags for this operation
+	if((flags & LINUX_CLONE_SIGHAND) == 0) throw LinuxException(LINUX_EINVAL);
+
 	// CLONE_VM must have been specified in the flags for this operation
 	if((flags & LINUX_CLONE_VM) == 0) throw LinuxException(LINUX_EINVAL);
 
@@ -311,7 +320,6 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 	//CLONE_NEWUTS
 	//CLONE_PARENT
 	//CLONE_PTRACE
-	//CLONE_SIGHAND
 	//CLONE_SYSVSEM
 	//CLONE_UNTRACED
 	//CLONE_VFORK
@@ -927,7 +935,7 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 
 		// Construct and return the new Process instance
 		return std::make_shared<Process>(vm, architecture, pid, parent, host->Process, host->ProcessId, std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), 
-			loaded.ProgramBreak, mainthread, executable->RootDirectory, executable->WorkingDirectory);
+			loaded.ProgramBreak, mainthread, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
 	}
 
 	// Terminate the created host process on exception
@@ -963,6 +971,26 @@ void Process::Suspend(void) const
 {
 	NTSTATUS result = NtApi::NtSuspendProcess(m_process->Handle);
 	if(result != 0) throw StructuredException(result);
+}
+
+//-----------------------------------------------------------------------------
+// Process::getTerminationSignal
+//
+// Gets the termination signal to send to the parent on termination
+
+int Process::getTerminationSignal(void) const
+{
+	return m_termsignal;
+}
+
+//-----------------------------------------------------------------------------
+// Process::putTerminationSignal
+//
+// Sets the termination signal to send to the parent on termination
+
+void Process::putTerminationSignal(int value)
+{
+	m_termsignal = value;
 }
 
 //-----------------------------------------------------------------------------

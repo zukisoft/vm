@@ -242,6 +242,13 @@ public:
 	uapi::sigaction getSignalAction(int signal) const;
 	void putSignalAction(int signal, uapi::sigaction action);
 
+	// TerminationSignal
+	//
+	// Gets/sets the signal to send to the parent on termination
+	__declspec(property(get=getTerminationSignal, put=putTerminationSignal)) int TerminationSignal;
+	int getTerminationSignal(void) const;
+	void putTerminationSignal(int value);
+
 	// Thread
 	//
 	// Gets a Thread instance by virtual thread identifier
@@ -295,13 +302,14 @@ private:
 	//
 	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 		const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-		const void* programbreak, const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+		const void* programbreak, const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 		const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 		const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
-		const std::shared_ptr<::Thread>& mainthread, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+		const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	friend class std::_Ref_count_obj<Process>;
 
@@ -384,6 +392,7 @@ private:
 	// Signals
 	//
 	std::shared_ptr<SignalActions>		m_sigactions;		// Signal actions
+	std::atomic<int>					m_termsignal;		// Termination signal
 
 	// Threads
 	//
