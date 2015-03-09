@@ -40,6 +40,8 @@ extern __declspec(thread) sys32_context_t t_rpccontext;
 
 uapi::long_t sys_exit_group(int status)
 {
+	return -38;
+
 	// Unlike sys_exit, sys_exit_group terminates the entire process
 	ExitProcess((status & 0xFF) << 8);
 

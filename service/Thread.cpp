@@ -97,6 +97,26 @@ void Thread::BeginSignal(int signal, uapi::sigaction action)
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Thread::getClearThreadIdOnExit
+//
+// Gets the address of a thread id to clear and signal when the thread exits
+
+void* Thread::getClearThreadIdOnExit(void) const
+{
+	return m_cleartid;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::putClearThreadIdOnExit
+//
+// Sets the address of a thread id to clear and signal when the thread exits
+
+void Thread::putClearThreadIdOnExit(void* value)
+{
+	m_cleartid = value;
+}
+
 // WIP
 //
 // The goal here is to never actually block the calling RPC thread and not have any
@@ -391,6 +411,24 @@ void Thread::SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_
 }
 
 //-----------------------------------------------------------------------------
+// Thread::Signal
+//
+// Attempts to send a signal to this thread
+//
+// Arguments:
+//
+//	signal		- Signal to be processed by this thread
+//	action		- Action defined for the signal
+
+Thread::SignalResult Thread::Signal(int signal, uapi::sigaction action)
+{
+	// TODO: check mask, is the thread alive, etc
+
+	// TODO: return true if signal will be processed, false if not
+	return SignalResult::Blocked;
+}
+
+//-----------------------------------------------------------------------------
 // Thread::SetSignalMask
 //
 // Sets the signal mask for the thread
@@ -477,18 +515,6 @@ std::unique_ptr<TaskState> Thread::SuspendTask(void)
 uapi::pid_t Thread::getThreadId(void) const
 {
 	return m_tid;
-}
-
-//-----------------------------------------------------------------------------
-// Thread::getZombie
-//
-// Gets a flag indicating if this thread is a zombie or not, which means the
-// actual thread has terminated but this class instance still exists
-
-bool Thread::getZombie(void) const
-{
-	// If the native process has terminated, this process is a zombie
-	return (WaitForSingleObject(m_thread->Handle, 0) == WAIT_OBJECT_0);
 }
 
 //-----------------------------------------------------------------------------

@@ -385,6 +385,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		thread_map_lock_t::scoped_lock writer(m_threadslock);
 
 		// Terminate all existing threads and clear out the local collection
+		// TODO: re-evaluate having Thread::Kill()
 		for(auto iterator : m_threads) iterator.second->Kill(0);
 		m_threads.clear();
 
@@ -697,8 +698,38 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length) con
 
 void Process::RemoveHandle(int fd)
 {
-	// Attempt to remove the specified file descriptor from the process
+	// Remove the specified file descriptor from the process
 	m_handles->Remove(fd);
+}
+
+//-----------------------------------------------------------------------------
+// Process::RemoveThread
+//
+// Removes a thread from the process
+//
+// Arguments:
+//
+//	tid		- Identifier for the thread to be removed
+
+void Process::RemoveThread(uapi::pid_t tid)
+{
+	thread_map_lock_t::scoped_lock writer(m_threadslock);
+
+	// Remove the reference to the thread from this process
+	m_threads.erase(tid);
+
+	// If this was the last thread in the process, signal the parent
+	if(m_threads.size() == 0) {
+
+		// The termination signal is atomic, access it only once
+		int signal = m_termsignal;
+		if(signal) {
+
+			// Attempt to acquire a parent process reference and signal it
+			std::shared_ptr<Process> parent = m_parent.lock();
+			if(parent) parent->Signal(signal);
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -834,6 +865,100 @@ void Process::SetSignalAction(int signal, const uapi::sigaction* action, uapi::s
 {
 	// SignalActions has a matching method for this operation
 	m_sigactions->Set(signal, action, oldaction);
+}
+
+//-----------------------------------------------------------------------------
+// Process::Signal
+//
+// Signals the process
+//
+// Arguments:
+//
+//	signal		- Signal to send to the process
+
+bool Process::Signal(int signal)
+{
+	// Get the action specified for this signal
+	uapi::sigaction action = m_sigactions->Get(signal);
+
+	// Acquire a read lock against the thread collection
+	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
+
+	//
+	// TODO: tgkill and tkill will indicate a specific thread
+	// break out the switch below into a function call, then
+	// can use find() or for(iterator...) against it 
+	//
+
+	// Iterate over all the threads in the process
+	for(const auto iterator : m_threads) {
+
+		// Ask the current thread to process the signal
+		switch(iterator.second->Signal(signal, action)) {
+
+			// SignalResult::Blocked
+			//
+			// Continue searching for a thread that can handle this signal
+			case Thread::SignalResult::Blocked: continue;
+
+			// SignalResult::Handled
+			//
+			// The thread accepted the signal and will process it
+			case Thread::SignalResult::Handled: return true;
+
+			// CoreDump (COREDUMP)
+			//
+			// The process should be core-dumped and terminated
+			case Thread::SignalResult::CoreDump:
+				// do kill
+				break;
+
+			// Terminate (TERM)
+			//
+			// The process should be terminated
+			case Thread::SignalResult::Terminate:
+				// do kill
+				break;
+
+			// Resume (CONT)
+			//
+			// The process should be resumed
+			case Thread::SignalResult::Resume:
+				// do resume
+				break;
+
+			// Suspend (STOP)
+			//
+			// The process should be suspended
+			case Thread::SignalResult::Suspend:
+				// do suspend
+				break;
+
+			// Unknown signal result
+			//
+			default:
+				// do throw exception
+				break;
+		}
+	}
+
+	//
+	// TODO: WHEN IS THE PROCESS-WIDE SIGNAL QUEUE REEVALUATED?  IT COULD BE DONE WHEN
+	// ANY THREAD CHANGES ITS SIGNAL MASK, BUT ... WHAT ABOUT THREADS CREATED WITH CLONE()?
+	// IF THE NEW THREAD HAS NO SIGNAL MASK, IT COULD POTENTIALLY BE ASKED TO HANDLE A 
+	// SIGNAL IMMEDIATELY. HOW DOES LINUX HANDLE THIS -- WHEN AND HOW DOES IT REEVALUATE
+	// THE CONTENTS OF THE PROCESS-WIDE SIGNAL QUEUE
+	//
+
+	//
+	// TODO: SIGNAL QUEUE MUST BE A PRIORITY QUEUE
+	//
+
+	// No thread in the process will currently accept this signal, queue it as pending
+	//
+	// TODO: SIGNAL IS NOW PENDING, NOT 'UNHANDLED' - still return false?
+	//
+	return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -1136,6 +1261,8 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 
 	// Close all of the duplicated native object handles on an exception
 	catch(...) { for(auto iterator : handles) CloseHandle(iterator); throw; }
+
+	// todo: vm->RemoveProcess(waitedon);
 
 //#define LINUX_WNOHANG				0x00000001
 //#define LINUX_WUNTRACED				0x00000002

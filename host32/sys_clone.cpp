@@ -67,6 +67,7 @@ uapi::long_t sys_clone(PCONTEXT context)
 	taskstate.eip = context->Eip;
 
 	// Set the frame and stack pointers explicitly if requested, otherwise use this thread's registers
+	// TODO: should ebp be zero or the new stack (when specified)? Probably zero?
 	taskstate.ebp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Ebp;
 	taskstate.esp = (child_stack) ? reinterpret_cast<sys32_addr_t>(child_stack) : context->Esp;
 

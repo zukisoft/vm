@@ -37,7 +37,7 @@
 
 uapi::long_t sys_set_tid_address(const Context* context, void* tidptr)
 {
-	context->Thread->TidAddress = tidptr;
+	context->Thread->ClearThreadIdOnExit = tidptr;
 	return context->Thread->ThreadId;
 }
 

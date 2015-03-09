@@ -220,9 +220,9 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 	return child;
 }
 
-void VmService::CloseProcess(const std::shared_ptr<Process>& process)
+void VmService::RemoveProcess(uapi::pid_t pid)
 {
-	m_processes.erase(process->ProcessId);
+	m_processes.erase(pid);
 }
 
 //-----------------------------------------------------------------------------

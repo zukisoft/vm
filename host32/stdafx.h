@@ -52,6 +52,10 @@
 #pragma comment(lib, "rpcrt4.lib")
 #pragma comment(lib, "rpcns4.lib")
 
+// Win32 Synchronization
+//
+#pragma comment(lib, "synchronization.lib")
+
 // find a place to put this stuff
 #include <align.h>
 template <typename _type>

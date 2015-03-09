@@ -136,6 +136,7 @@ threadexit:
 DWORD WINAPI ThreadMain(void*)
 {
 	zero_init<sys32_thread_t>	thread;			// Thread information from service
+	sys32_addr_t				cleartid = 0;	// Address to clear/signal on exit
 	DWORD						exitcode;		// Thread exit code
 
 	// Attempt to acquire the task information and context handle from the server
@@ -146,9 +147,19 @@ DWORD WINAPI ThreadMain(void*)
 	exitcode = ExecuteTask(&thread.task);
 
 	// Release the server context handle for this thread
-	sys32_release_context(&t_rpccontext);
+	sys32_release_thread(&t_rpccontext, &cleartid);
 
-	// Individual threads can return from the entry point, do not call ExitThread()
+	// TODO: This is my best guess as to how I'm going to implement futex() - with
+	// the new WaitOnAddress/WakeByAddress functions, which are in-process only from
+	// what I can tell.  Therefore, the WakeBy() has to happen here in the host
+	if(cleartid) {
+
+		// Zero the PID located at the provided address and signal the address
+		*reinterpret_cast<uapi::pid_t*>(cleartid) = 0;
+		WakeByAddressSingle(reinterpret_cast<void*>(cleartid));
+	}
+
+	// Individual threads can return normally, do not call ExitThread()
 	return exitcode;
 }
 
@@ -168,6 +179,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 {
 	zero_init<sys32_process_t>		process;		// Process information from the service
 	RPC_STATUS						rpcresult;		// Result from RPC function call
+	sys32_addr_t					cleartid = 0;	// Address to clear/signal on exit
 	DWORD							exitcode;		// Exit code from the main thread
 	HRESULT							hresult;		// Result from system call API function
 
@@ -195,7 +207,17 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	exitcode = ExecuteTask(&process.task);
 
 	// Release the server context handle for this thread
-	sys32_release_context(&t_rpccontext);
+	sys32_release_thread(&t_rpccontext, &cleartid);
+
+	// TODO: This is my best guess as to how I'm going to implement futex() - with
+	// the new WaitOnAddress/WakeByAddress functions, which are in-process only from
+	// what I can tell.  Therefore, the WakeBy() has to happen here in the host
+	if(cleartid) {
+
+		// Zero the PID located at the provided address and signal the address
+		*reinterpret_cast<uapi::pid_t*>(cleartid) = 0;
+		WakeByAddressSingle(reinterpret_cast<void*>(cleartid));
+	}
 
 	// Call ExitThread rather than returning from WinMain, that would invoke ExitProcess()
 	// and kill any other threads that have been created inside this host process

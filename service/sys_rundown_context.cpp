@@ -39,10 +39,10 @@ void sys_rundown_context(Context* context)
 {
 	if(context == nullptr) return;
 
-	// TESTING
-	context->VirtualMachine->CloseProcess(context->Process);
+	// The hosted thread has died, remove it from the process
+	context->Process->RemoveThread(context->Thread->ThreadId);
 
-	// Destroy the context handle
+	// Release the context object and it's contained references
 	Context::Release(context);
 }
 

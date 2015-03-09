@@ -157,10 +157,10 @@ interface SystemCalls32
 	// Allocates a new context handle and startup information for a thread
 	HRESULT sys32_acquire_thread([in] sys32_uint_t tid, [out, ref] sys32_thread_t* thread, [out, ref] sys32_context_exclusive_t* context);
 
-	// sys32_release_context (synchronous)
+	// sys32_release_thread (synchronous)
 	//
-	// Releases a context handle previously allocated for a child process
-	HRESULT sys32_release_context([in, out, ref] sys32_context_exclusive_t* context);
+	// Releases a context handle previously allocated for a thread
+	HRESULT sys32_release_thread([in, out, ref] sys32_context_exclusive_t* context, [out, ref] sys32_addr_t* cleartid);
 
 	// sys32_trace
 	//

@@ -48,6 +48,10 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	auto parent = context->Process;
 	auto child = context->VirtualMachine->CloneProcess(parent, flags, taskstate, taskstatelen);
 
+	//
+	// TODO: CHILD IS RUNNING AT THIS POINT; RACE CONDITIONS BELOW - FIX THIS
+	//
+
 	// Acquire the process identifier from the newly created process object instance
 	uapi::pid_t newpid = child->ProcessId;
 
@@ -69,7 +73,7 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	//
 	// Sets a pointer to the thread id in the child process.  See set_tid_address(2) for more details.
 	auto thread = child->Thread[newpid];
-	if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) thread->TidAddress = reinterpret_cast<void*>(ctid);
+	if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) thread->ClearThreadIdOnExit = reinterpret_cast<void*>(ctid);
 
 	// CLONE_SETTLS
 	//

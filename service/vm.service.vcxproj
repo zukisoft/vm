@@ -683,7 +683,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_openat.cpp" />
     <ClCompile Include="sys_prctl.cpp" />
     <ClCompile Include="sys_read.cpp" />
-    <ClCompile Include="sys_release_context.cpp" />
+    <ClCompile Include="sys_release_thread.cpp" />
     <ClCompile Include="sys_rt_sigaction.cpp" />
     <ClCompile Include="sys_rt_sigprocmask.cpp" />
     <ClCompile Include="sys_rt_sigreturn.cpp" />

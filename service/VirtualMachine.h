@@ -97,7 +97,7 @@ public:
 
 	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen) = 0;
 
-	virtual void CloseProcess(const std::shared_ptr<Process>& process) = 0;
+	virtual void RemoveProcess(uapi::pid_t pid) = 0;
 
 	// SpawnProcess
 	//

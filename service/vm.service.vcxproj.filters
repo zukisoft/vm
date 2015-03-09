@@ -559,9 +559,6 @@
     <ClCompile Include="sys_olduname.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="sys_release_context.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
     <ClCompile Include="sys_rundown_context.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
@@ -785,6 +782,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sys_geteuid.cpp">
+      <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_release_thread.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>

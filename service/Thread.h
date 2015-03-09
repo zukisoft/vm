@@ -46,6 +46,19 @@ class Thread
 {
 public:
 
+	// SignalResult
+	//
+	// Result provided by the thread from a signal request
+	enum class SignalResult {
+
+		Blocked			= 0,		// Signal is blocked by the thread
+		Handled,					// Signal was handled by the thread
+		CoreDump,					// Process should be core dumped
+		Resume,						// Process should be resumed
+		Suspend,					// Process should be suspended
+		Terminate,					// Process should be terminated
+	};
+
 	// Destructor
 	//
 	~Thread()=default;
@@ -100,6 +113,11 @@ public:
 	// Sets the signal mask
 	void SetSignalMask(const uapi::sigset_t* newmask, uapi::sigset_t* oldmask);
 
+	// Signal
+	//
+	// Attempts to send a signal to this thread
+	SignalResult Signal(int signal, uapi::sigaction action);
+
 	// Suspend
 	//
 	// Suspends the thread
@@ -118,6 +136,13 @@ public:
 	// Gets the architecture flag for the thread instance
 	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
 	::Architecture getArchitecture(void) const;
+
+	// ClearThreadIdOnExit
+	//
+	// Gets/sets the address to be set to zero and signaled on normal thread exit
+	__declspec(property(get=getClearThreadIdOnExit, put=putClearThreadIdOnExit)) void* ClearThreadIdOnExit;
+	void* getClearThreadIdOnExit(void) const;
+	void putClearThreadIdOnExit(void* value);
 
 	// NativeHandle
 	//
@@ -154,20 +179,6 @@ public:
 	// Gets the virtual thread identifier
 	__declspec(property(get=getThreadId)) uapi::pid_t ThreadId;
 	uapi::pid_t getThreadId(void) const;
-
-	// TidAddress
-	//
-	// TODO: This is used for set_tid_address; needs to have a futex associated with 
-	// it as well, stubbing this out so that sys_set_tid_address can be implemented
-	__declspec(property(get=getTidAddress, put=putTidAddress)) void* TidAddress;
-	void* getTidAddress(void) const { return m_tidaddress; }
-	void putTidAddress(void* value) { m_tidaddress = value; }
-
-	// Zombie
-	//
-	// Gets flag indicating if this thread is a 'zombie' or not
-	__declspec(property(get=getZombie)) bool Zombie;
-	bool getZombie(void) const;
 
 private:
 
@@ -257,7 +268,7 @@ private:
 	const DWORD						m_threadid;			// Native thread id
 	std::unique_ptr<TaskState>		m_initialtask;		// Initial task state
 
-	void*					m_tidaddress = nullptr;
+	void*							m_cleartid = nullptr;
 
 	// Signal Management
 	//

@@ -78,7 +78,7 @@ public:
 	virtual uapi::pid_t							AllocatePID(void);
 	virtual void								ReleasePID(uapi::pid_t pid);
 	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen);
-	virtual void								CloseProcess(const std::shared_ptr<Process>& process);
+	virtual void								RemoveProcess(uapi::pid_t pid);
 	virtual std::shared_ptr<Process>			FindNativeProcess(DWORD nativepid);
 
 	// SpawnProcess

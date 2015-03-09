@@ -89,6 +89,7 @@ public:
 	// Kill
 	//
 	// Kills (terminates) the process
+	// TODO: CURRENTLY UNUSED
 	void Kill(int exitcode) const;
 
 	// MapMemory
@@ -125,6 +126,11 @@ public:
 	// Removes a file system handle from the process
 	void RemoveHandle(int fd);
 
+	// RemoveThread
+	//
+	// Removes a thread from the process
+	void RemoveThread(uapi::pid_t tid);
+
 	// SetProgramBreak
 	//
 	// Sets the program break address to increase or decrease data segment length
@@ -134,6 +140,11 @@ public:
 	//
 	// Assigns an action to be taken for a process signal
 	void SetSignalAction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction);
+
+	// Signal
+	//
+	// Signals the process
+	bool Signal(int signal);
 
 	// UnmapMemory
 	//
