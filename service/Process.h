@@ -86,12 +86,6 @@ public:
 	// Replaces the process with a new executable image
 	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
 
-	// Kill
-	//
-	// Kills (terminates) the process
-	// TODO: CURRENTLY UNUSED
-	void Kill(int exitcode) const;
-
 	// MapMemory
 	//
 	// Allocates/maps process virtual address space
@@ -145,6 +139,13 @@ public:
 	//
 	// Signals the process
 	bool Signal(int signal);
+
+	// Terminate
+	//
+	// Terminates and optionally core dumps the process
+	void Terminate(int exitcode);
+	void Terminate(int exitcode, int signal);
+	void Terminate(int exitcode, int signal, bool coredump);
 
 	// UnmapMemory
 	//

@@ -231,6 +231,58 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 }
 
 //-----------------------------------------------------------------------------
+// Thread::DefaultSignalResult (private, static)
+//
+// Determines the action to take for a defaulted signal
+//
+// Arguments:
+//
+//	signal		- Signal to be defauted
+
+Thread::SignalResult Thread::DefaultSignalResult(int signal)
+{
+	// Defaults as defined in the signal(7) man page ...
+	//
+	switch(signal) {
+
+		case LINUX_SIGHUP:		return SignalResult::Terminate;
+		case LINUX_SIGINT:		return SignalResult::Terminate;
+		case LINUX_SIGQUIT:		return SignalResult::CoreDump;
+		case LINUX_SIGILL:		return SignalResult::CoreDump;
+		case LINUX_SIGTRAP:		return SignalResult::CoreDump;
+		case LINUX_SIGABRT:		return SignalResult::CoreDump;
+		case LINUX_SIGBUS:		return SignalResult::CoreDump;
+		case LINUX_SIGFPE:		return SignalResult::CoreDump;
+		case LINUX_SIGKILL:		return SignalResult::Terminate;
+		case LINUX_SIGUSR1:		return SignalResult::Terminate;
+		case LINUX_SIGSEGV:		return SignalResult::CoreDump;
+		case LINUX_SIGUSR2:		return SignalResult::Terminate;
+		case LINUX_SIGPIPE:		return SignalResult::Terminate;
+		case LINUX_SIGALRM:		return SignalResult::Terminate;
+		case LINUX_SIGTERM:		return SignalResult::Terminate;
+		case LINUX_SIGSTKFLT:	return SignalResult::Terminate;
+		case LINUX_SIGCHLD:		return SignalResult::Ignored;
+		case LINUX_SIGCONT:		return SignalResult::Resume;
+		case LINUX_SIGSTOP:		return SignalResult::Suspend;
+		case LINUX_SIGTSTP:		return SignalResult::Suspend;
+		case LINUX_SIGTTIN:		return SignalResult::Suspend;
+		case LINUX_SIGTTOU:		return SignalResult::Suspend;
+		case LINUX_SIGURG:		return SignalResult::Ignored;
+		case LINUX_SIGXCPU:		return SignalResult::CoreDump;
+		case LINUX_SIGXFSZ:		return SignalResult::CoreDump;
+		case LINUX_SIGVTALRM:	return SignalResult::Terminate;
+		case LINUX_SIGPROF:		return SignalResult::Terminate;
+		case LINUX_SIGWINCH:	return SignalResult::Ignored;
+		case LINUX_SIGIO:		return SignalResult::Terminate;
+		case LINUX_SIGPWR:		return SignalResult::Terminate;
+		case LINUX_SIGSYS:		return SignalResult::CoreDump;
+	}
+
+	// Default result for any other signal is TERM
+	return SignalResult::Terminate;
+}
+
+//-----------------------------------------------------------------------------
 // Thread::EndSignal
 //
 // Completes execution of a signal handler on the thread

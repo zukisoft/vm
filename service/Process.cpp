@@ -434,7 +434,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		}
 
 		// Kill the entire process on exception
-		catch(...) { Kill(0); throw; }
+		catch(...) { Terminate(0, LINUX_SIGKILL); throw; }
 	}
 
 	// Kill just the newly created remote thread on exception
@@ -479,21 +479,6 @@ std::shared_ptr<FileSystem::Handle> Process::getHandle(int fd) const
 const void* Process::getLocalDescriptorTable(void) const
 {
 	return m_ldt;
-}
-
-//-----------------------------------------------------------------------------
-// Process::Kill
-//
-// Kills (terminates) the process
-//
-// Arguments:
-//
-//	exitcode	- Exit code for the process
-
-void Process::Kill(int exitcode) const
-{
-	// Terminate the process indicating SIGKILL as the reason
-	TerminateProcess(m_process->Handle, ((exitcode & 0xFF) << 8) | LINUX_SIGKILL);
 }
 
 //-----------------------------------------------------------------------------
@@ -878,17 +863,29 @@ void Process::SetSignalAction(int signal, const uapi::sigaction* action, uapi::s
 
 bool Process::Signal(int signal)
 {
+	//
+	// TODO: There needs to be an overriding synchronization object
+	// to serialize all signal activity at the PROCESS level, this means
+	// that all actions (sigprocmask, etc) need to come through PROCESS
+	// and never directly through THREAD.  Without doing this, there will
+	// be a race condition that allows things to change while figuring
+	// out what to do, and can cause a pending signal release event (such as
+	// changing a sigprocmask to unblock it) to go unnoticed
+	//
+
 	// Get the action specified for this signal
 	uapi::sigaction action = m_sigactions->Get(signal);
 
+	// Signals specifically set as ignored do not get delivered to a thread
+	if(action.sa_handler == LINUX_SIG_IGN) return true;
+
+	// Signals that default to ignored do not get delivered either, this
+	// currently includes SIGCHLD (17), SIGURG (23) and SIGWINCH (28)
+	if((action.sa_handler == LINUX_SIG_DFL) && ((signal == LINUX_SIGCHLD) || 
+		(signal == LINUX_SIGURG) || (signal == LINUX_SIGWINCH))) return true;
+
 	// Acquire a read lock against the thread collection
 	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
-
-	//
-	// TODO: tgkill and tkill will indicate a specific thread
-	// break out the switch below into a function call, then
-	// can use find() or for(iterator...) against it 
-	//
 
 	// Iterate over all the threads in the process
 	for(const auto iterator : m_threads) {
@@ -901,37 +898,44 @@ bool Process::Signal(int signal)
 			// Continue searching for a thread that can handle this signal
 			case Thread::SignalResult::Blocked: continue;
 
-			// SignalResult::Handled
+			// SignalResult::Delivered
 			//
-			// The thread accepted the signal and will process it
-			case Thread::SignalResult::Handled: return true;
+			// The thread accepted and delivered the signal
+			case Thread::SignalResult::Delivered: return true;
 
-			// CoreDump (COREDUMP)
+			// SignalResult::Ignored
+			//
+			// The thread accepted and ignored the signal
+			case Thread::SignalResult::Ignored: return true;
+
+			// SignalResult::CoreDump (COREDUMP)
 			//
 			// The process should be core-dumped and terminated
 			case Thread::SignalResult::CoreDump:
-				// do kill
-				break;
+				Terminate(0, signal, true);
+				return true;
 
-			// Terminate (TERM)
+			// SignalResult::Terminate (TERM)
 			//
 			// The process should be terminated
 			case Thread::SignalResult::Terminate:
-				// do kill
-				break;
+				Terminate(0, signal);
+				return true;
 
-			// Resume (CONT)
+			// SignalResult::Resume (CONT)
 			//
 			// The process should be resumed
 			case Thread::SignalResult::Resume:
 				// do resume
+				// signal parent with SIGCHLD
 				break;
 
-			// Suspend (STOP)
+			// SignalResult::Suspend (STOP)
 			//
 			// The process should be suspended
 			case Thread::SignalResult::Suspend:
 				// do suspend
+				// signal parent with SIGCHLD
 				break;
 
 			// Unknown signal result
@@ -943,16 +947,15 @@ bool Process::Signal(int signal)
 	}
 
 	//
-	// TODO: WHEN IS THE PROCESS-WIDE SIGNAL QUEUE REEVALUATED?  IT COULD BE DONE WHEN
-	// ANY THREAD CHANGES ITS SIGNAL MASK, BUT ... WHAT ABOUT THREADS CREATED WITH CLONE()?
-	// IF THE NEW THREAD HAS NO SIGNAL MASK, IT COULD POTENTIALLY BE ASKED TO HANDLE A 
-	// SIGNAL IMMEDIATELY. HOW DOES LINUX HANDLE THIS -- WHEN AND HOW DOES IT REEVALUATE
-	// THE CONTENTS OF THE PROCESS-WIDE SIGNAL QUEUE
+	// TODO: SIGNAL QUEUE MUST BE A PRIORITY QUEUE
+	// QUEUE WILL ALSO NEED TO KNOW THE TARGET THREAD ID IF IT WAS A DIRECTED SIGNAL
 	//
 
 	//
-	// TODO: SIGNAL QUEUE MUST BE A PRIORITY QUEUE
-	//
+	// TODO: STOP AND CONT WILL SEND SIGCHLD TO THE PARENT -- ALWAYS SEEMS TO BE SIGCHLD
+	// TODO: NO WAY IN WINDOWS TO DETERMINE IF A THREAD/PROCESS IS SUSPENDED; NEED TO 
+	// KEEP TRACK OF THAT INTERNALLY -- there is no way I can see to deal with a condition
+	// where the user manually suspended something; service will not know
 
 	// No thread in the process will currently accept this signal, queue it as pending
 	//
@@ -1096,6 +1099,55 @@ void Process::Suspend(void) const
 {
 	NTSTATUS result = NtApi::NtSuspendProcess(m_process->Handle);
 	if(result != 0) throw StructuredException(result);
+}
+
+//-----------------------------------------------------------------------------
+// Process::Terminate
+//
+// Terminates the process
+//
+// Arguments:
+//
+//	exitcode	- Exit code for the process
+
+void Process::Terminate(int exitcode)
+{
+	// If only an exit code was provided, assume SIGKILL
+	Terminate(exitcode, LINUX_SIGKILL, false);
+}
+
+//-----------------------------------------------------------------------------
+// Process::Terminate
+//
+// Terminates the process
+//
+// Arguments:
+//
+//	exitcode	- Exit code for the process
+//	signal		- Signal that terminated the process
+
+void Process::Terminate(int exitcode, int signal)
+{
+	// Terminate the process without a coredump
+	Terminate(exitcode, signal, false);
+}
+
+//-----------------------------------------------------------------------------
+// Process::Terminate
+//
+// Terminates the process
+//
+// Arguments:
+//
+//	exitcode	- Exit code for the process
+//	signal		- Signal that terminated the process
+//	coredump	- Flag to core dump the process
+
+void Process::Terminate(int exitcode, int signal, bool coredump)
+{
+	// Generate the final status code for the process and terminate it
+	UINT status = ((exitcode & 0xFF) << 8) | (signal & 0xFF) | (coredump ? 0x80 : 0);
+	TerminateProcess(m_process->Handle, status);
 }
 
 //-----------------------------------------------------------------------------

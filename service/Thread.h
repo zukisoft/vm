@@ -52,7 +52,8 @@ public:
 	enum class SignalResult {
 
 		Blocked			= 0,		// Signal is blocked by the thread
-		Handled,					// Signal was handled by the thread
+		Delivered,					// Signal was delivered to the thread
+		Ignored,					// Signal was ignored by the thread
 		CoreDump,					// Process should be core dumped
 		Resume,						// Process should be resumed
 		Suspend,					// Process should be suspended
@@ -253,6 +254,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
+	// DefaultSignalResult (static)
+	//
+	// Determines the action to take for a defaulted signal
+	static SignalResult DefaultSignalResult(int signal);
+	
 	// ProcessQueuedSignal
 	//
 	// Processes a single signal popped from the queue
