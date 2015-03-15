@@ -42,8 +42,8 @@
 #include "NtApi.h"
 #include "ProcessHandles.h"
 #include "ProcessMemory.h"
-#include "Schedulable.h"
 #include "SignalActions.h"
+#include "Task.h"
 #include "TaskState.h"
 #include "Thread.h"
 #include "VirtualMachine.h"
@@ -55,7 +55,7 @@
 //
 // Process represents a virtual machine process/thread group instance
 
-class Process : public std::enable_shared_from_this<Process>, public Schedulable
+class Process : public std::enable_shared_from_this<Process>, public Task
 {
 public:
 
@@ -114,7 +114,7 @@ public:
 	// Removes a thread from the process
 	void RemoveThread(uapi::pid_t tid, int exitcode);
 
-	// Resume (Schedulable)
+	// Resume (Task)
 	//
 	// Resumes the process from a suspended state
 	virtual void Resume(void);
@@ -141,17 +141,17 @@ public:
 	// Signals the process
 	bool Signal(int signal);
 
-	// Start (Schedulable)
+	// Start (Task)
 	//
 	// Starts the process
 	virtual void Start(void);
 
-	// Suspend (Schedulable)
+	// Suspend (Task)
 	//
 	// Suspends the process
 	virtual void Suspend(void);
 
-	// Terminate (Schedulable)
+	// Terminate (Task)
 	//
 	// Terminates the process
 	virtual void Terminate(int exitcode);

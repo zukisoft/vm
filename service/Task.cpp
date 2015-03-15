@@ -21,18 +21,18 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Schedulable.h"
+#include "Task.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Schedulable Constructor (protected)
+// Task Constructor (protected)
 //
 // Arguments:
 //
 //	state		- Initial object state to assign
 
-Schedulable::Schedulable(State state) : m_state(state), m_exitcode(0)
+Task::Task(State state) : m_state(state), m_exitcode(0)
 {
 	// Create a Win32 auto reset event to signal state changes
 	m_statechanged = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -40,25 +40,25 @@ Schedulable::Schedulable(State state) : m_state(state), m_exitcode(0)
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable Destructor
+// Task Destructor
 
-Schedulable::~Schedulable()
+Task::~Task()
 {
 	CloseHandle(m_statechanged);
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::ChangeState (private)
+// Task::ChangeState (private)
 //
-// Changes the state of the schedulable object and signals the event
+// Changes the state of the task and signals the event
 //
 // Arguments:
 //
-//	newstate	- New schedulable object state
+//	newstate	- New task state
 //	fireevent	- Flag to fire the state changed event
 //	exitcode	- Exit code to be assigned
 
-void Schedulable::ChangeState(State newstate, bool fireevent, int exitcode)
+void Task::ChangeState(State newstate, bool fireevent, int exitcode)
 {
 	std::lock_guard<std::mutex> critsec(m_statelock);
 
@@ -74,31 +74,31 @@ void Schedulable::ChangeState(State newstate, bool fireevent, int exitcode)
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::getCurrentState
+// Task::getCurrentState
 //
-// Gets the current state of the schedulable object
+// Gets the current state of the task
 
-Schedulable::State Schedulable::getCurrentState(void)
+Task::State Task::getCurrentState(void)
 {
 	std::lock_guard<std::mutex> critsec(m_statelock);
 	return m_state;
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::getExitCode
+// Task::getExitCode
 //
-// Gets the exit code for the schedulable object
+// Gets the exit code for the task
 
-int Schedulable::getExitCode(void)
+int Task::getExitCode(void)
 {
 	std::lock_guard<std::mutex> critsec(m_statelock);
 	return m_exitcode;
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::MakeExitCode (static, protected)
+// Task::MakeExitCode (static, protected)
 //
-// Generates an exit code for a schedulable object
+// Generates an exit code for a task
 //
 // Arguments:
 //
@@ -106,7 +106,7 @@ int Schedulable::getExitCode(void)
 //	signal		- Signal number to embed in the exit code
 //	coredump	- Flag if the exit caused a core dump
 
-int Schedulable::MakeExitCode(int status, int signal, bool coredump)
+int Task::MakeExitCode(int status, int signal, bool coredump)
 {
 	// Create the packed exit code for the process, which is a 16-bit value that
 	// contains the actual exit code in the upper 8 bits and flags in the lower 8
@@ -114,70 +114,70 @@ int Schedulable::MakeExitCode(int status, int signal, bool coredump)
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::Resumed (protected)
+// Task::Resumed (protected)
 //
-// Indicates that the schedulable object has resumed from suspension
+// Indicates that the task has resumed from suspension
 //
 // Arguments:
 //
 //	NONE
 
-void Schedulable::Resumed(void)
+void Task::Resumed(void)
 {
 	// Change the state to running with an exit code of 0xFFFF
 	ChangeState(State::Running, true, 0xFFFF);
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::Started (protected)
+// Task::Started (protected)
 //
-// Indicates that the schedulable object has started
+// Indicates that the task has started
 //
 // Arguments:
 //
 //	NONE
 
-void Schedulable::Started(void)
+void Task::Started(void)
 {
 	// Change the state to running without signaling the event
 	ChangeState(State::Running, false, 0x0000);
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::getStateChanged
+// Task::getStateChanged
 //
 // Gets the Win32 event object handle used to signal state changes
 
-HANDLE Schedulable::getStateChanged(void) const
+HANDLE Task::getStateChanged(void) const
 {
 	return m_statechanged;
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::Suspended (protected)
+// Task::Suspended (protected)
 //
-// Indicates that the schedulable object has been suspended
+// Indicates that the task has been suspended
 //
 // Arguments:
 //
 //	NONE
 
-void Schedulable::Suspended(void)
+void Task::Suspended(void)
 {
 	// Change the state to suspended with an exit code of 0x007F
 	ChangeState(State::Stopped, true, 0x007F);
 }
 
 //-----------------------------------------------------------------------------
-// Schedulable::Terminated (protected)
+// Task::Terminated (protected)
 //
-// Indicates that the schedulable object has terminated
+// Indicates that the task has terminated
 //
 // Arguments:
 //
-//	exitcode		- Exit code for the schedulable object
+//	exitcode		- Exit code for the task
 
-void Schedulable::Terminated(int exitcode)
+void Task::Terminated(int exitcode)
 {
 	// Change the state to suspended with an exit code of 0x007F
 	ChangeState(State::Terminated, true, exitcode);

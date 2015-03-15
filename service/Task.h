@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SCHEDULABLE_H_
-#define __SCHEDULABLE_H_
+#ifndef __TASK_H_
+#define __TASK_H_
 #pragma once
 
 #include <mutex>
@@ -30,13 +30,12 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Schedulable
+// Task
 //
 // Abstract base class used by Process and Thread to provide a common interface
-// for starting/suspending/resuming/terminating them.  Couldn't think of a better
-// name at the time.
+// for starting/suspending/resuming/terminating them
 
-class Schedulable
+class Task
 {
 public:
 
@@ -53,29 +52,29 @@ public:
 
 	// Destructor
 	//
-	virtual ~Schedulable();
+	virtual ~Task();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
 	// Resume
 	//
-	// Resumes the schedulable object
+	// Resumes the task
 	virtual void Resume(void) = 0;
 
 	// Start
 	//
-	// Starts the schedulable object
+	// Starts the task
 	virtual void Start(void) = 0;
 
 	// Suspend
 	//
-	// Suspends the schedulable object
+	// Suspends the task
 	virtual void Suspend(void) = 0;
 
 	// Terminate
 	//
-	// Terminates the schedulable object
+	// Terminates the task
 	virtual void Terminate(int exitcode) = 0;
 
 	//-------------------------------------------------------------------------
@@ -83,13 +82,13 @@ public:
 
 	// CurrentState
 	//
-	// Gets the current state of the schedulable object
+	// Gets the current state of the task
 	__declspec(property(get=getCurrentState)) State CurrentState;
 	State getCurrentState(void);
 
 	// ExitCode
 	//
-	// Gets the exit code set for the schedulable object
+	// Gets the exit code set for the task
 	__declspec(property(get=getExitCode)) int ExitCode;
 	int getExitCode(void);
 
@@ -103,7 +102,7 @@ protected:
 
 	// Instance Constructor
 	//
-	explicit Schedulable(State state);
+	explicit Task(State state);
 
 	//-------------------------------------------------------------------------
 	// Protected Member Functions
@@ -115,29 +114,29 @@ protected:
 
 	// Resumed
 	//
-	// Indicates that the schedulable object has resumed
+	// Indicates that the task has resumed
 	void Resumed(void);
 
 	// Started
 	//
-	// Indicates that the schedulable object has started
+	// Indicates that the task has started
 	void Started(void);
 
 	// Suspended
 	//
-	// Indicates that the schedulable object has been suspended
+	// Indicates that the task has been suspended
 	void Suspended(void);
 
 	// Terminated
 	//
-	// Indicates that the schedulable object has terminated
+	// Indicates that the task has terminated
 	virtual void Terminated(int exitcode);
 
 
 private:
 
-	Schedulable(const Schedulable&)=delete;
-	Schedulable& operator=(const Schedulable&)=delete;
+	Task(const Task&)=delete;
+	Task& operator=(const Task&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -153,11 +152,11 @@ private:
 	State				m_state;			// Current object state
 	std::mutex			m_statelock;		// Synchronization object
 	HANDLE				m_statechanged;		// Waitable event object
-	int					m_exitcode;			// Schedulable object exit code
+	int					m_exitcode;			// Task object exit code
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __SCHEDULABLE_H_
+#endif	// __TASK_H_
