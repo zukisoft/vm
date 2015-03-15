@@ -33,9 +33,10 @@
 // Arguments:
 //
 //	context		- System call context object to be released
+//	exitcode	- Exit code to report for the thread object
 //	cleartid	- Gets a pid_t address within the process to clear/signal
 
-HRESULT sys_release_thread(Context* context, uintptr_t* cleartid)
+HRESULT sys_release_thread(Context* context, int exitcode, uintptr_t* cleartid)
 {
 	if(context == nullptr) return S_FALSE;
 
@@ -44,7 +45,7 @@ HRESULT sys_release_thread(Context* context, uintptr_t* cleartid)
 	*cleartid = uintptr_t(context->Thread->ClearThreadIdOnExit);
 
 	// Remove the thread from the process instance
-	context->Process->RemoveThread(context->Thread->ThreadId);
+	context->Process->RemoveThread(context->Thread->ThreadId, exitcode);
 
 	// Release the context object
 	Context::Release(context);
@@ -54,12 +55,12 @@ HRESULT sys_release_thread(Context* context, uintptr_t* cleartid)
 
 // sys32_release_thread
 //
-HRESULT sys32_release_thread(sys32_context_exclusive_t* context, sys32_addr_t* cleartid)
+HRESULT sys32_release_thread(sys32_context_exclusive_t* context, sys32_int_t exitcode, sys32_addr_t* cleartid)
 {
 	uintptr_t clearaddr = 0;				// Address to send back as cleartid
 
 	// Release the thread context
-	HRESULT result = sys_release_thread(reinterpret_cast<Context*>(*context), &clearaddr);
+	HRESULT result = sys_release_thread(reinterpret_cast<Context*>(*context), exitcode, &clearaddr);
 
 	// Sanity check that the address to send back for the 32-bit system call interface
 	_ASSERTE(clearaddr <= UINT32_MAX);
@@ -72,12 +73,12 @@ HRESULT sys32_release_thread(sys32_context_exclusive_t* context, sys32_addr_t* c
 #ifdef _M_X64
 // sys64_release_context
 //
-HRESULT sys64_release_context(sys64_context_exclusive_t* context, sys64_addr_t* cleartid)
+HRESULT sys64_release_context(sys64_context_exclusive_t* context, sys64_int_t exitcode, sys64_addr_t* cleartid)
 {
 	uintptr_t clearaddr = 0;				// Address to send back as cleartid
 
 	// Release the thread context
-	HRESULT result = sys_release_thread(reinterpret_cast<Context*>(*context), &clearaddr);
+	HRESULT result = sys_release_thread(reinterpret_cast<Context*>(*context), exitcode, &clearaddr);
 
 	// Pass the uintptr_t back to the caller as the address to clear/signal
 	*cleartid = clearaddr;

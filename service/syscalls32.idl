@@ -160,7 +160,7 @@ interface SystemCalls32
 	// sys32_release_thread (synchronous)
 	//
 	// Releases a context handle previously allocated for a thread
-	HRESULT sys32_release_thread([in, out, ref] sys32_context_exclusive_t* context, [out, ref] sys32_addr_t* cleartid);
+	HRESULT sys32_release_thread([in, out, ref] sys32_context_exclusive_t* context, [in] sys32_int_t exitcode, [out, ref] sys32_addr_t* cleartid);
 
 	// sys32_trace
 	//

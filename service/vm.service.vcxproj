@@ -374,6 +374,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="ProcessMemory.h" />
     <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="Context.h" />
+    <ClInclude Include="Schedulable.h" />
     <ClInclude Include="SignalActions.h" />
     <ClInclude Include="TaskState.h" />
     <ClInclude Include="SystemCall.h" />
@@ -644,6 +645,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="ProcessMemory.cpp" />
     <ClCompile Include="ProcFileSystem.cpp" />
+    <ClCompile Include="Schedulable.cpp" />
     <ClCompile Include="SignalActions.cpp" />
     <ClCompile Include="sys_acquire_process.cpp" />
     <ClCompile Include="SystemCall.cpp" />

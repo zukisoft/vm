@@ -42,6 +42,7 @@
 #include "NtApi.h"
 #include "ProcessHandles.h"
 #include "ProcessMemory.h"
+#include "Schedulable.h"
 #include "SignalActions.h"
 #include "TaskState.h"
 #include "Thread.h"
@@ -54,7 +55,7 @@
 //
 // Process represents a virtual machine process/thread group instance
 
-class Process : public std::enable_shared_from_this<Process>
+class Process : public std::enable_shared_from_this<Process>, public Schedulable
 {
 public:
 
@@ -98,18 +99,6 @@ public:
 	// Sets the memory protection flags for an address space region
 	void ProtectMemory(const void* address, size_t length, int prot) const;
 
-	// Spawn (static)
-	//
-	// Spawns a new process instance
-	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		const char_t* filename, const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-		const std::shared_ptr<FileSystem::Alias>& workingdir);
-
-	// Start
-	//
-	// Starts the process execution
-	void Start(void) const;
-
 	// ReadMemory
 	//
 	// Reads data from the process virtual address space
@@ -123,12 +112,24 @@ public:
 	// RemoveThread
 	//
 	// Removes a thread from the process
-	void RemoveThread(uapi::pid_t tid);
+	void RemoveThread(uapi::pid_t tid, int exitcode);
+
+	// Resume (Schedulable)
+	//
+	// Resumes the process from a suspended state
+	virtual void Resume(void);
 
 	// SetProgramBreak
 	//
 	// Sets the program break address to increase or decrease data segment length
 	const void* SetProgramBreak(const void* address);
+
+	// Spawn (static)
+	//
+	// Spawns a new process instance
+	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+		const char_t* filename, const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	// SetSignalAction
 	//
@@ -140,12 +141,20 @@ public:
 	// Signals the process
 	bool Signal(int signal);
 
-	// Terminate
+	// Start (Schedulable)
 	//
-	// Terminates and optionally core dumps the process
-	void Terminate(int exitcode);
-	void Terminate(int exitcode, int signal);
-	void Terminate(int exitcode, int signal, bool coredump);
+	// Starts the process
+	virtual void Start(void);
+
+	// Suspend (Schedulable)
+	//
+	// Suspends the process
+	virtual void Suspend(void);
+
+	// Terminate (Schedulable)
+	//
+	// Terminates the process
+	virtual void Terminate(int exitcode);
 
 	// UnmapMemory
 	//
@@ -345,10 +354,10 @@ private:
 	template<::Architecture>
 	void Execute(const std::unique_ptr<Executable>& executable);
 
-	// Resume
+	// ResumeInternal
 	//
 	// Resumes the process from a suspended state
-	void Resume(void) const;
+	void ResumeInternal(void) const;
 
 	// Spawn<Architecture>
 	//
@@ -357,10 +366,10 @@ private:
 	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent,
 		const std::unique_ptr<Executable>& executable);
 
-	// Suspend
+	// SuspendInternal
 	//
 	// Suspends the process
-	void Suspend(void) const;
+	void SuspendInternal(void) const;
 
 	// WaitHandle
 	//

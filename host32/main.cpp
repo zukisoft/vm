@@ -147,7 +147,7 @@ DWORD WINAPI ThreadMain(void*)
 	exitcode = ExecuteTask(&thread.task);
 
 	// Release the server context handle for this thread
-	sys32_release_thread(&t_rpccontext, &cleartid);
+	sys32_release_thread(&t_rpccontext, static_cast<int>(exitcode), &cleartid);
 
 	// TODO: This is my best guess as to how I'm going to implement futex() - with
 	// the new WaitOnAddress/WakeByAddress functions, which are in-process only from
@@ -207,7 +207,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	exitcode = ExecuteTask(&process.task);
 
 	// Release the server context handle for this thread
-	sys32_release_thread(&t_rpccontext, &cleartid);
+	sys32_release_thread(&t_rpccontext, static_cast<int>(exitcode), &cleartid);
 
 	// TODO: This is my best guess as to how I'm going to implement futex() - with
 	// the new WaitOnAddress/WakeByAddress functions, which are in-process only from

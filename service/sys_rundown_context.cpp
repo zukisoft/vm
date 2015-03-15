@@ -39,8 +39,9 @@ void sys_rundown_context(Context* context)
 {
 	if(context == nullptr) return;
 
-	// The hosted thread has died, remove it from the process
-	context->Process->RemoveThread(context->Thread->ThreadId);
+	// The hosted thread has died, remove it from the process.  Use SIGKILL
+	// as the exit code, there is no way to know here why it actually died
+	context->Process->RemoveThread(context->Thread->ThreadId, LINUX_SIGKILL);
 
 	// Release the context object and it's contained references
 	Context::Release(context);
