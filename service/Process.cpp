@@ -79,7 +79,7 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 	const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
 	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), m_ldt(ldt), 
 	m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), m_rootdir(rootdir), 
-	m_workingdir(workingdir), Task(Task::State::Stopped)
+	m_workingdir(workingdir), Schedulable(Schedulable::ExecutionState::Stopped)
 {
 	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
 
@@ -386,8 +386,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		thread_map_lock_t::scoped_lock writer(m_threadslock);
 
 		// Terminate all existing threads and clear out the local collection
-		// TODO: re-evaluate having Thread::Kill()
-		for(auto iterator : m_threads) iterator.second->Kill(0);
+		for(auto iterator : m_threads) iterator.second->Terminate(0);
 		m_threads.clear();
 
 		try {
@@ -435,7 +434,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		}
 
 		// Kill the entire process on exception, use SIGKILL as the exit code
-		catch(...) { Terminate(Task::MakeExitCode(0, LINUX_SIGKILL, false)); throw; }
+		catch(...) { Terminate(Schedulable::MakeExitCode(0, LINUX_SIGKILL, false)); throw; }
 	}
 
 	// Kill just the newly created remote thread on exception
@@ -720,7 +719,7 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 		}
 
 		// Set the exit code for the process to the exit code of the last thread
-		Terminated(exitcode);
+		Schedulable::Terminated(exitcode);
 	}
 }
 
@@ -736,7 +735,7 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 void Process::Resume(void)
 {
 	ResumeInternal();					// Resume all threads in the process
-	Task::Resumed();				// Notify that process has resumed
+	Schedulable::Resumed();				// Notify that process has resumed
 }
 
 //-----------------------------------------------------------------------------
@@ -934,14 +933,14 @@ bool Process::Signal(int signal)
 			//
 			// The process should be core-dumped and terminated
 			case Thread::SignalResult::CoreDump:
-				Terminate(Task::MakeExitCode(0, signal, true));
+				Terminate(Schedulable::MakeExitCode(0, signal, true));
 				return true;
 
 			// SignalResult::Terminate (TERM)
 			//
 			// The process should be terminated
 			case Thread::SignalResult::Terminate:
-				Terminate(Task::MakeExitCode(0, signal, false));
+				Terminate(Schedulable::MakeExitCode(0, signal, false));
 				return true;
 
 			// SignalResult::Resume (CONT)
@@ -1096,7 +1095,7 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 void Process::Start(void)
 {
 	ResumeInternal();					// Start all threads in the process
-	Task::Started();				// Notify that process has started
+	Schedulable::Started();				// Notify that process has started
 }
 
 //-----------------------------------------------------------------------------
@@ -1111,7 +1110,7 @@ void Process::Start(void)
 void Process::Suspend(void)
 {
 	SuspendInternal();					// Suspend all threads in the process
-	Task::Suspended();			// Notify that process has suspended
+	Schedulable::Suspended();			// Notify that process has suspended
 }
 
 //-----------------------------------------------------------------------------
@@ -1153,7 +1152,7 @@ void Process::Terminate(int exitcode)
 		if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(termsignal);
 	}
 
-	Terminated(exitcode);		// Notify that the process has terminated
+	Schedulable::Terminated(exitcode);		// Notify that the process has terminated
 }
 
 //-----------------------------------------------------------------------------
@@ -1222,8 +1221,8 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	// Cannot wait for your own process or main thread to terminate
 	if(pid == m_pid) throw LinuxException(LINUX_ECHILD);
 
-	// Create a collection of task objects to wait against
-	std::vector<std::shared_ptr<Task>> objects;
+	// Create a collection of schedulable objects to wait against
+	std::vector<std::shared_ptr<Schedulable>> objects;
 
 	// Not _WCLONE -> Wait for child processes
 	if((options & LINUX__WCLONE) == 0) {
@@ -1282,13 +1281,13 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
 
 	// TODO: need to check result is actually valid
-	std::shared_ptr<Task> selected = objects[result - WAIT_OBJECT_0];
+	std::shared_ptr<Schedulable> selected = objects[result - WAIT_OBJECT_0];
 
 	// TODO: if the object has terminated, wait for it to actually terminate, threads
 	// and processes that exit normally have rundown code to execute
-	if(selected->CurrentState == Task::State::Terminated) {
+	if(selected->State == Schedulable::ExecutionState::Terminated) {
 
-		// TODO - need to add getter for native handle to Task?  Could also
+		// TODO - need to add getter for native handle to Schedulable?  Could also
 		// dynamically cast to Process/Thread
 		//WaitForSingleObject(selected->
 	}
@@ -1340,28 +1339,6 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	//#define LINUX_P_ALL				0
 	//#define LINUX_P_PID				1
 	//#define LINUX_P_PGID			2
-}
-
-//-----------------------------------------------------------------------------
-// Process::WaitHandle<_type> (private)
-//
-// Duplicates a source process/thread native handle for a wait operation.  The
-// resultant handle must be closed with the CloseHandle() Win32 API function
-//
-// Arguments:
-//
-//	object		- Object from which to duplicate the native handle
-
-template<typename _type>
-HANDLE Process::WaitHandle(const std::shared_ptr<_type>& object)
-{
-	HANDLE			result;				// Duplicated object handle
-
-	// Attempt to duplicate the native operating system handle with the same access
-	if(!DuplicateHandle(GetCurrentProcess(), object->NativeHandle, GetCurrentProcess(), &result, 0, 
-		FALSE, DUPLICATE_SAME_ACCESS)) throw Win32Exception();
-
-	return result;						// Return the duplicated handle
 }
 
 //-----------------------------------------------------------------------------

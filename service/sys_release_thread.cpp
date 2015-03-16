@@ -44,6 +44,11 @@ HRESULT sys_release_thread(Context* context, int exitcode, uintptr_t* cleartid)
 	// process from the thread object before its released
 	*cleartid = uintptr_t(context->Thread->ClearThreadIdOnExit);
 
+	// TODO -- this now signals the Schedulable object and 
+	// sets the exit code; thread may be better served by keeping
+	// a reference to its parent process and handling "RemoveThread" itself
+	context->Thread->Exit(exitcode);
+
 	// Remove the thread from the process instance
 	context->Process->RemoveThread(context->Thread->ThreadId, exitcode);
 
@@ -62,7 +67,7 @@ HRESULT sys32_release_thread(sys32_context_exclusive_t* context, sys32_int_t exi
 	// Release the thread context
 	HRESULT result = sys_release_thread(reinterpret_cast<Context*>(*context), exitcode, &clearaddr);
 
-	// Sanity check that the address to send back for the 32-bit system call interface
+	// Sanity check the address to send back for the 32-bit system call interface
 	_ASSERTE(clearaddr <= UINT32_MAX);
 	*cleartid = (clearaddr & 0xFFFFFFFF);
 

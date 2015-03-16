@@ -21,18 +21,18 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Task.h"
+#include "Schedulable.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Task Constructor (protected)
+// Schedulable Constructor (protected)
 //
 // Arguments:
 //
-//	state		- Initial object state to assign
+//	state		- Initial execution state to assign
 
-Task::Task(State state) : m_state(state), m_exitcode(0)
+Schedulable::Schedulable(ExecutionState state) : m_state(state), m_exitcode(0)
 {
 	// Create a Win32 auto reset event to signal state changes
 	m_statechanged = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -40,25 +40,25 @@ Task::Task(State state) : m_state(state), m_exitcode(0)
 }
 
 //-----------------------------------------------------------------------------
-// Task Destructor
+// Schedulable Destructor
 
-Task::~Task()
+Schedulable::~Schedulable()
 {
 	CloseHandle(m_statechanged);
 }
 
 //-----------------------------------------------------------------------------
-// Task::ChangeState (private)
+// Schedulable::ChangeState (private)
 //
-// Changes the state of the task and signals the event
+// Changes the state of the object and signals the event
 //
 // Arguments:
 //
-//	newstate	- New task state
+//	newstate	- New execution state
 //	fireevent	- Flag to fire the state changed event
 //	exitcode	- Exit code to be assigned
 
-void Task::ChangeState(State newstate, bool fireevent, int exitcode)
+void Schedulable::ChangeState(ExecutionState newstate, bool fireevent, int exitcode)
 {
 	std::lock_guard<std::mutex> critsec(m_statelock);
 
@@ -69,36 +69,24 @@ void Task::ChangeState(State newstate, bool fireevent, int exitcode)
 		if((fireevent) && (!SetEvent(m_statechanged))) throw Win32Exception();
 	}
 
-	// Always update the exit code
-	m_exitcode = exitcode;
+	m_exitcode = exitcode;				// Update the exit code
 }
 
 //-----------------------------------------------------------------------------
-// Task::getCurrentState
+// Schedulable::getExitCode
 //
-// Gets the current state of the task
+// Gets the exit code for the unit of execution
 
-Task::State Task::getCurrentState(void)
-{
-	std::lock_guard<std::mutex> critsec(m_statelock);
-	return m_state;
-}
-
-//-----------------------------------------------------------------------------
-// Task::getExitCode
-//
-// Gets the exit code for the task
-
-int Task::getExitCode(void)
+int Schedulable::getExitCode(void)
 {
 	std::lock_guard<std::mutex> critsec(m_statelock);
 	return m_exitcode;
 }
 
 //-----------------------------------------------------------------------------
-// Task::MakeExitCode (static, protected)
+// Schedulable::MakeExitCode (static, protected)
 //
-// Generates an exit code for a task
+// Generates an exit code for a unit of execution
 //
 // Arguments:
 //
@@ -106,81 +94,92 @@ int Task::getExitCode(void)
 //	signal		- Signal number to embed in the exit code
 //	coredump	- Flag if the exit caused a core dump
 
-int Task::MakeExitCode(int status, int signal, bool coredump)
+int Schedulable::MakeExitCode(int status, int signal, bool coredump)
 {
-	// Create the packed exit code for the process, which is a 16-bit value that
+	// Create the packed exit code for the task, which is a 16-bit value that
 	// contains the actual exit code in the upper 8 bits and flags in the lower 8
 	return ((status & 0xFF) << 8) | (signal & 0xFF) | (coredump ? 0x80 : 0);
 }
 
 //-----------------------------------------------------------------------------
-// Task::Resumed (protected)
+// Schedulable::Resumed (protected)
 //
-// Indicates that the task has resumed from suspension
+// Indicates that the object has resumed execution
 //
 // Arguments:
 //
 //	NONE
 
-void Task::Resumed(void)
+void Schedulable::Resumed(void)
 {
 	// Change the state to running with an exit code of 0xFFFF
-	ChangeState(State::Running, true, 0xFFFF);
+	ChangeState(ExecutionState::Running, true, 0xFFFF);
 }
 
 //-----------------------------------------------------------------------------
-// Task::Started (protected)
+// Schedulable::Started (protected)
 //
-// Indicates that the task has started
+// Indicates that the object has started execution
 //
 // Arguments:
 //
 //	NONE
 
-void Task::Started(void)
+void Schedulable::Started(void)
 {
 	// Change the state to running without signaling the event
-	ChangeState(State::Running, false, 0x0000);
+	ChangeState(ExecutionState::Running, false, 0x0000);
 }
 
 //-----------------------------------------------------------------------------
-// Task::getStateChanged
+// Schedulable::getState
+//
+// Gets the current state of the schedulable object
+
+Schedulable::ExecutionState Schedulable::getState(void)
+{
+	std::lock_guard<std::mutex> critsec(m_statelock);
+	return m_state;
+}
+
+//-----------------------------------------------------------------------------
+// Schedulable::getStateChanged
 //
 // Gets the Win32 event object handle used to signal state changes
 
-HANDLE Task::getStateChanged(void) const
+HANDLE Schedulable::getStateChanged(void) const
 {
 	return m_statechanged;
 }
 
 //-----------------------------------------------------------------------------
-// Task::Suspended (protected)
+// Schedulable::Suspended (protected)
 //
-// Indicates that the task has been suspended
+// Indicates that execution has been suspended
 //
 // Arguments:
 //
 //	NONE
 
-void Task::Suspended(void)
+void Schedulable::Suspended(void)
 {
 	// Change the state to suspended with an exit code of 0x007F
-	ChangeState(State::Stopped, true, 0x007F);
+	ChangeState(ExecutionState::Stopped, true, 0x007F);
 }
 
 //-----------------------------------------------------------------------------
-// Task::Terminated (protected)
+// Schedulable::Terminated (protected)
 //
-// Indicates that the task has terminated
+// Indicates that execution has terminated
 //
 // Arguments:
 //
 //	exitcode		- Exit code for the task
 
-void Task::Terminated(int exitcode)
+void Schedulable::Terminated(int exitcode)
 {
 	// Change the state to suspended with an exit code of 0x007F
-	ChangeState(State::Terminated, true, exitcode);
+	ChangeState(ExecutionState::Terminated, true, exitcode);
 }
 
 //-----------------------------------------------------------------------------

@@ -365,7 +365,7 @@
     <ClInclude Include="..\common\linux\wait.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="Task.h">
+    <ClInclude Include="Schedulable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -790,7 +790,7 @@
     <ClCompile Include="sys_release_thread.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="Task.cpp">
+    <ClCompile Include="Schedulable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

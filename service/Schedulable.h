@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __TASK_H_
-#define __TASK_H_
+#ifndef __SCHEDULABLE_H_
+#define __SCHEDULABLE_H_
 #pragma once
 
 #include <mutex>
@@ -30,67 +30,66 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Task
+// Schedulable
 //
-// Abstract base class used by Process and Thread to provide a common interface
-// for starting/suspending/resuming/terminating them
+// Abstraction of a schedulable unit of execution (processes, threads); provides
+// a common interface for manipulating execution state
 
-class Task
+class Schedulable
 {
 public:
 
-	// State
+	// ExecutionState
 	//
-	// Strongly typed enumeration defining the object state
-	enum class State {
+	// Strongly typed enumeration defining the execution state
+	enum class ExecutionState {
 
-		Stopped		= 0,		// Object is suspended
-		Running,				// Object is running
-		Terminating,			// Object is terminating
-		Terminated,				// Object has terminated
+		Stopped		= 0,		// Execution is suspended
+		Running,				// Execution is running
+		Terminated,				// Execution has terminated
 	};
 
 	// Destructor
 	//
-	virtual ~Task();
+	virtual ~Schedulable();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
 	// Resume
 	//
-	// Resumes the task
+	// Resumes execution of the object
 	virtual void Resume(void) = 0;
 
 	// Start
 	//
-	// Starts the task
+	// Starts execution of the object
 	virtual void Start(void) = 0;
 
 	// Suspend
 	//
-	// Suspends the task
+	// Suspends execution of the object
 	virtual void Suspend(void) = 0;
 
 	// Terminate
 	//
-	// Terminates the task
+	// Terminates execution of the object
 	virtual void Terminate(int exitcode) = 0;
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// CurrentState
-	//
-	// Gets the current state of the task
-	__declspec(property(get=getCurrentState)) State CurrentState;
-	State getCurrentState(void);
-
 	// ExitCode
 	//
-	// Gets the exit code set for the task
+	// Gets the current exit code, also resets the event handle
 	__declspec(property(get=getExitCode)) int ExitCode;
 	int getExitCode(void);
+
+	// State
+	//
+	// Gets the current execution state
+	__declspec(property(get=getState)) ExecutionState State;
+	ExecutionState getState(void);
 
 	// StateChanged
 	//
@@ -102,7 +101,7 @@ protected:
 
 	// Instance Constructor
 	//
-	explicit Task(State state);
+	explicit Schedulable(ExecutionState state);
 
 	//-------------------------------------------------------------------------
 	// Protected Member Functions
@@ -114,29 +113,29 @@ protected:
 
 	// Resumed
 	//
-	// Indicates that the task has resumed
+	// Indicates that execution has resumed
 	void Resumed(void);
 
 	// Started
 	//
-	// Indicates that the task has started
+	// Indicates that execution has started
 	void Started(void);
 
 	// Suspended
 	//
-	// Indicates that the task has been suspended
+	// Indicates that execution has been suspended
 	void Suspended(void);
 
 	// Terminated
 	//
-	// Indicates that the task has terminated
+	// Indicates that execution has terminated
 	virtual void Terminated(int exitcode);
 
 
 private:
 
-	Task(const Task&)=delete;
-	Task& operator=(const Task&)=delete;
+	Schedulable(const Schedulable&)=delete;
+	Schedulable& operator=(const Schedulable&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -144,19 +143,19 @@ private:
 	// ChangeState
 	//
 	// Changes the state of the object and signals the event
-	void ChangeState(State newstate, bool fireevent, int exitcode);
+	void ChangeState(ExecutionState newstate, bool fireevent, int exitcode);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	State				m_state;			// Current object state
+	ExecutionState		m_state;			// Current execution state
 	std::mutex			m_statelock;		// Synchronization object
 	HANDLE				m_statechanged;		// Waitable event object
-	int					m_exitcode;			// Task object exit code
+	int					m_exitcode;			// Current object exit code
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __TASK_H_
+#endif	// __SCHEDULABLE_H_

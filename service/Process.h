@@ -42,8 +42,8 @@
 #include "NtApi.h"
 #include "ProcessHandles.h"
 #include "ProcessMemory.h"
+#include "Schedulable.h"
 #include "SignalActions.h"
-#include "Task.h"
 #include "TaskState.h"
 #include "Thread.h"
 #include "VirtualMachine.h"
@@ -55,7 +55,7 @@
 //
 // Process represents a virtual machine process/thread group instance
 
-class Process : public std::enable_shared_from_this<Process>, public Task
+class Process : public Schedulable, public std::enable_shared_from_this<Process>
 {
 public:
 
@@ -114,7 +114,7 @@ public:
 	// Removes a thread from the process
 	void RemoveThread(uapi::pid_t tid, int exitcode);
 
-	// Resume (Task)
+	// Resume (Schedulable)
 	//
 	// Resumes the process from a suspended state
 	virtual void Resume(void);
@@ -141,17 +141,17 @@ public:
 	// Signals the process
 	bool Signal(int signal);
 
-	// Start (Task)
+	// Start (Schedulable)
 	//
 	// Starts the process
 	virtual void Start(void);
 
-	// Suspend (Task)
+	// Suspend (Schedulable)
 	//
 	// Suspends the process
 	virtual void Suspend(void);
 
-	// Terminate (Task)
+	// Terminate (Schedulable)
 	//
 	// Terminates the process
 	virtual void Terminate(int exitcode);
@@ -370,12 +370,6 @@ private:
 	//
 	// Suspends the process
 	void SuspendInternal(void) const;
-
-	// WaitHandle
-	//
-	// Gets a duplicated native process/thread handle for a wait operation
-	template<class _type>
-	HANDLE WaitHandle(const std::shared_ptr<_type>& object);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

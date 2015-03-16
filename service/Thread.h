@@ -31,6 +31,7 @@
 #include "Architecture.h"
 #include "NativeHandle.h"
 #include "NtApi.h"
+#include "Schedulable.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
 #include "Win32Exception.h"
@@ -40,9 +41,9 @@
 //-----------------------------------------------------------------------------
 // Thread
 //
-// Represents a single thread within a hosted process instance
+// Represents a single thread within a process/thread group
 
-class Thread
+class Thread : public Schedulable
 {
 public:
 
@@ -77,6 +78,11 @@ public:
 	// Completes execution of the current signal handler on this thread
 	void EndSignal(void);
 
+	// Exit
+	//
+	// Indicates that the thread terminated normally on its own
+	void Exit(int status);
+
 	// FromNativeHandle
 	//
 	// Creates a new Thread instance from a native operating system handle
@@ -84,25 +90,15 @@ public:
 	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
 		DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
 
-	// Kill
-	//
-	// Kills (terminates) the thread
-	void Kill(int status) const;
-
 	// PopInitialTask
 	//
 	// Pops the initial task information for the thread and clears it
 	void PopInitialTask(void* task, size_t tasklength);
 
-	// Resume
+	// Resume (Schedulable)
 	//
 	// Resumes the thread
-	void Resume(void) const;
-
-	// ResumeTask
-	//
-	// Resumes the thread after application of a task state
-	void ResumeTask(const std::unique_ptr<TaskState>& initialtask) const;
+	virtual void Resume(void);
 
 	// SetSignalAlternateStack
 	//
@@ -119,15 +115,20 @@ public:
 	// Attempts to send a signal to this thread
 	SignalResult Signal(int signal, uapi::sigaction action);
 
-	// Suspend
+	// Start (Schedulable)
+	//
+	// Starts the thread
+	virtual void Start(void);
+
+	// Suspend (Schedulable)
 	//
 	// Suspends the thread
-	void Suspend(void) const;
+	virtual void Suspend(void);
 
-	// SuspendTask
+	// Terminate (Schedulable)
 	//
-	// Suspends the thread and captures the task state
-	std::unique_ptr<TaskState> SuspendTask(void);
+	// Terminates the thread
+	virtual void Terminate(int exitcode);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -263,6 +264,16 @@ private:
 	//
 	// Processes a single signal popped from the queue
 	void ProcessQueuedSignal(queued_signal_t signal);
+
+	// ResumeInternal
+	//
+	// Internal implementation to resume a suspended thread
+	void ResumeInternal(const std::unique_ptr<TaskState>& initialtask);
+
+	// SuspendInternal
+	//
+	// Internal implementation to suspend a thread
+	std::unique_ptr<TaskState> SuspendInternal(bool capture);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

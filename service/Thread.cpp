@@ -53,7 +53,7 @@ template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(
 
 Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
 	std::unique_ptr<TaskState>&& initialtask) : m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid), 
-	m_initialtask(std::move(initialtask))
+	m_initialtask(std::move(initialtask)), Schedulable(Schedulable::ExecutionState::Stopped)
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
@@ -147,7 +147,7 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	m_sigmask = mask;
 
 	// task state
-	m_savedsigtask = SuspendTask();
+	m_savedsigtask = SuspendInternal(true);
 
 	//
 	// TODO: DEFAULT HANDLERS AND WHATNOT HERE
@@ -224,7 +224,7 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	
 	newstate->StackPointer = reinterpret_cast<void*>(stackpointer);
 
-	ResumeTask(newstate);
+	ResumeInternal(newstate);
 	
 	// in theory this ultimately calls into EndSignal from the remote thread
 	// which undoes what was done here
@@ -304,7 +304,7 @@ void Thread::EndSignal(void)
 	_ASSERTE(m_insignal);
 	if(!m_insignal) return;
 
-	Suspend();
+	SuspendInternal(false);
 
 	// TODO: need to kick off additional signals here
 	//queued_signal_t signal;
@@ -315,9 +315,29 @@ void Thread::EndSignal(void)
 	//}
 
 	m_sigmask = m_savedsigmask;
-	ResumeTask(m_savedsigtask);
+	ResumeInternal(m_savedsigtask);
 	
 	m_insignal = false;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::Exit
+//
+// Indicates that the thread terminated normally on its own
+//
+// Arguments:
+//
+//	status		- Thread exit status code
+
+void Thread::Exit(int status)
+{
+	// TODO: clean out anything? thread is now technically dead
+
+	// Signal that the thread has terminated
+	Schedulable::Terminated(Schedulable::MakeExitCode(status, 0, false));
+
+	// TODO: inform process automatically?  Currently done in sys_exit/rundown context
+	// by telling the process to remove the thread
 }
 
 //-----------------------------------------------------------------------------
@@ -336,21 +356,6 @@ std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::sha
 	DWORD threadid, std::unique_ptr<TaskState>&& initialtask)
 {
 	return std::make_shared<Thread>(tid, architecture, process, thread, threadid, std::move(initialtask));
-}
-
-//-----------------------------------------------------------------------------
-// Thread::Kill
-//
-// Kills (terminates) the thread
-//
-// Arguments:
-//
-//	exitcode		- Exit code for the thread
-
-void Thread::Kill(int exitcode) const
-{
-	// Terminate the thread indicating SIGKILL as the reason
-	TerminateThread(m_thread->Handle, ((exitcode & 0xFF) << 8) | LINUX_SIGKILL);
 }
 
 //-----------------------------------------------------------------------------
@@ -399,41 +404,34 @@ void Thread::PopInitialTask(void* task, size_t tasklen)
 //-----------------------------------------------------------------------------
 // Thread::Resume
 //
-// Resumes the thread from a suspended state; forces a thread that has been
-// suspended multiple times to resume execution.
+// Resumes the thread; will trigger a state changed event
 //
 // Arguments:
 //
 //	NONE
 
-void Thread::Resume(void) const
+void Thread::Resume(void)
 {
-	DWORD result;				// Result from function call
-
-	// Repeatedly call ResumeThread until it has overcome all suspend
-	// operations.  If it returns zero, the thread was not suspended.
-	do { result = ResumeThread(m_thread->Handle); }
-	while((result != -1) && (result > 1));
-
-	// A result of -1 (0xFFFFFFFF) indicates that an error occurred
-	if(result == -1) throw Win32Exception();		// todo: linux exception?
+	ResumeInternal(nullptr);
+	Schedulable::Resumed();
 }
 
 //-----------------------------------------------------------------------------
-// Thread::ResumeTask
+// Thread::ResumeInternal (private)
 //
-// Resumes the thread from a suspended state after applying a task state
+// Resumes the thread
 //
 // Arguments:
 //
-//	task		- Task state to be applied to the thread
+//	task			- Optional task state to be applied to the thread
 
-void Thread::ResumeTask(const std::unique_ptr<TaskState>& task) const
+void Thread::ResumeInternal(const std::unique_ptr<TaskState>& task)
 {
-	// Apply the specified task to the native thread
-	task->Restore(m_architecture, m_thread->Handle);
+	// If provided, apply the specified task to the thread first
+	if(task) task->Restore(m_architecture, m_thread->Handle);
 
-	Resume();					// Resume the thread
+	// Resume the thread without informing Schedulable about it
+	if(ResumeThread(m_thread->Handle) == -1) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
@@ -521,6 +519,21 @@ uapi::sigset_t Thread::getSignalMask(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Thread::Start
+//
+// Starts the thread
+//
+// Arguments:
+//
+//	NONE
+
+void Thread::Start(void)
+{
+	ResumeInternal(nullptr);
+	Schedulable::Started();
+}
+
+//-----------------------------------------------------------------------------
 // Thread::Suspend
 //
 // Suspends the thread
@@ -529,9 +542,23 @@ uapi::sigset_t Thread::getSignalMask(void) const
 //
 //	NONE
 
-void Thread::Suspend(void) const
+void Thread::Suspend(void)
 {
-	// todo: linux exceptions?
+	SuspendInternal(false);
+	Schedulable::Suspended();
+}
+
+//-----------------------------------------------------------------------------
+// Thread::SuspendInternal (private)
+//
+// Suspends the thread
+//
+// Arguments:
+//
+//	capture		- Flag to capture the TaskState, returns nullptr otherwise
+
+std::unique_ptr<TaskState> Thread::SuspendInternal(bool capture)
+{
 #ifndef _M_X64
 	if(SuspendThread(m_thread->Handle) == -1) throw Win32Exception();
 #else
@@ -539,24 +566,31 @@ void Thread::Suspend(void) const
 	if(m_architecture == Architecture::x86) { if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception(); }
 	else if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
 #endif
+
+	// If the TaskState for the thread is not required, just return nullptr
+	if(!capture) return nullptr;
+
+	// Attempt to capture the task state for the thread; auto-resume on exception
+	try { return TaskState::Capture(m_architecture, m_thread->Handle); }
+	catch(...) { ResumeInternal(nullptr); throw; }
 }
 
 //-----------------------------------------------------------------------------
-// Thread::SuspendTask
+// Thread::Terminate
 //
-// Suspends the thread and captures it's task state
+// Terminates the thread
 //
 // Arguments:
 //
-//	NONE
+//	exitcode		- Exit code for the thread
 
-std::unique_ptr<TaskState> Thread::SuspendTask(void)
+void Thread::Terminate(int exitcode)
 {
-	Suspend();						// Suspend the native operating system thread
+	// Terminate the thread and wait for it to actually terminate
+	TerminateThread(m_thread->Handle, exitcode);
+	WaitForSingleObject(m_thread->Handle, INFINITE);
 	
-	// Attempt to capture the task state for the thread, and resume on exception
-	try { return TaskState::Capture(m_architecture, m_thread->Handle); }
-	catch(...) { Resume(); throw; }
+	Schedulable::Terminated(exitcode);
 }
 
 //-----------------------------------------------------------------------------
