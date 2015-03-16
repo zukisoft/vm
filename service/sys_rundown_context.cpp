@@ -39,11 +39,6 @@ void sys_rundown_context(Context* context)
 {
 	if(context == nullptr) return;
 
-	// TODO -- this now signals the Schedulable object and 
-	// sets the exit code; thread may be better served by keeping
-	// a reference to its parent process and handling "RemoveThread" itself
-	context->Thread->Exit(LINUX_SIGKILL);
-
 	// The hosted thread has died, remove it from the process.  Use SIGKILL
 	// as the exit code, there is no way to know here why it actually died
 	context->Process->RemoveThread(context->Thread->ThreadId, LINUX_SIGKILL);

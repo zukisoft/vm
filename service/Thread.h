@@ -81,7 +81,7 @@ public:
 	// Exit
 	//
 	// Indicates that the thread terminated normally on its own
-	void Exit(int status);
+	void Exit(int exitcode);
 
 	// FromNativeHandle
 	//

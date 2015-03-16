@@ -44,11 +44,6 @@ HRESULT sys_release_thread(Context* context, int exitcode, uintptr_t* cleartid)
 	// process from the thread object before its released
 	*cleartid = uintptr_t(context->Thread->ClearThreadIdOnExit);
 
-	// TODO -- this now signals the Schedulable object and 
-	// sets the exit code; thread may be better served by keeping
-	// a reference to its parent process and handling "RemoveThread" itself
-	context->Thread->Exit(exitcode);
-
 	// Remove the thread from the process instance
 	context->Process->RemoveThread(context->Thread->ThreadId, exitcode);
 

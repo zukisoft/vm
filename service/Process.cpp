@@ -697,12 +697,28 @@ void Process::RemoveHandle(int fd)
 //	tid			- Identifier for the thread to be removed
 //	exitcode	- Exit code reported by the thread
 
+// TODO: Rename me to ExitThread() or OnThreadExit() or something?
+// RemoveThread doesn't describe how its supposed to be used
 void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 {
 	thread_map_lock_t::scoped_lock writer(m_threadslock);
 
-	// Remove the reference to the thread from this process
-	m_threads.erase(tid);
+	try {
+		
+		// TODO: this needs to be done to signal the StateChanged event of the thread
+		// but I'm not fond of how this works out.  sys_exit/release_thread/rundown_context
+		// could call this, but then the process wouldn't know to remove it
+		// unless RemoveThread() was still called, so for now just put this here
+
+		auto thread = m_threads.at(tid);			// can throw std::out_of_range if not there
+		thread->Exit(exitcode);						// TODO: rename to OnExit()??
+
+		// Remove the thread from the collection
+		m_threads.erase(tid);			
+	}
+
+	catch(std::out_of_range&) { return; }
+	// TODO: catch all else here?
 
 	// If this was the last thread in the process, the process is exiting normally.
 	// Signal the parent and set as terminated, but don't wait for the process itself,

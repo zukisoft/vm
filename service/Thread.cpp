@@ -327,17 +327,16 @@ void Thread::EndSignal(void)
 //
 // Arguments:
 //
-//	status		- Thread exit status code
+//	exitcode		- Thread exit code
 
-void Thread::Exit(int status)
+void Thread::Exit(int exitcode)
 {
-	// TODO: clean out anything? thread is now technically dead
+	// TODO: BLOCK ALL SIGNALS AND CLEAR ANY PENDING STATES
 
-	// Signal that the thread has terminated
-	Schedulable::Terminated(Schedulable::MakeExitCode(status, 0, false));
-
-	// TODO: inform process automatically?  Currently done in sys_exit/rundown context
-	// by telling the process to remove the thread
+	// All this does is signal anything waiting on StateChanged event that
+	// the thread has died, do not wait for it since its technically still
+	// running and has native termination code that has to execute
+	Schedulable::Terminated(exitcode);
 }
 
 //-----------------------------------------------------------------------------
