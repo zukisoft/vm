@@ -30,6 +30,7 @@
 #include <linux/ptrace.h>
 #include <linux/resource.h>
 #include <linux/sched.h>
+#include <linux/siginfo.h>
 #include <linux/signal.h>
 #include <linux/stat.h>
 #include <linux/statfs.h>

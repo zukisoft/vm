@@ -27,13 +27,15 @@
 #include <atomic>
 #include <concurrent_priority_queue.h>
 #include <memory>
+#include <mutex>
 #include <linux/signal.h>
+#include <linux/wait.h>
 #include "Architecture.h"
 #include "NativeHandle.h"
 #include "NtApi.h"
-#include "Schedulable.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
+#include "Waitable.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -43,7 +45,7 @@
 //
 // Represents a single thread within a process/thread group
 
-class Thread : public Schedulable
+class Thread : public Waitable
 {
 public:
 
@@ -63,7 +65,7 @@ public:
 
 	// Destructor
 	//
-	~Thread()=default;
+	virtual ~Thread()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -95,10 +97,10 @@ public:
 	// Pops the initial task information for the thread and clears it
 	void PopInitialTask(void* task, size_t tasklength);
 
-	// Resume (Schedulable)
+	// Resume
 	//
 	// Resumes the thread
-	virtual void Resume(void);
+	void Resume(void);
 
 	// SetSignalAlternateStack
 	//
@@ -115,20 +117,20 @@ public:
 	// Attempts to send a signal to this thread
 	SignalResult Signal(int signal, uapi::sigaction action);
 
-	// Start (Schedulable)
+	// Start
 	//
 	// Starts the thread
-	virtual void Start(void);
+	void Start(void);
 
-	// Suspend (Schedulable)
+	// Suspend
 	//
 	// Suspends the thread
-	virtual void Suspend(void);
+	void Suspend(void);
 
-	// Terminate (Schedulable)
+	// Terminate
 	//
 	// Terminates the thread
-	virtual void Terminate(int exitcode);
+	void Terminate(int exitcode);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -175,6 +177,12 @@ public:
 	// Gets/sets the blocked signal mask for the thread
 	__declspec(property(get=getSignalMask)) uapi::sigset_t SignalMask;
 	uapi::sigset_t getSignalMask(void) const;
+
+	// StatusCode (Waitable)
+	//
+	// Gets the thread status/exit code
+	__declspec(property(get=getStatusCode)) int StatusCode;
+	virtual int getStatusCode(void);
 
 	// ThreadId
 	//
@@ -278,23 +286,28 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const uapi::pid_t				m_tid;				// Thread identifier
-	const ::Architecture			m_architecture;		// Thread architecture
-	std::shared_ptr<::NativeHandle>	m_process;			// Native process handle
-	std::shared_ptr<::NativeHandle>	m_thread;			// Native thread handle
-	const DWORD						m_threadid;			// Native thread id
-	std::unique_ptr<TaskState>		m_initialtask;		// Initial task state
+	const uapi::pid_t					m_tid;				// Thread identifier
+	const ::Architecture				m_architecture;		// Thread architecture
+	std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
+	std::shared_ptr<::NativeHandle>		m_thread;			// Native thread handle
+	const DWORD							m_threadid;			// Native thread id
+	std::unique_ptr<TaskState>			m_initialtask;		// Initial task state
 
-	void*							m_cleartid = nullptr;
+	// Status
+	//
+	int									m_statuscode;		// Process status code
+	std::mutex							m_statuslock;		// Synchronization object
+
+	void*								m_cleartid = nullptr;
 
 	// Signal Management
 	//
-	std::atomic<uapi::sigset_t>		m_sigmask = 0;		// Current signal mask
-	std::atomic<uapi::stack_t>		m_sigaltstack;		// Alternate signal stack
-	signal_queue_t					m_pendingsignals;	// Pending signals
-	std::atomic<bool>				m_insignal = false;
-	std::unique_ptr<TaskState>		m_savedsigtask;		// Previous task state
-	uapi::sigset_t					m_savedsigmask;		// Previous signal mask
+	std::atomic<uapi::sigset_t>			m_sigmask = 0;		// Current signal mask
+	std::atomic<uapi::stack_t>			m_sigaltstack;		// Alternate signal stack
+	signal_queue_t						m_pendingsignals;	// Pending signals
+	std::atomic<bool>					m_insignal = false;
+	std::unique_ptr<TaskState>			m_savedsigtask;		// Previous task state
+	uapi::sigset_t						m_savedsigmask;		// Previous signal mask
 };
 
 //-----------------------------------------------------------------------------

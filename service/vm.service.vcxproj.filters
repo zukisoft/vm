@@ -365,7 +365,10 @@
     <ClInclude Include="..\common\linux\wait.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="Schedulable.h">
+    <ClInclude Include="..\common\linux\siginfo.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="Waitable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -790,7 +793,7 @@
     <ClCompile Include="sys_release_thread.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="Schedulable.cpp">
+    <ClCompile Include="Waitable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

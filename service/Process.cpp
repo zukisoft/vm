@@ -77,9 +77,9 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
 	const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
-	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), m_ldt(ldt), 
-	m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), m_rootdir(rootdir), 
-	m_workingdir(workingdir), Schedulable(Schedulable::ExecutionState::Stopped)
+	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_statuscode(0), m_memory(std::move(memory)), 
+	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), 
+	m_rootdir(rootdir), m_workingdir(workingdir)
 {
 	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
 
@@ -434,7 +434,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		}
 
 		// Kill the entire process on exception, use SIGKILL as the exit code
-		catch(...) { Terminate(Schedulable::MakeExitCode(0, LINUX_SIGKILL, false)); throw; }
+		catch(...) { Terminate(uapi::MakeExitCode(0, LINUX_SIGKILL, false)); throw; }
 	}
 
 	// Kill just the newly created remote thread on exception
@@ -701,7 +701,8 @@ void Process::RemoveHandle(int fd)
 // RemoveThread doesn't describe how its supposed to be used
 void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 {
-	thread_map_lock_t::scoped_lock writer(m_threadslock);
+	std::lock_guard<std::mutex>		crtisec(m_statuslock);
+	thread_map_lock_t::scoped_lock	writer(m_threadslock);
 
 	try {
 		
@@ -734,8 +735,9 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 			if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(signal);
 		}
 
-		// Set the exit code for the process to the exit code of the last thread
-		Schedulable::Terminated(exitcode);
+		// Signal that the process has terminated
+		m_statuscode = exitcode;
+		SetWaitableState(State::Terminated);
 	}
 }
 
@@ -750,8 +752,14 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 
 void Process::Resume(void)
 {
-	ResumeInternal();					// Resume all threads in the process
-	Schedulable::Resumed();				// Notify that process has resumed
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
+	// Resume all threads in the process
+	ResumeInternal();
+	
+	// Signal that the process is running again
+	m_statuscode = uapi::RUNNING;
+	SetWaitableState(State::Resumed);
 }
 
 //-----------------------------------------------------------------------------
@@ -949,14 +957,14 @@ bool Process::Signal(int signal)
 			//
 			// The process should be core-dumped and terminated
 			case Thread::SignalResult::CoreDump:
-				Terminate(Schedulable::MakeExitCode(0, signal, true));
+				Terminate(uapi::MakeExitCode(0, signal, true));
 				return true;
 
 			// SignalResult::Terminate (TERM)
 			//
 			// The process should be terminated
 			case Thread::SignalResult::Terminate:
-				Terminate(Schedulable::MakeExitCode(0, signal, false));
+				Terminate(uapi::MakeExitCode(0, signal, false));
 				return true;
 
 			// SignalResult::Resume (CONT)
@@ -1110,8 +1118,22 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 
 void Process::Start(void)
 {
-	ResumeInternal();					// Start all threads in the process
-	Schedulable::Started();				// Notify that process has started
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
+	// Start all threads in the process and update status to RUNNING
+	ResumeInternal();
+	m_statuscode = uapi::RUNNING;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getStatusCode
+//
+// Gets the current status/exit code for the process
+
+int Process::getStatusCode(void)
+{
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+	return m_statuscode;
 }
 
 //-----------------------------------------------------------------------------
@@ -1125,8 +1147,14 @@ void Process::Start(void)
 
 void Process::Suspend(void)
 {
-	SuspendInternal();					// Suspend all threads in the process
-	Schedulable::Suspended();			// Notify that process has suspended
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
+	// Suspend all threads in the process
+	SuspendInternal();
+	
+	// Signal that the process has been stopped
+	m_statuscode = uapi::STOPPED;
+	SetWaitableState(State::Suspended);
 }
 
 //-----------------------------------------------------------------------------
@@ -1155,6 +1183,8 @@ void Process::SuspendInternal(void) const
 
 void Process::Terminate(int exitcode)
 {
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
 	// Terminate the process and wait for it to actually exit
 	TerminateProcess(m_process->Handle, exitcode);
 	WaitForSingleObject(m_process->Handle, INFINITE);
@@ -1168,7 +1198,9 @@ void Process::Terminate(int exitcode)
 		if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(termsignal);
 	}
 
-	Schedulable::Terminated(exitcode);		// Notify that the process has terminated
+	// Signal that the process has terminated
+	m_statuscode = exitcode;
+	SetWaitableState(State::Terminated);
 }
 
 //-----------------------------------------------------------------------------
@@ -1237,17 +1269,20 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	// Cannot wait for your own process or main thread to terminate
 	if(pid == m_pid) throw LinuxException(LINUX_ECHILD);
 
-	// Create a collection of schedulable objects to wait against
-	std::vector<std::shared_ptr<Schedulable>> objects;
+	// Create a collection of waitable objects to wait against, this also
+	// prevents the objects from dying off prematurely during a wait op
+	std::vector<std::shared_ptr<Waitable>> objects;
 
-	// Not _WCLONE -> Wait for child processes
+	// NOT _WCLONE
+	//
+	// Wait for child processes that send SIGCHLD only
 	if((options & LINUX__WCLONE) == 0) {
 	
-		// TODO: This seems to only apply if the child process hasn't set
-		// SIGCHILD to ignore -- more research on that needed
-
 		process_map_lock_t::scoped_lock_read reader(m_childlock);
 		for(auto iterator : m_children) {
+
+			// Processes that do not send ECHILD on termination are skipped
+			if(iterator.second->TerminationSignal != LINUX_ECHILD) continue;
 
 			// TODO (pid < -1) -- specified process group (use absolute value)
 			if(false) {
@@ -1268,27 +1303,37 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 		}
 	}
 
-	//// _WALL | _WCLONE -> Wait for thread objects as well
-	//if((options & LINUX__WALL) || (options && LINUX__WCLONE)) {
+	// _WALL OR _WCLONE
+	//
+	// Wait for threads and non-SIGCHLD processes as well
+	if((options & LINUX__WALL) || (options && LINUX__WCLONE)) {
 
-	//	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
-	//	for(auto iterator: m_threads) {
+		// Lock both the child process and thread collection for iteration
+		process_map_lock_t::scoped_lock_read proc_reader(m_childlock);
+		thread_map_lock_t::scoped_lock_read thread_reader(m_threadslock);
 
-	//		// Don't wait for the process main thread, this operation only
-	//		// applies to threads explicitly created by Clone()
-	//		if(iterator.second->ThreadId == m_pid) continue;
+		for(auto iterator : m_children) {
 
-	//		// TODO
-	//	}
-	//}
+			// TODO: PID filtering (like above) todo: just redo this, have some function that
+			// takes the collections and flags and comes up with this instead
 
+			// Child processes that don't send SIGCHLD count for WALL or _WCLONE
+			if(iterator.second->TerminationSignal != LINUX_SIGCHLD) objects.push_back(iterator.second);
+		}
+
+		for(auto iterator: m_threads) {
+
+			// Do not include the process main thread (tid == pid)
+			if(iterator.second->ThreadId != m_pid) objects.push_back(iterator.second);
+		}
+	}
 
 	// If no PIDs to wait against were located based on the options, throw ECHILD
 	if(objects.size() == 0) throw LinuxException(LINUX_ECHILD);
 
 	// TODO: move this out?
 	std::vector<HANDLE> handles;
-	for(auto iterator : objects) handles.push_back(iterator->StateChanged);
+	for(auto iterator : objects) handles.push_back(iterator->WaitableStateChanged);
 
 	// TODO: need while loop here to spin on stopped/continued processes when the flags
 	// didn't indicate to wait for them; repeatedly call WaitForMultipleObjects()
@@ -1297,11 +1342,11 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
 
 	// TODO: need to check result is actually valid
-	std::shared_ptr<Schedulable> selected = objects[result - WAIT_OBJECT_0];
+	std::shared_ptr<Waitable> selected = objects[result - WAIT_OBJECT_0];
 
 	// TODO: if the object has terminated, wait for it to actually terminate, threads
 	// and processes that exit normally have rundown code to execute
-	if(selected->State == Schedulable::ExecutionState::Terminated) {
+	if(selected->PopWaitableState() == State::Terminated) {
 
 		// TODO - need to add getter for native handle to Schedulable?  Could also
 		// dynamically cast to Process/Thread
@@ -1309,7 +1354,7 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	}
 		
 	// Report the exit code for the process/thread if the caller wants to know
-	if(status) *status = selected->ExitCode;
+	if(status) *status = selected->StatusCode;
 
 	// TODO: TEMPORARY -- MOVE UP (or get rid of it)
 	std::shared_ptr<Process> tempproc = std::dynamic_pointer_cast<Process>(selected);
@@ -1357,6 +1402,107 @@ uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 	//#define LINUX_P_PGID			2
 }
 
+// version for waitid()
+void Process::WaitChild(int which, uapi::pid_t pid, uapi::siginfo* info, int options, uapi::rusage* rusage)
+{
+	// which argument values to determine collection contents
+	LINUX_P_ALL;	// 0
+	LINUX_P_PID;	// 1
+	LINUX_P_PGID;	// 2
+
+	(which);
+	(pid);
+	(info);
+	(options);
+	(rusage);
+
+	// BUILD COLLECTION BASED ON FLAGS
+	// CALL WAITCHILD() INTERNAL VERSION
+
+	//
+	// NOTE: NEED TO MAKE EVENT IN SCHEDULABLE MANUAL RESET AGAIN
+	//
+
+	throw LinuxException(LINUX_ENOSYS);
+}
+
+//-----------------------------------------------------------------------------
+// Process::WaitChild (private)
+//
+// Internal version of WaitChild implementation
+//
+// Arguments:
+//
+//	objects		- Collection of child objects to wait against
+//	options		- Wait operation options (waitid(2) set)
+//	waitall		- Flag to wait for all objects rather than just one
+//	siginfo		- Receives information about the selected child
+//	rusage		- Receives resource utilization information about the selected child
+
+void Process::WaitChild(std::vector<std::shared_ptr<Waitable>>& objects, int options, bool waitall, uapi::siginfo* siginfo, uapi::rusage* rusage)
+{
+	DWORD						waitresult;				// Result from wait operation
+
+	// Convert the collection of Waitable objects into waitable HANDLEs.  The objects collection
+	// still remains and will keep the shared_ptr<> instances around until we are finished here
+	std::vector<HANDLE> handles(objects.size());
+	for(auto iterator : objects) handles.push_back(iterator->WaitableStateChanged);
+
+	while(true) {
+
+		// Wait for one (or all) of the specified object handles to become signaled
+		waitresult = WaitForMultipleObjects(handles.size(), handles.data(), (waitall) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
+
+		// waitresult can be:
+		// WAIT_FAILED - exception
+		// WAIT_TIMEOUT - if NOHANG nothing signaled
+		// WAIT_OBJECT_0 + x - object has been signaled
+
+		// check result against options
+		// if suspended and not WSTOPPED -> loop
+		// if resumed and not WCONTINUED -> loop
+		// if terminated and not WEXITED -> loop
+
+		// if not WNOWAIT, reset the event
+		
+		// get the exit code
+		// fill in siginfo and rusage
+
+		siginfo->si_signo = LINUX_SIGCHLD;
+		siginfo->si_errno = 0;
+		siginfo->si_code = 0;
+		siginfo->linux_si_pid = 0;
+		siginfo->linux_si_uid = 0;
+		siginfo->linux_si_status = 0;
+		// code
+
+		// return
+	}
+
+	(options);
+	(waitall);
+	(siginfo);
+	(rusage);
+
+	// need to know:
+	// what to wait for (suspend, resume, terminate)
+	// wait for one or wait for all
+	// reset the event or not
+	// block or don't block (nohang)
+
+	// need to return:
+	// siginfo, rusage
+
+//#define LINUX_WNOHANG			0x00000001
+//#define LINUX_WUNTRACED			0x00000002
+//#define LINUX_WSTOPPED			LINUX_WUNTRACED
+//#define LINUX_WEXITED			0x00000004
+//#define LINUX_WCONTINUED		0x00000008
+//#define LINUX_WNOWAIT			0x01000000		/* Don't reap, just poll status.  */
+
+//
+}
+
 //-----------------------------------------------------------------------------
 // Process::getWorkingDirectory
 //
@@ -1392,18 +1538,6 @@ size_t Process::WriteMemory(const void* address, const void* buffer, size_t leng
 {
 	// Use ProcessMemory to write into the virtualized address space
 	return m_memory->Write(address, buffer, length);
-}
-
-//-----------------------------------------------------------------------------
-// Process::getZombie
-//
-// Gets a flag indicating if this process is a zombie or not, which means the
-// actual process has terminated but this class instance still exists
-
-bool Process::getZombie(void) const
-{
-	// If the native process has terminated, this process is a zombie
-	return (WaitForSingleObject(m_process->Handle, 0) == WAIT_OBJECT_0);
 }
 
 //-----------------------------------------------------------------------------

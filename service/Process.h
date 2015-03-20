@@ -27,9 +27,12 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <concrt.h>
 #include <linux/ldt.h>
+#include <linux/resource.h>
 #include <linux/sched.h>
+#include <linux/siginfo.h>
 #include <linux/stat.h>
 #include <linux/wait.h>
 #include "Architecture.h"
@@ -42,11 +45,11 @@
 #include "NtApi.h"
 #include "ProcessHandles.h"
 #include "ProcessMemory.h"
-#include "Schedulable.h"
 #include "SignalActions.h"
 #include "TaskState.h"
 #include "Thread.h"
 #include "VirtualMachine.h"
+#include "Waitable.h"
 
 #pragma warning(push, 4)
 
@@ -55,13 +58,13 @@
 //
 // Process represents a virtual machine process/thread group instance
 
-class Process : public Schedulable, public std::enable_shared_from_this<Process>
+class Process : public Waitable, public std::enable_shared_from_this<Process>
 {
 public:
 
 	// Destructor
 	//
-	~Process();
+	virtual ~Process();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -114,10 +117,10 @@ public:
 	// Removes a thread from the process
 	void RemoveThread(uapi::pid_t tid, int exitcode);
 
-	// Resume (Schedulable)
+	// Resume
 	//
 	// Resumes the process from a suspended state
-	virtual void Resume(void);
+	void Resume(void);
 
 	// SetProgramBreak
 	//
@@ -141,30 +144,35 @@ public:
 	// Signals the process
 	bool Signal(int signal);
 
-	// Start (Schedulable)
+	// Start
 	//
 	// Starts the process
-	virtual void Start(void);
+	void Start(void);
 
-	// Suspend (Schedulable)
+	// Suspend
 	//
 	// Suspends the process
-	virtual void Suspend(void);
+	void Suspend(void);
 
-	// Terminate (Schedulable)
+	// Terminate
 	//
 	// Terminates the process
-	virtual void Terminate(int exitcode);
+	void Terminate(int exitcode);
 
 	// UnmapMemory
 	//
 	// Releases process virtual address space
 	void UnmapMemory(const void* address, size_t length);
 
-	// WaitChild
+	// WaitChild (waitpid(2) style)
 	//
 	// Waits for one or more child processes to terminate
 	uapi::pid_t WaitChild(uapi::pid_t pid, int* status, int options);
+
+	// WaitChild (waitid(2) style)
+	//
+	// Waits for one or more child processes to terminate
+	void WaitChild(int which, uapi::pid_t pid, uapi::siginfo* info, int options, uapi::rusage* rusage);
 
 	// WriteMemory
 	//
@@ -263,6 +271,12 @@ public:
 	uapi::sigaction getSignalAction(int signal) const;
 	void putSignalAction(int signal, uapi::sigaction action);
 
+	// StatusCode (Waitable)
+	//
+	// Gets the process status/exit code
+	__declspec(property(get=getStatusCode)) int StatusCode;
+	virtual int getStatusCode(void);
+
 	// TerminationSignal
 	//
 	// Gets/sets the signal to send to the parent on termination
@@ -282,12 +296,6 @@ public:
 	__declspec(property(get=getWorkingDirectory, put=putWorkingDirectory)) std::shared_ptr<FileSystem::Alias> WorkingDirectory;
 	std::shared_ptr<FileSystem::Alias> getWorkingDirectory(void) const;
 	void putWorkingDirectory(const std::shared_ptr<FileSystem::Alias>& value);
-
-	// Zombie
-	//
-	// Gets a flag indicating if this process is a 'zombie' or not
-	__declspec(property(get=getZombie)) bool Zombie;
-	bool getZombie(void) const;
 
 private:
 
@@ -371,6 +379,11 @@ private:
 	// Suspends the process
 	void SuspendInternal(void) const;
 
+	// WaitChild
+	//
+	// Internal version of WaitChild implementation
+	void WaitChild(std::vector<std::shared_ptr<Waitable>>& objects, int options, bool waitall, uapi::siginfo* siginfo, uapi::rusage* rusage);
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
@@ -379,6 +392,11 @@ private:
 	const uapi::pid_t					m_pid;				// Process identifier
 	std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
 	const DWORD							m_processid;		// Native process identifier
+
+	// Status
+	//
+	int									m_statuscode;		// Process status code
+	std::mutex							m_statuslock;		// Synchronization object
 
 	// Parent and Children
 	//

@@ -53,7 +53,7 @@ template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(
 
 Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
 	std::unique_ptr<TaskState>&& initialtask) : m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid), 
-	m_initialtask(std::move(initialtask)), Schedulable(Schedulable::ExecutionState::Stopped)
+	m_initialtask(std::move(initialtask)), m_statuscode(0)
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
@@ -331,12 +331,17 @@ void Thread::EndSignal(void)
 
 void Thread::Exit(int exitcode)
 {
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
 	// TODO: BLOCK ALL SIGNALS AND CLEAR ANY PENDING STATES
 
 	// All this does is signal anything waiting on StateChanged event that
 	// the thread has died, do not wait for it since its technically still
 	// running and has native termination code that has to execute
-	Schedulable::Terminated(exitcode);
+
+	// Signal that the thread has terminated
+	m_statuscode = exitcode;
+	SetWaitableState(State::Terminated);
 }
 
 //-----------------------------------------------------------------------------
@@ -411,8 +416,14 @@ void Thread::PopInitialTask(void* task, size_t tasklen)
 
 void Thread::Resume(void)
 {
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
+	// Resume the thread
 	ResumeInternal(nullptr);
-	Schedulable::Resumed();
+	
+	// Signal that the thread is running
+	m_statuscode = uapi::RUNNING;
+	SetWaitableState(State::Resumed);
 }
 
 //-----------------------------------------------------------------------------
@@ -528,8 +539,22 @@ uapi::sigset_t Thread::getSignalMask(void) const
 
 void Thread::Start(void)
 {
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
+	// Start the thread and update status to RUNNING
 	ResumeInternal(nullptr);
-	Schedulable::Started();
+	m_statuscode = uapi::RUNNING;
+}
+
+//-----------------------------------------------------------------------------
+// Thread::getStatusCode
+//
+// Gets the current status/exit code for the thread
+
+int Thread::getStatusCode(void)
+{
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+	return m_statuscode;
 }
 
 //-----------------------------------------------------------------------------
@@ -543,8 +568,14 @@ void Thread::Start(void)
 
 void Thread::Suspend(void)
 {
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
+	// Suspend the thread
 	SuspendInternal(false);
-	Schedulable::Suspended();
+	
+	// Signal that the thread is suspended
+	m_statuscode = uapi::STOPPED;
+	SetWaitableState(State::Suspended);
 }
 
 //-----------------------------------------------------------------------------
@@ -585,11 +616,15 @@ std::unique_ptr<TaskState> Thread::SuspendInternal(bool capture)
 
 void Thread::Terminate(int exitcode)
 {
+	std::lock_guard<std::mutex> critsec(m_statuslock);
+
 	// Terminate the thread and wait for it to actually terminate
 	TerminateThread(m_thread->Handle, exitcode);
 	WaitForSingleObject(m_thread->Handle, INFINITE);
-	
-	Schedulable::Terminated(exitcode);
+
+	// Signal that the thread has terminated
+	m_statuscode = exitcode;
+	SetWaitableState(State::Terminated);
 }
 
 //-----------------------------------------------------------------------------

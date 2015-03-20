@@ -83,7 +83,7 @@ typedef struct {
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
-	typedef linux_rusage64			rusage;
+	typedef linux_rusage32			rusage;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)

@@ -43,6 +43,31 @@
 #define LINUX_P_PID				1
 #define LINUX_P_PGID			2
 
+#if !defined(__midl) && defined(__cplusplus)
+namespace uapi {
+
+	// RUNNING
+	//
+	// Process/thread status code when running
+	const int RUNNING = 0xFFFF;
+
+	// STOPPED
+	//
+	// Process/thread status code when suspended
+	const int STOPPED = 0x007F;
+
+	// Constructs a waitable status/exit code from components
+	//
+	inline int MakeExitCode(int status, int signal, bool coredump)
+	{
+		// Create the packed status code for the task, which is a 16-bit value that
+		// contains the actual status code in the upper 8 bits and flags in the lower 8
+		return ((status & 0xFF) << 8) | (signal & 0xFF) | (coredump ? 0x80 : 0);
+	}
+
+}	// namespace uapi
+#endif	// !defined(__midl) && defined(__cplusplus)
+
 //-----------------------------------------------------------------------------
 
 #endif		// __LINUX_WAIT_H_
