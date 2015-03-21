@@ -56,13 +56,20 @@ namespace uapi {
 	// Process/thread status code when suspended
 	const int STOPPED = 0x007F;
 
-	// Constructs a waitable status/exit code from components
+	// Constructs a waitable status/exit code from component values
 	//
 	inline int MakeExitCode(int status, int signal, bool coredump)
 	{
 		// Create the packed status code for the task, which is a 16-bit value that
 		// contains the actual status code in the upper 8 bits and flags in the lower 8
 		return ((status & 0xFF) << 8) | (signal & 0xFF) | (coredump ? 0x80 : 0);
+	}
+
+	// Constructs a waitable status/exit code from component values
+	//
+	inline int MakeExitCode(int status, int signal)
+	{
+		return MakeExitCode(status, signal, false);
 	}
 
 }	// namespace uapi

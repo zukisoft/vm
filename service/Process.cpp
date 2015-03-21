@@ -434,11 +434,11 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		}
 
 		// Kill the entire process on exception, use SIGKILL as the exit code
-		catch(...) { Terminate(uapi::MakeExitCode(0, LINUX_SIGKILL, false)); throw; }
+		catch(...) { Terminate(uapi::MakeExitCode(0, LINUX_SIGKILL)); throw; }
 	}
 
 	// Kill just the newly created remote thread on exception
-	catch(...) { TerminateThread(thread->Handle, LINUX_SIGKILL); throw; }
+	catch(...) { TerminateThread(thread->Handle, uapi::MakeExitCode(0, LINUX_SIGKILL)); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -964,7 +964,7 @@ bool Process::Signal(int signal)
 			//
 			// The process should be terminated
 			case Thread::SignalResult::Terminate:
-				Terminate(uapi::MakeExitCode(0, signal, false));
+				Terminate(uapi::MakeExitCode(0, signal));
 				return true;
 
 			// SignalResult::Resume (CONT)
@@ -1450,13 +1450,29 @@ void Process::WaitChild(std::vector<std::shared_ptr<Waitable>>& objects, int opt
 
 	while(true) {
 
-		// Wait for one (or all) of the specified object handles to become signaled
+		// Wait for one or all of the specified object handles to become signaled
 		waitresult = WaitForMultipleObjects(handles.size(), handles.data(), (waitall) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
 
-		// waitresult can be:
-		// WAIT_FAILED - exception
-		// WAIT_TIMEOUT - if NOHANG nothing signaled
-		// WAIT_OBJECT_0 + x - object has been signaled
+		// WAIT_FAILED
+		//
+		// An error occurred during the wait operation; throw an exception
+		if(waitresult == WAIT_FAILED) throw Win32Exception();	// todo: exception
+
+		// WAIT_TIMEOUT
+		//
+		// None of the specified objects became signaled; leave siginfo and rusage unspecified
+		else if(waitresult == WAIT_TIMEOUT) return;
+
+		// WAIT_OBJECT_0 [WAITALL]
+		//
+		// All of the specified objects have been signaled
+		else if((waitall) && (waitresult == WAIT_OBJECT_0)) {
+		}
+
+		// WAIT_OBJECT_0 + n [WAITANY]
+		//
+		// One of the specified objects has been signaled
+
 
 		// check result against options
 		// if suspended and not WSTOPPED -> loop
