@@ -149,38 +149,37 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 	_ASSERTE(siginfo);
 	siginfo->linux_si_pid = 0;
 
+	// Take the condition variable lock before adding any waiters
+	std::unique_lock<std::mutex> critsec(lock);
+
 	// Register this wait with all of the provided Waitable instances
 	for(auto& iterator : objects) {
 
 		std::lock_guard<std::mutex> critsec(iterator->m_lock);
 
-		// If there is already a pending state for this Waitable instance that matches
-		// the requested wait operation mask, pull it out and stop registering waits
+		// If there is already a pending state for this Waitable instance that matches the
+		// requested wait operation mask, pull it out and stop registering waits
 		if((iterator->m_pending.linux_si_pid != 0) && (MaskAcceptsState(options, static_cast<State>(iterator->m_pending.si_code)))) {
 
 			// Pull out the pending signal information and assign the result object
 			*siginfo = iterator->m_pending;
 			signaled = iterator;
 
-			// Reset the pending signal information for the Waitable instance
-			memset(&iterator->m_pending, 0, sizeof(uapi::siginfo));
+			// If WNOWAIT has not been specified, reset the pending signal information
+			if((options & LINUX_WNOWAIT) == 0) memset(&iterator->m_pending, 0, sizeof(uapi::siginfo));
 
-			signal.notify_one();				// Condition will signal immediately
-			break;								// No need to register any more waiters
+			signal.notify_one();			// Condition will signal immediately on wait
+			break;							// No need to register any more waiters
 		}
 
 		// No pending signal, register a waiter for this Waitable instance
-		else iterator->m_waiters.emplace_back(signal, lock, options, iterator, siginfo, signaled);
+		iterator->m_waiters.emplace_back(signal, lock, options, iterator, siginfo, signaled);
 	}
 
-	// Take the lock and wait for the condition variable to become signaled
-	std::unique_lock<std::mutex> critsec(lock);
+	// Wait indefinitely for the condition variable to become signaled and retake the lock
 	signal.wait(critsec, [&]() -> bool { return siginfo->linux_si_pid != 0; });
 
-	// Remove this wait from the provided Waitable instances. Note that there is a race 
-	// here that would allow a new state change to resignal the condition variable before this
-	// termination code can take place -- this is taken care of in the signal function by
-	// checking that the siginfo->si_pid is still set to zero before signaling
+	// Remove this wait from the provided Waitable instances
 	for(auto iterator : objects) {
 
 		std::lock_guard<std::mutex> critsec(iterator->m_lock);
