@@ -142,17 +142,22 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 {
 	std::condition_variable			signal;				// Signaled on a successful wait
 	std::mutex						lock;				// Condition variable synchronization object
-	std::shared_ptr<Waitable>		signaled;			// Object that was signaled		
+	std::shared_ptr<Waitable>		signaled;			// Object that was signaled
 
 	// The si_pid field of the signal information is used to detect spurious condition
 	// variable wakes as well as preventing it from being signaled multiple times
 	_ASSERTE(siginfo);
 	siginfo->linux_si_pid = 0;
 
+	// At least one Waitable instance must have been provided
+	_ASSERTE(objects.size());
+	if(objects.size() == 0) return nullptr;
+
 	// Take the condition variable lock before adding any waiters
 	std::unique_lock<std::mutex> critsec(lock);
 
-	// Register this wait with all of the provided Waitable instances
+	// Iterate over all of the Waitable instances to check for a pending signal that can be
+	// consumed immediately, or to register a wait operation against it
 	for(auto& iterator : objects) {
 
 		std::lock_guard<std::mutex> critsec(iterator->m_lock);
@@ -168,13 +173,17 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 			// If WNOWAIT has not been specified, reset the pending signal information
 			if((options & LINUX_WNOWAIT) == 0) memset(&iterator->m_pending, 0, sizeof(uapi::siginfo));
 
-			signal.notify_one();			// Condition will signal immediately on wait
+			signal.notify_one();			// Condition will signal immediately if waited upon
 			break;							// No need to register any more waiters
 		}
 
-		// No pending signal, register a waiter for this Waitable instance
-		iterator->m_waiters.emplace_back(signal, lock, options, iterator, siginfo, signaled);
+		// Unless WNOHANG has been specified, register a wait operation for this Waitable instance
+		if((options & LINUX_WNOHANG) == 0) iterator->m_waiters.emplace_back(signal, lock, options, iterator, siginfo, signaled);
 	}
+
+	// If WNOHANG was specified, nothing will have been registered to wait against; only a
+	// consumed pending signal from a Waitable instance is considered as a result
+	if(options & LINUX_WNOHANG) return signaled;
 
 	// Wait indefinitely for the condition variable to become signaled and retake the lock
 	signal.wait(critsec, [&]() -> bool { return siginfo->linux_si_pid != 0; });
