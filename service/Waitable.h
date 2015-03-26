@@ -30,7 +30,7 @@
 #include <linux/siginfo.h>
 #include <linux/signal.h>
 #include <linux/wait.h>
-#include "Win32Exception.h"
+#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
