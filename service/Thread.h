@@ -178,12 +178,6 @@ public:
 	__declspec(property(get=getSignalMask)) uapi::sigset_t SignalMask;
 	uapi::sigset_t getSignalMask(void) const;
 
-	// StatusCode (Waitable)
-	//
-	// Gets the thread status/exit code
-	__declspec(property(get=getStatusCode)) int StatusCode;
-	virtual int getStatusCode(void);
-
 	// ThreadId
 	//
 	// Gets the virtual thread identifier
@@ -292,11 +286,6 @@ private:
 	std::shared_ptr<::NativeHandle>		m_thread;			// Native thread handle
 	const DWORD							m_threadid;			// Native thread id
 	std::unique_ptr<TaskState>			m_initialtask;		// Initial task state
-
-	// Status
-	//
-	int									m_statuscode;		// Process status code
-	std::mutex							m_statuslock;		// Synchronization object
 
 	void*								m_cleartid = nullptr;
 

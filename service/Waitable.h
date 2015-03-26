@@ -39,7 +39,7 @@
 //
 // Base class for a waitable object (process/thread) that provides the mechanism
 // that allows the object to be waited upon for a state change
-//
+
 class Waitable
 {
 public:

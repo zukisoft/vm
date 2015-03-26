@@ -271,12 +271,6 @@ public:
 	uapi::sigaction getSignalAction(int signal) const;
 	void putSignalAction(int signal, uapi::sigaction action);
 
-	// StatusCode (Waitable)
-	//
-	// Gets the process status/exit code
-	__declspec(property(get=getStatusCode)) int StatusCode;
-	virtual int getStatusCode(void);
-
 	// TerminationSignal
 	//
 	// Gets/sets the signal to send to the parent on termination
@@ -351,6 +345,11 @@ private:
 	template<::Architecture architecture>
 	std::shared_ptr<Process> Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task);
 
+	// CollectWaitables
+	//
+	// Generates a collection of waitable objects for use with WaitChild()
+	std::vector<std::shared_ptr<Waitable>> CollectWaitables(uapi::pid_t pid, int options);
+
 	// CreateStack
 	//
 	// Allocates a new stack in the process
@@ -392,11 +391,6 @@ private:
 	const uapi::pid_t					m_pid;				// Process identifier
 	std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
 	const DWORD							m_processid;		// Native process identifier
-
-	// Status
-	//
-	int									m_statuscode;		// Process status code
-	std::mutex							m_statuslock;		// Synchronization object
 
 	// Parent and Children
 	//

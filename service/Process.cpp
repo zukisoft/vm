@@ -77,7 +77,7 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
 	const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
-	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_statuscode(0), m_memory(std::move(memory)), 
+	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), 
 	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), 
 	m_rootdir(rootdir), m_workingdir(workingdir)
 {
@@ -701,7 +701,6 @@ void Process::RemoveHandle(int fd)
 // RemoveThread doesn't describe how its supposed to be used
 void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 {
-	std::lock_guard<std::mutex>		crtisec(m_statuslock);
 	thread_map_lock_t::scoped_lock	writer(m_threadslock);
 
 	try {
@@ -735,9 +734,8 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 			if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(signal);
 		}
 
-		// Signal that the process has terminated
-		m_statuscode = exitcode;
-		SetWaitableState(State::Terminated);
+		// Notify that the process has terminated normally
+		Waitable::NotifyStateChange(m_pid, Waitable::State::Exited, exitcode);
 	}
 }
 
@@ -752,14 +750,11 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 
 void Process::Resume(void)
 {
-	std::lock_guard<std::mutex> critsec(m_statuslock);
-
 	// Resume all threads in the process
 	ResumeInternal();
 	
-	// Signal that the process is running again
-	m_statuscode = uapi::RUNNING;
-	SetWaitableState(State::Resumed);
+	// Notify that the process has been continued
+	Waitable::NotifyStateChange(m_pid, Waitable::State::Continued, uapi::RUNNING);
 }
 
 //-----------------------------------------------------------------------------
@@ -1118,22 +1113,8 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 
 void Process::Start(void)
 {
-	std::lock_guard<std::mutex> critsec(m_statuslock);
-
 	// Start all threads in the process and update status to RUNNING
 	ResumeInternal();
-	m_statuscode = uapi::RUNNING;
-}
-
-//-----------------------------------------------------------------------------
-// Process::getStatusCode
-//
-// Gets the current status/exit code for the process
-
-int Process::getStatusCode(void)
-{
-	std::lock_guard<std::mutex> critsec(m_statuslock);
-	return m_statuscode;
 }
 
 //-----------------------------------------------------------------------------
@@ -1147,14 +1128,11 @@ int Process::getStatusCode(void)
 
 void Process::Suspend(void)
 {
-	std::lock_guard<std::mutex> critsec(m_statuslock);
-
 	// Suspend all threads in the process
 	SuspendInternal();
 	
-	// Signal that the process has been stopped
-	m_statuscode = uapi::STOPPED;
-	SetWaitableState(State::Suspended);
+	// Notify that the process has been suspended
+	Waitable::NotifyStateChange(m_pid, Waitable::State::Stopped, uapi::STOPPED);
 }
 
 //-----------------------------------------------------------------------------
@@ -1183,8 +1161,6 @@ void Process::SuspendInternal(void) const
 
 void Process::Terminate(int exitcode)
 {
-	std::lock_guard<std::mutex> critsec(m_statuslock);
-
 	// Terminate the process and wait for it to actually exit
 	TerminateProcess(m_process->Handle, exitcode);
 	WaitForSingleObject(m_process->Handle, INFINITE);
@@ -1198,9 +1174,9 @@ void Process::Terminate(int exitcode)
 		if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(termsignal);
 	}
 
-	// Signal that the process has terminated
-	m_statuscode = exitcode;
-	SetWaitableState(State::Terminated);
+	// Signal that the process has been terminated/dumped from a signal
+	Waitable::State reason = (exitcode & 0x80) ? Waitable::State::Dumped : Waitable::State::Killed;
+	Waitable::NotifyStateChange(m_pid, reason, exitcode);
 }
 
 //-----------------------------------------------------------------------------
@@ -1253,6 +1229,72 @@ void Process::UnmapMemory(const void* address, size_t length)
 	m_memory->Release(address, length);
 }
 
+std::vector<std::shared_ptr<Waitable>> Process::CollectWaitables(uapi::pid_t pid, int options)
+{
+	// Create a collection of waitable objects to operate against
+	std::vector<std::shared_ptr<Waitable>> objects;
+
+	// __WALL overrides __WCLONE
+	if(options & LINUX__WALL) options &= ~LINUX__WCLONE;
+
+	// Lock the contents of the process and thread collections
+	process_map_lock_t::scoped_lock_read proc_reader(m_childlock);
+	thread_map_lock_t::scoped_lock_read thread_reader(m_threadslock);
+
+	// Iterate over all of the child processes in the collection
+	for(auto iterator : m_children) {
+
+		// A pid less than negative one specifies a specific process group
+		if(pid < -1) { /* continue if iterator pgid is not equal to |pid| */ }
+
+		// A pid of zero indicates that only children in our process group apply
+		if(pid == 0) { /* continue if iterator pgid is not equal to our pgid */ }
+
+		// A pid greater than zero indicates a specific child process
+		if(pid > 0) { if(pid != iterator.second->ProcessId) continue; }
+
+		/////////// FINISH THIS - LOGIC NOT RIGHT /////////////
+		// __WCLONE only includes processes that do not signal termination with SIGCHLD
+		if((options & LINUX__WCLONE) && (iterator.second->TerminationSignal == LINUX_SIGCHLD)) continue;
+
+		// __WALL includes all child processes regardless of the termination signal, otherwise
+		// only consider processes that use SIGCHLD
+		if((options & LINUX__WALL) || (iterator.second->TerminationSignal == LINUX_SIGCHLD)) objects.push_back(iterator.second);
+		//////////////////////////////////////////////////////
+	}
+
+	// THREADS
+	//
+	// don't do it for __WNOTHREAD
+	if(options & (LINUX__WCLONE | LINUX__WALL)) {
+
+		// TODO: LINUX__WNOTHREAD see man pages -- is it even possible to create
+		// a thread that isn't a sibling of the calling thread?  Perhaps my implementation
+		// doesn't need to care about this flag
+
+		// Iterate over all the threads in the collection
+		for(auto iterator : m_threads) {
+
+			// Do not include the main thread assigned to a process in the collection
+			if(iterator.second->ThreadId == m_pid) continue;
+
+			// TODO: Does pid argument get used here? I think it would since in Linux threads
+			// are actually processes.  "0" would always be true, threads have to be in the same
+			// process group as the process.  "< -1" may not apply at all, threads cannot be 
+			// associated with another process instance
+			//
+			// See PROCESSES above
+
+			// TODO: does this apply?
+			if(pid > 0) { if(pid != iterator.second->ThreadId) continue; }
+
+			objects.push_back(iterator.second);
+		}
+	}
+
+	return objects;
+}
+
 //-----------------------------------------------------------------------------
 // Process::WaitChild
 //
@@ -1266,140 +1308,63 @@ void Process::UnmapMemory(const void* address, size_t length)
 
 uapi::pid_t Process::WaitChild(uapi::pid_t pid, int* status, int options)
 {
+	// check input options here
+
+	//
+	// TODO: THERE NEEDS TO BE EARLY LOCKS AGAINST PROCESS AND THREAD COLLECTIONS
+	// ANYWHERE THEY MIGHT BE REAPED.  Consider the case where a thread is exiting
+	// and we try to add a wait against it.  If the thread signals the exit before
+	// its removed from the collection, it could get waited on and never signal again.
+	// Best plan is probably to remove something from the collection(s) before
+	// allowing the signal to happen.  Basically, a wait can only occur against
+	// an object that stands a chance of being signaled
+	//
+
+
+	// waitpid(2) implies WEXITED
+	options |= LINUX_WEXITED;
+
 	// Cannot wait for your own process or main thread to terminate
 	if(pid == m_pid) throw LinuxException(LINUX_ECHILD);
 
-	// Create a collection of waitable objects to wait against, this also
-	// prevents the objects from dying off prematurely during a wait op
-	std::vector<std::shared_ptr<Waitable>> objects;
+	// Create a collection of waitable objects to operate against
+	std::vector<std::shared_ptr<Waitable>> objects = CollectWaitables(pid, options);
 
-	// NOT _WCLONE
-	//
-	// Wait for child processes that send SIGCHLD only
-	if((options & LINUX__WCLONE) == 0) {
-	
-		process_map_lock_t::scoped_lock_read reader(m_childlock);
-		for(auto iterator : m_children) {
-
-			// Processes that do not send ECHILD on termination are skipped
-			if(iterator.second->TerminationSignal != LINUX_ECHILD) continue;
-
-			// TODO (pid < -1) -- specified process group (use absolute value)
-			if(false) {
-
-				int pgroup = -pid;
-				(pgroup);
-			}
-
-			// TODO (pid == 0) -- this process group
-			else if(false) {
-			}
-
-			// (pid == -1)  --> any child process
-			else if(pid == -1) objects.push_back(iterator.second);
-
-			// (pid == pid) --> specific child process
-			else if(iterator.second->ProcessId == pid) objects.push_back(iterator.second);
-		}
-	}
-
-	// _WALL OR _WCLONE
-	//
-	// Wait for threads and non-SIGCHLD processes as well
-	if((options & LINUX__WALL) || (options && LINUX__WCLONE)) {
-
-		// Lock both the child process and thread collection for iteration
-		process_map_lock_t::scoped_lock_read proc_reader(m_childlock);
-		thread_map_lock_t::scoped_lock_read thread_reader(m_threadslock);
-
-		for(auto iterator : m_children) {
-
-			// TODO: PID filtering (like above) todo: just redo this, have some function that
-			// takes the collections and flags and comes up with this instead
-
-			// Child processes that don't send SIGCHLD count for WALL or _WCLONE
-			if(iterator.second->TerminationSignal != LINUX_SIGCHLD) objects.push_back(iterator.second);
-		}
-
-		for(auto iterator: m_threads) {
-
-			// Do not include the process main thread (tid == pid)
-			if(iterator.second->ThreadId != m_pid) objects.push_back(iterator.second);
-		}
-	}
-
-	// If no PIDs to wait against were located based on the options, throw ECHILD
+	// No waitable objects met the criteria; throw ECHILD
 	if(objects.size() == 0) throw LinuxException(LINUX_ECHILD);
 
-	// TODO: move this out?
-	std::vector<HANDLE> handles;
-	for(auto iterator : objects) handles.push_back(iterator->WaitableStateChanged);
+	uapi::siginfo siginfo;
+	std::shared_ptr<Waitable> result = Waitable::Wait(objects, options, &siginfo);
 
-	// TODO: need while loop here to spin on stopped/continued processes when the flags
-	// didn't indicate to wait for them; repeatedly call WaitForMultipleObjects()
+	// Check if a child object was successfully waited on and returned
+	if(result == nullptr) {
 
-	// Wait for any or all of the collected handles to become signaled
-	DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), (options & LINUX__WALL) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
-
-	// TODO: need to check result is actually valid
-	std::shared_ptr<Waitable> selected = objects[result - WAIT_OBJECT_0];
-
-	// TODO: if the object has terminated, wait for it to actually terminate, threads
-	// and processes that exit normally have rundown code to execute
-	if(selected->PopWaitableState() == State::Terminated) {
-
-		// TODO - need to add getter for native handle to Schedulable?  Could also
-		// dynamically cast to Process/Thread
-		//WaitForSingleObject(selected->
-	}
-		
-	// Report the exit code for the process/thread if the caller wants to know
-	if(status) *status = selected->StatusCode;
-
-	// TODO: TEMPORARY -- MOVE UP (or get rid of it)
-	std::shared_ptr<Process> tempproc = std::dynamic_pointer_cast<Process>(selected);
-
-	// todo: if nothing was signaled and WNOHANG was set, return zero instead
-	if(result == WAIT_FAILED) throw LinuxException(LINUX_ECHILD);
-
-	// WAIT_TIMEOUT will only be sent if nothing was signaled after a zero timeout
-	if(result == WAIT_TIMEOUT) return 0;
-
-	else {
-
-		// Remove the specified PID from the process collection
-		process_map_lock_t::scoped_lock procwriter(m_childlock);
-
-		if(options & LINUX__WALL) m_children.clear();
-		else m_children.erase(tempproc->ProcessId);
-
-		//// Remove the specified PID from the thread collection
-		//// todo: if _WALL, clear all but main thread (pid == tid)
-		//process_map_lock_t::scoped_lock threadwriter(m_threadslock);
-		//m_threads.erase(tempthread->ProcessId);
+		if(options & LINUX_WNOHANG) return 0;			// WNOHANG - ok to return zero
+		else throw LinuxException(LINUX_ECHILD);		// Not WNOHANG - ECHILD
 	}
 
-	// this needs to happen to release the Process instance
-	m_vm->RemoveProcess(tempproc->ProcessId);
-	// todo: vm->RemoveProcess(waitedon);
+	// TODO: remove the object from the appropriate collection; do threads get
+	// removed from here? I suppose they would in linux since they are processes,
+	// BUT they never send SIGCHLD, so have to look that up
 
-	// Return the PID of the object that was signaled
-	return tempproc->ProcessId;
+	//	// Remove the specified PID from the process collection
+	//	process_map_lock_t::scoped_lock procwriter(m_childlock);
 
-	// FLAGS TO DEAL WITH IN HERE
-	//#define LINUX_WNOHANG				0x00000001
-	//#define LINUX_WUNTRACED				0x00000002
-	//#define LINUX_WSTOPPED				WUNTRACED
-	//#define LINUX_WEXITED				0x00000004
-	//#define LINUX_WCONTINUED			0x00000008
-	//#define LINUX_WNOWAIT				0x01000000		/* Don't reap, just poll status.  */
-	//
-	//#define LINUX__WNOTHREAD			0x20000000		/* Don't wait on children of other threads in this group */
-	//#define LINUX__WALL					0x40000000		/* Wait on all children, regardless of type */
-	//#define LINUX__WCLONE				0x80000000		/* Wait only on non-SIGCHLD children */
-	//#define LINUX_P_ALL				0
-	//#define LINUX_P_PID				1
-	//#define LINUX_P_PGID			2
+	//	//// Remove the specified PID from the thread collection
+	//	//process_map_lock_t::scoped_lock threadwriter(m_threadslock);
+	//	//m_threads.erase(tempthread->ProcessId);
+	//}
+
+	// TODO: reap the process
+	//// this needs to happen to release the Process instance
+	//m_vm->RemoveProcess(tempproc->ProcessId);
+	//// todo: vm->RemoveProcess(waitedon);
+
+	// TODO: This function should have siginfo and rusage [out] pointer arguments,
+	// see temporary version of same function below
+
+	*status = siginfo.linux_si_status;
+	return siginfo.linux_si_pid;
 }
 
 // version for waitid()
@@ -1417,11 +1382,7 @@ void Process::WaitChild(int which, uapi::pid_t pid, uapi::siginfo* info, int opt
 	(rusage);
 
 	// BUILD COLLECTION BASED ON FLAGS
-	// CALL WAITCHILD() INTERNAL VERSION
-
-	//
-	// NOTE: NEED TO MAKE EVENT IN SCHEDULABLE MANUAL RESET AGAIN
-	//
+	// CALL WAITCHILD() INTERNAL VERSION?
 
 	throw LinuxException(LINUX_ENOSYS);
 }
@@ -1441,64 +1402,64 @@ void Process::WaitChild(int which, uapi::pid_t pid, uapi::siginfo* info, int opt
 
 void Process::WaitChild(std::vector<std::shared_ptr<Waitable>>& objects, int options, bool waitall, uapi::siginfo* siginfo, uapi::rusage* rusage)
 {
-	DWORD						waitresult;				// Result from wait operation
+	//DWORD						waitresult;				// Result from wait operation
 
-	// Convert the collection of Waitable objects into waitable HANDLEs.  The objects collection
-	// still remains and will keep the shared_ptr<> instances around until we are finished here
-	std::vector<HANDLE> handles(objects.size());
-	for(auto iterator : objects) handles.push_back(iterator->WaitableStateChanged);
+	//// Convert the collection of Waitable objects into waitable HANDLEs.  The objects collection
+	//// still remains and will keep the shared_ptr<> instances around until we are finished here
+	//std::vector<HANDLE> handles(objects.size());
+	//for(auto iterator : objects) handles.push_back(iterator->WaitableStateChanged);
 
-	while(true) {
+	//while(true) {
 
-		// Wait for one or all of the specified object handles to become signaled
-		waitresult = WaitForMultipleObjects(handles.size(), handles.data(), (waitall) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
+	//	// Wait for one or all of the specified object handles to become signaled
+	//	waitresult = WaitForMultipleObjects(handles.size(), handles.data(), (waitall) ? TRUE : FALSE, (options & LINUX_WNOHANG) ? 0 : INFINITE);
 
-		// WAIT_FAILED
-		//
-		// An error occurred during the wait operation; throw an exception
-		if(waitresult == WAIT_FAILED) throw Win32Exception();	// todo: exception
+	//	// WAIT_FAILED
+	//	//
+	//	// An error occurred during the wait operation; throw an exception
+	//	if(waitresult == WAIT_FAILED) throw Win32Exception();	// todo: exception
 
-		// WAIT_TIMEOUT
-		//
-		// None of the specified objects became signaled; leave siginfo and rusage unspecified
-		else if(waitresult == WAIT_TIMEOUT) return;
+	//	// WAIT_TIMEOUT
+	//	//
+	//	// None of the specified objects became signaled; leave siginfo and rusage unspecified
+	//	else if(waitresult == WAIT_TIMEOUT) return;
 
-		// WAIT_OBJECT_0 [WAITALL]
-		//
-		// All of the specified objects have been signaled
-		else if((waitall) && (waitresult == WAIT_OBJECT_0)) {
-		}
+	//	// WAIT_OBJECT_0 [WAITALL]
+	//	//
+	//	// All of the specified objects have been signaled
+	//	else if((waitall) && (waitresult == WAIT_OBJECT_0)) {
+	//	}
 
-		// WAIT_OBJECT_0 + n [WAITANY]
-		//
-		// One of the specified objects has been signaled
+	//	// WAIT_OBJECT_0 + n [WAITANY]
+	//	//
+	//	// One of the specified objects has been signaled
 
 
-		// check result against options
-		// if suspended and not WSTOPPED -> loop
-		// if resumed and not WCONTINUED -> loop
-		// if terminated and not WEXITED -> loop
+	//	// check result against options
+	//	// if suspended and not WSTOPPED -> loop
+	//	// if resumed and not WCONTINUED -> loop
+	//	// if terminated and not WEXITED -> loop
 
-		// if not WNOWAIT, reset the event
-		
-		// get the exit code
-		// fill in siginfo and rusage
+	//	// if not WNOWAIT, reset the event
+	//	
+	//	// get the exit code
+	//	// fill in siginfo and rusage
 
-		siginfo->si_signo = LINUX_SIGCHLD;
-		siginfo->si_errno = 0;
-		siginfo->si_code = 0;
-		siginfo->linux_si_pid = 0;
-		siginfo->linux_si_uid = 0;
-		siginfo->linux_si_status = 0;
-		// code
+	//	siginfo->si_signo = LINUX_SIGCHLD;
+	//	siginfo->si_errno = 0;
+	//	siginfo->si_code = 0;
+	//	siginfo->linux_si_pid = 0;
+	//	siginfo->linux_si_uid = 0;
+	//	siginfo->linux_si_status = 0;
+	//	// code
 
-		// return
-	}
+	//	// return
+	//}
 
-	(options);
-	(waitall);
-	(siginfo);
-	(rusage);
+	//(options);
+	//(waitall);
+	//(siginfo);
+	//(rusage);
 
 	// need to know:
 	// what to wait for (suspend, resume, terminate)

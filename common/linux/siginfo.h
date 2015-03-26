@@ -133,7 +133,7 @@ typedef struct {
 		/* SIGSYS */
 		struct {
 			
-			void*				_call_addr;		/* calling user insn */
+			void*				_call_addr;		/* calling user insn */						// <--- void* here
 			int32_t				_syscall;		/* triggering system call number */
 			uint32_t			_arch;			/* AUDIT_ARCH_* of syscall */
 
@@ -142,7 +142,6 @@ typedef struct {
 	} _sifields;
 
 } linux_siginfo32;
-
 
 #define linux_si_pid			_sifields._kill._pid
 #define linux_si_uid			_sifields._kill._uid
@@ -163,6 +162,7 @@ typedef struct {
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
+	// todo
 	typedef linux_siginfo32		siginfo;
 
 }	// namespace uapi
