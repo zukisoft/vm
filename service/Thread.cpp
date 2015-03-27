@@ -147,7 +147,7 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	m_sigmask = mask;
 
 	// task state
-	m_savedsigtask = SuspendInternal(true);
+	m_savedsigtask = SuspendTask();
 
 	//
 	// TODO: DEFAULT HANDLERS AND WHATNOT HERE
@@ -224,7 +224,7 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	
 	newstate->StackPointer = reinterpret_cast<void*>(stackpointer);
 
-	ResumeInternal(newstate);
+	ResumeTask(newstate);
 	
 	// in theory this ultimately calls into EndSignal from the remote thread
 	// which undoes what was done here
@@ -304,7 +304,7 @@ void Thread::EndSignal(void)
 	_ASSERTE(m_insignal);
 	if(!m_insignal) return;
 
-	SuspendInternal(false);
+	Suspend();
 
 	// TODO: need to kick off additional signals here
 	//queued_signal_t signal;
@@ -315,7 +315,7 @@ void Thread::EndSignal(void)
 	//}
 
 	m_sigmask = m_savedsigmask;
-	ResumeInternal(m_savedsigtask);
+	ResumeTask(m_savedsigtask);
 	
 	m_insignal = false;
 }
@@ -337,8 +337,8 @@ void Thread::Exit(int exitcode)
 	// the thread has died, do not wait for it since its technically still
 	// running and has native termination code that has to execute
 
-	// Notify that the thread has terminated normally
-	Waitable::NotifyStateChange(m_tid, Waitable::State::Exited, exitcode);
+	// todo: what should be done with the exit code
+	(exitcode);
 }
 
 //-----------------------------------------------------------------------------
@@ -405,7 +405,7 @@ void Thread::PopInitialTask(void* task, size_t tasklen)
 //-----------------------------------------------------------------------------
 // Thread::Resume
 //
-// Resumes the thread; will trigger a state changed event
+// Resumes the thread
 //
 // Arguments:
 //
@@ -413,29 +413,27 @@ void Thread::PopInitialTask(void* task, size_t tasklen)
 
 void Thread::Resume(void)
 {
-	// Resume the thread
-	ResumeInternal(nullptr);
-	
-	// Notify that the thread has been continued
-	Waitable::NotifyStateChange(m_tid, Waitable::State::Continued, uapi::RUNNING);
+	if(ResumeThread(m_thread->Handle) == -1) throw Win32Exception();
 }
 
 //-----------------------------------------------------------------------------
-// Thread::ResumeInternal (private)
+// Thread::ResumeTask (private)
 //
-// Resumes the thread
+// Resumes the thread with a new task state
 //
 // Arguments:
 //
-//	task			- Optional task state to be applied to the thread
+//	task		- Task state to be applied to the thread
 
-void Thread::ResumeInternal(const std::unique_ptr<TaskState>& task)
+void Thread::ResumeTask(const std::unique_ptr<TaskState>& task)
 {
-	// If provided, apply the specified task to the thread first
-	if(task) task->Restore(m_architecture, m_thread->Handle);
+	_ASSERTE(task);
 
-	// Resume the thread without informing Schedulable about it
-	if(ResumeThread(m_thread->Handle) == -1) throw Win32Exception();
+	// Apply the specified task state to the thread
+	task->Restore(m_architecture, m_thread->Handle);
+
+	// Resume the thread
+	Resume();
 }
 
 //-----------------------------------------------------------------------------
@@ -477,6 +475,8 @@ void Thread::SetSignalAlternateStack(const uapi::stack_t* newstack, uapi::stack_
 Thread::SignalResult Thread::Signal(int signal, uapi::sigaction action)
 {
 	// TODO: check mask, is the thread alive, etc
+	(action);
+	(signal);
 
 	// TODO: return true if signal will be processed, false if not
 	return SignalResult::Blocked;
@@ -533,8 +533,7 @@ uapi::sigset_t Thread::getSignalMask(void) const
 
 void Thread::Start(void)
 {
-	// Start the thread and update status to RUNNING
-	ResumeInternal(nullptr);
+	Resume();
 }
 
 //-----------------------------------------------------------------------------
@@ -548,38 +547,32 @@ void Thread::Start(void)
 
 void Thread::Suspend(void)
 {
-	// Suspend the thread
-	SuspendInternal(false);
-	
-	// Notify that the thread has been suspended
-	Waitable::NotifyStateChange(m_tid, Waitable::State::Stopped, uapi::STOPPED);
-}
-
-//-----------------------------------------------------------------------------
-// Thread::SuspendInternal (private)
-//
-// Suspends the thread
-//
-// Arguments:
-//
-//	capture		- Flag to capture the TaskState, returns nullptr otherwise
-
-std::unique_ptr<TaskState> Thread::SuspendInternal(bool capture)
-{
 #ifndef _M_X64
+	// 32-bit builds use SuspendThread() exclusively
 	if(SuspendThread(m_thread->Handle) == -1) throw Win32Exception();
 #else
 	// On 64-bit builds, Wow64SuspendThread() should be used for 32-bit threads
 	if(m_architecture == Architecture::x86) { if(Wow64SuspendThread(m_nativehandle) == -1) throw Win32Exception(); }
 	else if(SuspendThread(m_nativehandle) == -1) throw Win32Exception();
 #endif
+}
 
-	// If the TaskState for the thread is not required, just return nullptr
-	if(!capture) return nullptr;
+//-----------------------------------------------------------------------------
+// Thread::SuspendTask (private)
+//
+// Suspends the thread, capturing its current task state
+//
+// Arguments:
+//
+//	NONE
 
-	// Attempt to capture the task state for the thread; auto-resume on exception
+std::unique_ptr<TaskState> Thread::SuspendTask(void)
+{
+	Suspend();					// Execute a regular Suspend() first
+
+	// Attempt to capture the task state for the thread; resume on exception
 	try { return TaskState::Capture(m_architecture, m_thread->Handle); }
-	catch(...) { ResumeInternal(nullptr); throw; }
+	catch(...) { Resume(); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -597,9 +590,7 @@ void Thread::Terminate(int exitcode)
 	TerminateThread(m_thread->Handle, exitcode);
 	WaitForSingleObject(m_thread->Handle, INFINITE);
 
-	// Noify that the thread has been terminated from a signal
-	Waitable::State reason = (exitcode & 0x80) ? Waitable::State::Dumped : Waitable::State::Killed;
-	Waitable::NotifyStateChange(m_tid, reason, exitcode);
+	// todo: what should be done with the exit code now?
 }
 
 //-----------------------------------------------------------------------------

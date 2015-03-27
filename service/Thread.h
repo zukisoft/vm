@@ -35,7 +35,6 @@
 #include "NtApi.h"
 #include "TaskState.h"
 #include "VirtualMachine.h"
-#include "Waitable.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -45,7 +44,7 @@
 //
 // Represents a single thread within a process/thread group
 
-class Thread : public Waitable
+class Thread
 {
 public:
 
@@ -267,15 +266,15 @@ private:
 	// Processes a single signal popped from the queue
 	void ProcessQueuedSignal(queued_signal_t signal);
 
-	// ResumeInternal
+	// ResumeTask
 	//
-	// Internal implementation to resume a suspended thread
-	void ResumeInternal(const std::unique_ptr<TaskState>& initialtask);
+	// Resumes the thread, applying a new task state
+	void ResumeTask(const std::unique_ptr<TaskState>& task);
 
-	// SuspendInternal
+	// SuspendTask
 	//
-	// Internal implementation to suspend a thread
-	std::unique_ptr<TaskState> SuspendInternal(bool capture);
+	// Suspends the thread, capturing its task state
+	std::unique_ptr<TaskState> SuspendTask(void);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
