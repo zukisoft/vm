@@ -146,7 +146,7 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 
 	// The caller has to be willing to wait for something otherwise this would never return
 	_ASSERTE(options & (LINUX_WEXITED | LINUX_WSTOPPED | LINUX_WCONTINUED));
-	if((options & (LINUX_WEXITED | LINUX_WSTOPPED | LINUX_WCONTINUED)) == 0) throw LinuxException(LINUX_EINVAL);
+	if(options & ~(LINUX_WEXITED | LINUX_WSTOPPED | LINUX_WCONTINUED)) throw LinuxException(LINUX_EINVAL);
 
 	// The si_pid field of the signal information is used to detect spurious condition variable
 	// wakes as well as preventing it from being signaled multiple times; initialize it to zero

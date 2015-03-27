@@ -81,6 +81,7 @@ typedef char*						__kernel_caddr_t;
 typedef unsigned short				__kernel_uid16_t;
 typedef unsigned short				__kernel_gid16_t;
 typedef char						__kernel_char_t;
+typedef int							__kernel_idtype_t;
 
 //-----------------------------------------------------------------------------
 // include/linux/types.h
@@ -115,6 +116,7 @@ typedef __kernel_time_t				linux_time_t;
 typedef __kernel_clock_t			linux_clock_t;
 typedef __kernel_caddr_t			linux_caddr_t;
 typedef __kernel_char_t				linux_char_t;
+typedef __kernel_idtype_t			linux_idtype_t;
 
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
@@ -146,6 +148,7 @@ namespace uapi {
 	typedef linux_clock_t			clock_t;
 	typedef linux_caddr_t			caddr_t;
 	typedef linux_char_t			char_t;
+	typedef linux_idtype_t			idtype_t;
 
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)

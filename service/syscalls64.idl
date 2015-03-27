@@ -40,6 +40,7 @@ typedef unsigned __int64				sys64_ulonglong_t;
 //
 typedef sys64_ulong_t					sys64_addr_t;
 typedef sys64_uint_t					sys64_dev_t;
+typedef sys64_int_t						sys64_idtype_t;
 typedef sys64_uint_t					sys64_mode_t;
 typedef sys64_long_t					sys64_off_t;
 typedef sys64_longlong_t				sys64_loff_t;

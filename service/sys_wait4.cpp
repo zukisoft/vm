@@ -40,10 +40,30 @@
 
 uapi::long_t sys_wait4(const Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
 {
-	(rusage);		// TODO
+	uapi::idtype_t			type;				// Wait identifier type for Process::WaitChild
+	uapi::pid_t				id;					// Wait identifier for Process::WaitChild
 
-	// Ask the current process to wait for the specified child/children
-	return context->Process->WaitChild(pid, status, options);
+	// Verify the validity of the options mask for this operation, they differ between the wait family
+	// of system calls but Process::WaitChild accepts a superset of them, so it has to be checked here
+	if(options & ~(LINUX_WNOHANG | LINUX_WUNTRACED | LINUX_WCONTINUED | LINUX__WNOTHREAD | LINUX__WCLONE | LINUX__WALL)) return -LINUX_EINVAL;
+
+	// Pull out a reference to the context Process object instance
+	auto process = context->Process;
+
+	// pid < -1 - Absolute value indicates a specific process group identifier
+	if(pid < -1) { type = LINUX_P_PGID; id = -pid; }
+
+	// pid == -1 - Indicates wait for any child process
+	else if(pid == -1) { type = LINUX_P_ALL; id = -1; }
+
+	// pid == 0 - Indicates wait for children in the same process group
+	else if(pid == 0) { _ASSERTE(false); type = LINUX_P_PGID; /* id = process->ProcessGroupId; */ }
+
+	// pid > 0 - Indicates a specific child process identifier
+	else { type = LINUX_P_PID; id = pid; }
+
+	// Execute the wait operation and return the signaled child pid, automatically applying WEXITED
+	return process->WaitChild(type, id, status, options | LINUX_WEXITED, nullptr, rusage);
 }
 
 // sys32_wait4

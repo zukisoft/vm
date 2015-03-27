@@ -164,15 +164,10 @@ public:
 	// Releases process virtual address space
 	void UnmapMemory(const void* address, size_t length);
 
-	// WaitChild (waitpid(2) style)
+	// WaitChild
 	//
 	// Waits for one or more child processes to terminate
-	uapi::pid_t WaitChild(uapi::pid_t pid, int* status, int options);
-
-	// WaitChild (waitid(2) style)
-	//
-	// Waits for one or more child processes to terminate
-	void WaitChild(int which, uapi::pid_t pid, uapi::siginfo* info, int options, uapi::rusage* rusage);
+	uapi::pid_t WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status, int options, uapi::siginfo* siginfo, uapi::rusage* rusage);
 
 	// WriteMemory
 	//
@@ -348,7 +343,7 @@ private:
 	// CollectWaitables
 	//
 	// Generates a collection of waitable objects for use with WaitChild()
-	std::vector<std::shared_ptr<Waitable>> CollectWaitables(uapi::pid_t pid, int options);
+	std::vector<std::shared_ptr<Waitable>> CollectWaitables(uapi::idtype_t type, uapi::pid_t id, int options);
 
 	// CreateStack
 	//
@@ -377,11 +372,6 @@ private:
 	//
 	// Suspends the process
 	void SuspendInternal(void) const;
-
-	// WaitChild
-	//
-	// Internal version of WaitChild implementation
-	void WaitChild(std::vector<std::shared_ptr<Waitable>>& objects, int options, bool waitall, uapi::siginfo* siginfo, uapi::rusage* rusage);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
