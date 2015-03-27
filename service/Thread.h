@@ -64,7 +64,7 @@ public:
 
 	// Destructor
 	//
-	virtual ~Thread()=default;
+	~Thread()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions

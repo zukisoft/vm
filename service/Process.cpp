@@ -502,6 +502,80 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 }
 
 //-----------------------------------------------------------------------------
+// Process::GetResourceUsage
+//
+// Gets resource usage information for the process
+//
+// Arguments:
+//
+//	who		- Flag indicating what usage information to collect
+//	rusage	- Resultant resource usage information structure
+
+void Process::GetResourceUsage(int who, uapi::rusage* rusage)
+{
+	FILETIME					creation, exit;			// Creation and exit times
+	FILETIME					kernel, user;			// Kernel and user times
+	PROCESS_MEMORY_COUNTERS		memory;					// Memory usage information
+	IO_COUNTERS					io;						// I/O statistics
+
+	uint64_t					totalkernel = 0;		// Accumulated kernel time
+	uint64_t					totaluser = 0;			// Accumulated user time
+	size_t						maxworkingset = 0;		// Maximum seen working set
+
+	// RUSAGE_THREAD can only be used with a Thread instance
+	_ASSERTE(who != LINUX_RUSAGE_THREAD);
+	if(who == LINUX_RUSAGE_THREAD) throw LinuxException(LINUX_EINVAL);
+
+	// Initialize the entire structure to zero, most of the fields won't be populated
+	_ASSERTE(rusage);
+	memset(rusage, 0, sizeof(uapi::rusage));
+
+	// RUSAGE_SELF - Information about the current process
+	//
+	if((who == LINUX_RUSAGE_BOTH) || (who == LINUX_RUSAGE_SELF)) {
+
+		// Attempt to acquire the necessary information for this process
+		if(!GetProcessTimes(m_process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
+		if(!GetProcessMemoryInfo(m_process->Handle, &memory, sizeof(PROCESS_MEMORY_COUNTERS))) throw Win32Exception();
+		if(!GetProcessIoCounters(m_process->Handle, &io)) throw Win32Exception();
+
+		// Tally the acquired information, directly into the structure when possible
+		totalkernel += (static_cast<uint64_t>(kernel.dwHighDateTime) << 32) + kernel.dwLowDateTime;
+		totaluser += (static_cast<uint64_t>(user.dwHighDateTime) << 32) + user.dwLowDateTime;
+		rusage->ru_majflt += memory.PageFaultCount;
+		rusage->ru_inblock += io.ReadOperationCount;
+		rusage->ru_oublock += io.WriteOperationCount;
+		if(memory.WorkingSetSize > maxworkingset) maxworkingset = memory.WorkingSetSize;
+	}
+
+	// RUSAGE_CHILDREN - Information about all child processes
+	//
+	if((who == LINUX_RUSAGE_BOTH) || (who == LINUX_RUSAGE_CHILDREN)) {
+
+		process_map_lock_t::scoped_lock_read reader(m_childlock);
+		for(auto iterator : m_children) {
+
+			// Attempt to acquire the necessary information about the child process
+			if(!GetProcessTimes(iterator.second->m_process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
+			if(!GetProcessMemoryInfo(iterator.second->m_process->Handle, &memory, sizeof(PROCESS_MEMORY_COUNTERS))) throw Win32Exception();
+			if(!GetProcessIoCounters(iterator.second->m_process->Handle, &io)) throw Win32Exception();
+
+			// Tally the acquired information, directly into the structure when possible
+			totalkernel += (static_cast<uint64_t>(kernel.dwHighDateTime) << 32) + kernel.dwLowDateTime;
+			totaluser += (static_cast<uint64_t>(user.dwHighDateTime) << 32) + user.dwLowDateTime;
+			rusage->ru_majflt += memory.PageFaultCount;
+			rusage->ru_inblock += io.ReadOperationCount;
+			rusage->ru_oublock += io.WriteOperationCount;
+			if(memory.WorkingSetSize > maxworkingset) maxworkingset = memory.WorkingSetSize;
+		}
+	}
+
+	//rusage->ru_systime = 0;	// todo: convert to timeval (microseconds)
+	//rusage->ru_utime = 0;	// todo: convert to timeval (microseconds)
+	rusage->ru_maxrss = (maxworkingset >> 10);	// Convert to kilobytes
+}
+
+//-----------------------------------------------------------------------------
 // Process::getFileCreationModeMask
 //
 // Gets the process umask value
@@ -1306,11 +1380,6 @@ void Process::UnmapMemory(const void* address, size_t length)
 
 uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status, int options, uapi::siginfo* siginfo, uapi::rusage* rusage)
 {
-	// check input options here
-
-	(siginfo);
-	(rusage);
-
 	//
 	// TODO: IF THIS PROCESS HAS SIGCHLD IGNORED OR SET SPECIFICALLY, A
 	// CALL TO WAITCHILD DOES NOT RETURN UNTIL ALL CHILDREN HAVE DIED
@@ -1319,20 +1388,13 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 	// parent's signal disposition for this and then remove itself? 
 	//
 
-	// todo: waitpid(2) implies WEXITED
-	//options |= LINUX_WEXITED;
-
-	// Create a collection of waitable objects to operate against
+	// Create a collection of waitable objects to operate against, ECHILD if none
 	std::vector<std::shared_ptr<Waitable>> objects = CollectWaitables(type, id, options);
-
-	// No waitable objects met the criteria; throw ECHILD
 	if(objects.size() == 0) throw LinuxException(LINUX_ECHILD);
 
+	// todo: Waitable can be pulled into Process now
 	uapi::siginfo l_siginfo;
-	std::shared_ptr<Waitable> result = Waitable::Wait(objects, options, &l_siginfo);
-
-	// todo: get rusage here
-	std::shared_ptr<Process> process = std::dynamic_pointer_cast<Process>(result);
+	std::shared_ptr<Process> result = std::dynamic_pointer_cast<Process>(Waitable::Wait(objects, options, &l_siginfo));
 
 	// Check if a child object was successfully waited on and returned
 	if(result == nullptr) {
@@ -1352,10 +1414,16 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 		m_children.erase(l_siginfo.linux_si_pid);
 	}
 
-	// TODO: This function should have siginfo and rusage [out] pointer arguments,
-	// see temporary version of same function below
-
+	// Optionally return the child process exit code and the signal information
 	if(status) *status = l_siginfo.linux_si_status;
+	if(siginfo) *siginfo = l_siginfo;
+
+	// Optionally acquire RUSAGE_BOTH resource information for the child process
+	uapi::rusage l_rusage;
+	result->GetResourceUsage(LINUX_RUSAGE_BOTH, &l_rusage);
+	//if(rusage) result->GetResourceUsage(LINUX_RUSAGE_BOTH, rusage);
+
+	// Return the PID of the process that was successfully waited on
 	return l_siginfo.linux_si_pid;
 }
 

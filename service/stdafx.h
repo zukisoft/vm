@@ -34,6 +34,7 @@
 
 // Windows / CRT
 #include <Windows.h>
+#include <Psapi.h>
 #include <rpc.h>
 #include <stdint.h>
 #include <memory>

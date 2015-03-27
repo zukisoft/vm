@@ -90,6 +90,11 @@ public:
 	// Replaces the process with a new executable image
 	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
 
+	// GetResourceUsage
+	//
+	// Gets resource usage information for the process
+	void GetResourceUsage(int who, uapi::rusage* rusage);
+
 	// MapMemory
 	//
 	// Allocates/maps process virtual address space
