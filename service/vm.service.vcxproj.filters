@@ -371,6 +371,9 @@
     <ClInclude Include="Waitable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ProcessGroup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -798,6 +801,9 @@
     </ClCompile>
     <ClCompile Include="sys_getrusage.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessGroup.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
