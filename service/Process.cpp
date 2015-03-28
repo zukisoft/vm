@@ -530,6 +530,10 @@ void Process::GetResourceUsage(int who, uapi::rusage* rusage)
 	_ASSERTE(rusage);
 	memset(rusage, 0, sizeof(uapi::rusage));
 
+	//
+	// TODO: This could go into a helper function, send in the const shared_ptr<Process>& and rusage*, much cleaner
+	//
+
 	// RUSAGE_SELF - Information about the current process
 	//
 	if((who == LINUX_RUSAGE_BOTH) || (who == LINUX_RUSAGE_SELF)) {
@@ -570,9 +574,18 @@ void Process::GetResourceUsage(int who, uapi::rusage* rusage)
 		}
 	}
 
-	//rusage->ru_systime = 0;	// todo: convert to timeval (microseconds)
-	//rusage->ru_utime = 0;	// todo: convert to timeval (microseconds)
-	rusage->ru_maxrss = (maxworkingset >> 10);	// Convert to kilobytes
+	// Convert the total kernel time into uapi::timeval
+	totalkernel /= 10;
+	rusage->ru_systime.tv_sec = totalkernel / 1000000;		// Seconds
+	rusage->ru_systime.tv_usec = totalkernel % 1000000;		// Microseconds
+
+	// Convert the total user time into uapi::timeval
+	totaluser /= 10;										
+	rusage->ru_utime.tv_sec = totaluser / 1000000;			// Seconds
+	rusage->ru_utime.tv_usec = totaluser % 1000000;			// Microseconds
+
+	// Convert the maximum seen working set size to kilobytes
+	rusage->ru_maxrss = (maxworkingset >> 10);				// Kilobytes
 }
 
 //-----------------------------------------------------------------------------
@@ -1418,10 +1431,8 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 	if(status) *status = l_siginfo.linux_si_status;
 	if(siginfo) *siginfo = l_siginfo;
 
-	// Optionally acquire RUSAGE_BOTH resource information for the child process
-	uapi::rusage l_rusage;
-	result->GetResourceUsage(LINUX_RUSAGE_BOTH, &l_rusage);
-	//if(rusage) result->GetResourceUsage(LINUX_RUSAGE_BOTH, rusage);
+	// Optionally acquire RUSAGE_BOTH resource information for the child process,
+	if(rusage) result->GetResourceUsage(LINUX_RUSAGE_BOTH, rusage);
 
 	// Return the PID of the process that was successfully waited on
 	return l_siginfo.linux_si_pid;

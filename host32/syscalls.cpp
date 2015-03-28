@@ -181,7 +181,7 @@ syscall_t g_syscalls[512] = {
 /* 074 */	REMOTE_SYSCALL_2(sys32_sethostname, sys32_char_t*, sys32_size_t),
 /* 075 */	sys_noentry,
 /* 076 */	sys_noentry,
-/* 077 */	sys_noentry,
+/* 077 */	REMOTE_SYSCALL_2(sys32_getrusage, int, linux_rusage32*),
 /* 078 */	sys_noentry,
 /* 079 */	sys_noentry,
 /* 080 */	sys_noentry,

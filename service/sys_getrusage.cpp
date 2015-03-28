@@ -26,57 +26,49 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_wait4
+// sys_getrusage
 //
-// Waits for a process to change state
+// Gets accounting information for a process or thread
 //
 // Arguments:
 //
 //	context		- System call context object
-//	pid			- PID to wait upon
-//	status		- Optionally receives PID status information
-//	options		- Wait operation options
-//	rusage		- Optionally receives child accounting information
+//	who			- Flag indicating what accounting information to get
+//	rusage		- Receives the accounting information data
 
-uapi::long_t sys_wait4(const Context* context, uapi::pid_t pid, int* status, int options, uapi::rusage* rusage)
+uapi::long_t sys_getrusage(const Context* context, int who, uapi::rusage* rusage)
 {
-	uapi::idtype_t			type;				// Wait identifier type for Process::WaitChild
-	uapi::pid_t				id;					// Wait identifier for Process::WaitChild
+	switch(who) {
 
-	// Verify the validity of the options mask for this operation, they differ between the wait family
-	// of system calls but Process::WaitChild accepts a superset of them, so it has to be checked here
-	if(options & ~(LINUX_WNOHANG | LINUX_WUNTRACED | LINUX_WCONTINUED | LINUX__WNOTHREAD | LINUX__WCLONE | LINUX__WALL)) return -LINUX_EINVAL;
+		// RUSAGE_SELF, RUSAGE_CHILDREN --> Process
+		case LINUX_RUSAGE_SELF:
+		case LINUX_RUSAGE_CHILDREN:
+			context->Process->GetResourceUsage(who, rusage);
+			break;
 
-	// Pull out a reference to the context Process object instance
-	auto process = context->Process;
+		// RUSAGE_THREAD --> Thread
+		case LINUX_RUSAGE_THREAD:
+			context->Thread->GetResourceUsage(who, rusage);
+			break;
 
-	// pid < -1 - Absolute value indicates a specific process group identifier
-	if(pid < -1) { type = LINUX_P_PGID; id = -pid; }
+		// Anything else --> EINVAL
+		default: throw LinuxException(LINUX_EINVAL);
+	}
 
-	// pid == -1 - Indicates wait for any child process
-	else if(pid == -1) { type = LINUX_P_ALL; id = -1; }
-
-	// pid == 0 - Indicates wait for children in the same process group
-	else if(pid == 0) { _ASSERTE(false); type = LINUX_P_PGID; /* id = process->ProcessGroupId; */ }
-
-	// pid > 0 - Indicates a specific child process identifier
-	else { type = LINUX_P_PID; id = pid; }
-
-	// Execute the wait operation and return the signaled child pid, automatically applying WEXITED
-	return process->WaitChild(type, id, status, options | LINUX_WEXITED, nullptr, rusage);
+	return 0;
 }
 
-// sys32_wait4
+// sys32_getrusage
 //
-sys32_long_t sys32_wait4(sys32_context_t context, sys32_pid_t pid, sys32_int_t* status, sys32_int_t options, linux_rusage32* rusage)
+sys32_long_t sys32_getrusage(sys32_context_t context, sys32_int_t who, linux_rusage32* rusage)
 {
-	uapi::rusage			usage;				// Optional child accounting information
+	uapi::rusage			usage;				// Generic uapi::rusage structure
 
 	// Invoke the generic version of the system call, passing in the generic uapi::rusage if applicable
-	sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_wait4, context, pid, status, options, (rusage) ? &usage : nullptr));
+	sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_getrusage, context, who, &usage));
 
-	// If sys_wait4 was successful, convert the data from the generic structure into the compatible one
-	if((result >= 0) && (rusage != nullptr)) {
+	// Convert the data from the generic rusage structure into the 32-bit linux_rusage32 structure
+	if(result >= 0) {
 
 		rusage->ru_utime.tv_sec		= static_cast<int32_t>(usage.ru_utime.tv_sec);
 		rusage->ru_utime.tv_usec	= static_cast<int32_t>(usage.ru_utime.tv_usec);
@@ -102,11 +94,11 @@ sys32_long_t sys32_wait4(sys32_context_t context, sys32_pid_t pid, sys32_int_t* 
 }
 
 #ifdef _M_X64
-// sys64_wait4
+// sys64_getrusage
 //
-sys64_long_t sys64_wait4(sys64_context_t context, sys64_pid_t pid, sys64_int_t* status, sys64_int_t options, linux_rusage64* rusage)
+sys64_long_t sys64_getrusage(sys64_context_t context, sys64_int_t who, linux_rusage64* rusage)
 {
-	return SystemCall::Invoke(sys_wait4, context, pid, status, options, rusage);
+	return SystemCall::Invoke(sys_wait4, context, who, rusage);
 }
 #endif
 

@@ -28,9 +28,11 @@
 #include <concurrent_priority_queue.h>
 #include <memory>
 #include <mutex>
+#include <linux/resource.h>
 #include <linux/signal.h>
 #include <linux/wait.h>
 #include "Architecture.h"
+#include "LinuxException.h"
 #include "NativeHandle.h"
 #include "NtApi.h"
 #include "TaskState.h"
@@ -83,6 +85,11 @@ public:
 	//
 	// Indicates that the thread terminated normally on its own
 	void Exit(int exitcode);
+
+	// GetResourceUsage
+	//
+	// Gets resource usage information for the thread
+	void GetResourceUsage(int who, uapi::rusage* rusage);
 
 	// FromNativeHandle
 	//

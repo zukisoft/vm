@@ -195,6 +195,7 @@ interface SystemCalls32
 	/* 060 */ sys32_long_t	sys32_umask([in] sys32_context_t context, [in] sys32_mode_t mask);
 	/* 064 */ sys32_long_t	sys32_getppid([in] sys32_context_t context);
 	/* 074 */ sys32_long_t	sys32_sethostname([in] sys32_context_t context, [in, ref, size_is(len)] sys32_char_t* name, [in] sys32_size_t len);
+	/* 077 */ sys32_long_t	sys32_getrusage([in] sys32_context_t context, [in] sys32_int_t who, [out, ref] linux_rusage32* usage);
 	/* 085 */ sys32_long_t	sys32_readlink([in] sys32_context_t context, [in, string] const sys32_char_t* pathname, [out, ref, size_is(bufsiz)] sys32_char_t* buf, [in] sys32_size_t bufsiz);
 	/* 090 */ sys32_long_t	sys32_old_mmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length, [in] sys32_int_t prot, [in] sys32_int_t flags, [in] sys32_int_t fd, [in] sys32_off_t offset);
 	/* 091 */ sys32_long_t	sys32_munmap([in] sys32_context_t context, [in] sys32_addr_t addr, [in] sys32_size_t length);

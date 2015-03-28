@@ -360,6 +360,43 @@ std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::sha
 }
 
 //-----------------------------------------------------------------------------
+// Thread::GetResourceUsage
+//
+// Gets resource usage information for the thread
+//
+// Arguments:
+//
+//	who		- Flag indicating what usage information to collect
+//	rusage	- Resultant resource usage information structure
+
+void Thread::GetResourceUsage(int who, uapi::rusage* rusage)
+{
+	FILETIME	creation, exit, kernel, user;		// Information from GetThreadTimes()
+
+	// RUSAGE_THREAD must be specified
+	_ASSERTE(who == LINUX_RUSAGE_THREAD);
+	if(who != LINUX_RUSAGE_THREAD) throw LinuxException(LINUX_EINVAL);
+
+	// Initialize the entire structure to zero, most of the fields won't be populated
+	_ASSERTE(rusage);
+	memset(rusage, 0, sizeof(uapi::rusage));
+
+	// There may be more that can be acquired via undocumented NTAPI functions, but for now I believe
+	// only the system/user times are available for a specific thread
+	if(!GetThreadTimes(m_thread->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
+
+	// Convert the total kernel time into uapi::timeval
+	uint64_t totalkernel = ((static_cast<uint64_t>(kernel.dwHighDateTime) << 32) + kernel.dwLowDateTime) / 10;
+	rusage->ru_systime.tv_sec = totalkernel / 1000000;			// Seconds
+	rusage->ru_systime.tv_usec = totalkernel % 1000000;			// Microseconds
+
+	// Convert the total user time into uapi::timeval
+	uint64_t totaluser = ((static_cast<uint64_t>(user.dwHighDateTime) << 32) + user.dwLowDateTime) / 10;
+	rusage->ru_utime.tv_sec = totaluser / 1000000;				// Seconds
+	rusage->ru_utime.tv_usec = totaluser % 1000000;				// Microseconds
+}
+
+//-----------------------------------------------------------------------------
 // Thread::getNativeHandle
 //
 // Gets the native operating system handle for this thread
