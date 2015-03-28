@@ -162,7 +162,7 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 
 	// Iterate over all of the Waitable instances to check for a pending signal that can be
 	// consumed immediately, or to register a wait operation against it
-	for(auto& iterator : objects) {
+	for(const auto& iterator : objects) {
 
 		std::lock_guard<std::mutex> critsec(iterator->m_lock);
 
@@ -193,7 +193,7 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 	signal.wait(critsec, [&]() -> bool { return siginfo->linux_si_pid != 0; });
 
 	// Remove this wait from the provided Waitable instances
-	for(auto iterator : objects) {
+	for(const auto& iterator : objects) {
 
 		std::lock_guard<std::mutex> critsec(iterator->m_lock);
 		iterator->m_waiters.remove_if([&](const waiter_t& item) -> bool { return &item.signal == &signal; });

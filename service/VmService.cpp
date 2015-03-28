@@ -261,7 +261,7 @@ std::shared_ptr<Process> VmService::FindNativeProcess(DWORD nativepid)
 {
 	if(nativepid == m_initprocess->NativeProcessId) return m_initprocess;
 
-	for(auto iterator : m_processes)
+	for(const auto& iterator : m_processes)
 		if(nativepid == iterator.second->NativeProcessId) return iterator.second;
 
 	return nullptr;

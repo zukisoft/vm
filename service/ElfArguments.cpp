@@ -75,8 +75,8 @@ ElfArguments::ElfArguments(const uapi::char_t** argv, const uapi::char_t** envp)
 
 ElfArguments::ElfArguments(const std::vector<std::string>& argv, const std::vector<std::string>& envp)
 {
-	for(const auto iterator : argv) AppendArgument(iterator.c_str());
-	for(const auto iterator : envp) AppendEnvironmentVariable(iterator.c_str());
+	for(const auto& iterator : argv) AppendArgument(iterator.c_str());
+	for(const auto& iterator : envp) AppendEnvironmentVariable(iterator.c_str());
 }
 
 //-----------------------------------------------------------------------------

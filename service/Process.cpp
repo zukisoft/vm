@@ -265,7 +265,7 @@ std::vector<std::shared_ptr<Waitable>> Process::CollectWaitables(uapi::idtype_t 
 	process_map_lock_t::scoped_lock_read proc_reader(m_childlock);
 
 	// Iterate over all of the child processes in the collection
-	for(auto iterator : m_children) {
+	for(const auto& iterator : m_children) {
 
 		// P_PID - Wait for a specific process id
 		if(type == LINUX_P_PID) { if(iterator.second->ProcessId != id) continue; }
@@ -446,7 +446,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		thread_map_lock_t::scoped_lock writer(m_threadslock);
 
 		// Terminate all existing threads and clear out the local collection
-		for(auto iterator : m_threads) iterator.second->Terminate(0);
+		for(const auto& iterator : m_threads) iterator.second->Terminate(0);
 		m_threads.clear();
 
 		try {
@@ -557,7 +557,7 @@ void Process::GetResourceUsage(int who, uapi::rusage* rusage)
 	if((who == LINUX_RUSAGE_BOTH) || (who == LINUX_RUSAGE_CHILDREN)) {
 
 		process_map_lock_t::scoped_lock_read reader(m_childlock);
-		for(auto iterator : m_children) {
+		for(const auto& iterator : m_children) {
 
 			// Attempt to acquire the necessary information about the child process
 			if(!GetProcessTimes(iterator.second->m_process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
@@ -729,7 +729,7 @@ std::shared_ptr<Thread> Process::getNativeThread(DWORD tid)
 {
 	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
 
-	for(auto iterator : m_threads) if(iterator.second->NativeThreadId == tid) return iterator.second;
+	for(const auto& iterator : m_threads) if(iterator.second->NativeThreadId == tid) return iterator.second;
 	return nullptr;
 }
 

@@ -82,7 +82,7 @@ void SignalActions::Reset(void)
 {
 	// Iterate over all of the contained actions and set anything that isn't
 	// currently being ignored back to a default action
-	for(auto iterator : m_actions)
+	for(auto& iterator : m_actions)
 		if(iterator.second.sa_handler != LINUX_SIG_IGN) iterator.second = action_t();
 }
 

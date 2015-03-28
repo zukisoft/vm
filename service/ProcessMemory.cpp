@@ -165,7 +165,7 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Clone(const std::shared_ptr<Native
 	section_lock_t::scoped_lock_read reader(m_sectionlock);
 
 	// Iterate over the existing memory sections and clone them into the target process
-	for(auto iterator = m_sections.begin(); iterator != m_sections.end(); iterator++) newsections.push_back((*iterator)->Clone(target->Handle));
+	for(const auto& iterator : m_sections) newsections.emplace_back(iterator->Clone(target->Handle));
 
 	// Construct a new ProcessMemory instance, moving the new section collection into it
 	return std::make_unique<ProcessMemory>(target, std::move(newsections));
@@ -203,7 +203,7 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<Na
 	section_lock_t::scoped_lock_read reader(m_sectionlock);
 
 	// Iterate over the existing memory sections and duplicate them in the target process
-	for(auto iterator = m_sections.begin(); iterator != m_sections.end(); iterator++) newsections.push_back((*iterator)->Duplicate(target->Handle));
+	for(const auto& iterator : m_sections) newsections.emplace_back(iterator->Duplicate(target->Handle));
 
 	// Construct a new ProcessMemory instance, moving the new section collection into it
 	return std::make_unique<ProcessMemory>(target, std::move(newsections));
