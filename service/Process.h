@@ -361,6 +361,11 @@ private:
 	template<::Architecture>
 	void Execute(const std::unique_ptr<Executable>& executable);
 
+	// NotifyParent
+	//
+	// Notifies the parent process that a state change has occurred
+	void NotifyParent(Waitable::State state, int32_t status);
+
 	// ResumeInternal
 	//
 	// Resumes the process from a suspended state

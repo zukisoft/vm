@@ -754,6 +754,56 @@ void Process::putNativeThreadProc(const void* value)
 }
 
 //-----------------------------------------------------------------------------
+// Process::NotifyParent
+//
+// Notifies the parent process that a state change has occurred
+//
+// Arguments:
+//
+//	state		- New process state
+//	status		- Status code associated with the changed state
+
+void Process::NotifyParent(Waitable::State state, int32_t status)
+{
+	// Attempt to acquire a reference to the parent process and ensure that it hasn't
+	// been set up as a self-referential parent instance
+	std::shared_ptr<Process> parent = m_parent.lock();
+	if((parent) && (parent->m_pid != m_pid)) {
+
+		int signal = 0;			// Default to not sending a signal to the parent
+
+		// Get the parent's disposition for the SIGCHLD signal
+		uapi::sigaction sigaction = parent->getSignalAction(LINUX_SIGCHLD);
+		if(sigaction.sa_handler != LINUX_SIG_IGN) {
+
+			// State::Exited / State::Killed / State::Dumped
+			//
+			// Send termination signal to parent if not disabled via SA_NOCLDWAIT
+			if((state == State::Exited) || (state == State::Killed) || (state == State::Dumped)) {
+
+				if((sigaction.sa_flags & LINUX_SA_NOCLDWAIT) == 0) signal = m_termsignal;
+			}
+
+			// State::Trapped / State::Stopped / State::Continued
+			//
+			// Send SIGCHLD to the parent if not disabled via SA_NOCLDSTOP
+			else if((state == State::Trapped) || (state == State::Stopped) || (state == State::Continued)) {
+
+				if((sigaction.sa_flags & LINUX_SA_NOCLDSTOP) == 0) signal = LINUX_SIGCHLD;
+			}
+
+			// If a signal code was determined above, signal the parent process
+			if(signal) parent->Signal(signal);
+		}
+	}
+
+	// Notify any threads waiting for this process that a state change has occurred;
+	// this is done whether or not SIGCHLD was sent to the parent above
+	Waitable::NotifyStateChange(m_pid, state, status);
+}
+
+
+//-----------------------------------------------------------------------------
 // Process::getParent
 //
 // Gets the parent of this process, or the root process if an orphan
@@ -870,20 +920,10 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 	// If this was the last thread in the process, the process is exiting normally.
 	// Signal the parent and set as terminated, but don't wait for the process itself,
 	// as the calling thread is technically still running
-	if(m_threads.size() == 0) {
+	if(m_threads.size() == 0) NotifyParent(Waitable::State::Exited, exitcode);
 
-		// The termination signal is atomic, access it only once
-		int signal = m_termsignal;
-		if(signal) {
-
-			// Attempt to acquire a parent process reference and signal it
-			auto parent = m_parent.lock();
-			if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(signal);
-		}
-
-		// Notify that the process has terminated normally
-		Waitable::NotifyStateChange(m_pid, Waitable::State::Exited, exitcode);
-	}
+	// TODO:
+	// process becomes a zombie unless parent is set to SA_NOCLDWAIT or ignores SIGCHLD
 }
 
 //-----------------------------------------------------------------------------
@@ -901,7 +941,7 @@ void Process::Resume(void)
 	ResumeInternal();
 	
 	// Notify that the process has been continued
-	Waitable::NotifyStateChange(m_pid, Waitable::State::Continued, uapi::RUNNING);
+	NotifyParent(Waitable::State::Continued, uapi::RUNNING);
 }
 
 //-----------------------------------------------------------------------------
@@ -1279,7 +1319,7 @@ void Process::Suspend(void)
 	SuspendInternal();
 	
 	// Notify that the process has been suspended
-	Waitable::NotifyStateChange(m_pid, Waitable::State::Stopped, uapi::STOPPED);
+	NotifyParent(Waitable::State::Stopped, uapi::STOPPED);
 }
 
 //-----------------------------------------------------------------------------
@@ -1312,18 +1352,8 @@ void Process::Terminate(int exitcode)
 	TerminateProcess(m_process->Handle, exitcode);
 	WaitForSingleObject(m_process->Handle, INFINITE);
 
-	// When a process is terminated, the parent optionally receives a signal
-	// m_termsignal is std::atomic<>, access it only once
-	int termsignal = m_termsignal;
-	if(termsignal) {
-
-		auto parent = m_parent.lock();
-		if((parent) && (parent->ProcessId != this->ProcessId)) parent->Signal(termsignal);
-	}
-
 	// Signal that the process has been terminated/dumped from a signal
-	Waitable::State reason = (exitcode & 0x80) ? Waitable::State::Dumped : Waitable::State::Killed;
-	Waitable::NotifyStateChange(m_pid, reason, exitcode);
+	NotifyParent((exitcode & 0x80) ? Waitable::State::Dumped : Waitable::State::Killed, exitcode);
 }
 
 //-----------------------------------------------------------------------------
