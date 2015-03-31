@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "SystemCall.h"			// TODO: REMOVE ME? IS THIS A SYSTEM CALL OR NOT
+#include "SystemCall.h"
 
 #pragma warning(push, 4)
 
@@ -39,12 +39,15 @@ void sys_rundown_context(Context* context)
 {
 	if(context == nullptr) return;
 
-	// The hosted thread has died, remove it from the process.  Use SIGKILL
-	// as the exit code, there is no way to know here why it actually died
-	context->Process->RemoveThread(context->Thread->ThreadId, LINUX_SIGKILL);
+	// The hosted thread has died, perhaps unexpectedly or perhaps as a result
+	// of a forced termination by something like sys_execve.  It's difficult to
+	// know the difference, but the shared_ptr can be checked to see if this is
+	// the only outstanding reference to the Thread object, which implies that
+	// it was killed intentionally and removed from its parent Process already
+	_ASSERTE(context->Thread.use_count() == 1);
+	if(context->Thread.use_count() > 1) context->Process->RemoveThread(context->Thread->ThreadId, LINUX_SIGKILL);
 
-	// Release the context object and it's contained references
-	Context::Release(context);
+	Context::Release(context);			// Release the context object
 }
 
 // sys32_context_t_rundown
