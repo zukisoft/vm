@@ -26,57 +26,58 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys_rundown_context
+// sys_exit
 //
-// Releases a context object allocated by a hosted thread but was not 
-// released correctly prior to that thread terminating
+// Normal thread termination
 //
 // Arguments:
 //
-//	context		- System call context object to be rundown
+//	context		- System call context object
+//	exitcode	- Exit code to report for the terminating thread
 
-void sys_rundown_context(Context* context)
+uapi::long_t sys_exit(const Context* context, int exitcode)
 {
-	if(context == nullptr) return;
-
-	// The hosted thread has died, perhaps unexpectedly or perhaps as a result
-	// of a forced termination by something like sys_execve.  It's not possible
-	// to know the reason, but the Process object won't know that it's also dead
-	// until all the Thread instances have been removed from its collection
-	context->Process->RundownThread(context->Thread);
-
-	Context::Release(context);			// Release the context object
+	// Thread is terminating normally, inform the Process instance
+	context->Process->ExitThread(context->Thread->ThreadId, exitcode);
+	return 0;
 }
 
-// sys32_context_t_rundown
-//
-void __RPC_USER sys32_context_t_rundown(sys32_context_t context)
+// sys32_exit
+sys32_long_t sys32_exit(sys32_context_exclusive_t* context_handle, sys32_int_t exitcode)
 {
-	sys_rundown_context(reinterpret_cast<Context*>(context));
-}
+	// context_handle is [in, out, ref] for this system call
+	Context* context = reinterpret_cast<Context*>(*context_handle);
 
-// sys32_context_exclusive_t_rundown
-//
-void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t context)
-{
-	sys_rundown_context(reinterpret_cast<Context*>(context));
+	// Invoke the sys_exit system call and release the context handle if successful
+	uapi::long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_exit, context, exitcode));
+	if(result == 0) {
+
+		Context::Release(context);				// Release the context object
+		*context_handle = nullptr;				// Release the context handle
+	}
+
+	return result;
 }
 
 #ifdef _M_X64
-// sys64_context_t_rundown
+// sys64_exit
 //
-void __RPC_USER sys32_context_t_rundown(sys64_context_t context)
+void sys64_exit(sys64_exclusive_context_t* context_handle, sys64_int_t exitcode)
 {
-	sys_rundown_context(reinterpret_cast<Context*>(context));
-}
+	// context_handle is [in, out, ref] for this system call
+	Context* context = reinterpret_cast<Context*>(*context_handle);
 
-// sys64_context_exclusive_t_rundown
-//
-void __RPC_USER sys64_context_exclusive_t_rundown(sys64_context_exclusive_t context)
-{
-	sys_rundown_context(reinterpret_cast<Context*>(context));
+	// Invoke the sys_exit system call and release the context handle if successful
+	uapi::long_t result = SystemCall::Invoke(sys_exit, context, exitcode);
+	if(result == 0) {
+
+		Context::Release(context);				// Release the context object
+		*context_handle = nullptr;				// Release the context handle
+	}
+
+	return result;
 }
-#endif	// _M_X64
+#endif
 
 //---------------------------------------------------------------------------
 

@@ -502,6 +502,34 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 }
 
 //-----------------------------------------------------------------------------
+// Process::ExitThread
+//
+// Indicates that a thread has exited normally
+//
+// Arguments:
+//
+//	tid			- Identifier for the thread to be removed
+//	exitcode	- Exit code reported by the thread
+
+void Process::ExitThread(uapi::pid_t tid, int exitcode)
+{
+	thread_map_lock_t::scoped_lock writer(m_threadslock);
+
+	// Locate the Thread instance associated with this thread id
+	const auto& iterator = m_threads.find(tid);
+	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
+
+	// Remove the Thread instance from the collection
+	m_threads.erase(iterator);
+
+	// If this was the last thread in the process, the process is exiting normally
+	if(m_threads.size() == 0) NotifyParent(Waitable::State::Exited, exitcode);
+
+	// TODO:
+	// process becomes a zombie unless parent is set to SA_NOCLDWAIT or ignores SIGCHLD
+}
+
+//-----------------------------------------------------------------------------
 // Process::GetResourceUsage
 //
 // Gets resource usage information for the process
@@ -800,8 +828,10 @@ void Process::NotifyParent(Waitable::State state, int32_t status)
 	// Notify any threads waiting for this process that a state change has occurred;
 	// this is done whether or not SIGCHLD was sent to the parent above
 	Waitable::NotifyStateChange(m_pid, state, status);
-}
 
+	// todo: send back a boolean flag if the process should be reaped or not,
+	// need to tell the parent, the process group and the VM?
+}
 
 //-----------------------------------------------------------------------------
 // Process::getParent
@@ -865,7 +895,6 @@ void Process::ProtectMemory(const void* address, size_t length, int prot) const
 
 size_t Process::ReadMemory(const void* address, void* buffer, size_t length) const
 {
-	// Use ProcessMemory to read from the virtualized address space
 	return m_memory->Read(address, buffer, length);
 }
 
@@ -880,50 +909,38 @@ size_t Process::ReadMemory(const void* address, void* buffer, size_t length) con
 
 void Process::RemoveHandle(int fd)
 {
-	// Remove the specified file descriptor from the process
 	m_handles->Remove(fd);
 }
 
 //-----------------------------------------------------------------------------
-// Process::RemoveThread
+// Process::RundownThread
 //
-// Removes a thread from the process
+// Runs down a thread instance that terminated abnormally and as a result was
+// unable to call ExitThread()
 //
 // Arguments:
 //
-//	tid			- Identifier for the thread to be removed
-//	exitcode	- Exit code reported by the thread
+//	thread		- Thread instance to be run down
 
-// TODO: Rename me to ExitThread() or OnThreadExit() or something?
-// RemoveThread doesn't describe how its supposed to be used
-void Process::RemoveThread(uapi::pid_t tid, int exitcode)
+void Process::RundownThread(const std::shared_ptr<::Thread>& thread)
 {
-	thread_map_lock_t::scoped_lock	writer(m_threadslock);
+	thread_map_lock_t::scoped_lock writer(m_threadslock);
 
-	try {
-		
-		// TODO: this needs to be done to signal the StateChanged event of the thread
-		// but I'm not fond of how this works out.  sys_exit/release_thread/rundown_context
-		// could call this, but then the process wouldn't know to remove it
-		// unless RemoveThread() was still called, so for now just put this here
+	// If there are no threads associated with this process, nothing to do
+	if(m_threads.size() == 0) return;
 
-		auto thread = m_threads.at(tid);			// can throw std::out_of_range if not there
-		thread->Exit(exitcode);						// TODO: rename to OnExit()??
+	// A thread should only appear in the collection once, but iterate over all
+	auto iterator = m_threads.begin();
+	while(iterator != m_threads.end()) {
 
 		// Remove the thread from the collection
-		m_threads.erase(tid);			
+		if(thread == iterator->second) iterator = m_threads.erase(iterator);
+		else ++iterator;
 	}
 
-	catch(std::out_of_range&) { return; }
-	// TODO: catch all else here?
-
-	// If this was the last thread in the process, the process is exiting normally.
-	// Signal the parent and set as terminated, but don't wait for the process itself,
-	// as the calling thread is technically still running
-	if(m_threads.size() == 0) NotifyParent(Waitable::State::Exited, exitcode);
-
-	// TODO:
-	// process becomes a zombie unless parent is set to SA_NOCLDWAIT or ignores SIGCHLD
+	// If this was the last thread, the process has terminated abnormally.  Indicate
+	// this condition by using a process exit code of SIGKILL
+	if(m_threads.size() == 0) NotifyParent(Waitable::State::Exited, LINUX_SIGKILL);
 }
 
 //-----------------------------------------------------------------------------
@@ -937,10 +954,7 @@ void Process::RemoveThread(uapi::pid_t tid, int exitcode)
 
 void Process::Resume(void)
 {
-	// Resume all threads in the process
 	ResumeInternal();
-	
-	// Notify that the process has been continued
 	NotifyParent(Waitable::State::Continued, uapi::RUNNING);
 }
 
@@ -1075,7 +1089,6 @@ const void* Process::SetProgramBreak(const void* address)
 
 void Process::SetSignalAction(int signal, const uapi::sigaction* action, uapi::sigaction* oldaction)
 {
-	// SignalActions has a matching method for this operation
 	m_sigactions->Set(signal, action, oldaction);
 }
 
@@ -1190,7 +1203,6 @@ bool Process::Signal(int signal)
 
 uapi::sigaction Process::getSignalAction(int signal) const
 {
-	// SignalActions has a matching method for this operation
 	return m_sigactions->Get(signal);
 }
 
@@ -1201,7 +1213,6 @@ uapi::sigaction Process::getSignalAction(int signal) const
 
 void Process::putSignalAction(int signal, uapi::sigaction action)
 {
-	// SignalActions has a matching method for this operation
 	m_sigactions->Set(signal, &action, nullptr);
 }
 
@@ -1300,7 +1311,6 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 
 void Process::Start(void)
 {
-	// Start all threads in the process and update status to RUNNING
 	ResumeInternal();
 }
 
@@ -1315,10 +1325,7 @@ void Process::Start(void)
 
 void Process::Suspend(void)
 {
-	// Suspend all threads in the process
 	SuspendInternal();
-	
-	// Notify that the process has been suspended
 	NotifyParent(Waitable::State::Stopped, uapi::STOPPED);
 }
 
@@ -1352,7 +1359,7 @@ void Process::Terminate(int exitcode)
 	TerminateProcess(m_process->Handle, exitcode);
 	WaitForSingleObject(m_process->Handle, INFINITE);
 
-	// Signal that the process has been terminated/dumped from a signal
+	// Signal that the process has been terminated
 	NotifyParent((exitcode & 0x80) ? Waitable::State::Dumped : Waitable::State::Killed, exitcode);
 }
 
@@ -1385,9 +1392,11 @@ std::shared_ptr<Thread> Process::getThread(uapi::pid_t tid)
 {
 	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
 
-	// Attempt to locate the thread within the collection
-	const auto found = m_threads.find(tid);
-	return (found != m_threads.end()) ? found->second : nullptr;
+	// Attempt to locate the Thread instance associated with this TID
+	const auto& iterator = m_threads.find(tid);
+	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
+
+	return iterator->second;
 }
 
 //-----------------------------------------------------------------------------
@@ -1402,7 +1411,6 @@ std::shared_ptr<Thread> Process::getThread(uapi::pid_t tid)
 
 void Process::UnmapMemory(const void* address, size_t length)
 {
-	// Releasing memory is taken care of by ProcessMemory
 	m_memory->Release(address, length);
 }
 
@@ -1501,7 +1509,6 @@ void Process::putWorkingDirectory(const std::shared_ptr<FileSystem::Alias>& valu
 
 size_t Process::WriteMemory(const void* address, const void* buffer, size_t length) const
 {
-	// Use ProcessMemory to write into the virtualized address space
 	return m_memory->Write(address, buffer, length);
 }
 

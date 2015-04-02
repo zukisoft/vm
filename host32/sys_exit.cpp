@@ -53,7 +53,8 @@ uapi::long_t sys_exit(PCONTEXT context)
 	status = ((status & 0xFF) << 8);
 
 	// Restore the saved task information, this will cause the thread to jump back
-	// to the original point where it was forked when the CONTEXT is reapplied
+	// to the original point where it was forked when the CONTEXT is reapplied, the
+	// sys32_exit() system call will be executed from there
 	context->Eax = status;
 	context->Ebx = t_exittask.ebx;
 	context->Ecx = t_exittask.ecx;

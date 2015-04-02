@@ -793,9 +793,6 @@
     <ClCompile Include="sys_geteuid.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="sys_release_thread.cpp">
-      <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
     <ClCompile Include="Waitable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -804,6 +801,9 @@
     </ClCompile>
     <ClCompile Include="ProcessGroup.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_exit.cpp">
+      <Filter>Source Files\System Calls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

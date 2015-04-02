@@ -658,6 +658,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_close.cpp" />
     <ClCompile Include="sys_creat.cpp" />
     <ClCompile Include="sys_execve.cpp" />
+    <ClCompile Include="sys_exit.cpp" />
     <ClCompile Include="sys_faccessat.cpp" />
     <ClCompile Include="sys_fcntl.cpp" />
     <ClCompile Include="sys_fork.cpp" />
@@ -688,7 +689,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_openat.cpp" />
     <ClCompile Include="sys_prctl.cpp" />
     <ClCompile Include="sys_read.cpp" />
-    <ClCompile Include="sys_release_thread.cpp" />
     <ClCompile Include="sys_rt_sigaction.cpp" />
     <ClCompile Include="sys_rt_sigprocmask.cpp" />
     <ClCompile Include="sys_rt_sigreturn.cpp" />

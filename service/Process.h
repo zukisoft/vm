@@ -90,6 +90,11 @@ public:
 	// Replaces the process with a new executable image
 	void Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
 
+	// ExitThread
+	//
+	// Indicates that a thread has exited normally
+	void ExitThread(uapi::pid_t tid, int exitcode);
+
 	// GetResourceUsage
 	//
 	// Gets resource usage information for the process
@@ -117,15 +122,15 @@ public:
 	// Removes a file system handle from the process
 	void RemoveHandle(int fd);
 
-	// RemoveThread
-	//
-	// Removes a thread from the process
-	void RemoveThread(uapi::pid_t tid, int exitcode);
-
 	// Resume
 	//
 	// Resumes the process from a suspended state
 	void Resume(void);
+
+	// RundownThread
+	//
+	// Removes a thread from the process that didn't terminate normally
+	void RundownThread(const std::shared_ptr<::Thread>& thread);
 
 	// SetProgramBreak
 	//
