@@ -342,6 +342,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\PathSplitter.h" />
     <ClInclude Include="..\common\Random.h" />
     <ClInclude Include="..\common\RpcInterface.h" />
+    <ClInclude Include="..\common\ScalarCondition.h" />
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\StructuredException.h" />
     <ClInclude Include="..\common\SystemInformation.h" />

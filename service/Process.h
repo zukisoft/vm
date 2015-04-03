@@ -45,6 +45,7 @@
 #include "NtApi.h"
 #include "ProcessHandles.h"
 #include "ProcessMemory.h"
+#include "ScalarCondition.h"
 #include "SignalActions.h"
 #include "TaskState.h"
 #include "Thread.h"
@@ -402,6 +403,7 @@ private:
 	std::weak_ptr<Process>				m_parent;			// Weak reference to parent
 	process_map_t						m_children;			// Collection of child processes
 	process_map_lock_t					m_childlock;		// Synchronization object
+	ScalarCondition<bool>				m_nochildren;		// "No Children" condition variable
 
 	// Memory
 	//

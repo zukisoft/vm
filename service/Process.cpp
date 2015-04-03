@@ -79,7 +79,7 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 	const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
 	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), 
 	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), 
-	m_rootdir(rootdir), m_workingdir(workingdir)
+	m_rootdir(rootdir), m_workingdir(workingdir), m_nochildren(true)
 {
 	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
 
@@ -241,6 +241,9 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		process_map_lock_t::scoped_lock writer(m_childlock);
 		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId,
 			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, childtermsig, m_rootdir, m_workingdir));
+
+		// Reset the condition variable indicating that there are no children as there now is one
+		m_nochildren = false;
 
 		// Verify that the new Process instance was added to the collection and return the shared_ptr
 		if(!emplaced.second) throw Exception(E_PROCESSDUPLICATEPID, pid, m_pid);
@@ -525,6 +528,16 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	// If this was the last thread in the process, the process is exiting normally
 	if(m_threads.size() == 0) NotifyParent(Waitable::State::Exited, exitcode);
 
+	// If the parent of this process is set to SA_NOCLDWAIT or ignores SIGCHLD, this
+	// process doesn't need to become a zombie and can remove itself from the process group
+	auto parent = m_parent.lock();
+	if(parent) {
+
+		auto sigchild = parent->SignalAction[LINUX_SIGCHLD];
+		if((sigchild.sa_flags & LINUX_SA_NOCLDWAIT) || (sigchild.sa_handler = LINUX_SIG_IGN)) {
+		}
+
+	}
 	// TODO:
 	// process becomes a zombie unless parent is set to SA_NOCLDWAIT or ignores SIGCHLD
 }
@@ -793,6 +806,8 @@ void Process::putNativeThreadProc(const void* value)
 
 void Process::NotifyParent(Waitable::State state, int32_t status)
 {
+	bool autoreap = false;				// Process auto-reap flag
+
 	// Attempt to acquire a reference to the parent process and ensure that it hasn't
 	// been set up as a self-referential parent instance
 	std::shared_ptr<Process> parent = m_parent.lock();
@@ -809,7 +824,10 @@ void Process::NotifyParent(Waitable::State state, int32_t status)
 			// Send termination signal to parent if not disabled via SA_NOCLDWAIT
 			if((state == State::Exited) || (state == State::Killed) || (state == State::Dumped)) {
 
-				if((sigaction.sa_flags & LINUX_SA_NOCLDWAIT) == 0) signal = m_termsignal;
+				// If the SA_NOCLDWAIT flag is specified for SIGCHLD, the process can automatically
+				// reap itself, otherwise the parent has to do it after a wait operation
+				autoreap = ((sigaction.sa_flags & LINUX_SA_NOCLDWAIT) == LINUX_SA_NOCLDWAIT);
+				if(!autoreap) signal = m_termsignal;
 			}
 
 			// State::Trapped / State::Stopped / State::Continued
@@ -829,8 +847,16 @@ void Process::NotifyParent(Waitable::State state, int32_t status)
 	// this is done whether or not SIGCHLD was sent to the parent above
 	Waitable::NotifyStateChange(m_pid, state, status);
 
-	// todo: send back a boolean flag if the process should be reaped or not,
-	// need to tell the parent, the process group and the VM?
+	// If the process can be automatically reaped without a wait, do it here
+	if(autoreap) {
+		
+		// todo: this needs some work, but ok for now
+		// will need to check for a 'subreaper' eventually too
+		process_map_lock_t::scoped_lock writer(parent->m_childlock);
+		parent->m_vm->RemoveProcess(m_pid);
+		parent->m_children.erase(m_pid);
+		if(parent->m_children.size() == 0) parent->m_nochildren = true;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1431,13 +1457,15 @@ void Process::UnmapMemory(const void* address, size_t length)
 
 uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status, int options, uapi::siginfo* siginfo, uapi::rusage* rusage)
 {
-	//
-	// TODO: IF THIS PROCESS HAS SIGCHLD IGNORED OR SET SPECIFICALLY, A
-	// CALL TO WAITCHILD DOES NOT RETURN UNTIL ALL CHILDREN HAVE DIED
-	//
-	// what does that mean for this, does a child need to check its
-	// parent's signal disposition for this and then remove itself? 
-	//
+	// If this process has specifically set SIGCHLD to ignored or has set SA_NOCLDWAIT
+	// in the flags, WaitChild() only returns once there are no children left in this process
+	uapi::sigaction sigchld = m_sigactions->Get(LINUX_SIGCHLD);
+	if((sigchld.sa_handler == LINUX_SIG_IGN) || (sigchld.sa_flags & LINUX_SA_NOCLDWAIT)) {
+
+		// Wait until there are no more child processes and always result with ECHILD
+		m_nochildren.WaitUntil(true);
+		throw LinuxException(LINUX_ECHILD);
+	}
 
 	// Create a collection of waitable objects to operate against, ECHILD if none
 	std::vector<std::shared_ptr<Waitable>> objects = CollectWaitables(type, id, options);
@@ -1463,6 +1491,7 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 		process_map_lock_t::scoped_lock writer(m_childlock);
 		m_vm->RemoveProcess(l_siginfo.linux_si_pid);
 		m_children.erase(l_siginfo.linux_si_pid);
+		if(m_children.size() == 0) m_nochildren = true;
 	}
 
 	// Optionally return the child process exit code and the signal information
