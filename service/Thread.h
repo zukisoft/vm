@@ -166,12 +166,6 @@ public:
 	__declspec(property(get=getNativeThreadId)) DWORD NativeThreadId;
 	DWORD getNativeThreadId(void) const;
 
-	// Process
-	//
-	// Gets a reference to the parent Process instance
-	__declspec(property(get=getProcess)) std::shared_ptr<::Process> Process;
-	std::shared_ptr<::Process> getProcess(void) const;
-
 	// SignalAlternateStack
 	//
 	// Gets the alternate stack for signal handlers

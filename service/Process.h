@@ -57,7 +57,10 @@
 //-----------------------------------------------------------------------------
 // Process
 //
-// Process represents a virtual machine process/thread group instance
+// Process represents a virtual machine process/thread group instance.
+//
+// TODO: This class absolutely needs documentation, it's become very large
+// and complicated in places.
 
 class Process : public Waitable, public std::enable_shared_from_this<Process>
 {
@@ -344,6 +347,11 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
+
+	// ClearThreads
+	//
+	// Removes all threads from the process
+	void ClearThreads(void);
 
 	// Clone<Architecture>
 	//

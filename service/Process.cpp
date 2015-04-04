@@ -96,11 +96,8 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 
 Process::~Process()
 {
-	// Release all held references to child Thread instances
-	m_threads.clear();
-
-	// Release the PID
-	m_vm->ReleasePID(m_pid);
+	ClearThreads();					// Terminate/remove all threads
+	m_vm->ReleasePID(m_pid);		// Release the process PID
 }
 
 //-----------------------------------------------------------------------------
@@ -142,6 +139,34 @@ int Process::AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle
 ::Architecture Process::getArchitecture(void) const
 {
 	return m_architecture;
+}
+
+//-----------------------------------------------------------------------------
+// Process::ClearThreads (private)
+//
+// Removes all threads from the process
+//
+// Arguments:
+//
+//	NONE
+
+void Process::ClearThreads(void)
+{
+	// Take an exclusive lock against the threads collection
+	thread_map_lock_t::scoped_lock writer(m_threadslock);
+
+	// Iterate over the collection of threads and remove all of them
+	for(const auto& iterator : m_threads) {
+
+		// Terminate the thread if its still active
+		iterator.second->Terminate(LINUX_SIGTERM);
+
+		// If the thread TID does not match the process PID, release it
+		uapi::pid_t tid = iterator.second->ThreadId;
+		if(tid != m_pid) m_vm->ReleasePID(tid);
+	}
+
+	m_threads.clear();			// Remove all threads
 }
 
 //-----------------------------------------------------------------------------
@@ -443,14 +468,13 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 	auto thread = ::NativeHandle::FromHandle(CreateRemoteThread(m_process->Handle, nullptr, SystemInformation::AllocationGranularity, 
 		reinterpret_cast<LPTHREAD_START_ROUTINE>(m_threadproc), nullptr, CREATE_SUSPENDED, &threadid));
 
+	//
+	// TODO: WHAT HAPPENS TO CHILD PROCESSES DURING EXECVE()?
+	//
+
 	try {
 
-		// Take an exclusive lock against the threads collection
-		thread_map_lock_t::scoped_lock writer(m_threadslock);
-
-		// Terminate all existing threads and clear out the local collection
-		for(const auto& iterator : m_threads) iterator.second->Terminate(0);
-		m_threads.clear();
+		ClearThreads();					// Terminate and remove all existing threads
 
 		try {
 		
@@ -523,6 +547,8 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
 
 	// Remove the Thread instance from the collection
+	uapi::pid_t tid = iterator->second->ThreadId;
+	if(tid != m_pid) m_vm->ReleasePID(tid);
 	m_threads.erase(iterator);
 
 	// If this was the last thread in the process, the process is exiting normally
@@ -960,7 +986,13 @@ void Process::RundownThread(const std::shared_ptr<::Thread>& thread)
 	while(iterator != m_threads.end()) {
 
 		// Remove the thread from the collection
-		if(thread == iterator->second) iterator = m_threads.erase(iterator);
+		if(thread == iterator->second) {
+			
+			uapi::pid_t tid = iterator->second->ThreadId;
+			if(tid != m_pid) m_vm->ReleasePID(tid);
+			iterator = m_threads.erase(iterator);
+		}
+
 		else ++iterator;
 	}
 
@@ -1462,7 +1494,7 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 	uapi::sigaction sigchld = m_sigactions->Get(LINUX_SIGCHLD);
 	if((sigchld.sa_handler == LINUX_SIG_IGN) || (sigchld.sa_flags & LINUX_SA_NOCLDWAIT)) {
 
-		// Wait until there are no more child processes and always result with ECHILD
+		// Wait until there are no more child processes and throw ECHILD
 		m_nochildren.WaitUntil(true);
 		throw LinuxException(LINUX_ECHILD);
 	}
@@ -1473,7 +1505,7 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 
 	// todo: Waitable can be pulled into Process now
 	uapi::siginfo l_siginfo;
-	std::shared_ptr<Process> result = std::dynamic_pointer_cast<Process>(Waitable::Wait(objects, options, &l_siginfo));
+	std::shared_ptr<Process> result = std::static_pointer_cast<Process>(Waitable::Wait(objects, options, &l_siginfo));
 
 	// Check if a child object was successfully waited on and returned
 	if(result == nullptr) {

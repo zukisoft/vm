@@ -628,6 +628,7 @@ void Thread::Terminate(int exitcode)
 	WaitForSingleObject(m_thread->Handle, INFINITE);
 
 	// todo: what should be done with the exit code now?
+	// todo: need to do all the things Exit() needs to do; what good is Exit() going to be?
 }
 
 //-----------------------------------------------------------------------------
