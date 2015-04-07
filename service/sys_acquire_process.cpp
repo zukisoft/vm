@@ -34,11 +34,12 @@
 // Arguments:
 //
 //	rpchandle		- RPC binding handle
+//	tid				- [in] native thread identifier of the process main thread
 //	threadproc		- [in] address of the thread creation entry point
 //	process			- [out] set to the process startup information
 //	context			- [out] set to the newly allocated context handle
 
-HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32_process_t* process, sys32_context_exclusive_t* context)
+HRESULT sys32_acquire_process(handle_t rpchandle, sys32_uint_t tid, sys32_addr_t threadproc, sys32_process_t* process, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
 	Context*					handle = nullptr;	// System call context handle
@@ -68,7 +69,8 @@ HRESULT sys32_acquire_process(handle_t rpchandle, sys32_addr_t threadproc, sys32
 		if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 		
 		// Use the process virtual PID to locate the thread, the first thread will match
-		auto thread = proc->Thread[proc->ProcessId];
+		//auto thread = proc->Thread[proc->ProcessId];
+		auto thread = proc->AttachThread(tid);
 		if(thread == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
 		// Set the provided address as the native thread entry point for the process

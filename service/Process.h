@@ -79,6 +79,9 @@ public:
 	int AddHandle(const std::shared_ptr<FileSystem::Handle>& handle);
 	int AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle);
 
+	// TODO
+	std::shared_ptr<::Thread> AttachThread(DWORD nativetid);
+
 	// Clone
 	//
 	// Clones this process into a new child process
@@ -216,23 +219,11 @@ public:
 	__declspec(property(get=getLocalDescriptorTable)) const void* LocalDescriptorTable;
 	const void* getLocalDescriptorTable(void) const;
 
-	// NativeHandle
-	//
-	// Gets the native handle for the process
-	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
-	HANDLE getNativeHandle(void) const;
-
 	// NativeProcessId
 	//
 	// Gets the native operating system process identifier
 	__declspec(property(get=getNativeProcessId)) DWORD NativeProcessId;
 	DWORD getNativeProcessId(void) const;
-
-	// NativeThread
-	//
-	// Gets a Thread instance by native thread identifier
-	__declspec(property(get=getNativeThread)) std::shared_ptr<Thread> NativeThread[];
-	std::shared_ptr<::Thread> getNativeThread(DWORD tid);
 
 	// NativeThreadProc
 	//
@@ -333,15 +324,14 @@ private:
 	// Instance Constructors
 	//
 	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-		const void* programbreak, const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
+		Bitmap&& ldtslots, const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-		const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
-		const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-		const std::shared_ptr<FileSystem::Alias>& workingdir);
+		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
+		Bitmap&& ldtslots, const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
+		int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 	const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	friend class std::_Ref_count_obj<Process>;
 
@@ -400,11 +390,22 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
+	// TESTING
+	std::unique_ptr<NativeProcess>		m_host;				// Native process instance
+	//std::unique_ptr<TaskState>			m_task;				// Initial process task
+	////ScalarCondition<DWORD>				m_attached;			// Condition when thread attaches
+
+	std::condition_variable			m_attach;
+	std::mutex						m_attachlock;
+	std::map<DWORD, std::unique_ptr<TaskState>> m_attachpending;
+
+	//
+
 	std::shared_ptr<VirtualMachine>		m_vm;				// Virtual machine instance
 	const ::Architecture				m_architecture;		// Process architecture
 	const uapi::pid_t					m_pid;				// Process identifier
-	std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
-	const DWORD							m_processid;		// Native process identifier
+	//std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
+	//const DWORD							m_processid;		// Native process identifier
 
 	// Parent and Children
 	//

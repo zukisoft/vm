@@ -67,7 +67,8 @@ HRESULT sys32_acquire_thread(handle_t rpchandle, sys32_uint_t tid, sys32_thread_
 		if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 		
 		// Use the native thread identifier to locate the thread within the process
-		auto thd = proc->NativeThread[tid];
+		//auto thd = proc->NativeThread[tid];
+		auto thd = proc->AttachThread(tid);
 		if(thd == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
 		// Acquire the initial task information for the thread

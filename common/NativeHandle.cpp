@@ -39,7 +39,7 @@ NativeHandle::NativeHandle(HANDLE handle) : m_handle(handle) {}
 
 NativeHandle::~NativeHandle()
 {
-	CloseHandle(m_handle);
+	if(m_handle) CloseHandle(m_handle);
 }
 
 //-----------------------------------------------------------------------------

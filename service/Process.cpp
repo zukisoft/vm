@@ -34,22 +34,21 @@
 //	architecture	- Process architecture
 //	pid				- Virtual process identifier
 //	parent			- Parent Process instance
-//	process			- Native process handle
-//	processid		- Native process identifier
+//	host			- NativeProcess instance
+//	task			- TaskState for the initial process thread
 //	memory			- ProcessMemory virtual memory manager
 //	ldt				- Address of allocated local descriptor table
 //	ldtslots		- Local descriptor table allocation bitmap
 //	programbreak	- Address of initial program break
-//	mainthread		- Main/initial process thread instance
 //	termsignal		- Signal to send to parent on termination
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
 Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-	const void* programbreak, const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-	const std::shared_ptr<FileSystem::Alias>& workingdir) : Process(vm, architecture, pid, parent, process, processid, std::move(memory), ldt, 
-	std::move(ldtslots), programbreak, ProcessHandles::Create(), SignalActions::Create(), mainthread, termsignal, rootdir, workingdir) {}
+	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+	const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
+	Process(vm, architecture, pid, parent, std::move(host), std::move(task), std::move(memory), ldt, std::move(ldtslots), programbreak, 
+	ProcessHandles::Create(), SignalActions::Create(), termsignal, rootdir, workingdir) {}
 
 //-----------------------------------------------------------------------------
 // Process Constructor
@@ -60,35 +59,27 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 //	architecture	- Process architecture
 //	pid				- Virtual process identifier
 //	parent			- Parent Process instance
-//	process			- Native process handle
-//	processid		- Native process identifier
+//	host			- NativeProcess instance
+//	task			- TaskState for the initial process thread
 //	memory			- ProcessMemory virtual memory manager
 //	ldt				- Address of allocated local descriptor table
 //	ldtslots		- Local descriptor table allocation bitmap
 //	programbreak	- Address of initial program break
 //	handles			- Initial file system handles collection
 //	sigactions		- Initial set of signal actions
-//	mainthread		- Main/initial process thread instance
 //	termsignal		- Signal to send to parent on termination
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
 Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	const std::shared_ptr<::NativeHandle>& process, DWORD processid, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
-	const std::shared_ptr<::Thread>& mainthread, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) 
-	: m_vm(vm), m_architecture(architecture), m_pid(pid), m_parent(parent), m_process(process), m_processid(processid), m_memory(std::move(memory)), 
-	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), 
-	m_rootdir(rootdir), m_workingdir(workingdir), m_nochildren(true)
+	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
+	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, int termsignal, 
+	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : m_vm(vm), m_architecture(architecture), 
+	m_pid(pid), m_parent(parent), m_host(std::move(host)), m_memory(std::move(memory)), m_ldt(ldt), m_ldtslots(std::move(ldtslots)), 
+	m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), m_rootdir(rootdir), m_workingdir(workingdir), 
+	m_threadproc(nullptr), m_nochildren(true) 
 {
-	_ASSERTE(pid == mainthread->ThreadId);		// PID and main thread TID should match
-
-	// The address of the thread entry point must be provided by the host process
-	// when it acquires the RPC process/thread context handle
-	m_threadproc = nullptr;
-
-	// Initialize the threads collection with just the main thread instance
-	m_threads[mainthread->ThreadId] = std::move(mainthread);
+	m_attachpending.emplace(m_host->ThreadId, std::move(task));
 }
 
 //-----------------------------------------------------------------------------
@@ -257,15 +248,15 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		std::shared_ptr<Process> childparent = (flags & LINUX_CLONE_PARENT) ? this->Parent : shared_from_this();
 
 		// Create the main thread instance for the child process
-		std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId, std::move(task));
+		//std::shared_ptr<::Thread> childthread = ::Thread::FromNativeHandle<architecture>(pid, childhost->Process, childhost->Thread, childhost->ThreadId, std::move(task));
 
 		// Determine the child termination signal from the low byte of the flags
 		int childtermsig = (flags & 0xFF);
 
 		// Construct and insert a new Process instance to the child collection
 		process_map_lock_t::scoped_lock writer(m_childlock);
-		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(m_vm, m_architecture, pid, childparent, childhost->Process, childhost->ProcessId,
-			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childthread, childtermsig, m_rootdir, m_workingdir));
+		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(m_vm, m_architecture, pid, childparent, std::move(childhost), std::move(task),
+			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childtermsig, m_rootdir, m_workingdir));
 
 		// Reset the condition variable indicating that there are no children as there now is one
 		m_nochildren = false;
@@ -465,7 +456,8 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 
 	// Create a new thread in the process using the address provided at process registration.  Use the minimum
 	// allowed thread stack size, it will be overcome by the stack allocated below
-	auto thread = ::NativeHandle::FromHandle(CreateRemoteThread(m_process->Handle, nullptr, SystemInformation::AllocationGranularity, 
+
+	auto thread = ::NativeHandle::FromHandle(CreateRemoteThread(m_host->Process->Handle, nullptr, SystemInformation::AllocationGranularity, 
 		reinterpret_cast<LPTHREAD_START_ROUTINE>(m_threadproc), nullptr, CREATE_SUSPENDED, &threadid));
 
 	//
@@ -514,10 +506,17 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 			m_programbreak = loaded.ProgramBreak;
 
 			// Make the new thread inherit the process pid and become the thread group leader
-			m_threads.emplace(m_pid, Thread::FromNativeHandle<architecture>(m_pid, m_process, thread, threadid, 
-				TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer)));
+			//m_threads.emplace(m_pid, Thread::FromNativeHandle<architecture>(m_pid, m_host, thread, threadid, 
+			//	TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer)));
 
 			ResumeInternal();		// Resume the process; this will start the thread as well
+
+			std::unique_lock<std::mutex> critsec(m_attachlock);
+			m_attachpending[threadid] = TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer);
+			m_attach.wait(critsec, [&]() -> bool { return m_attachpending.count(threadid) == 0; });
+
+			// TODO: TIMEOUT
+			//m_attached.WaitUntil(threadid);
 		}
 
 		// Kill the entire process on exception, use SIGKILL as the exit code
@@ -525,7 +524,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 	}
 
 	// Kill just the newly created remote thread on exception
-	catch(...) { TerminateThread(thread->Handle, uapi::MakeExitCode(0, LINUX_SIGKILL)); throw; }
+	catch(...) { /* TODO: PUT ME BACK */ /*TerminateThread(thread->Handle, uapi::MakeExitCode(0, LINUX_SIGKILL)); */ throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -547,7 +546,6 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
 
 	// Remove the Thread instance from the collection
-	uapi::pid_t tid = iterator->second->ThreadId;
 	if(tid != m_pid) m_vm->ReleasePID(tid);
 	m_threads.erase(iterator);
 
@@ -606,9 +604,9 @@ void Process::GetResourceUsage(int who, uapi::rusage* rusage)
 	if((who == LINUX_RUSAGE_BOTH) || (who == LINUX_RUSAGE_SELF)) {
 
 		// Attempt to acquire the necessary information for this process
-		if(!GetProcessTimes(m_process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
-		if(!GetProcessMemoryInfo(m_process->Handle, &memory, sizeof(PROCESS_MEMORY_COUNTERS))) throw Win32Exception();
-		if(!GetProcessIoCounters(m_process->Handle, &io)) throw Win32Exception();
+		if(!GetProcessTimes(m_host->Process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
+		if(!GetProcessMemoryInfo(m_host->Process->Handle, &memory, sizeof(PROCESS_MEMORY_COUNTERS))) throw Win32Exception();
+		if(!GetProcessIoCounters(m_host->Process->Handle, &io)) throw Win32Exception();
 
 		// Tally the acquired information, directly into the structure when possible
 		totalkernel += (static_cast<uint64_t>(kernel.dwHighDateTime) << 32) + kernel.dwLowDateTime;
@@ -627,9 +625,9 @@ void Process::GetResourceUsage(int who, uapi::rusage* rusage)
 		for(const auto& iterator : m_children) {
 
 			// Attempt to acquire the necessary information about the child process
-			if(!GetProcessTimes(iterator.second->m_process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
-			if(!GetProcessMemoryInfo(iterator.second->m_process->Handle, &memory, sizeof(PROCESS_MEMORY_COUNTERS))) throw Win32Exception();
-			if(!GetProcessIoCounters(iterator.second->m_process->Handle, &io)) throw Win32Exception();
+			if(!GetProcessTimes(iterator.second->m_host->Process->Handle, &creation, &exit, &kernel, &user)) throw Win32Exception();
+			if(!GetProcessMemoryInfo(iterator.second->m_host->Process->Handle, &memory, sizeof(PROCESS_MEMORY_COUNTERS))) throw Win32Exception();
+			if(!GetProcessIoCounters(iterator.second->m_host->Process->Handle, &io)) throw Win32Exception();
 
 			// Tally the acquired information, directly into the structure when possible
 			totalkernel += (static_cast<uint64_t>(kernel.dwHighDateTime) << 32) + kernel.dwLowDateTime;
@@ -768,36 +766,13 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 }
 
 //-----------------------------------------------------------------------------
-// Process::getNativeHandle
-//
-// Gets the native operating system handle for this process
-
-HANDLE Process::getNativeHandle(void) const
-{
-	return m_process->Handle;
-}
-
-//-----------------------------------------------------------------------------
 // Process::getNativeProcessId
 //
 // Gets the native operating system process identifier
 
 DWORD Process::getNativeProcessId(void) const
 {
-	return m_processid;
-}
-
-//-----------------------------------------------------------------------------
-// Process::getThread
-//
-// Gets a Thread instance from its native thread identifier
-
-std::shared_ptr<Thread> Process::getNativeThread(DWORD tid)
-{
-	thread_map_lock_t::scoped_lock_read reader(m_threadslock);
-
-	for(const auto& iterator : m_threads) if(iterator.second->NativeThreadId == tid) return iterator.second;
-	return nullptr;
+	return m_host->ProcessId;
 }
 
 //-----------------------------------------------------------------------------
@@ -1027,7 +1002,7 @@ void Process::Resume(void)
 
 void Process::ResumeInternal(void) const
 {
-	NTSTATUS result = NtApi::NtResumeProcess(m_process->Handle);
+	NTSTATUS result = NtApi::NtResumeProcess(m_host->Process->Handle);
 	if(result != 0) throw StructuredException(result);
 }
 
@@ -1346,12 +1321,12 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
 
 		// Create a Thread instance for the main thread of the new process, using a new TaskState
-		std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
-			TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
+		//std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
+		//	TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
 
 		// Construct and return the new Process instance
-		return std::make_shared<Process>(vm, architecture, pid, parent, host->Process, host->ProcessId, std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), 
-			loaded.ProgramBreak, mainthread, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
+		return std::make_shared<Process>(vm, architecture, pid, parent, std::move(host), TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer), 
+			std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), loaded.ProgramBreak, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
 	}
 
 	// Terminate the created host process on exception
@@ -1370,6 +1345,38 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 void Process::Start(void)
 {
 	ResumeInternal();
+	//m_attached.WaitUntil(m_host->ThreadId);
+
+	// todo: wait until somebody pops out the task state
+	std::unique_lock<std::mutex> critsec(m_attachlock);
+	if(m_attachpending.count(m_host->ThreadId) == 0) return;
+	m_attach.wait(critsec, [&]() -> bool { return m_attachpending.count(m_host->ThreadId) == 0; });
+}
+
+std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
+{
+	// Attempt to open a new NativeHandle with THREAD_ALL_ACCESS against the provided thread identifier
+	std::shared_ptr<NativeHandle> handle = NativeHandle::FromHandle(OpenThread(THREAD_ALL_ACCESS, FALSE, nativetid));
+	if(handle->Handle == nullptr) throw LinuxException(LINUX_ESRCH);
+
+	// Allocate a thread identifier for the new Thread instance; if this is the main
+	// thread for the process it is assigned the same value as the process identifier
+	uapi::pid_t tid = (nativetid == m_host->ThreadId) ? m_pid : m_vm->AllocatePID();
+
+	std::unique_lock<std::mutex> critsec(m_attachlock);
+	auto iterator = m_attachpending.find(nativetid);
+	if(iterator == m_attachpending.end()) throw LinuxException(LINUX_ESRCH);
+
+	thread_map_lock_t::scoped_lock writer(m_threadslock);
+	auto thread = Thread::Create(shared_from_this(), tid, handle, nativetid, std::move(iterator->second));
+	m_threads.emplace(tid, thread);
+
+	m_attachpending.erase(iterator);
+
+	// caller will need to wait to find the TaskState popped off?
+	m_attach.notify_all();
+
+	return thread;
 }
 
 //-----------------------------------------------------------------------------
@@ -1398,7 +1405,7 @@ void Process::Suspend(void)
 
 void Process::SuspendInternal(void) const
 {
-	NTSTATUS result = NtApi::NtSuspendProcess(m_process->Handle);
+	NTSTATUS result = NtApi::NtSuspendProcess(m_host->Process->Handle);
 	if(result != 0) throw StructuredException(result);
 }
 
@@ -1414,8 +1421,8 @@ void Process::SuspendInternal(void) const
 void Process::Terminate(int exitcode)
 {
 	// Terminate the process and wait for it to actually exit
-	TerminateProcess(m_process->Handle, exitcode);
-	WaitForSingleObject(m_process->Handle, INFINITE);
+	TerminateProcess(m_host->Process->Handle, exitcode);
+	WaitForSingleObject(m_host->Process->Handle, INFINITE);
 
 	// Signal that the process has been terminated
 	NotifyParent((exitcode & 0x80) ? Waitable::State::Dumped : Waitable::State::Killed, exitcode);

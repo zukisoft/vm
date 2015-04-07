@@ -151,7 +151,7 @@ interface SystemCalls32
 	// sys32_acquire_process (synchronous)
 	//
 	// Allocates a new context handle and startup information for a process
-	HRESULT sys32_acquire_process([in] sys32_addr_t threadproc, [out, ref] sys32_process_t* process, [out, ref] sys32_context_exclusive_t* context);
+	HRESULT sys32_acquire_process([in] sys32_uint_t tid, [in] sys32_addr_t threadproc, [out, ref] sys32_process_t* process, [out, ref] sys32_context_exclusive_t* context);
 
 	// sys32_acquire_thread (synchronous)
 	//

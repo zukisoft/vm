@@ -39,6 +39,8 @@
 #include "VirtualMachine.h"
 #include "Win32Exception.h"
 
+class Process;
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -94,9 +96,12 @@ public:
 	// FromNativeHandle
 	//
 	// Creates a new Thread instance from a native operating system handle
-	template<Architecture architecture>
-	static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
-		DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
+	//template<Architecture architecture>
+	//static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
+	//	DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
+
+	static std::shared_ptr<Thread> Create(const std::shared_ptr<::Process>& process, uapi::pid_t tid, 
+		const std::shared_ptr<NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
 
 	// PopInitialTask
 	//
@@ -250,7 +255,7 @@ private:
 
 	// Instance Constructor
 	//
-	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
+	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
 		std::unique_ptr<TaskState>&& initialtask);
 	friend class std::_Ref_count_obj<Thread>;
 
@@ -282,7 +287,8 @@ private:
 
 	const uapi::pid_t					m_tid;				// Thread identifier
 	const ::Architecture				m_architecture;		// Thread architecture
-	std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
+	//std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
+	std::shared_ptr<::Process>			m_process;
 	std::shared_ptr<::NativeHandle>		m_thread;			// Native thread handle
 	const DWORD							m_threadid;			// Native thread id
 	std::unique_ptr<TaskState>			m_initialtask;		// Initial task state

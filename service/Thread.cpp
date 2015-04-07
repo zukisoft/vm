@@ -22,22 +22,23 @@
 
 #include "stdafx.h"
 #include "Thread.h"
+#include "Process.h"
 
 #pragma warning(push, 4)
 
-// Thread::FromNativeHandle<Architecture::x86>
+//// Thread::FromNativeHandle<Architecture::x86>
+////
+//// Explicit Instantiation of template function
+//template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, 
+//	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
 //
-// Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, 
-	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
-
-#ifdef _M_X64
-// Thread::FromNativeHandle<Architecture::x86_64>
-//
-// Explicit Instantiation of template function
-template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, 
-	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
-#endif
+//#ifdef _M_X64
+//// Thread::FromNativeHandle<Architecture::x86_64>
+////
+//// Explicit Instantiation of template function
+//template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(uapi::pid_t pid, const std::shared_ptr<::NativeHandle>& process, 
+//	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
+//#endif
 
 //-----------------------------------------------------------------------------
 // Thread Constructor (private)
@@ -51,7 +52,7 @@ template std::shared_ptr<Thread> Thread::FromNativeHandle<Architecture::x86_64>(
 //	threadid		- Native thread identifier
 //	initialtask		- Initial thread task information
 
-Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
+Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
 	std::unique_ptr<TaskState>&& initialtask) : m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid), 
 	m_initialtask(std::move(initialtask))
 {
@@ -213,13 +214,15 @@ void Thread::ProcessQueuedSignal(queued_signal_t signal)
 	//  ... more stuff follows
 	uint32_t signo = signal.first;
 	stackpointer -= sizeof(uint32_t);
-	NtApi::NtWriteVirtualMemory(m_process->Handle, reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t), nullptr);
+	//NtApi::NtWriteVirtualMemory(m_process->Handle, reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t), nullptr);
+	m_process->WriteMemory(reinterpret_cast<void*>(stackpointer), &signo, sizeof(uint32_t));
 	
 	if(signal.second.sa_flags & LINUX_SA_RESTORER) {
 
 		// write the sa_restorer pointer to the stack
 		stackpointer -= sizeof(uint32_t);
-		NtApi::NtWriteVirtualMemory(m_process->Handle, reinterpret_cast<void*>(stackpointer), &signal.second.sa_restorer, sizeof(uint32_t), nullptr);
+		m_process->WriteMemory(reinterpret_cast<void*>(stackpointer), &signal.second.sa_restorer, sizeof(uint32_t));
+		//NtApi::NtWriteVirtualMemory(m_process->Handle, reinterpret_cast<void*>(stackpointer), &signal.second.sa_restorer, sizeof(uint32_t), nullptr);
 	}
 	
 	newstate->StackPointer = reinterpret_cast<void*>(stackpointer);
@@ -352,11 +355,17 @@ void Thread::Exit(int exitcode)
 //	threadid		- Native thread identifier
 //	initialtask		- Initial task for the thread
 
-template<Architecture architecture>
-std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
+//template<Architecture architecture>
+//std::shared_ptr<Thread> Thread::FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
+//	DWORD threadid, std::unique_ptr<TaskState>&& initialtask)
+//{
+//	return std::make_shared<Thread>(tid, architecture, process, thread, threadid, std::move(initialtask));
+//}
+
+std::shared_ptr<Thread> Thread::Create(const std::shared_ptr<::Process>& process, uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& thread, 
 	DWORD threadid, std::unique_ptr<TaskState>&& initialtask)
 {
-	return std::make_shared<Thread>(tid, architecture, process, thread, threadid, std::move(initialtask));
+	return std::make_shared<Thread>(tid, process->Architecture, process, thread, threadid, std::move(initialtask));
 }
 
 //-----------------------------------------------------------------------------
