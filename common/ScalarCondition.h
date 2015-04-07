@@ -24,6 +24,7 @@
 #define __SCALARCONDITION_H_
 #pragma once
 
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 
@@ -66,7 +67,7 @@ public:
 
 	// WaitUntil
 	//
-	// Waits until the value has been set to the specified value
+	// Waits indefinitely until the value has been set to the specified value
 	void WaitUntil(const _type& value)
 	{
 		std::unique_lock<std::mutex> critsec(m_lock);
@@ -74,6 +75,19 @@ public:
 		// If the value does not already match the provided value, wait for it
 		if(m_value == value) return;
 		m_condition.wait(critsec, [&]() -> bool { return m_value == value; });
+	}
+
+	// WaitUntil
+	//
+	// Waits until the value has been set to the specified value
+	bool WaitUntil(const _type& value, uint32_t timeoutms)
+	{
+		std::unique_lock<std::mutex> critsec(m_lock);
+
+		// If the value does not already match the provided value, wait for it
+		if(m_value == value) return true;
+		return m_condition.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(timeoutms), 
+			[&]() -> bool { return m_value == value; });
 	}
 
 private:
