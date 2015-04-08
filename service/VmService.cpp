@@ -787,7 +787,8 @@ void VmService::OnStart(int, LPTSTR*)
 #ifdef _M_X64
 		SetProperty(Properties::HostProcessBinary64, process_host_64bit);
 #endif
-		SetProperty(Properties::ThreadStackSize, "2097152");	// 2MiB
+		SetProperty(Properties::ThreadStackSize, "2097152");	// 2 MiB
+		SetProperty(Properties::ThreadAttachTimeout, "15000");	// 15 seconds
 
 		//
 		// SYSTEM LOG

@@ -148,15 +148,15 @@ interface SystemCalls32
 	// the handle points to does not need to be changed by an interface method
 	typedef [context_handle] sys32_context_exclusive_t sys32_context_t;
 
-	// sys32_acquire_process (synchronous)
+	// sys32_attach_process (synchronous)
 	//
 	// Allocates a new context handle and startup information for a process
-	HRESULT sys32_acquire_process([in] sys32_uint_t tid, [in] sys32_addr_t threadproc, [out, ref] sys32_process_t* process, [out, ref] sys32_context_exclusive_t* context);
+	HRESULT sys32_attach_process([in] sys32_uint_t tid, [in] sys32_addr_t threadproc, [out, ref] sys32_process_t* process, [out, ref] sys32_context_exclusive_t* context);
 
-	// sys32_acquire_thread (synchronous)
+	// sys32_attach_thread (synchronous)
 	//
 	// Allocates a new context handle and startup information for a thread
-	HRESULT sys32_acquire_thread([in] sys32_uint_t tid, [out, ref] sys32_thread_t* thread, [out, ref] sys32_context_exclusive_t* context);
+	HRESULT sys32_attach_thread([in] sys32_uint_t tid, [out, ref] sys32_thread_t* thread, [out, ref] sys32_context_exclusive_t* context);
 
 	// sys32_trace
 	//

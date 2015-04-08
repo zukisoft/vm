@@ -82,6 +82,7 @@ public:
 #endif
 
 		ThreadStackSize,			// Default size of a new thread stack
+		ThreadAttachTimeout,		// Timeout, in milliseconds for a thread to attach
 	};
 	
 	// PROCESSID_INIT

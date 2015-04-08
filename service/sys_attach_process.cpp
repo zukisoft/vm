@@ -27,7 +27,7 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// sys32_acquire_process
+// sys32_attach_process
 //
 // Acquires the process context for a 32-bit host
 //
@@ -39,7 +39,7 @@
 //	process			- [out] set to the process startup information
 //	context			- [out] set to the newly allocated context handle
 
-HRESULT sys32_acquire_process(handle_t rpchandle, sys32_uint_t tid, sys32_addr_t threadproc, sys32_process_t* process, sys32_context_exclusive_t* context)
+HRESULT sys32_attach_process(handle_t rpchandle, sys32_uint_t tid, sys32_addr_t threadproc, sys32_process_t* process, sys32_context_exclusive_t* context)
 {
 	uuid_t						objectid;			// RPC object identifier
 	Context*					handle = nullptr;	// System call context handle

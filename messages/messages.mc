@@ -1290,9 +1290,23 @@ The thread stack size virtual machine property is invalid.
 
 MessageId=
 Severity=Error
+SymbolicName=E_PROCESSINVALIDTHREADTIMEOUT
+Language=English
+The thread attach timeout virtual machine property is invalid.
+.
+
+MessageId=
+Severity=Error
 SymbolicName=E_PROCESSDUPLICATEPID
 Language=English
 The provided pid (%1!d!) cannot be inserted as a child for process (%2!d!); the pid has already been added.
+.
+
+MessageId=
+Severity=Error
+SymbolicName=E_PROCESSTHREADTIMEOUT
+Language=English
+Process (%1!d!) timed out waiting for a newly created native OS thread to become attached.
 .
 
 ;//----------------------------------------------------------------------------

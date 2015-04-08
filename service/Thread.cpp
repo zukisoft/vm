@@ -45,6 +45,7 @@
 //
 // Arguments:
 //
+//	vm				- Reference to the parent VirtualMachine instance
 //	tid				- Virtual thread identifier
 //	architecture	- Process/thread architecture
 //	process			- Parent process handle
@@ -52,12 +53,22 @@
 //	threadid		- Native thread identifier
 //	initialtask		- Initial thread task information
 
-Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, const std::shared_ptr<::NativeHandle>& thread, DWORD threadid,
-	std::unique_ptr<TaskState>&& initialtask) : m_tid(tid), m_architecture(architecture), m_process(process), m_thread(thread), m_threadid(threadid), 
-	m_initialtask(std::move(initialtask))
+Thread::Thread(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, 
+	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& initialtask) : m_vm(vm), m_tid(tid), m_architecture(architecture), 
+	m_process(process), m_thread(thread), m_threadid(threadid), m_initialtask(std::move(initialtask))
 {
 	// The initial alternate signal handler stack is disabled
 	m_sigaltstack = { nullptr, LINUX_SS_DISABLE, 0 };
+}
+
+//-----------------------------------------------------------------------------
+// Thread Destructor
+
+Thread::~Thread()
+{
+	// Release the thread TID if this is not the thread group leader (having a
+	// TID that matches the parent process PID).
+	if(m_tid != m_process->ProcessId) m_vm->ReleasePID(m_tid);
 }
 
 //-----------------------------------------------------------------------------
@@ -362,10 +373,10 @@ void Thread::Exit(int exitcode)
 //	return std::make_shared<Thread>(tid, architecture, process, thread, threadid, std::move(initialtask));
 //}
 
-std::shared_ptr<Thread> Thread::Create(const std::shared_ptr<::Process>& process, uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& thread, 
-	DWORD threadid, std::unique_ptr<TaskState>&& initialtask)
+std::shared_ptr<Thread> Thread::Create(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Process>& process, uapi::pid_t tid, 
+	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& initialtask)
 {
-	return std::make_shared<Thread>(tid, process->Architecture, process, thread, threadid, std::move(initialtask));
+	return std::make_shared<Thread>(vm, tid, process->Architecture, process, thread, threadid, std::move(initialtask));
 }
 
 //-----------------------------------------------------------------------------

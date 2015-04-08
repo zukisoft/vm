@@ -140,7 +140,7 @@ DWORD WINAPI ThreadMain(void*)
 	//DWORD						exitcode;		// Thread exit code
 
 	// Attempt to acquire the task information and context handle from the server
-	HRESULT hresult = sys32_acquire_thread(g_rpcbinding, GetCurrentThreadId(), &thread, &t_rpccontext);
+	HRESULT hresult = sys32_attach_thread(g_rpcbinding, GetCurrentThreadId(), &thread, &t_rpccontext);
 	if(FAILED(hresult)) return static_cast<DWORD>(hresult);
 
 	//
@@ -197,7 +197,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR, int)
 	if(rpcresult != RPC_S_OK) return static_cast<int>(rpcresult);
 
 	// Attempt to acquire the host process information and context from the server
-	hresult = sys32_acquire_process(g_rpcbinding, GetCurrentThreadId(), reinterpret_cast<sys32_addr_t>(ThreadMain), &process, &t_rpccontext);
+	hresult = sys32_attach_process(g_rpcbinding, GetCurrentThreadId(), reinterpret_cast<sys32_addr_t>(ThreadMain), &process, &t_rpccontext);
 	if(FAILED(hresult)) return static_cast<int>(hresult);
 
 	// Set the pointer to the process-wide local descriptor table

@@ -79,7 +79,9 @@ public:
 	int AddHandle(const std::shared_ptr<FileSystem::Handle>& handle);
 	int AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle);
 
-	// TODO
+	// AttachThread
+	//
+	// Attaches a native thread to this process instance
 	std::shared_ptr<::Thread> AttachThread(DWORD nativetid);
 
 	// Clone
@@ -91,6 +93,11 @@ public:
 	//
 	// Creates a new Thread in this process
 	std::shared_ptr<Thread> CreateThread(int flags, const std::unique_ptr<TaskState>& task) const;
+
+	// DetachThread
+	//
+	// Detaches a thread from this process instance
+	void DetachThread(const std::shared_ptr<::Thread>& thread, int exitcode);
 
 	// Execute
 	//
@@ -311,6 +318,11 @@ private:
 	// Synchronization object for process_map_t
 	using process_map_lock_t = Concurrency::reader_writer_lock;
 
+	// pending_thread_map_t
+	//
+	// Collection of pending Thread instances, keyed on native thread identifier
+	using pending_thread_map_t = std::map<DWORD, std::unique_ptr<TaskState>>;
+
 	// thread_map_t
 	//
 	// Collection of contained Thread instances, keyed on the thread identifier
@@ -390,22 +402,16 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	// TESTING
-	std::unique_ptr<NativeProcess>		m_host;				// Native process instance
-	//std::unique_ptr<TaskState>			m_task;				// Initial process task
-	////ScalarCondition<DWORD>				m_attached;			// Condition when thread attaches
+	const std::shared_ptr<VirtualMachine>	m_vm;				// Virtual machine instance
+	const ::Architecture					m_architecture;		// Process architecture
+	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
+	const uapi::pid_t						m_pid;				// Process identifier
 
-	std::condition_variable			m_attach;
-	std::mutex						m_attachlock;
-	std::map<DWORD, std::unique_ptr<TaskState>> m_attachpending;
-
+	// Threads
 	//
-
-	std::shared_ptr<VirtualMachine>		m_vm;				// Virtual machine instance
-	const ::Architecture				m_architecture;		// Process architecture
-	const uapi::pid_t					m_pid;				// Process identifier
-	//std::shared_ptr<::NativeHandle>		m_process;			// Native process handle
-	//const DWORD							m_processid;		// Native process identifier
+	pending_thread_map_t				m_pendingthreads;	// Pending threads
+	std::condition_variable				m_attached;			// Condition signaling an attach
+	std::mutex							m_attachlock;		// Synchronization object
 
 	// Parent and Children
 	//

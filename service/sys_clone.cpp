@@ -49,7 +49,7 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	auto child = context->VirtualMachine->CloneProcess(parent, flags, taskstate, taskstatelen);
 
 	//
-	// TODO: CHILD IS RUNNING AT THIS POINT; RACE CONDITIONS BELOW - FIX THIS
+	// TODO: CHILD IS RUNNING; EVERYTHING BELOW IS A RACE CONDITION
 	//
 
 	// Acquire the process identifier from the newly created process object instance
@@ -79,6 +79,9 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	//
 	// Indicates that a new thread-local storage descriptor should be set for the child process/thread
 	if((flags & LINUX_CLONE_SETTLS) && tls_val) child->SetLocalDescriptor(tls_val);
+
+	// Start the child process -- NOTE thread does not exist yet if done here, CLEARTID above will crash
+	//child->Start();
 
 	// The calling process gets the new PID as the result
 	return static_cast<uapi::long_t>(newpid);

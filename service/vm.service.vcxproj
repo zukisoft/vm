@@ -650,10 +650,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ProcessMemory.cpp" />
     <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="SignalActions.cpp" />
-    <ClCompile Include="sys_acquire_process.cpp" />
+    <ClCompile Include="sys_attach_process.cpp" />
     <ClCompile Include="SystemCall.cpp" />
     <ClCompile Include="sys_access.cpp" />
-    <ClCompile Include="sys_acquire_thread.cpp" />
+    <ClCompile Include="sys_attach_thread.cpp" />
     <ClCompile Include="sys_brk.cpp" />
     <ClCompile Include="sys_clone.cpp" />
     <ClCompile Include="sys_close.cpp" />
