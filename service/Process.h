@@ -407,12 +407,6 @@ private:
 	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
 	const uapi::pid_t						m_pid;				// Process identifier
 
-	// Threads
-	//
-	pending_thread_map_t				m_pendingthreads;	// Pending threads
-	std::condition_variable				m_attached;			// Condition signaling an attach
-	std::mutex							m_attachlock;		// Synchronization object
-
 	// Parent and Children
 	//
 	std::weak_ptr<Process>				m_parent;			// Weak reference to parent
@@ -442,6 +436,12 @@ private:
 	//
 	std::shared_ptr<SignalActions>		m_sigactions;		// Signal actions
 	std::atomic<int>					m_termsignal;		// Termination signal
+
+	// Pending Threads
+	//
+	pending_thread_map_t				m_pendingthreads;	// Pending threads
+	std::condition_variable				m_attached;			// Condition signaling an attach
+	std::mutex							m_attachlock;		// Synchronization object
 
 	// Threads
 	//

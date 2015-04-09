@@ -79,7 +79,7 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 	m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), m_rootdir(rootdir), m_workingdir(workingdir), 
 	m_threadproc(nullptr), m_nochildren(true) 
 {
-	m_attachpending.emplace(m_host->ThreadId, std::move(task));
+	m_pendingthreads.emplace(m_host->ThreadId, std::move(task));
 }
 
 //-----------------------------------------------------------------------------
@@ -123,6 +123,48 @@ int Process::AddHandle(int fd, const std::shared_ptr<FileSystem::Handle>& handle
 }
 
 //-----------------------------------------------------------------------------
+// Process::AttachThread
+//
+// Attaches a newly created thread to the process instance
+//
+// Arguments:
+//
+//	nativetid		- Native OS thread identifier
+
+std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
+{
+	std::shared_ptr<::Thread>		thread;				// Attached Thread instance
+
+	// Attempt to open a new NativeHandle with THREAD_ALL_ACCESS against the provided thread identifier
+	std::shared_ptr<NativeHandle> handle = NativeHandle::FromHandle(OpenThread(THREAD_ALL_ACCESS, FALSE, nativetid));
+	if(handle->Handle == nullptr) throw LinuxException(LINUX_ESRCH, Win32Exception());
+
+	// Acquire exclusive access to the pending threads collection and condition variable
+	std::unique_lock<std::mutex> critsec(m_attachlock);
+
+	// Locate the pending thread in the collection
+	auto iterator = m_pendingthreads.find(nativetid);
+	if(iterator == m_pendingthreads.end()) throw LinuxException(LINUX_ESRCH);
+
+	// Acquire exclusive access to the active threads collection
+	thread_map_lock_t::scoped_lock writer(m_threadslock);
+
+	// Allocate a thread identifier for the new Thread instance; the first thread in the process
+	// (or a replacement main thread from Execute) inherits the process PID instead
+	uapi::pid_t tid = (m_threads.size() == 0) ? m_pid : m_vm->AllocatePID();
+
+	// Attempt to create the Thread instance, releasing the allocated PID on exception
+	try { thread = Thread::Create(m_vm, shared_from_this(), tid, handle, nativetid, std::move(iterator->second)); }
+	catch(...) { if(tid != m_pid) m_vm->ReleasePID(tid); throw; }
+
+	m_threads.emplace(tid, thread);			// Insert the new Thread
+	m_pendingthreads.erase(iterator);		// Remove pending thread entry
+	m_attached.notify_all();				// Notify pending collection changed
+
+	return thread;
+}
+
+//-----------------------------------------------------------------------------
 // Process::getArchitecture
 //
 // Gets the process architecture type
@@ -147,15 +189,7 @@ void Process::ClearThreads(void)
 	thread_map_lock_t::scoped_lock writer(m_threadslock);
 
 	// Iterate over the collection of threads and remove all of them
-	for(const auto& iterator : m_threads) {
-
-		// Terminate the thread if its still active
-		iterator.second->Terminate(LINUX_SIGTERM);
-
-		// If the thread TID does not match the process PID, release it
-		uapi::pid_t tid = iterator.second->ThreadId;
-		if(tid != m_pid) m_vm->ReleasePID(tid);
-	}
+	for(const auto& iterator : m_threads) iterator.second->Terminate(LINUX_SIGTERM);
 
 	m_threads.clear();			// Remove all threads
 }
@@ -449,82 +483,77 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 template<::Architecture architecture>
 void Process::Execute(const std::unique_ptr<Executable>& executable)
 {
-	DWORD				threadid;				// New thread identifier
+	DWORD					nativetid;			// Native thread identifier
+	unsigned long			timeoutms;			// Thread attach timeout value
 
-	// Suspend the process without signaling the parent
+	// Get the thread attach timeout value from the virtual machine properties
+	try { timeoutms = std::stoul(m_vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
+	catch(...) { throw Exception(E_PROCESSINVALIDTHREADTIMEOUT); }
+
+	// Suspend the process; all existing threads will be terminated
 	SuspendInternal();
 
-	// Create a new thread in the process using the address provided at process registration.  Use the minimum
-	// allowed thread stack size, it will be overcome by the stack allocated below
-
+	// Create a new thread in the process using the address provided at process registration, using 
+	// the minimum allowed thread stack size, it will be overcome by the custom stack allocated below
 	auto thread = ::NativeHandle::FromHandle(CreateRemoteThread(m_host->Process->Handle, nullptr, SystemInformation::AllocationGranularity, 
-		reinterpret_cast<LPTHREAD_START_ROUTINE>(m_threadproc), nullptr, CREATE_SUSPENDED, &threadid));
+		reinterpret_cast<LPTHREAD_START_ROUTINE>(m_threadproc), nullptr, CREATE_SUSPENDED, &nativetid));
+	if(thread->Handle == nullptr) throw Win32Exception();
 
 	//
 	// TODO: WHAT HAPPENS TO CHILD PROCESSES DURING EXECVE()?
 	//
 
+	// Once the new thread has been created, any exceptions that occur are considered fatal
+	// and will result in the termination of the entire process
 	try {
 
 		ClearThreads();					// Terminate and remove all existing threads
 
-		try {
-		
-			// TODO (+ more, see execve(2))
-			// Architecture
-			// Termination Signal -> SIGCHLD
+		// TODO (+ more, see execve(2))
+		// Architecture
+		// Termination Signal -> SIGCHLD
 
-			// Unshare the process file handles by creating a duplicate collection and then
-			// close all file descriptors that were set for close-on-exec
-			m_handles = ProcessHandles::Duplicate(m_handles);
-			m_handles->RemoveCloseOnExecute();
+		// Unshare the process file handles by creating a duplicate collection and then
+		// close all file descriptors that were set for close-on-exec
+		m_handles = ProcessHandles::Duplicate(m_handles);
+		m_handles->RemoveCloseOnExecute();
 
-			// Unshare the signal actions by creating a duplicate collection and then resetting
-			// all non-ignored signal actions back to their defaults
-			m_sigactions = SignalActions::Duplicate(m_sigactions);
-			m_sigactions->Reset();
+		// Unshare the signal actions by creating a duplicate collection and then resetting
+		// all non-ignored signal actions back to their defaults
+		m_sigactions = SignalActions::Duplicate(m_sigactions);
+		m_sigactions->Reset();
 
-			// Remove all existing memory sections from the current process
-			m_memory->Clear();
+		// Remove all existing memory sections from the current process
+		m_memory->Clear();
 
-			// Reallocate the local descriptor table for the process at the original address
-			try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
-			catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+		// Reallocate the local descriptor table for the process at the original address
+		m_ldtslots.Clear();
+		try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
-			// The local descriptor table is new, remove all set slot bits
-			m_ldtslots.Clear();
+		// Load the executable image into the process address space with a new stack allocation
+		Executable::LoadResult loaded = executable->Load(m_memory, CreateStack(m_vm, m_memory));
 
-			// Allocate the stack for the new main process thread
-			const void* stackpointer = nullptr;
-			try { stackpointer = CreateStack(m_vm, m_memory); }
-			catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+		// Reset the program break address based on the loaded executable 
+		m_programbreak = loaded.ProgramBreak;
 
-			// Load the executable image into the process address space and set up the thread stack
-			Executable::LoadResult loaded = executable->Load(m_memory, stackpointer);
+		// Lock the pending threads collection and insert a new TaskState for the thread to acquire
+		std::unique_lock<std::mutex> critsec(m_attachlock);
+		m_pendingthreads.emplace(nativetid, TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
 
-			// Reset the program break address based on the loaded executable 
-			m_programbreak = loaded.ProgramBreak;
+		// Resume the process within the context of the unique_lock<> to prevent a race condition
+		ResumeInternal();
 
-			// Make the new thread inherit the process pid and become the thread group leader
-			//m_threads.emplace(m_pid, Thread::FromNativeHandle<architecture>(m_pid, m_host, thread, threadid, 
-			//	TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer)));
+		// Wait up to defined timeout in milliseconds for the thread to attach and remove the element
+		if(m_attached.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(timeoutms), 
+			[&]() -> bool { return m_pendingthreads.count(nativetid) == 0; })) return;
 
-			ResumeInternal();		// Resume the process; this will start the thread as well
-
-			std::unique_lock<std::mutex> critsec(m_attachlock);
-			m_attachpending[threadid] = TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer);
-			m_attach.wait(critsec, [&]() -> bool { return m_attachpending.count(threadid) == 0; });
-
-			// TODO: TIMEOUT
-			//m_attached.WaitUntil(threadid);
-		}
-
-		// Kill the entire process on exception, use SIGKILL as the exit code
-		catch(...) { Terminate(uapi::MakeExitCode(0, LINUX_SIGKILL)); throw; }
+		// Throw ESRCH / E_PROCESSTHREADTIMEOUT if the wait operation expired
+		throw LinuxException(LINUX_ESRCH, Exception(E_PROCESSTHREADTIMEOUT, m_pid));
 	}
 
-	// Kill just the newly created remote thread on exception
-	catch(...) { /* TODO: PUT ME BACK */ /*TerminateThread(thread->Handle, uapi::MakeExitCode(0, LINUX_SIGKILL)); */ throw; }
+	// Kill the entire process on exception, using SIGKILL as the exit code
+	catch(...) { Terminate(uapi::MakeExitCode(0, LINUX_SIGKILL)); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -537,6 +566,12 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 //	tid			- Identifier for the thread to be removed
 //	exitcode	- Exit code reported by the thread
 
+void Process::DetachThread(const std::shared_ptr<::Thread>& thread, int exitcode)
+{
+	(thread);
+	(exitcode);
+}
+
 void Process::ExitThread(uapi::pid_t tid, int exitcode)
 {
 	thread_map_lock_t::scoped_lock writer(m_threadslock);
@@ -546,7 +581,7 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
 
 	// Remove the Thread instance from the collection
-	if(tid != m_pid) m_vm->ReleasePID(tid);
+	//if(tid != m_pid) m_vm->ReleasePID(tid);
 	m_threads.erase(iterator);
 
 	// If this was the last thread in the process, the process is exiting normally
@@ -961,13 +996,7 @@ void Process::RundownThread(const std::shared_ptr<::Thread>& thread)
 	while(iterator != m_threads.end()) {
 
 		// Remove the thread from the collection
-		if(thread == iterator->second) {
-			
-			uapi::pid_t tid = iterator->second->ThreadId;
-			if(tid != m_pid) m_vm->ReleasePID(tid);
-			iterator = m_threads.erase(iterator);
-		}
-
+		if(thread == iterator->second) iterator = m_threads.erase(iterator);
 		else ++iterator;
 	}
 
@@ -1344,39 +1373,35 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 
 void Process::Start(void)
 {
-	ResumeInternal();
-	//m_attached.WaitUntil(m_host->ThreadId);
+	unsigned long			timeoutms;			// Thread attach timeout value
 
-	// todo: wait until somebody pops out the task state
-	std::unique_lock<std::mutex> critsec(m_attachlock);
-	if(m_attachpending.count(m_host->ThreadId) == 0) return;
-	m_attach.wait(critsec, [&]() -> bool { return m_attachpending.count(m_host->ThreadId) == 0; });
-}
+	// Any exeception that occurs during process start is considered fatal and results
+	// in the process instance being terminated
+	try {
 
-std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
-{
-	// Attempt to open a new NativeHandle with THREAD_ALL_ACCESS against the provided thread identifier
-	std::shared_ptr<NativeHandle> handle = NativeHandle::FromHandle(OpenThread(THREAD_ALL_ACCESS, FALSE, nativetid));
-	if(handle->Handle == nullptr) throw LinuxException(LINUX_ESRCH);
+		// Get the thread attach timeout value from the virtual machine properties
+		try { timeoutms = std::stoul(m_vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
+		catch(...) { throw Exception(E_PROCESSINVALIDTHREADTIMEOUT); }
 
-	// Allocate a thread identifier for the new Thread instance; if this is the main
-	// thread for the process it is assigned the same value as the process identifier
-	uapi::pid_t tid = (nativetid == m_host->ThreadId) ? m_pid : m_vm->AllocatePID();
+		// Start the process; there is no race condition to consider with the pending threads
+		// collection here as the main thread is added during object construction above
+		ResumeInternal();
+	
+		// Start is a special case in that the initial thread task state is added to the pending
+		// threads collection during construction; there is no race condition with Resume to consider
+		std::unique_lock<std::mutex> critsec(m_attachlock);
+		if(m_pendingthreads.count(m_host->ThreadId) == 0) return;
 
-	std::unique_lock<std::mutex> critsec(m_attachlock);
-	auto iterator = m_attachpending.find(nativetid);
-	if(iterator == m_attachpending.end()) throw LinuxException(LINUX_ESRCH);
+		// Wait up to defined timeout in milliseconds for the main thread to attach and remove the element
+		if(m_attached.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(timeoutms), 
+			[&]() -> bool { return m_pendingthreads.count(m_host->ThreadId) == 0; })) return;
 
-	thread_map_lock_t::scoped_lock writer(m_threadslock);
-	auto thread = Thread::Create(shared_from_this(), tid, handle, nativetid, std::move(iterator->second));
-	m_threads.emplace(tid, thread);
+		// Throw ESRCH / E_PROCESSTHREADTIMEOUT if the wait operation expired
+		throw LinuxException(LINUX_ESRCH, Exception(E_PROCESSTHREADTIMEOUT, m_pid));
+	}
 
-	m_attachpending.erase(iterator);
-
-	// caller will need to wait to find the TaskState popped off?
-	m_attach.notify_all();
-
-	return thread;
+	// Kill the entire process on exception, using SIGKILL as the exit code
+	catch(...) { Terminate(uapi::MakeExitCode(0, LINUX_SIGKILL)); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -1420,6 +1445,9 @@ void Process::SuspendInternal(void) const
 
 void Process::Terminate(int exitcode)
 {
+	// Terminate all threads
+	// TODO
+
 	// Terminate the process and wait for it to actually exit
 	TerminateProcess(m_host->Process->Handle, exitcode);
 	WaitForSingleObject(m_host->Process->Handle, INFINITE);
