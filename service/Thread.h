@@ -68,7 +68,7 @@ public:
 
 	// Destructor
 	//
-	~Thread();
+	~Thread()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -100,8 +100,8 @@ public:
 	//static std::shared_ptr<Thread> FromNativeHandle(uapi::pid_t tid, const std::shared_ptr<::NativeHandle>& process, const std::shared_ptr<::NativeHandle>& thread, 
 	//	DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
 
-	static std::shared_ptr<Thread> Create(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Process>& process, uapi::pid_t tid, 
-		const std::shared_ptr<NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& task);
+	static std::shared_ptr<Thread> Create(const std::shared_ptr<::Process>& process, uapi::pid_t tid, const std::shared_ptr<NativeHandle>& thread, DWORD threadid, 
+		std::unique_ptr<TaskState>&& task);
 
 	// PopInitialTask
 	//
@@ -158,18 +158,6 @@ public:
 	__declspec(property(get=getClearThreadIdOnExit, put=putClearThreadIdOnExit)) void* ClearThreadIdOnExit;
 	void* getClearThreadIdOnExit(void) const;
 	void putClearThreadIdOnExit(void* value);
-
-	// NativeHandle
-	//
-	// Gets the native handle for the thread
-	__declspec(property(get=getNativeHandle)) HANDLE NativeHandle;
-	HANDLE getNativeHandle(void) const;
-
-	// NativeThreadId
-	//
-	// Gets the native thread identifier
-	__declspec(property(get=getNativeThreadId)) DWORD NativeThreadId;
-	DWORD getNativeThreadId(void) const;
 
 	// SignalAlternateStack
 	//
@@ -255,8 +243,8 @@ private:
 
 	// Instance Constructor
 	//
-	Thread(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, 
-		const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
+	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, const std::shared_ptr<::NativeHandle>& thread, 
+		DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
 	friend class std::_Ref_count_obj<Thread>;
 
 	//-------------------------------------------------------------------------
@@ -285,13 +273,12 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::shared_ptr<VirtualMachine>	m_vm;				// Virtual machine instance
-	const uapi::pid_t						m_tid;				// Thread identifier
-	const ::Architecture					m_architecture;		// Thread architecture
-	std::shared_ptr<::Process>				m_process;			// Parent process
-	std::shared_ptr<::NativeHandle>			m_thread;			// Native thread handle
-	const DWORD								m_threadid;			// Native thread id
-	std::unique_ptr<TaskState>				m_initialtask;		// Initial task state
+	const uapi::pid_t					m_tid;				// Thread identifier
+	const ::Architecture				m_architecture;		// Thread architecture
+	std::shared_ptr<::Process>			m_process;			// Parent process
+	std::shared_ptr<::NativeHandle>		m_thread;			// Native thread handle
+	const DWORD							m_threadid;			// Native thread id
+	std::unique_ptr<TaskState>			m_initialtask;		// Initial task state
 
 	void*								m_cleartid = nullptr;
 

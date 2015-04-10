@@ -154,7 +154,7 @@ std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
 	uapi::pid_t tid = (m_threads.size() == 0) ? m_pid : m_vm->AllocatePID();
 
 	// Attempt to create the Thread instance, releasing the allocated PID on exception
-	try { thread = Thread::Create(m_vm, shared_from_this(), tid, handle, nativetid, std::move(iterator->second)); }
+	try { thread = Thread::Create(shared_from_this(), tid, handle, nativetid, std::move(iterator->second)); }
 	catch(...) { if(tid != m_pid) m_vm->ReleasePID(tid); throw; }
 
 	m_threads.emplace(tid, thread);			// Insert the new Thread
@@ -581,7 +581,7 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
 
 	// Remove the Thread instance from the collection
-	//if(tid != m_pid) m_vm->ReleasePID(tid);
+	if(tid != m_pid) m_vm->ReleasePID(tid);
 	m_threads.erase(iterator);
 
 	// If this was the last thread in the process, the process is exiting normally
