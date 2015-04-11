@@ -21,29 +21,29 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ProcessGroup.h"
+#include "Session.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ProcessGroup Constructor (private)
+// Session Constructor (private)
 //
 // Arguments:
 //
-//	pgid			- Process group identifier
+//	sid			- Session identifier
 
-ProcessGroup::ProcessGroup(uapi::pid_t pgid) : m_pgid(pgid)
+Session::Session(uapi::pid_t sid) : m_sid(sid)
 {
 }
 
 //-----------------------------------------------------------------------------
-// ProcessGroup::getProcessGroupId
+// Session::getSessionId
 //
-// Gets the process group identifier
+// Gets the session identifier
 
-uapi::pid_t ProcessGroup::getProcessGroupId(void) const
+uapi::pid_t Session::getSessionId(void) const
 {
-	return m_pgid;
+	return m_sid;
 }
 
 //-----------------------------------------------------------------------------

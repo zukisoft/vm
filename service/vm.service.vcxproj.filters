@@ -377,6 +377,12 @@
     <ClInclude Include="..\common\ScalarCondition.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Namespace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -807,6 +813,12 @@
     </ClCompile>
     <ClCompile Include="sys_attach_process.cpp">
       <Filter>Source Files\System Calls</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Namespace.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

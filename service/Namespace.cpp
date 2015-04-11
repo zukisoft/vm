@@ -21,29 +21,19 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "ProcessGroup.h"
+#include "Namespace.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ProcessGroup Constructor (private)
+// Namespace Constructor (private)
 //
 // Arguments:
 //
-//	pgid			- Process group identifier
+//	NONE
 
-ProcessGroup::ProcessGroup(uapi::pid_t pgid) : m_pgid(pgid)
+Namespace::Namespace()
 {
-}
-
-//-----------------------------------------------------------------------------
-// ProcessGroup::getProcessGroupId
-//
-// Gets the process group identifier
-
-uapi::pid_t ProcessGroup::getProcessGroupId(void) const
-{
-	return m_pgid;
 }
 
 //-----------------------------------------------------------------------------

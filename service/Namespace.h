@@ -20,32 +20,51 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "ProcessGroup.h"
+#ifndef __NAMESPACE_H_
+#define __NAMESPACE_H_
+#pragma once
+
+#include <memory>
+#include <linux/types.h>
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ProcessGroup Constructor (private)
+// Namespace
 //
-// Arguments:
-//
-//	pgid			- Process group identifier
+// Implements a namespace, which defines a view of global resources (PIDs,
+// UIDs/GIDs, mount points, etc) for a process
 
-ProcessGroup::ProcessGroup(uapi::pid_t pgid) : m_pgid(pgid)
+class Namespace
 {
-}
+public:
 
-//-----------------------------------------------------------------------------
-// ProcessGroup::getProcessGroupId
-//
-// Gets the process group identifier
+	// Destructor
+	//
+	~Namespace()=default;
 
-uapi::pid_t ProcessGroup::getProcessGroupId(void) const
-{
-	return m_pgid;
-}
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+private:
+
+	Namespace(const Namespace&)=delete;
+	Namespace& operator=(const Namespace&)=delete;
+
+	// Instance Constructor
+	//
+	Namespace();
+	friend class std::_Ref_count_obj<Namespace>;
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+};
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __NAMESPACE_H_

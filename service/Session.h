@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __PROCESSGROUP_H_
-#define __PROCESSGROUP_H_
+#ifndef __SESSION_H_
+#define __SESSION_H_
 #pragma once
 
 #include <map>
@@ -29,23 +29,23 @@
 #include <concrt.h>
 #include <linux/types.h>
 #include "Namespace.h"
-#include "Process.h"
+#include "ProcessGroup.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// ProcessGroup
+// Session
 //
-// Implements a process group, which is a collection of processes that can be 
-// managed as a single entity
+// Implements a session, which is a collection of process groups that are 
+// associated with a controlling terminal (stdin/stdout).
 
-class ProcessGroup
+class Session
 {
 public:
 
 	// Destructor
 	//
-	~ProcessGroup()=default;
+	~Session()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -53,48 +53,48 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Process
+	// ProcessGroup
 	//
-	// Gets a Process instance by identifier
-	__declspec(property(get=getProcess)) std::shared_ptr<::Process> Process[];
-	std::shared_ptr<::Process> getProcess(uapi::pid_t pid);
+	// Gets a ProcessGroup instance by process group identifier
+	__declspec(property(get=getProcessGroup)) std::shared_ptr<::ProcessGroup> ProcessGroup[];
+	std::shared_ptr<::ProcessGroup> getProcessGroup(uapi::pid_t pgid);
 
-	// ProcessGroupId
+	// SessionId
 	//
-	// Gets the virtual process group identifier
-	__declspec(property(get=getProcessGroupId)) uapi::pid_t ProcessGroupId;
-	uapi::pid_t getProcessGroupId(void) const;
+	// Gets the session identifier
+	__declspec(property(get=getSessionId)) uapi::pid_t SessionId;
+	uapi::pid_t getSessionId(void) const;
 
 private:
 
-	ProcessGroup(const ProcessGroup&)=delete;
-	ProcessGroup& operator=(const ProcessGroup&)=delete;
+	Session(const Session&)=delete;
+	Session& operator=(const Session&)=delete;
 
-	// process_map_t
+	// pgroup_map_t
 	//
-	// Collection of owned Process instances
-	using process_map_t = std::map<uapi::pid_t, std::shared_ptr<::Process>>;
+	// Collection of owned ProcessGroup instances
+	using pgroup_map_t = std::map<uapi::pid_t, std::shared_ptr<::ProcessGroup>>;
 
-	// process_map_lock_t
+	// pgroup_map_lock_t
 	//
-	// Synchronization object for process_map_t
-	using process_map_lock_t = Concurrency::reader_writer_lock;
+	// Synchronization object for pgroup_map_t
+	using pgroup_map_lock_t = Concurrency::reader_writer_lock;
 
 	// Instance Constructor
 	//
-	ProcessGroup(uapi::pid_t pgid);
-	friend class std::_Ref_count_obj<ProcessGroup>;
+	Session(uapi::pid_t sid);
+	friend class std::_Ref_count_obj<Session>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const uapi::pid_t			m_pgid;				// Process group identifier
-	process_map_t				m_processes;		// Owned processes
-	process_map_lock_t			m_processeslock;	// Synchronization object
+	const uapi::pid_t			m_sid;				// Session identifier
+	pgroup_map_t				m_groups;			// Owned process groups
+	pgroup_map_lock_t			m_groupslock;		// Synchronization object
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __PROCESSGROUP_H_
+#endif	// __SESSION_H_
