@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <linux/types.h>
+#include "PidNamespace.h"
 
 #pragma warning(push, 4)
 
@@ -46,8 +47,19 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Create
+	//
+	// Creates a new Namespace instance
+	static std::shared_ptr<Namespace> Create(void);
+
 	//-------------------------------------------------------------------------
 	// Properties
+
+	// Pids
+	//
+	// Gets a reference to the contained PID namespace instance
+	__declspec(property(get=getPids)) std::shared_ptr<PidNamespace> Pids;
+	std::shared_ptr<PidNamespace> getPids(void) const;
 
 private:
 
@@ -56,11 +68,13 @@ private:
 
 	// Instance Constructor
 	//
-	Namespace();
+	Namespace(const std::shared_ptr<PidNamespace>& pids);
 	friend class std::_Ref_count_obj<Namespace>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
+
+	std::shared_ptr<PidNamespace>	m_pids;		// PID namespace instance
 };
 
 //-----------------------------------------------------------------------------

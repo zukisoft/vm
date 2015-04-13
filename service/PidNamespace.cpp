@@ -21,67 +21,59 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Session.h"
+#include "PidNamespace.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Session Constructor (private)
+// PidNamespace::Allocate
+//
+// Allocates a unique pid_t from the pool
 //
 // Arguments:
 //
-//	sid			- Session identifier
-//	ns			- Namespace instance for the session
+//	NONE
 
-Session::Session(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns) : m_sid(sid), m_ns(ns) {}
+uapi::pid_t PidNamespace::Allocate(void)
+{
+	uapi::pid_t value;			// Allocated pid_t value
+
+	// Try to use a spent pid_t first before grabbing a new one; if the
+	// return value overflowed, there are no more pids left to use
+	if(!m_spent.try_pop(value)) value = m_next++;
+	if(value < 0) throw Exception(E_FAIL);	// TODO: exception
+
+	return value;
+}
 
 //-----------------------------------------------------------------------------
-// Session::Create (static)
+// PidNamespace::Create (static)
 //
-// Creates a new Session instance
+// Creates a new PidNamespace instance
 //
 // Arguments:
 //
-//	sid			- Session identifier
-//	ns			- Namespace instance for the session
+//	NONE
 
-std::shared_ptr<Session> Session::Create(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns)
+std::shared_ptr<PidNamespace> PidNamespace::Create(void)
 {
-	// Create an empty session instance and the required initial process group
-	auto session = std::make_shared<Session>(sid, ns);
-	auto pgroup = ProcessGroup::Create(session, sid, ns);
-	
-	// Add the process group to the session's collection before returning it
-	pgroup_map_lock_t::scoped_lock writer(session->m_pgroupslock);
-	session->m_pgroups.insert(std::make_pair(sid, pgroup));
-
-	return session;
+	return std::make_shared<PidNamespace>();
 }
 
 //-----------------------------------------------------------------------------
-// Session::getProcessGroup
+// PidNamespace::Release
 //
-// Gets a contained ProcessGroup instance via it's PGID
-
-std::shared_ptr<::ProcessGroup> Session::getProcessGroup(uapi::pid_t pgid)
-{
-	pgroup_map_lock_t::scoped_lock_read reader(m_pgroupslock);
-
-	// Attempt to locate the ProcessGroup instance associated with this PGID
-	const auto& iterator = m_pgroups.find(pgid);
-	if(iterator == m_pgroups.end()) throw LinuxException(LINUX_ESRCH);
-
-	return iterator->second;
-}
-
-//-----------------------------------------------------------------------------
-// Session::getSessionId
+// Releases a pid for re-use in the pool
 //
-// Gets the session identifier
+// Arguments:
+//
+//	pid		- Spent pid_t to return to the pool
 
-uapi::pid_t Session::getSessionId(void) const
+void PidNamespace::Release(uapi::pid_t pid)
 {
-	return m_sid;
+	// This class reuses pids aggressively, push it into the spent queue
+	// so that it be grabbed before allocating a new one
+	m_spent.push(pid);	
 }
 
 //-----------------------------------------------------------------------------

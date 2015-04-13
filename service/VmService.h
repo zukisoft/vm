@@ -36,10 +36,12 @@
 #include "File.h"
 #include "FileSystem.h"
 #include "IndexPool.h"
+#include "Namespace.h"
 #include "NativeHandle.h"
 #include "PathSplitter.h"
 #include "Process.h"
 #include "RpcInterface.h"
+#include "Session.h"
 #include "SystemLog.h"
 #include "VirtualMachine.h"
 
@@ -165,6 +167,16 @@ private:
 	// Typedef for a concurrent map<> of mounted file systems and the alias they are mounted in
 	using mount_map_t = Concurrency::concurrent_unordered_map<FileSystem::AliasPtr, FileSystemPtr>;
 
+	// session_map_t
+	//
+	//
+	using session_map_t = std::map<uapi::pid_t, std::shared_ptr<Session>>;
+
+	// session_map_lock_t
+	//
+	//
+	using session_map_lock_t = Concurrency::reader_writer_lock;
+
 	// process_map_t
 	//
 	// 
@@ -186,6 +198,10 @@ private:
 	property_map_t						m_properties;	// Collection of vm properties
 	std::unique_ptr<SystemLog>			m_syslog;		// System Log
 	std::shared_ptr<FileSystem>			m_procfs;		// PROCFS file system instance
+
+	// SESSIONS
+	session_map_t						m_sessions;
+	session_map_lock_t					m_sessionslock;
 
 	// PROCESSES
 	//

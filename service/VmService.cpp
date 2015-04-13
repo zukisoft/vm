@@ -873,6 +873,18 @@ void VmService::OnStart(int, LPTSTR*)
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
 
 	//
+	// DEFAULT NAMESPACE
+	//
+	auto defaultns = Namespace::Create();
+
+	//
+	// TEST: SESSION
+	// TODO: REMOVE ME
+	auto rootsession = Session::Create(defaultns->Pids->Allocate(), defaultns);
+	auto rootgroup = rootsession->ProcessGroup[rootsession->SessionId];
+	auto parenttest = rootgroup->Session;
+
+	//
 	// LAUNCH INIT
 	//
 	std::string initpath = std::to_string(vm_initpath);

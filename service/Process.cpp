@@ -909,6 +909,16 @@ std::shared_ptr<Process> Process::getParent(void) const
 }
 	
 //-----------------------------------------------------------------------------
+// Process::getProcessGroup
+//
+// Gets a reference to the containing process group instance
+
+std::shared_ptr<::ProcessGroup> Process::getProcessGroup(void) const
+{
+	return m_pgroup.lock();
+}
+
+//-----------------------------------------------------------------------------
 // Process::getProcessId
 //
 // Gets the virtual process identifier

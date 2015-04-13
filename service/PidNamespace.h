@@ -20,87 +20,73 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __SESSION_H_
-#define __SESSION_H_
+#ifndef __PIDNAMESPACE_H_
+#define __PIDNAMESPACE_H_
 #pragma once
 
-#include <map>
+#include <atomic>
 #include <memory>
-#include <concrt.h>
+#include <concurrent_queue.h>
 #include <linux/types.h>
-#include "Namespace.h"
-#include "ProcessGroup.h"
+#include "Exception.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Session
+// PidNamespace
 //
-// Implements a session, which is a collection of process groups that are 
-// associated with a controlling terminal (stdin/stdout).
+// Implements a process identifier namespace
 
-class Session
+class PidNamespace
 {
 public:
 
 	// Destructor
 	//
-	~Session()=default;
+	~PidNamespace()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Allocate
+	//
+	// Allocates a new pid_t from the pool
+	uapi::pid_t Allocate(void);
+
 	// Create
 	//
-	// Creates a new Session instance
-	static std::shared_ptr<Session> Create(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns);
+	// Creates a new PidNamespace instance
+	static std::shared_ptr<PidNamespace> Create(void);
 
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// ProcessGroup
+	// Release
 	//
-	// Gets a ProcessGroup instance by process group identifier
-	__declspec(property(get=getProcessGroup)) std::shared_ptr<::ProcessGroup> ProcessGroup[];
-	std::shared_ptr<::ProcessGroup> getProcessGroup(uapi::pid_t pgid);
-
-	// SessionId
-	//
-	// Gets the session identifier
-	__declspec(property(get=getSessionId)) uapi::pid_t SessionId;
-	uapi::pid_t getSessionId(void) const;
+	// Releases a previously allocated pid_t
+	void Release(uapi::pid_t pid);
 
 private:
 
-	Session(const Session&)=delete;
-	Session& operator=(const Session&)=delete;
+	PidNamespace(const PidNamespace&)=delete;
+	PidNamespace& operator=(const PidNamespace&)=delete;
 
-	// pgroup_map_t
+	// spent_queue_t
 	//
-	// Collection of owned ProcessGroup instances
-	using pgroup_map_t = std::map<uapi::pid_t, std::shared_ptr<::ProcessGroup>>;
-
-	// pgroup_map_lock_t
-	//
-	// Synchronization object for pgroup_map_t
-	using pgroup_map_lock_t = Concurrency::reader_writer_lock;
+	// Alias for the spent index queue data type
+	using spent_queue_t = Concurrency::concurrent_queue<uapi::pid_t>;
 
 	// Instance Constructor
 	//
-	Session(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns);
-	friend class std::_Ref_count_obj<Session>;
+	PidNamespace()=default;
+	friend class std::_Ref_count_obj<PidNamespace>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<Namespace>	m_ns;				// Namespace instance
-	const uapi::pid_t			m_sid;				// Session identifier
-	pgroup_map_t				m_pgroups;			// Owned process groups
-	pgroup_map_lock_t			m_pgroupslock;		// Synchronization object
+	std::atomic<uapi::pid_t>	m_next = 1;		// Next unused sequential pid
+	spent_queue_t				m_spent;		// Queue of spent pids to reuse
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __SESSION_H_
+#endif	// __PIDNAMESPACE_H_

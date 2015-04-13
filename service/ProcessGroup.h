@@ -33,6 +33,10 @@
 
 #pragma warning(push, 4)
 
+// Forward Declarations
+//
+class Session;
+
 //-----------------------------------------------------------------------------
 // ProcessGroup
 //
@@ -50,6 +54,12 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Create
+	//
+	// Creates a new ProcessGroup instance
+	static std::shared_ptr<ProcessGroup> Create(const std::shared_ptr<Session>& session, uapi::pid_t pgid, 
+		const std::shared_ptr<Namespace>& ns);
+
 	//-------------------------------------------------------------------------
 	// Properties
 
@@ -64,6 +74,12 @@ public:
 	// Gets the virtual process group identifier
 	__declspec(property(get=getProcessGroupId)) uapi::pid_t ProcessGroupId;
 	uapi::pid_t getProcessGroupId(void) const;
+
+	// Session
+	//
+	// Gets a reference to the containing session instance
+	__declspec(property(get=getSession)) std::shared_ptr<::Session> Session;
+	std::shared_ptr<::Session> getSession(void) const;
 
 private:
 
@@ -82,13 +98,15 @@ private:
 
 	// Instance Constructor
 	//
-	ProcessGroup(uapi::pid_t pgid);
+	ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid, const std::shared_ptr<Namespace>& ns);
 	friend class std::_Ref_count_obj<ProcessGroup>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	const uapi::pid_t			m_pgid;				// Process group identifier
+	std::shared_ptr<Namespace>	m_ns;				// Namespace instance
+	std::weak_ptr<::Session>	m_session;			// Parent session instance
 	process_map_t				m_processes;		// Owned processes
 	process_map_lock_t			m_processeslock;	// Synchronization object
 };

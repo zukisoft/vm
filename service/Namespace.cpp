@@ -30,10 +30,34 @@
 //
 // Arguments:
 //
+//	pids		- PidNamespace instance to contain
+
+Namespace::Namespace(const std::shared_ptr<PidNamespace>& pids) : m_pids(pids)
+{
+}
+
+//-----------------------------------------------------------------------------
+// Namespace::Create
+//
+// Creates a new Namespace instance
+//
+// Arguments:
+//
 //	NONE
 
-Namespace::Namespace()
+std::shared_ptr<Namespace> Namespace::Create(void)
 {
+	return std::make_shared<Namespace>(PidNamespace::Create());
+}
+
+//-----------------------------------------------------------------------------
+// Namespace::getPids
+//
+// Gets a reference to the contained PID namespace
+
+std::shared_ptr<PidNamespace> Namespace::getPids(void) const
+{
+	return m_pids;
 }
 
 //-----------------------------------------------------------------------------

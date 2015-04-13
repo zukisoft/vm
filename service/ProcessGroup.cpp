@@ -30,10 +30,52 @@
 //
 // Arguments:
 //
+//	session			- Parent session instance
 //	pgid			- Process group identifier
+//	ns				- Namespace instance for the process group
 
-ProcessGroup::ProcessGroup(uapi::pid_t pgid) : m_pgid(pgid)
+ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid, const std::shared_ptr<Namespace>& ns) 
+	: m_session(session), m_pgid(pgid), m_ns(ns) {}
+
+//-----------------------------------------------------------------------------
+// ProcessGroup::Create (static)
+//
+// Creates a new ProcessGroup instance
+//
+// Arguments:
+//
+//	session		- Parent Session instance
+//	pgid		- Process group indentifier
+//	ns			- Namespace instance
+
+std::shared_ptr<ProcessGroup> ProcessGroup::Create(const std::shared_ptr<::Session>& session, 
+	uapi::pid_t pgid, const std::shared_ptr<Namespace>& ns)
 {
+	// Create an empty process group instance and the required initial process
+	auto pgroup = std::make_shared<ProcessGroup>(session, pgid, ns);
+	auto process = nullptr;/// TODO: Process::Spawn(blah)
+	
+	// Add the process to process group's collection before returning it
+	process_map_lock_t::scoped_lock writer(pgroup->m_processeslock);
+	// TODO: pgroup->m_processes.insert(std::make_pair(pgid, blah));
+
+	return pgroup;	
+}
+
+//-----------------------------------------------------------------------------
+// Session::getProcess
+//
+// Gets a contained Process instance via it's PID
+
+std::shared_ptr<::Process> ProcessGroup::getProcess(uapi::pid_t pid)
+{
+	process_map_lock_t::scoped_lock_read reader(m_processeslock);
+
+	// Attempt to locate the Process instance associated with this PID
+	const auto& iterator = m_processes.find(pid);
+	if(iterator == m_processes.end()) throw LinuxException(LINUX_ESRCH);
+
+	return iterator->second;
 }
 
 //-----------------------------------------------------------------------------
@@ -44,6 +86,16 @@ ProcessGroup::ProcessGroup(uapi::pid_t pgid) : m_pgid(pgid)
 uapi::pid_t ProcessGroup::getProcessGroupId(void) const
 {
 	return m_pgid;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessGroup::getSession
+//
+// Gets a reference to the containing session instance
+
+std::shared_ptr<::Session> ProcessGroup::getSession(void) const
+{
+	return m_session.lock();
 }
 
 //-----------------------------------------------------------------------------

@@ -383,6 +383,9 @@
     <ClInclude Include="Namespace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PidNamespace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -818,6 +821,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Namespace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PidNamespace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

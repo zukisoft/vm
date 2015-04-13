@@ -54,6 +54,10 @@
 
 #pragma warning(push, 4)
 
+// Forward Declarations
+//
+class ProcessGroup;
+
 //-----------------------------------------------------------------------------
 // Process
 //
@@ -245,6 +249,12 @@ public:
 	__declspec(property(get=getParent)) std::shared_ptr<Process> Parent;
 	std::shared_ptr<Process> getParent(void) const;
 
+	// ProcessGroup
+	//
+	// Gets a reference to the containing process group instance
+	__declspec(property(get=getProcessGroup)) std::shared_ptr<::ProcessGroup> ProcessGroup;
+	std::shared_ptr<::ProcessGroup> getProcessGroup(void) const;
+
 	// ProcessId
 	//
 	// Gets the virtual process identifier
@@ -406,6 +416,7 @@ private:
 	const ::Architecture					m_architecture;		// Process architecture
 	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
 	const uapi::pid_t						m_pid;				// Process identifier
+	std::weak_ptr<::ProcessGroup>			m_pgroup;			// Process group
 
 	// Parent and Children
 	//
