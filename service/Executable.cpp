@@ -42,7 +42,6 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //
 //	architecture	- Executable architecture flag
 //	format			- Executable binary format
-//	vm				- VirtualMachine instance
 //	handle			- File system handle open for execute access
 //	filename		- Original file name provided for the executable
 //	arguments		- Executable command-line arguments
@@ -50,9 +49,9 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	rootdir			- Root directory used to resolve the executable
 //	workingdir		- Working directory used to resolve the executable
 
-Executable::Executable(::Architecture architecture, BinaryFormat format, const std::shared_ptr<VirtualMachine>& vm, std::shared_ptr<FileSystem::Handle>&& handle, 
-	const char_t* filename, const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-	const std::shared_ptr<FileSystem::Alias>& workingdir) : m_architecture(architecture), m_format(format), m_vm(vm), m_handle(std::move(handle)), 
+Executable::Executable(::Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* filename, 
+	const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	const std::shared_ptr<FileSystem::Alias>& workingdir) : m_architecture(architecture), m_format(format), m_handle(std::move(handle)), 
 	m_filename(filename), m_rootdir(rootdir), m_workingdir(workingdir)
 {
 	// Convert the argument and environment variable arrays into vectors of string objects
@@ -143,19 +142,18 @@ Executable::BinaryFormat Executable::getFormat(void) const
 //
 // Arguments:
 //
-//	vm				- VirtualMachine instance creating the process
 //	filename		- Path to the executable image
 //	arguments		- Command line arguments for the executable
 //	environment		- Environment variables to assign to the process
 //	rootdir			- Root directory to assign to the process
 //	workingdir		- Working directory to assign to the process
 
-std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const* arguments, 
-	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
+std::unique_ptr<Executable> Executable::FromFile(const char_t* filename, const char_t* const* arguments, const char_t* const* environment, 
+	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
 {
 	// Invoke the private version using the provided file name as the 'original' file name.  This needs to be
 	// tracked in order to support the ELF AT_EXECFN auxiliary vector value
-	return FromFile(vm, filename, filename, arguments, environment, rootdir, workingdir);
+	return FromFile(filename, filename, arguments, environment, rootdir, workingdir);
 }
 
 //-----------------------------------------------------------------------------
@@ -165,7 +163,6 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 //
 // Arguments:
 //
-//	vm					- VirtualMachine instance creating the process
 //	originalfilename	- Original file name passed into public FromFile()
 //	filename			- Path to the executable image
 //	arguments			- Command line arguments for the executable
@@ -173,14 +170,13 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 //	rootdir				- Root directory to assign to the process
 //	workingdir			- Working directory to assign to the process
 
-std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* originalfilename, const char_t* filename, 
-	const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-	const std::shared_ptr<FileSystem::Alias>& workingdir)
+std::unique_ptr<Executable> Executable::FromFile(const char_t* originalfilename, const char_t* filename, const char_t* const* arguments, 
+	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
 {
 	if(filename == nullptr) throw LinuxException(LINUX_EFAULT);
 
 	// Attempt to open an executable handle to the specified file
-	std::shared_ptr<FileSystem::Handle> handle = vm->OpenExecutable(rootdir, workingdir, filename);
+	std::shared_ptr<FileSystem::Handle> handle = FileSystem::OpenExecutable(rootdir, workingdir, filename);
 
 	// Ensure at compile-time that EI_NIDENT will be a big enough magic number buffer
 	static_assert(LINUX_EI_NIDENT >= sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI), "Executable::FromFile -- Magic number buffer too small");
@@ -200,11 +196,11 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 		switch(magic[LINUX_EI_CLASS]) {
 
 			// ELFCLASS32 --> Architecture::x86
-			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, BinaryFormat::ELF, vm, std::move(handle), 
+			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, BinaryFormat::ELF, std::move(handle), 
 				originalfilename, arguments, environment, rootdir, workingdir);
 #ifdef _M_X64
 			// ELFCLASS64: --> Architecture::x86_64
-			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, BinaryFormat::ELF, vm, std::move(handle), 
+			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, BinaryFormat::ELF, std::move(handle), 
 				originalfilename, arguments, environment, rootdir, workingdir);
 #endif
 			// Unknown ELFCLASS --> ENOEXEC	
@@ -266,7 +262,7 @@ std::unique_ptr<Executable> Executable::FromFile(const std::shared_ptr<VirtualMa
 	newarguments.push_back(nullptr);
 
 	// Recursively call back into FromFile with the interpreter path and modified arguments
-	return FromFile(vm, originalfilename, interpreter.c_str(), newarguments.data(), environment, rootdir, workingdir);
+	return FromFile(originalfilename, interpreter.c_str(), newarguments.data(), environment, rootdir, workingdir);
 }
 
 //-----------------------------------------------------------------------------
@@ -350,7 +346,7 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 	executable = ElfImage::Load<architecture>(m_handle, memory);
 
 	// If an interpreter is specified by the main executable, open and load that into the process
-	if(executable->Interpreter) interpreter = ElfImage::Load<architecture>(m_vm->OpenExecutable(m_rootdir, m_workingdir, executable->Interpreter), memory);
+	if(executable->Interpreter) interpreter = ElfImage::Load<architecture>(FileSystem::OpenExecutable(m_rootdir, m_workingdir, executable->Interpreter), memory);
 
 	// Generate the AT_RANDOM auxiliary vector data
 	Random::Generate(random, sizeof(random));

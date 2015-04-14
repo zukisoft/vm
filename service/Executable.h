@@ -37,7 +37,6 @@
 #include "ProcessMemory.h"
 #include "Random.h"
 #include "SystemInformation.h"
-#include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -85,7 +84,7 @@ public:
 	// FromFile (static)
 	//
 	// Creates an executable instance from a file system path
-	static std::unique_ptr<Executable> FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* filename, const char_t* const* arguments,
+	static std::unique_ptr<Executable> FromFile(const char_t* filename, const char_t* const* arguments,
 		const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	// Load
@@ -163,14 +162,14 @@ private:
 
 	// Instance Constructor
 	//
-	Executable(::Architecture architecture, BinaryFormat format, const std::shared_ptr<VirtualMachine>& vm, std::shared_ptr<FileSystem::Handle>&& handle, 
-		const char_t* filename, const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
+	Executable(::Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* filename, 
+		const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir,  
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
-	friend std::unique_ptr<Executable> std::make_unique<Executable, ::Architecture, BinaryFormat, const std::shared_ptr<VirtualMachine>&, 
-		std::shared_ptr<FileSystem::Handle>, const char_t*&, const char_t* const *&, const char_t* const*&, const std::shared_ptr<FileSystem::Alias>&, 
-		const std::shared_ptr<FileSystem::Alias>&>(::Architecture&&, BinaryFormat&& format, const std::shared_ptr<VirtualMachine>& vm, 
-		std::shared_ptr<FileSystem::Handle>&&, const char_t*& filename, const char_t* const *& arguments, const char_t* const*& environment, 
+	friend std::unique_ptr<Executable> std::make_unique<Executable, ::Architecture, BinaryFormat, std::shared_ptr<FileSystem::Handle>, 
+		const char_t*&, const char_t* const *&, const char_t* const*&, const std::shared_ptr<FileSystem::Alias>&, 
+		const std::shared_ptr<FileSystem::Alias>&>(::Architecture&&, BinaryFormat&& format, std::shared_ptr<FileSystem::Handle>&&, 
+		const char_t*& filename, const char_t* const *& arguments, const char_t* const*& environment, 
 		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
 
 	//-------------------------------------------------------------------------
@@ -179,7 +178,7 @@ private:
 	// FromFile (static)
 	//
 	// Creates an executable instance from a file system path
-	static std::unique_ptr<Executable> FromFile(const std::shared_ptr<VirtualMachine>& vm, const char_t* originalfilename, const char_t* filename, 
+	static std::unique_ptr<Executable> FromFile(const char_t* originalfilename, const char_t* filename, 
 		const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
@@ -199,7 +198,6 @@ private:
 
 	const ::Architecture				m_architecture;		// Architecture flag
 	const BinaryFormat					m_format;			// Binary file format
-	std::shared_ptr<VirtualMachine>		m_vm;				// VirtualMachine instance
 	std::shared_ptr<FileSystem::Handle>	m_handle;			// File handle
 	std::string							m_filename;			// Original file name
 	std::vector<std::string>			m_arguments;		// Command-line arguments

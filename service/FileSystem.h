@@ -29,6 +29,7 @@
 #include <linux/stat.h>
 #include <linux/statfs.h>
 #include <linux/types.h>
+#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
@@ -36,7 +37,7 @@
 //
 // todo: consider making everything in here lowercase filesystem_ptr vs FileSystemPtr, for example?
 
-struct FileSystem;
+class FileSystem;
 using FileSystemPtr = std::shared_ptr<FileSystem>;
 
 //-----------------------------------------------------------------------------
@@ -44,8 +45,14 @@ using FileSystemPtr = std::shared_ptr<FileSystem>;
 //
 // todo: words
 
-struct __declspec(novtable) FileSystem
+class FileSystem
 {
+public:
+
+	// Instance Constructor
+	//
+	FileSystem()=default;
+
 	// AliasPtr
 	//
 	// Alias for an std::shared_ptr<Alias>
@@ -176,8 +183,8 @@ struct __declspec(novtable) FileSystem
 		// FileSystem
 		//
 		// Gets a reference to this node's parent FileSystem instance
-		__declspec(property(get=getFileSystem)) std::shared_ptr<struct FileSystem> FileSystem;
-		virtual std::shared_ptr<struct FileSystem> getFileSystem(void) = 0;
+		__declspec(property(get=getFileSystem)) std::shared_ptr<class FileSystem> FileSystem;
+		virtual std::shared_ptr<class FileSystem> getFileSystem(void) = 0;
 
 		// Index
 		//
@@ -339,6 +346,8 @@ struct __declspec(novtable) FileSystem
 	// FileSystem Members
 	//
 
+	static std::shared_ptr<Handle> OpenExecutable(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path);
+
 	// Remount
 	//
 	// Changes the options used for the file system mount
@@ -355,6 +364,13 @@ struct __declspec(novtable) FileSystem
 	// Gets the file system status information	
 	__declspec(property(get=getStatus)) uapi::statfs Status;
 	virtual uapi::statfs getStatus(void) = 0;
+
+private:
+
+	FileSystem(const FileSystem&)=delete;
+	FileSystem& operator=(const FileSystem&)=delete;
+
+	static std::shared_ptr<Alias> ResolvePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, int flags);
 };
 
 //-----------------------------------------------------------------------------
