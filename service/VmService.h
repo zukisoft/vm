@@ -91,14 +91,7 @@ public:
 	// updated file system api
 	// THESE ALL MOVE TO FILESYSTEM AS STATICS
 
-	virtual void								CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
-	virtual void								CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device);
-	virtual void								CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode);
-	virtual void								CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, const uapi::char_t* target);
-	virtual void								GetAbsolutePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& alias, uapi::char_t* path, size_t pathlen);
 	virtual void								MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data, size_t datalen);
-	virtual size_t								ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::char_t* buffer, size_t length);
-	virtual std::shared_ptr<FileSystem::Alias>	ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags);
 
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) { return m_rootfs; }
 	virtual std::shared_ptr<Process> getRootProcess(void) const { return m_initprocess; }

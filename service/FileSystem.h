@@ -347,13 +347,30 @@ public:
 	// FileSystem Members
 	//
 
+	static void CheckPermissions(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
+		int flags, uapi::mode_t mode);
+
+	static void CreateCharacterDevice(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base,
+		const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device);
+
+	static void CreateDirectory(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, uapi::mode_t mode);
+
 	static std::shared_ptr<Handle> CreateFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
 		int flags, uapi::mode_t mode);
+
+	static void CreateSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, const uapi::char_t* target);
+
+	static void GetAbsolutePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& alias, uapi::char_t* path, size_t pathlen);
 
 	static std::shared_ptr<Handle> OpenExecutable(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path);
 
 	static std::shared_ptr<Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
 		const uapi::char_t* path, int flags, uapi::mode_t mode);
+
+	static size_t ReadSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
+		uapi::char_t* buffer, size_t length);
+
+	static std::shared_ptr<Alias> ResolvePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, int flags);
 
 	// Remount
 	//
@@ -376,8 +393,6 @@ private:
 
 	FileSystem(const FileSystem&)=delete;
 	FileSystem& operator=(const FileSystem&)=delete;
-
-	static std::shared_ptr<Alias> ResolvePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, int flags);
 };
 
 //-----------------------------------------------------------------------------

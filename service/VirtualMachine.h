@@ -129,32 +129,7 @@ public:
 	// FILE SYSTEM
 	//
 
-	// TODO: THESE NEED A PATH OBJECT, FIRST THREE PARAMETERS ARE A BIT RIDICULOUS
-
-	virtual void CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, 
-		int flags, uapi::mode_t mode) = 0;
-
-	virtual void CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path, uapi::mode_t mode) = 0;
-
-	//
-	// I think I would rather have CreateCharacterDevice, CreateBlockDevice, CreatePipe, CreateSocket ??
-	//
-	virtual void CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device) = 0;
-
-	virtual void CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path, const uapi::char_t* target) = 0;
-
-	virtual void GetAbsolutePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& alias, uapi::char_t* path, size_t pathlen) = 0;
-
 	virtual void MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data, size_t datalen) = 0;
-
-	virtual size_t ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, 
-		uapi::char_t* buffer, size_t length) = 0;
-
-	virtual std::shared_ptr<FileSystem::Alias> ResolvePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path, int flags) = 0;
 
 	//
 	// PROPERTY MANAGEMENT

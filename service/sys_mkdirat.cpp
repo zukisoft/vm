@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -43,14 +44,14 @@ uapi::long_t sys_mkdirat(const Context* context, int dirfd, const uapi::char_t* 
 	bool absolute = ((pathname) && (pathname[0] == '/'));
 
 	// Determine the base alias from which to resolve the path
-	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+	std::shared_ptr<FileSystem::Alias> base = absolute ? context->Process->RootDirectory : 
 		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
 
 	// Apply the process' current umask to the provided creation mode flags
 	mode &= ~context->Process->FileCreationModeMask;
 
 	// Attempt to create the directory object relative from the base alias
-	context->VirtualMachine->CreateDirectory(context->Process->RootDirectory, base, pathname, mode);
+	FileSystem::CreateDirectory(context->Process->RootDirectory, base, pathname, mode);
 
 	return 0;
 }

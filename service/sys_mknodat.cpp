@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -44,7 +45,7 @@ uapi::long_t sys_mknodat(const Context* context, int dirfd, const uapi::char_t* 
 	bool absolute = ((pathname) && (pathname[0] == '/'));
 
 	// Determine the base alias from which to resolve the path
-	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+	std::shared_ptr<FileSystem::Alias> base = absolute ? context->Process->RootDirectory : 
 		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
 
 	// Apply the process' current umask to the provided creation mode flags
@@ -61,7 +62,7 @@ uapi::long_t sys_mknodat(const Context* context, int dirfd, const uapi::char_t* 
 
 		// S_IFCHR: Create a new character device node
 		case LINUX_S_IFCHR:
-			context->VirtualMachine->CreateCharacterDevice(context->Process->RootDirectory, base, pathname, mode, device);
+			FileSystem::CreateCharacterDevice(context->Process->RootDirectory, base, pathname, mode, device);
 			break;
 
 		// S_IFBLK: Create a new block device node

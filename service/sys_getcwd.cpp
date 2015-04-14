@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -41,7 +42,7 @@ uapi::long_t sys_getcwd(const Context* context, uapi::char_t* buf, size_t size)
 	if(buf == nullptr) return -LINUX_EFAULT;
 
 	// Ask the virtual machine instance to resolve the absolute path to the working directory
-	context->VirtualMachine->GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
+	FileSystem::GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
 
 	return 0;
 }

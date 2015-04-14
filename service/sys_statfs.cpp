@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -41,7 +42,7 @@ uapi::long_t sys_statfs(const Context* context, const uapi::char_t* path, uapi::
 	if(buf == nullptr) return -LINUX_EFAULT;
 		
 	// Resolve the path to the target alias and go through it to get to the file system information
-	auto alias = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, context->Process->WorkingDirectory, path, 0);
+	auto alias = FileSystem::ResolvePath(context->Process->RootDirectory, context->Process->WorkingDirectory, path, 0);
 	*buf = alias->Node->FileSystem->Status;
 
 	return 0;

@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -57,7 +58,7 @@ uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* p
 		throw LinuxException(LINUX_ENOTDIR);
 
 	// Attempt to resolve the target node
-	auto node = context->VirtualMachine->ResolvePath(context->Process->RootDirectory, base, pathname, 
+	auto node = FileSystem::ResolvePath(context->Process->RootDirectory, base, pathname, 
 		(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node;
 
 	// Retrieve and convert the status information for the node

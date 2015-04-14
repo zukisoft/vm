@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -40,7 +41,7 @@
 uapi::long_t sys_readlink(const Context* context, const uapi::char_t* pathname, uapi::char_t* buf, size_t bufsiz)
 {
 	if(buf == nullptr) return -LINUX_EFAULT;
-	return context->VirtualMachine->ReadSymbolicLink(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, buf, bufsiz);
+	return FileSystem::ReadSymbolicLink(context->Process->RootDirectory, context->Process->WorkingDirectory, pathname, buf, bufsiz);
 }
 
 // sys32_readlink
