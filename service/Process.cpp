@@ -22,6 +22,8 @@
 
 #include "stdafx.h"
 #include "Process.h"
+#include "ProcessGroup.h"
+#include "Session.h"
 
 #pragma warning(push, 4)
 
@@ -455,7 +457,7 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
 {
 	// Parse the filename and command line arguments into an Executable instance
-	auto executable = Executable::FromFile(m_vm, filename, argv, envp, m_rootdir, m_workingdir);
+	auto executable = Executable::FromFile(filename, argv, envp, m_rootdir, m_workingdir);
 
 	// Architecture::x86 --> 32-bit executable
 	if(executable->Architecture == ::Architecture::x86) Execute<Architecture::x86>(executable);
@@ -1297,8 +1299,8 @@ void Process::putSignalAction(int signal, uapi::sigaction action)
 //
 //	vm			- Parent virtual machine instance
 //	pid			- Virtual process identifier to assign
-//	filename	- Name of the file system executable
 //	parent		- Optional parent process to assign to the process
+//	filename	- Name of the file system executable
 //	argv		- Command-line arguments
 //	envp		- Environment variables
 //	rootdir		- Process root directory
@@ -1309,7 +1311,7 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 	const std::shared_ptr<FileSystem::Alias>& workingdir)
 {
 	// Parse the filename and command line arguments into an Executable instance
-	auto executable = Executable::FromFile(vm, filename, argv, envp, rootdir, workingdir);
+	auto executable = Executable::FromFile(filename, argv, envp, rootdir, workingdir);
 
 	// Architecture::x86 --> 32-bit executable
 	if(executable->Architecture == Architecture::x86) return Spawn<Architecture::x86>(vm, pid, parent, executable);
@@ -1317,6 +1319,21 @@ std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& v
 #ifdef _M_X64
 	// Architecture::x86_64 --> 64-bit executable
 	else if(executable->Architecture == Architecture::x86_64) return Spawn<Architecture::x86_64>(vm, pid, parent, executable);
+#endif
+	
+	throw LinuxException(LINUX_ENOEXEC);
+}
+
+// new
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
+	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
+{
+	// Architecture::x86 --> 32-bit executable
+	if(executable->Architecture == Architecture::x86) return Spawn<Architecture::x86>(pgroup->Session->VirtualMachine, pid, nullptr, executable);
+
+#ifdef _M_X64
+	// Architecture::x86_64 --> 64-bit executable
+	else if(executable->Architecture == Architecture::x86_64) return Spawn<Architecture::x86_64>(pgroup->Session->VirtualMachine, pid, nullptr, executable);
 #endif
 	
 	throw LinuxException(LINUX_ENOEXEC);

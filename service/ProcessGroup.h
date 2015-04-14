@@ -54,11 +54,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Create
+	// FromExecutable (static)
 	//
-	// Creates a new ProcessGroup instance
-	static std::shared_ptr<ProcessGroup> Create(const std::shared_ptr<Session>& session, uapi::pid_t pgid, 
-		const std::shared_ptr<Namespace>& ns);
+	// Creates a new ProcessGroup from an Executable instance
+	static std::shared_ptr<ProcessGroup> FromExecutable(const std::shared_ptr<::Session>& session, uapi::pid_t pgid,
+		const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -98,15 +98,14 @@ private:
 
 	// Instance Constructor
 	//
-	ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid, const std::shared_ptr<Namespace>& ns);
+	ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid);
 	friend class std::_Ref_count_obj<ProcessGroup>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const uapi::pid_t			m_pgid;				// Process group identifier
-	std::shared_ptr<Namespace>	m_ns;				// Namespace instance
 	std::weak_ptr<::Session>	m_session;			// Parent session instance
+	const uapi::pid_t			m_pgid;				// Process group identifier
 	process_map_t				m_processes;		// Owned processes
 	process_map_lock_t			m_processeslock;	// Synchronization object
 };

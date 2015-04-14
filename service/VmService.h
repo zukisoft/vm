@@ -89,6 +89,8 @@ public:
 	virtual std::shared_ptr<Process> SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
 
 	// updated file system api
+	// THESE ALL MOVE TO FILESYSTEM AS STATICS
+
 	virtual void								CheckPermissions(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, int flags, uapi::mode_t mode);
 	virtual void								CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode, uapi::dev_t device);
 	virtual void								CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, uapi::mode_t mode);

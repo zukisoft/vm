@@ -642,6 +642,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="Executable.cpp" />
     <ClCompile Include="FilePermission.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />

@@ -30,30 +30,29 @@
 //
 // Arguments:
 //
+//	vm			- Parent VirtualMachine instance
 //	sid			- Session identifier
-//	ns			- Namespace instance for the session
 
-Session::Session(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns) : m_sid(sid), m_ns(ns) {}
+Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid) {}
 
 //-----------------------------------------------------------------------------
-// Session::Create (static)
+// Session::FromExecutable (static)
 //
-// Creates a new Session instance
+// Creates a new Session instance from an Executable
 //
 // Arguments:
 //
+//	vm			- Parent VirtualMachine instance
 //	sid			- Session identifier
-//	ns			- Namespace instance for the session
+//	ns			- Namespace instance
+//	executable	- Executable instance to use to seed the session
 
-std::shared_ptr<Session> Session::Create(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns)
+std::shared_ptr<Session> Session::FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
+	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
 {
-	// Create an empty session instance and the required initial process group
-	auto session = std::make_shared<Session>(sid, ns);
-	auto pgroup = ProcessGroup::Create(session, sid, ns);
-	
-	// Add the process group to the session's collection before returning it
-	pgroup_map_lock_t::scoped_lock writer(session->m_pgroupslock);
-	session->m_pgroups.insert(std::make_pair(sid, pgroup));
+	// Create and initialize a new session instance with a new process group
+	auto session = std::make_shared<Session>(vm, sid);
+	session->m_pgroups.emplace(std::make_pair(sid, ProcessGroup::FromExecutable(session, sid, ns, executable)));
 
 	return session;
 }
@@ -82,6 +81,16 @@ std::shared_ptr<::ProcessGroup> Session::getProcessGroup(uapi::pid_t pgid)
 uapi::pid_t Session::getSessionId(void) const
 {
 	return m_sid;
+}
+
+//-----------------------------------------------------------------------------
+// Session::getVirtualMachine
+//
+// Gets a reference to the parent virtual machine instance
+
+std::shared_ptr<::VirtualMachine> Session::getVirtualMachine(void) const
+{
+	return m_vm.lock();
 }
 
 //-----------------------------------------------------------------------------

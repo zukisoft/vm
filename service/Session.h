@@ -28,8 +28,11 @@
 #include <memory>
 #include <concrt.h>
 #include <linux/types.h>
+#include "Executable.h"
 #include "Namespace.h"
+#include "Process.h"
 #include "ProcessGroup.h"
+#include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 
@@ -50,10 +53,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Create
+	// FromExecutable (static)
 	//
-	// Creates a new Session instance
-	static std::shared_ptr<Session> Create(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns);
+	// Creates a new Session from an Executable instance
+	static std::shared_ptr<Session> FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
+		const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -69,6 +73,12 @@ public:
 	// Gets the session identifier
 	__declspec(property(get=getSessionId)) uapi::pid_t SessionId;
 	uapi::pid_t getSessionId(void) const;
+
+	// VirtualMachine
+	//
+	// Gets the parent virtual machine instance
+	__declspec(property(get=getVirtualMachine)) std::shared_ptr<::VirtualMachine> VirtualMachine;
+	std::shared_ptr<::VirtualMachine> getVirtualMachine(void) const;
 
 private:
 
@@ -87,16 +97,16 @@ private:
 
 	// Instance Constructor
 	//
-	Session(uapi::pid_t sid, const std::shared_ptr<Namespace>& ns);
+	Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid);
 	friend class std::_Ref_count_obj<Session>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<Namespace>	m_ns;				// Namespace instance
-	const uapi::pid_t			m_sid;				// Session identifier
-	pgroup_map_t				m_pgroups;			// Owned process groups
-	pgroup_map_lock_t			m_pgroupslock;		// Synchronization object
+	std::weak_ptr<::VirtualMachine>	m_vm;				// Parent VirtualMachine
+	const uapi::pid_t				m_sid;				// Session identifier
+	pgroup_map_t					m_pgroups;			// Owned process groups
+	pgroup_map_lock_t				m_pgroupslock;		// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

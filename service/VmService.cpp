@@ -873,25 +873,32 @@ void VmService::OnStart(int, LPTSTR*)
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
 
 	//
-	// DEFAULT NAMESPACE
+	// TEST: DEFAULT NAMESPACE
 	//
 	auto defaultns = Namespace::Create();
-
-	//
-	// TEST: SESSION
-	// TODO: REMOVE ME
-	auto rootsession = Session::Create(defaultns->Pids->Allocate(), defaultns);
-	auto rootgroup = rootsession->ProcessGroup[rootsession->SessionId];
-	auto parenttest = rootgroup->Session;
 
 	//
 	// LAUNCH INIT
 	//
 	std::string initpath = std::to_string(vm_initpath);
 	const uapi::char_t* args[] = { initpath.c_str(), "First Argument", "Second Argument", nullptr };
+
+	// TESTING - NEW SESSION/GROUP/PROCESS RELATIONSHIPS (overcomes Process::Spawn)
+	// it would be nice to return the Process instance, but this works too I guess
+
+	auto rootpid = defaultns->Pids->Allocate();
+	// try/catch/release pid? why bother, whole VM dies if init can't be loaded
+	auto exec = Executable::FromFile(initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
+	auto rootsession = Session::FromExecutable(shared_from_this(), rootpid, defaultns, exec);
+
+	// Get the init process from the root session and root process group, this is inefficient but quick enough
+	m_initprocess = rootsession->ProcessGroup[rootpid]->Process[rootpid];
+
 	// TODO: NEED INITIAL ENVIRONMENT
 	// note: no parent
-	m_initprocess = Process::Spawn(shared_from_this(), 1, nullptr, initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
+
+	// following line is OBE from Session/ProcessGroup stuff, remove it
+	//m_initprocess = Process::Spawn(shared_from_this(), 1, nullptr, initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
 	
 	// stdout/stderr test
 	m_initprocess->AddHandle(1, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));

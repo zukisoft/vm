@@ -40,6 +40,7 @@
 #include "Executable.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
+#include "Namespace.h"
 #include "NativeHandle.h"
 #include "NativeProcess.h"
 #include "NtApi.h"
@@ -57,6 +58,7 @@
 // Forward Declarations
 //
 class ProcessGroup;
+class Session;
 
 //-----------------------------------------------------------------------------
 // Process
@@ -112,6 +114,12 @@ public:
 	//
 	// Indicates that a thread has exited normally
 	void ExitThread(uapi::pid_t tid, int exitcode);
+
+	// FromExecutable (static)
+	//
+	// Creates a new Process from an Executable instance
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
+		const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable);
 
 	// GetResourceUsage
 	//
@@ -413,10 +421,10 @@ private:
 	// Member Variables
 
 	const std::shared_ptr<VirtualMachine>	m_vm;				// Virtual machine instance
+	std::weak_ptr<::ProcessGroup>			m_pgroup;			// Parent ProcessGroup instance
 	const ::Architecture					m_architecture;		// Process architecture
 	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
 	const uapi::pid_t						m_pid;				// Process identifier
-	std::weak_ptr<::ProcessGroup>			m_pgroup;			// Process group
 
 	// Parent and Children
 	//

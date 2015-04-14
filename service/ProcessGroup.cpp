@@ -32,34 +32,29 @@
 //
 //	session			- Parent session instance
 //	pgid			- Process group identifier
-//	ns				- Namespace instance for the process group
 
-ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid, const std::shared_ptr<Namespace>& ns) 
-	: m_session(session), m_pgid(pgid), m_ns(ns) {}
+ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid) : m_session(session), m_pgid(pgid){}
 
 //-----------------------------------------------------------------------------
-// ProcessGroup::Create (static)
+// ProcessGroup::FromExecutable (static)
 //
-// Creates a new ProcessGroup instance
+// Creates a new ProcessGroup instance from an Executable
 //
 // Arguments:
 //
 //	session		- Parent Session instance
-//	pgid		- Process group indentifier
+//	pgid		- ProcessGroup identifier
 //	ns			- Namespace instance
+//	executable	- Executable instance to use to seed the session
 
-std::shared_ptr<ProcessGroup> ProcessGroup::Create(const std::shared_ptr<::Session>& session, 
-	uapi::pid_t pgid, const std::shared_ptr<Namespace>& ns)
+std::shared_ptr<ProcessGroup> ProcessGroup::FromExecutable(const std::shared_ptr<::Session>& session, uapi::pid_t pgid,
+	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
 {
-	// Create an empty process group instance and the required initial process
-	auto pgroup = std::make_shared<ProcessGroup>(session, pgid, ns);
-	auto process = nullptr;/// TODO: Process::Spawn(blah)
-	
-	// Add the process to process group's collection before returning it
-	process_map_lock_t::scoped_lock writer(pgroup->m_processeslock);
-	// TODO: pgroup->m_processes.insert(std::make_pair(pgid, blah));
+	// Create and initialize a new process group instance with a new process
+	auto pgroup = std::make_shared<ProcessGroup>(session, pgid);
+	pgroup->m_processes.emplace(std::make_pair(pgid, Process::FromExecutable(pgroup, pgid, ns, executable)));
 
-	return pgroup;	
+	return pgroup;
 }
 
 //-----------------------------------------------------------------------------
