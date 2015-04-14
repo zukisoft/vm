@@ -292,7 +292,7 @@ FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 	if((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) throw LinuxException(LINUX_ENOTDIR);
 
 	// Attempt to open a query-only handle against the file system directory object
-	HANDLE handle = CreateFile(hostpath.c_str(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 
+	HANDLE handle = ::CreateFile(hostpath.c_str(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 
 		FILE_FLAG_POSIX_SEMANTICS | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 	if(handle == INVALID_HANDLE_VALUE) throw MapHostException();
 

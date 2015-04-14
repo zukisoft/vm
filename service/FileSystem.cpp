@@ -26,6 +26,43 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
+// FileSystem::CreateFile (static)
+//
+// Creates a regular file object and returns a Handle instance
+//
+// Arguments:
+//
+//	root		- Root alias to use for path resolution
+//	base		- Base alias from which to start path resolution
+//	path		- Path to the object to be opened/created
+//	flags		- Flags indicating how the object should be opened
+//	mode		- Mode bitmask to use if a new object is created
+
+std::shared_ptr<FileSystem::Handle> FileSystem::CreateFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
+	const uapi::char_t* path, int flags, uapi::mode_t mode)
+{
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
+
+	// O_PATH and O_DIRECTORY cannot be used when creating a regular file object
+	if((flags & LINUX_O_PATH) || (flags & LINUX_O_DIRECTORY)) throw LinuxException(LINUX_EINVAL);
+
+	// Split the path into branch and leaf components
+	PathSplitter splitter(path);
+
+	// Resolve the branch path to an Alias instance, must resolve to a Directory
+	auto branch = ResolvePath(root, base, splitter.Branch, flags);
+	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+	if(directory == nullptr) throw LinuxException(LINUX_ENOTDIR);
+
+	// Request a new regular file be created as a child of the resolved directory
+	return directory->CreateFile(branch, splitter.Leaf, flags, mode);
+}
+
+//-----------------------------------------------------------------------------
 // FileSystem::OpenExecutable (static)
 //
 // Opens an executable file system object and returns a Handle instance
@@ -36,8 +73,8 @@
 //	base		- Base alias from which to start path resolution
 //	path		- Path to the object to be opened/created
 
-std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-	const uapi::char_t* path)
+std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(const std::shared_ptr<Alias>& root, 
+	const std::shared_ptr<Alias>& base, const uapi::char_t* path)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -52,6 +89,63 @@ std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(const std::shared
 
 	// Create and return an executable handle for the file system object
 	return node->OpenExec(alias);
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::OpenFile (static)
+//
+// Opens a file system object and returns a Handle instance
+//
+// Arguments:
+//
+//	root		- Root alias to use for path resolution
+//	base		- Base alias from which to start path resolution
+//	path		- Path to the object to be opened/created
+//	flags		- Flags indicating how the object should be opened
+//	mode		- Mode bitmask to use if a new object is created
+
+std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
+	const uapi::char_t* path, int flags, uapi::mode_t mode)
+{
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
+	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
+
+	// O_PATH filter -> Only O_CLOEXEC, O_DIRECTORY and O_NOFOLLOW are evaluated
+	if(flags & LINUX_O_PATH) flags &= (LINUX_O_PATH | LINUX_O_CLOEXEC | LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW);
+
+	// O_CREAT | O_EXCL indicates that a regular file object must be created, call CreateFile() instead.
+	if((flags & (LINUX_O_CREAT | LINUX_O_EXCL)) == (LINUX_O_CREAT | LINUX_O_EXCL)) return CreateFile(root, base, path, flags, mode);
+
+	// O_CREAT indicates that if the object does not exist, a new regular file will be created
+	else if((flags & LINUX_O_CREAT) == LINUX_O_CREAT) {
+
+		PathSplitter splitter(path);				// Path splitter
+
+		// Resolve the branch path to an Alias instance, must resolve to a Directory
+		auto branch = ResolvePath(root, base, splitter.Branch, flags);
+		if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
+
+		// Ask the branch node to resolve the leaf, if that succeeds, just open it
+		try { 
+			
+			auto leaf = ResolvePath(root, branch, splitter.Leaf, flags);
+			return leaf->Node->Open(leaf, flags); 
+		}
+		
+		catch(...) { /* DON'T CARE - KEEP GOING */ }
+
+		// The leaf didn't exist (or some other bad thing happened), cast out the branch
+		// as a Directory node and attempt to create the file instead
+		auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
+		if(directory == nullptr) throw LinuxException(LINUX_ENOTDIR);
+
+		return directory->CreateFile(branch, splitter.Leaf, flags, mode);
+	}
+
+	// Standard open, will throw exception if the object does not exist
+	auto alias = ResolvePath(root, base, path, flags);
+	return alias->Node->Open(alias, flags);
 }
 
 //-----------------------------------------------------------------------------

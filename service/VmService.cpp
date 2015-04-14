@@ -150,43 +150,6 @@ void VmService::CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, 
 }
 
 //-----------------------------------------------------------------------------
-// VmService::CreateFile
-//
-// Creates a regular file object and returns a Handle instance
-//
-// Arguments:
-//
-//	root		- Root alias to use for path resolution
-//	base		- Base alias from which to start path resolution
-//	path		- Path to the object to be opened/created
-//	flags		- Flags indicating how the object should be opened
-//	mode		- Mode bitmask to use if a new object is created
-
-std::shared_ptr<FileSystem::Handle> VmService::CreateFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, 
-	const uapi::char_t* path, int flags, uapi::mode_t mode)
-{
-	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
-
-	// O_PATH and O_DIRECTORY cannot be used when creating a regular file object
-	if((flags & LINUX_O_PATH) || (flags & LINUX_O_DIRECTORY)) throw LinuxException(LINUX_EINVAL);
-
-	// Split the path into branch and leaf components
-	PathSplitter splitter(path);
-
-	// Resolve the branch path to an Alias instance, must resolve to a Directory
-	auto branch = ResolvePath(root, base, splitter.Branch, flags);
-	if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-
-	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
-	if(directory == nullptr) throw LinuxException(LINUX_ENOTDIR);
-
-	// Request a new regular file be created as a child of the resolved directory
-	return directory->CreateFile(branch, splitter.Leaf, flags, mode);
-}
-
-//-----------------------------------------------------------------------------
 // VmService::CloneProcess
 //
 // Clones an exising process
@@ -432,92 +395,6 @@ void VmService::MountFileSystem(const uapi::char_t* source, const uapi::char_t* 
 }
 
 //-----------------------------------------------------------------------------
-// VmService::OpenExecutable
-//
-// Opens an executable file system object and returns a Handle instance
-//
-// Arguments:
-//
-//	root		- Root alias to use for path resolution
-//	base		- Base alias from which to start path resolution
-//	path		- Path to the object to be opened/created
-
-std::shared_ptr<FileSystem::Handle> VmService::OpenExecutable(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, 
-	const uapi::char_t* path)
-{
-	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
-
-	// Attempt to resolve the file system object's name
-	auto alias = ResolvePath(root, base, path, 0);
-	
-	// The only valid node type is a regular file object
-	auto node = std::dynamic_pointer_cast<FileSystem::File>(alias->Node);
-	if(node == nullptr) throw LinuxException(LINUX_ENOEXEC);
-
-	// Create and return an executable handle for the file system object
-	return node->OpenExec(alias);
-}
-
-//-----------------------------------------------------------------------------
-// VmService::OpenFile
-//
-// Opens a file system object and returns a Handle instance
-//
-// Arguments:
-//
-//	root		- Root alias to use for path resolution
-//	base		- Base alias from which to start path resolution
-//	path		- Path to the object to be opened/created
-//	flags		- Flags indicating how the object should be opened
-//	mode		- Mode bitmask to use if a new object is created
-
-std::shared_ptr<FileSystem::Handle> VmService::OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, 
-	const uapi::char_t* path, int flags, uapi::mode_t mode)
-{
-	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
-
-	// O_PATH filter -> Only O_CLOEXEC, O_DIRECTORY and O_NOFOLLOW are evaluated
-	if(flags & LINUX_O_PATH) flags &= (LINUX_O_PATH | LINUX_O_CLOEXEC | LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW);
-
-	// O_CREAT | O_EXCL indicates that a regular file object must be created, call CreateFile() instead.
-	if((flags & (LINUX_O_CREAT | LINUX_O_EXCL)) == (LINUX_O_CREAT | LINUX_O_EXCL)) return CreateFile(root, base, path, flags, mode);
-
-	// O_CREAT indicates that if the object does not exist, a new regular file will be created
-	else if((flags & LINUX_O_CREAT) == LINUX_O_CREAT) {
-
-		PathSplitter splitter(path);				// Path splitter
-
-		// Resolve the branch path to an Alias instance, must resolve to a Directory
-		auto branch = ResolvePath(root, base, splitter.Branch, flags);
-		if(branch->Node->Type != FileSystem::NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-
-		// Ask the branch node to resolve the leaf, if that succeeds, just open it
-		try { 
-			
-			auto leaf = ResolvePath(root, branch, splitter.Leaf, flags);
-			return leaf->Node->Open(leaf, flags); 
-		}
-		
-		catch(...) { /* DON'T CARE - KEEP GOING */ }
-
-		// The leaf didn't exist (or some other bad thing happened), cast out the branch
-		// as a Directory node and attempt to create the file instead
-		auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(branch->Node);
-		if(directory == nullptr) throw LinuxException(LINUX_ENOTDIR);
-
-		return directory->CreateFile(branch, splitter.Leaf, flags, mode);
-	}
-
-	// Standard open, will throw exception if the object does not exist
-	auto alias = ResolvePath(root, base, path, flags);
-	return alias->Node->Open(alias, flags);
-}
-
-//-----------------------------------------------------------------------------
 // VmService::ReadSymbolicLink
 //
 // Reads the target string from a file system symbolic link
@@ -694,7 +571,7 @@ void VmService::LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& 
 
 			case LINUX_S_IFREG: 
 			{
-				FileSystem::HandlePtr p = CreateFile(target, target, path.c_str(), 0, file.Mode);
+				FileSystem::HandlePtr p = FileSystem::CreateFile(target, target, path.c_str(), 0, file.Mode);
 				std::vector<uint8_t> buffer(64 KiB);
 				size_t read = file.Data.Read(buffer.data(), buffer.size());
 				while(read > 0) {
@@ -901,8 +778,8 @@ void VmService::OnStart(int, LPTSTR*)
 	//m_initprocess = Process::Spawn(shared_from_this(), 1, nullptr, initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
 	
 	// stdout/stderr test
-	m_initprocess->AddHandle(1, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
-	m_initprocess->AddHandle(2, OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
+	m_initprocess->AddHandle(1, FileSystem::OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
+	m_initprocess->AddHandle(2, FileSystem::OpenFile(m_rootfs->Root, m_rootfs->Root, "/dev/console", LINUX_O_RDWR, 0));
 
 	m_initprocess->Start();
 

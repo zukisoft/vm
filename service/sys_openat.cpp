@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -51,7 +52,7 @@ uapi::long_t sys_openat(const Context* context, int dirfd, const uapi::char_t* p
 	mode &= ~context->Process->FileCreationModeMask;
 
 	// Attempt to open the file system object relative from the base alias
-	return context->Process->AddHandle(context->VirtualMachine->OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
+	return context->Process->AddHandle(FileSystem::OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
 }
 
 // sys32_openat

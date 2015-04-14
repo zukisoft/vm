@@ -137,9 +137,6 @@ public:
 	virtual void CreateDirectory(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
 		const uapi::char_t* path, uapi::mode_t mode) = 0;
 
-	virtual std::shared_ptr<FileSystem::Handle> CreateFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path, int flags, uapi::mode_t mode) = 0;
-
 	//
 	// I think I would rather have CreateCharacterDevice, CreateBlockDevice, CreatePipe, CreateSocket ??
 	//
@@ -152,13 +149,6 @@ public:
 	virtual void GetAbsolutePath(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& alias, uapi::char_t* path, size_t pathlen) = 0;
 
 	virtual void MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data, size_t datalen) = 0;
-
-	virtual std::shared_ptr<FileSystem::Handle> OpenExecutable(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path) = 0;
-
-	// rename to OpenFsObject? or OpenObject? or OpenNode? or OpenHandle?
-	virtual std::shared_ptr<FileSystem::Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
-		const uapi::char_t* path, int flags, uapi::mode_t mode) = 0;
 
 	virtual size_t ReadSymbolicLink(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base, const uapi::char_t* path, 
 		uapi::char_t* buffer, size_t length) = 0;

@@ -30,6 +30,7 @@
 #include <linux/statfs.h>
 #include <linux/types.h>
 #include "LinuxException.h"
+#include "PathSplitter.h"
 
 #pragma warning(push, 4)
 
@@ -346,7 +347,13 @@ public:
 	// FileSystem Members
 	//
 
+	static std::shared_ptr<Handle> CreateFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
+		int flags, uapi::mode_t mode);
+
 	static std::shared_ptr<Handle> OpenExecutable(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path);
+
+	static std::shared_ptr<Handle> OpenFile(const std::shared_ptr<FileSystem::Alias>& root, const std::shared_ptr<FileSystem::Alias>& base,
+		const uapi::char_t* path, int flags, uapi::mode_t mode);
 
 	// Remount
 	//
