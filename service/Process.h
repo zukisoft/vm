@@ -163,13 +163,6 @@ public:
 	// Sets the program break address to increase or decrease data segment length
 	const void* SetProgramBreak(const void* address);
 
-	// Spawn (static)
-	//
-	// Spawns a new process instance
-	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		const char_t* filename, const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-		const std::shared_ptr<FileSystem::Alias>& workingdir);
-
 	// SetSignalAction
 	//
 	// Assigns an action to be taken for a process signal
@@ -395,6 +388,13 @@ private:
 	template<::Architecture>
 	void Execute(const std::unique_ptr<Executable>& executable);
 
+	// FromExecutable<Architecture>
+	//
+	// Creates a new process instance from an executable image
+	template<::Architecture architecture>
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, 
+		const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable);
+
 	// NotifyParent
 	//
 	// Notifies the parent process that a state change has occurred
@@ -404,13 +404,6 @@ private:
 	//
 	// Resumes the process from a suspended state
 	void ResumeInternal(void) const;
-
-	// Spawn<Architecture>
-	//
-	// Creates a new process instance from an executable image
-	template<::Architecture architecture>
-	static std::shared_ptr<Process> Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent,
-		const std::unique_ptr<Executable>& executable);
 
 	// SuspendInternal
 	//

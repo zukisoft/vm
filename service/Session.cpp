@@ -33,7 +33,9 @@
 //	vm			- Parent VirtualMachine instance
 //	sid			- Session identifier
 
-Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid) {}
+Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid) 
+{
+}
 
 //-----------------------------------------------------------------------------
 // Session::FromExecutable (static)

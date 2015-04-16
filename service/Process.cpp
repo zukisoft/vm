@@ -604,6 +604,82 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 }
 
 //-----------------------------------------------------------------------------
+// Process::FromExecutable (static)
+//
+// Creates a new process instance from an executable
+//
+// Arguments:
+//
+//	pgroup		- Parent process group instance
+//	pid			- Process identifier
+//	ns			- Namespace instance
+//	executable	- Executable to construct into a process
+
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
+	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
+{
+	// Architecture::x86 --> 32-bit executable
+	if(executable->Architecture == Architecture::x86) return FromExecutable<Architecture::x86>(pgroup->Session->VirtualMachine, pid, nullptr, executable);
+
+#ifdef _M_X64
+	// Architecture::x86_64 --> 64-bit executable
+	else if(executable->Architecture == Architecture::x86_64) return FromExecutable<Architecture::x86_64>(pgroup->Session->VirtualMachine, pid, nullptr, executable);
+#endif
+	
+	throw LinuxException(LINUX_ENOEXEC);
+}
+
+//-----------------------------------------------------------------------------
+// Process::FromExecutable<Architecture> (private, static)
+//
+// Creates a new process based on an Executable instance
+//
+// Arguments:
+//
+//	vm				- Parent virtual machine instance
+//	pid				- Virtual process identifier to assign
+//	parent			- Optional parent process to assign to the process
+//	executable		- Executable instance
+
+template<::Architecture architecture>
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	const std::unique_ptr<Executable>& executable)
+{
+	// Create a host process for the specified architecture
+	std::unique_ptr<NativeProcess> host = NativeProcess::Create<architecture>(vm);
+
+	try {
+
+		// Create a new virtual address space for the process
+		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
+
+		// Allocate a new local descriptor table for the process
+		const void* ldt = nullptr;
+		try { ldt = memory->Allocate(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+		// Allocate the stack for the main process thread
+		const void* stackpointer = nullptr;
+		try { stackpointer = CreateStack(vm, memory); }
+		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
+
+		// Load the executable image into the process address space and set up the thread stack
+		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
+
+		// Create a Thread instance for the main thread of the new process, using a new TaskState
+		//std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
+		//	TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
+
+		// Construct and return the new Process instance
+		return std::make_shared<Process>(vm, architecture, pid, parent, std::move(host), TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer), 
+			std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), loaded.ProgramBreak, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
+	}
+
+	// Terminate the created host process on exception
+	catch(...) { host->Terminate(LINUX_SIGKILL); throw; }
+}
+	
+//-----------------------------------------------------------------------------
 // Process::GetResourceUsage
 //
 // Gets resource usage information for the process
@@ -1290,105 +1366,6 @@ void Process::putSignalAction(int signal, uapi::sigaction action)
 	m_sigactions->Set(signal, &action, nullptr);
 }
 
-//-----------------------------------------------------------------------------
-// Process::Spawn (static)
-//
-// Creates a new process instance from an executable in the file system
-//
-// Arguments:
-//
-//	vm			- Parent virtual machine instance
-//	pid			- Virtual process identifier to assign
-//	parent		- Optional parent process to assign to the process
-//	filename	- Name of the file system executable
-//	argv		- Command-line arguments
-//	envp		- Environment variables
-//	rootdir		- Process root directory
-//	workingdir	- Process working directory
-
-std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	const char_t* filename, const char_t* const* argv, const char_t* const* envp, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-	const std::shared_ptr<FileSystem::Alias>& workingdir)
-{
-	// Parse the filename and command line arguments into an Executable instance
-	auto executable = Executable::FromFile(filename, argv, envp, rootdir, workingdir);
-
-	// Architecture::x86 --> 32-bit executable
-	if(executable->Architecture == Architecture::x86) return Spawn<Architecture::x86>(vm, pid, parent, executable);
-
-#ifdef _M_X64
-	// Architecture::x86_64 --> 64-bit executable
-	else if(executable->Architecture == Architecture::x86_64) return Spawn<Architecture::x86_64>(vm, pid, parent, executable);
-#endif
-	
-	throw LinuxException(LINUX_ENOEXEC);
-}
-
-// new
-std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
-	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
-{
-	// Architecture::x86 --> 32-bit executable
-	if(executable->Architecture == Architecture::x86) return Spawn<Architecture::x86>(pgroup->Session->VirtualMachine, pid, nullptr, executable);
-
-#ifdef _M_X64
-	// Architecture::x86_64 --> 64-bit executable
-	else if(executable->Architecture == Architecture::x86_64) return Spawn<Architecture::x86_64>(pgroup->Session->VirtualMachine, pid, nullptr, executable);
-#endif
-	
-	throw LinuxException(LINUX_ENOEXEC);
-}
-
-//-----------------------------------------------------------------------------
-// Process::Spawn<Architecture> (private, static)
-//
-// Creates a new process based on an Executable instance
-//
-// Arguments:
-//
-//	vm				- Parent virtual machine instance
-//	pid				- Virtual process identifier to assign
-//	parent			- Optional parent process to assign to the process
-//	executable		- Executable instance
-
-template<::Architecture architecture>
-std::shared_ptr<Process> Process::Spawn(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	const std::unique_ptr<Executable>& executable)
-{
-	// Create a host process for the specified architecture
-	std::unique_ptr<NativeProcess> host = NativeProcess::Create<architecture>(vm);
-
-	try {
-
-		// Create a new virtual address space for the process
-		std::unique_ptr<ProcessMemory> memory = ProcessMemory::Create(host->Process);
-
-		// Allocate a new local descriptor table for the process
-		const void* ldt = nullptr;
-		try { ldt = memory->Allocate(LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
-		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
-
-		// Allocate the stack for the main process thread
-		const void* stackpointer = nullptr;
-		try { stackpointer = CreateStack(vm, memory); }
-		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
-
-		// Load the executable image into the process address space and set up the thread stack
-		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
-
-		// Create a Thread instance for the main thread of the new process, using a new TaskState
-		//std::shared_ptr<::Thread> mainthread = ::Thread::FromNativeHandle<architecture>(pid, host->Process, host->Thread, host->ThreadId,
-		//	TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer));
-
-		// Construct and return the new Process instance
-		return std::make_shared<Process>(vm, architecture, pid, parent, std::move(host), TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer), 
-			std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), loaded.ProgramBreak, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
-	}
-
-	// Terminate the created host process on exception
-	catch(...) { host->Terminate(LINUX_SIGKILL); throw; }
-}
-	
 //-----------------------------------------------------------------------------
 // Process::Start
 //

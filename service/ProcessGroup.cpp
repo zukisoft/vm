@@ -33,7 +33,9 @@
 //	session			- Parent session instance
 //	pgid			- Process group identifier
 
-ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid) : m_session(session), m_pgid(pgid){}
+ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid) : m_session(session), m_pgid(pgid)
+{
+}
 
 //-----------------------------------------------------------------------------
 // ProcessGroup::FromExecutable (static)
