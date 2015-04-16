@@ -28,7 +28,6 @@
 #include <memory>
 #include <concrt.h>
 #include <linux/types.h>
-#include "Namespace.h"
 #include "Process.h"
 
 #pragma warning(push, 4)
@@ -58,7 +57,7 @@ public:
 	//
 	// Creates a new ProcessGroup from an Executable instance
 	static std::shared_ptr<ProcessGroup> FromExecutable(const std::shared_ptr<::Session>& session, uapi::pid_t pgid,
-		const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable);
+		const std::unique_ptr<Executable>& executable);
 
 	//-------------------------------------------------------------------------
 	// Properties

@@ -50,11 +50,11 @@ Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) :
 //	executable	- Executable instance to use to seed the session
 
 std::shared_ptr<Session> Session::FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
-	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
+	const std::unique_ptr<Executable>& executable)
 {
 	// Create and initialize a new session instance with a new process group
 	auto session = std::make_shared<Session>(vm, sid);
-	session->m_pgroups.emplace(std::make_pair(sid, ProcessGroup::FromExecutable(session, sid, ns, executable)));
+	session->m_pgroups.emplace(std::make_pair(sid, ProcessGroup::FromExecutable(session, sid, executable)));
 
 	return session;
 }

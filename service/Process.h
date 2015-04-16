@@ -40,7 +40,6 @@
 #include "Executable.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
-#include "Namespace.h"
 #include "NativeHandle.h"
 #include "NativeProcess.h"
 #include "NtApi.h"
@@ -119,7 +118,7 @@ public:
 	//
 	// Creates a new Process from an Executable instance
 	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
-		const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable);
+		const std::unique_ptr<Executable>& executable);
 
 	// GetResourceUsage
 	//

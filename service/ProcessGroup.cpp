@@ -50,11 +50,11 @@ ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_
 //	executable	- Executable instance to use to seed the session
 
 std::shared_ptr<ProcessGroup> ProcessGroup::FromExecutable(const std::shared_ptr<::Session>& session, uapi::pid_t pgid,
-	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
+	const std::unique_ptr<Executable>& executable)
 {
 	// Create and initialize a new process group instance with a new process
 	auto pgroup = std::make_shared<ProcessGroup>(session, pgid);
-	pgroup->m_processes.emplace(std::make_pair(pgid, Process::FromExecutable(pgroup, pgid, ns, executable)));
+	pgroup->m_processes.emplace(std::make_pair(pgid, Process::FromExecutable(pgroup, pgid, executable)));
 
 	return pgroup;
 }

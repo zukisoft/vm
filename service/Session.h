@@ -29,7 +29,6 @@
 #include <concrt.h>
 #include <linux/types.h>
 #include "Executable.h"
-#include "Namespace.h"
 #include "Process.h"
 #include "ProcessGroup.h"
 #include "VirtualMachine.h"
@@ -57,7 +56,7 @@ public:
 	//
 	// Creates a new Session from an Executable instance
 	static std::shared_ptr<Session> FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
-		const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable);
+		const std::unique_ptr<Executable>& executable);
 
 	//-------------------------------------------------------------------------
 	// Properties

@@ -36,7 +36,6 @@
 #include "File.h"
 #include "FileSystem.h"
 #include "IndexPool.h"
-#include "Namespace.h"
 #include "NativeHandle.h"
 #include "PathSplitter.h"
 #include "Process.h"

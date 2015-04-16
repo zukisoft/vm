@@ -616,7 +616,7 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 //	executable	- Executable to construct into a process
 
 std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
-	const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Executable>& executable)
+	const std::unique_ptr<Executable>& executable)
 {
 	// Architecture::x86 --> 32-bit executable
 	if(executable->Architecture == Architecture::x86) return FromExecutable<Architecture::x86>(pgroup->Session->VirtualMachine, pid, nullptr, executable);

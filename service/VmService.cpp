@@ -509,16 +509,6 @@ void VmService::OnStart(int, LPTSTR*)
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
 
 	//
-	// TEST: DEFAULT NAMESPACE
-	//
-	auto defaultns = Namespace::Create();
-	// ROOT PROCESS (init) NEEDS TO GO INTO THE NAMESPACE AS WELL (see pid_namespaces(7))
-	// SINCE THAT PROCESS WILL BECOME THE CHILD REAPER PROCESS
-	//
-	// ALSO OF NOTE: IF A NON-DEFAULT NAMESPACE ROOT PROCESS DIES, THE ENTIRE TREE GOES WITH IT
-	// BUT IT DOES NOT DESTROY THE VM (PANIC)
-
-	//
 	// LAUNCH INIT
 	//
 	std::string initpath = std::to_string(vm_initpath);
@@ -527,10 +517,10 @@ void VmService::OnStart(int, LPTSTR*)
 	// TESTING - NEW SESSION/GROUP/PROCESS RELATIONSHIPS (overcomes Process::Spawn)
 	// it would be nice to return the Process instance, but this works too I guess
 
-	auto rootpid = defaultns->Pids->Allocate();
+	auto rootpid = AllocatePID();
 	// try/catch/release pid? why bother, whole VM dies if init can't be loaded
 	auto exec = Executable::FromFile(initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
-	auto rootsession = Session::FromExecutable(shared_from_this(), rootpid, defaultns, exec);
+	auto rootsession = Session::FromExecutable(shared_from_this(), rootpid, exec);
 
 	// Get the init process from the root session and root process group, this is inefficient like this
 	m_initprocess = rootsession->ProcessGroup[rootpid]->Process[rootpid];
