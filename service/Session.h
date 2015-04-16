@@ -47,7 +47,7 @@ public:
 
 	// Destructor
 	//
-	~Session()=default;
+	~Session();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -57,6 +57,11 @@ public:
 	// Creates a new Session from an Executable instance
 	static std::shared_ptr<Session> FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
 		const std::unique_ptr<Executable>& executable);
+
+	// ReleaseProcessGroup
+	//
+	// Removes a ProcessGroup from this session instance
+	void ReleaseProcessGroup(uapi::pid_t pgid);
 
 	//-------------------------------------------------------------------------
 	// Properties

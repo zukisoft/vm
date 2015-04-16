@@ -101,11 +101,6 @@ std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const st
 
 	// TODO: THIS NEEDS TO KILL THE PROCESS IF CHECKARCHITECTURE FAILS
 
-	// TODO: TESTING
-	// taken out for now, the jobs didn't behave as I expected, they seem to hang around
-	// after all the processes died, but can only see them in Visual Studio debugger?
-	// AssignProcessToJobObject(vm->NativeJob, host->Process->Handle);
-
 	return host;
 }
 
@@ -129,9 +124,6 @@ std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const st
 	CheckArchitecture<Architecture::x86_64>(host);
 
 	// TODO: THIS NEEDS TO KILL THE PROCESS IF CHECKARCHITECTURE FAILS
-
-	// TODO: TESTING
-	AssignProcessToJobObject(vm->NativeJob, host->Process->Handle);
 
 	return host;
 }

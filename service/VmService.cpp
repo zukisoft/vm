@@ -81,16 +81,28 @@ std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>&
 	// task can be part of context
 
 	std::shared_ptr<Process> child = process->Clone(flags, TaskState::FromExisting<Architecture::x86>(tss, tsslen));
-	m_processes.insert(std::make_pair(child->ProcessId, child));
+	
+	// dirty hack - this collection needs to be maintained differently, just replacing the shared_ptr 
+	// should be ok temporarily
+	//m_processes.insert(std::make_pair(child->ProcessId, child));
+	m_processes[child->ProcessId] = child;
 
 	child->Start();
 
 	return child;
 }
 
-void VmService::RemoveProcess(uapi::pid_t pid)
+//void VmService::RemoveProcess(uapi::pid_t pid)
+//{
+//	m_processes.erase(pid);
+//}
+
+void VmService::ReleaseSession(uapi::pid_t sid)
 {
-	m_processes.erase(pid);
+	session_map_lock_t::scoped_lock writer(m_sessionslock);
+
+	if(m_sessions.erase(sid) == 0) throw LinuxException(LINUX_ESRCH);
+	ReleasePID(sid);
 }
 
 std::shared_ptr<Process> VmService::FindNativeProcess(DWORD nativepid)
@@ -401,11 +413,6 @@ void VmService::OnStart(int, LPTSTR*)
 	try {
 
 		//
-		// NATIVE JOB
-		//
-		m_nativejob = NativeHandle::FromHandle(CreateJobObject(nullptr, nullptr));
-
-		//
 		// PROPERTIES
 		//
 		SetProperty(Properties::DomainName, "DOMAIN NAME");
@@ -520,10 +527,11 @@ void VmService::OnStart(int, LPTSTR*)
 	auto rootpid = AllocatePID();
 	// try/catch/release pid? why bother, whole VM dies if init can't be loaded
 	auto exec = Executable::FromFile(initpath.c_str(), args, nullptr, m_rootfs->Root, m_rootfs->Root);
-	auto rootsession = Session::FromExecutable(shared_from_this(), rootpid, exec);
+	auto session = Session::FromExecutable(shared_from_this(), rootpid, exec);
+	m_sessions.insert(std::make_pair(rootpid, session));
 
 	// Get the init process from the root session and root process group, this is inefficient like this
-	m_initprocess = rootsession->ProcessGroup[rootpid]->Process[rootpid];
+	m_initprocess = session->ProcessGroup[rootpid]->Process[rootpid];
 
 	// TODO: NEED INITIAL ENVIRONMENT
 	// note: no parent
@@ -563,10 +571,9 @@ void VmService::OnStart(int, LPTSTR*)
 void VmService::OnStop(void)
 {
 	// TODO: TESTING
-	TerminateJobObject(m_nativejob->Handle, static_cast<UINT>(E_UNEXPECTED));
+	//m_initprocess.reset();
 
-	// TODO: TESTING
-	m_initprocess.reset();
+	m_sessions.clear();
 
 #ifdef _M_X64
 	// Remove the 64-bit system calls RPC interface
@@ -577,43 +584,6 @@ void VmService::OnStop(void)
 	// Remove the 32-bit system calls RPC interface
 	syscall32_listener::RemoveObject(this->InstanceID);
 	syscall32_listener::Unregister(true);
-}
-
-//-----------------------------------------------------------------------------
-// VmService::SpawnProcess
-//
-// Spawns a new process.  A spawned process will have no parent and will use
-// the file system root directory for both its working and root directories
-//
-// Arguments:
-//
-//	filename		- Path to the binary used to spawn the process
-//	argv			- Process command line arguments
-//	envp			- Process environment variables
-
-std::shared_ptr<Process> VmService::SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
-{
-	(filename);
-	(argv);
-	(envp);
-	//uapi::pid_t pid = m_pidpool.Allocate();			// Allocate a PID for the new process
-
-	//try { 
-	//	
-	//	// Attempt to spawn the new process
-	//	auto process = Process::FromFile(shared_from_this(), pid, filename, argv, envp, m_rootfs->Root, m_rootfs->Root);
-
-	//	// Take a writer lock on the process collection and add the new process to it.  The lock can be taken just
-	//	// prior to inserting the item since the key (PID) is already guaranteed to be unique via the pool class
-	//	process_map_lock_t::scoped_lock writer(m_processeslock);
-	//	m_processes.insert(std::make_pair(pid, process));
-
-	//	return process;								// Return the newly created process instance
-	//}
-
-	//catch(...) { m_pidpool.Release(pid); throw; }
-
-	return nullptr;
 }
 
 //---------------------------------------------------------------------------

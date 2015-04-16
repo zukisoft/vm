@@ -38,6 +38,21 @@ Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) :
 }
 
 //-----------------------------------------------------------------------------
+// Session Destructor
+
+Session::~Session()
+{
+	auto vm = m_vm.lock();			// Parent virtual machine instance
+
+	// There should not be any process groups left in this session
+	_ASSERTE(m_pgroups.size() == 0);
+
+	// Release the PGIDs for any process groups that still exist in the collection
+	for(const auto& iterator : m_pgroups)
+		if(iterator.first != m_sid && vm) vm->ReleasePID(iterator.first);
+}
+
+//-----------------------------------------------------------------------------
 // Session::FromExecutable (static)
 //
 // Creates a new Session instance from an Executable
@@ -54,7 +69,7 @@ std::shared_ptr<Session> Session::FromExecutable(const std::shared_ptr<::Virtual
 {
 	// Create and initialize a new session instance with a new process group
 	auto session = std::make_shared<Session>(vm, sid);
-	session->m_pgroups.emplace(std::make_pair(sid, ProcessGroup::FromExecutable(session, sid, executable)));
+	session->m_pgroups.emplace(std::make_pair(sid, ProcessGroup::FromExecutable(vm, session, sid, executable)));
 
 	return session;
 }
@@ -73,6 +88,31 @@ std::shared_ptr<::ProcessGroup> Session::getProcessGroup(uapi::pid_t pgid)
 	if(iterator == m_pgroups.end()) throw LinuxException(LINUX_ESRCH);
 
 	return iterator->second;
+}
+
+//-----------------------------------------------------------------------------
+// Session::ReleaseProcessGroup
+//
+// Removes a process group from this session
+//
+// Arguments:
+//
+//	pgid		- Process group identifier
+
+void Session::ReleaseProcessGroup(uapi::pid_t pgid)
+{
+	auto vm = m_vm.lock();			// Parent virtual machine instance
+
+	pgroup_map_lock_t::scoped_lock writer(m_pgroupslock);
+
+	// Remove the specified process group from the collection
+	if(m_pgroups.erase(pgid) == 0) throw LinuxException(LINUX_ESRCH);
+
+	// Release the process group identifier if it wasn't the session leader
+	if((pgid != m_sid) && vm) vm->ReleasePID(pgid);
+
+	// If this was the last process group, release the session as well
+	if((m_pgroups.size() == 0) && vm) vm->ReleaseSession(m_sid);
 }
 
 //-----------------------------------------------------------------------------

@@ -78,14 +78,12 @@ public:
 	//
 	virtual uapi::pid_t							AllocatePID(void);
 	virtual void								ReleasePID(uapi::pid_t pid);
+
 	virtual std::shared_ptr<Process>			CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen);
-	virtual void								RemoveProcess(uapi::pid_t pid);
+	///virtual void								RemoveProcess(uapi::pid_t pid);
 	virtual std::shared_ptr<Process>			FindNativeProcess(DWORD nativepid);
 
-	// SpawnProcess
-	//
-	// Spawns a new process
-	virtual std::shared_ptr<Process> SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp);
+	virtual void ReleaseSession(uapi::pid_t sid);
 
 	// updated file system api
 	// THESE ALL MOVE TO FILESYSTEM AS STATICS
@@ -94,7 +92,6 @@ public:
 
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) { return m_rootfs; }
 	virtual std::shared_ptr<Process> getRootProcess(void) const { return m_initprocess; }
-	virtual HANDLE getNativeJob(void) const { return (m_nativejob) ? m_nativejob->Handle : nullptr; }
 
 	virtual const std::tstring&	GetProperty(VirtualMachine::Properties id);
 	virtual size_t				GetProperty(VirtualMachine::Properties id, char_t* value, size_t length);
@@ -198,7 +195,6 @@ private:
 	//
 	IndexPool<int32_t>					m_pidpool;		// Process/thread id pool
 	std::shared_ptr<Process>			m_initprocess;	// initial process object
-	std::shared_ptr<NativeHandle>		m_nativejob;	
 
 	// FILE SYSTEMS
 	//

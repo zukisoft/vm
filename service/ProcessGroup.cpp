@@ -22,6 +22,7 @@
 
 #include "stdafx.h"
 #include "ProcessGroup.h"
+#include "Session.h"
 
 #pragma warning(push, 4)
 
@@ -30,11 +31,45 @@
 //
 // Arguments:
 //
+//	vm				- Parent virtual machine instance
 //	session			- Parent session instance
 //	pgid			- Process group identifier
 
-ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid) : m_session(session), m_pgid(pgid)
+ProcessGroup::ProcessGroup(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid) 
+	: m_vm(vm), m_session(session), m_pgid(pgid)
 {
+}
+
+//-----------------------------------------------------------------------------
+// ProcessGroup Destructor
+
+ProcessGroup::~ProcessGroup()
+{
+	auto vm = m_vm.lock();			// Parent virtual machine instance
+
+	// There should not be any processes left in this process group
+	_ASSERTE(m_processes.size() == 0);
+
+	// Release the PIDs for any processes that still exist in the collection
+	for(const auto& iterator : m_processes)
+		if(iterator.first != m_pgid && vm) vm->ReleasePID(iterator.first);
+}
+
+//-----------------------------------------------------------------------------
+// ProcessGroup::AttachProcess
+//
+// Attaches an existing Process instance to this process group
+//
+// Arguments:
+//
+//	process		- Process to add to this group
+
+void ProcessGroup::AttachProcess(const std::shared_ptr<::Process>& process)
+{
+	process_map_lock_t::scoped_lock writer(m_processeslock);
+
+	// TODO: TEMPORARY; NEEDS EXCEPTION HANDLING
+	m_processes.insert(std::make_pair(process->ProcessId, process));
 }
 
 //-----------------------------------------------------------------------------
@@ -44,17 +79,17 @@ ProcessGroup::ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_
 //
 // Arguments:
 //
+//	vm			- Parent VirtualMachine instance
 //	session		- Parent Session instance
-//	pgid		- ProcessGroup identifier
-//	ns			- Namespace instance
+//	pgid		- Process group identifier
 //	executable	- Executable instance to use to seed the session
 
-std::shared_ptr<ProcessGroup> ProcessGroup::FromExecutable(const std::shared_ptr<::Session>& session, uapi::pid_t pgid,
-	const std::unique_ptr<Executable>& executable)
+std::shared_ptr<ProcessGroup> ProcessGroup::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, 
+	uapi::pid_t pgid, const std::unique_ptr<Executable>& executable)
 {
 	// Create and initialize a new process group instance with a new process
-	auto pgroup = std::make_shared<ProcessGroup>(session, pgid);
-	pgroup->m_processes.emplace(std::make_pair(pgid, Process::FromExecutable(pgroup, pgid, executable)));
+	auto pgroup = std::make_shared<ProcessGroup>(vm, session, pgid);
+	pgroup->m_processes.emplace(std::make_pair(pgid, Process::FromExecutable(vm, pgroup, pgid, executable)));
 
 	return pgroup;
 }
@@ -83,6 +118,32 @@ std::shared_ptr<::Process> ProcessGroup::getProcess(uapi::pid_t pid)
 uapi::pid_t ProcessGroup::getProcessGroupId(void) const
 {
 	return m_pgid;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessGroup::ReleaseProcess
+//
+// Removes a process from this process group
+//
+// Arguments:
+//
+//	pid			- Process identifier
+
+void ProcessGroup::ReleaseProcess(uapi::pid_t pid)
+{
+	auto vm = m_vm.lock();				// Parent virtual machine instance
+	auto session = m_session.lock();	// Parent session instance
+
+	process_map_lock_t::scoped_lock writer(m_processeslock);
+
+	// Remove the specified process group from the collection
+	if(m_processes.erase(pid) == 0) throw LinuxException(LINUX_ESRCH);
+
+	// Release the process identifier if it wasn't the group leader
+	if((pid != m_pgid) && vm) vm->ReleasePID(pid);
+
+	// If this was the last process, release the process group as well
+	if((m_processes.size() == 0) && session) session->ReleaseProcessGroup(m_pgid);
 }
 
 //-----------------------------------------------------------------------------

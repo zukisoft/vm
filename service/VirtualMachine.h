@@ -98,15 +98,10 @@ public:
 
 	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen) = 0;
 
-	virtual void RemoveProcess(uapi::pid_t pid) = 0;
+	///virtual void RemoveProcess(uapi::pid_t pid) = 0;
 
-	// SpawnProcess
-	//
-	// Spawns a new process
-	virtual std::shared_ptr<Process> SpawnProcess(const char_t* filename, const char_t* const* argv, const char_t* const* envp) = 0;
-
-	//
-	///virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process>& process, CloneFlags flags);
+	// sessions
+	virtual void ReleaseSession(uapi::pid_t sid) = 0;
 
 
 	// CreateDeviceId (static)
@@ -165,9 +160,6 @@ public:
 
 	__declspec(property(get=getRootFileSystem)) std::shared_ptr<FileSystem> RootFileSystem;
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) = 0;
-
-	__declspec(property(get=getNativeJob)) HANDLE NativeJob;
-	virtual HANDLE getNativeJob(void) const = 0;
 
 protected:
 

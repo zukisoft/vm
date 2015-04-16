@@ -117,8 +117,8 @@ public:
 	// FromExecutable (static)
 	//
 	// Creates a new Process from an Executable instance
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
-		const std::unique_ptr<Executable>& executable);
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
+		uapi::pid_t pid, const std::unique_ptr<Executable>& executable);
 
 	// GetResourceUsage
 	//
@@ -391,7 +391,7 @@ private:
 	//
 	// Creates a new process instance from an executable image
 	template<::Architecture architecture>
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid, 
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid, 
 		const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable);
 
 	// NotifyParent

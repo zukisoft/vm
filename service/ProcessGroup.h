@@ -48,16 +48,26 @@ public:
 
 	// Destructor
 	//
-	~ProcessGroup()=default;
+	~ProcessGroup();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// AttachProcess
+	//
+	// Attaches an existing Process to this ProcessGroup
+	void AttachProcess(const std::shared_ptr<::Process>& process);
+
 	// FromExecutable (static)
 	//
 	// Creates a new ProcessGroup from an Executable instance
-	static std::shared_ptr<ProcessGroup> FromExecutable(const std::shared_ptr<::Session>& session, uapi::pid_t pgid,
-		const std::unique_ptr<Executable>& executable);
+	static std::shared_ptr<ProcessGroup> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, 
+		uapi::pid_t pgid, const std::unique_ptr<Executable>& executable);
+
+	// ReleaseProcess
+	//
+	// Removes a process from this process group
+	void ReleaseProcess(uapi::pid_t pid);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -97,16 +107,17 @@ private:
 
 	// Instance Constructor
 	//
-	ProcessGroup(const std::shared_ptr<::Session>& session, uapi::pid_t pgid);
+	ProcessGroup(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid);
 	friend class std::_Ref_count_obj<ProcessGroup>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::weak_ptr<::Session>	m_session;			// Parent session instance
-	const uapi::pid_t			m_pgid;				// Process group identifier
-	process_map_t				m_processes;		// Owned processes
-	process_map_lock_t			m_processeslock;	// Synchronization object
+	std::weak_ptr<VirtualMachine>	m_vm;				// Parent vm instance
+	std::weak_ptr<::Session>		m_session;			// Parent session instance
+	const uapi::pid_t				m_pgid;				// Process group identifier
+	process_map_t					m_processes;		// Owned processes
+	process_map_lock_t				m_processeslock;	// Synchronization object
 };
 
 //-----------------------------------------------------------------------------
