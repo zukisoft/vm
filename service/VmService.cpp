@@ -109,8 +109,11 @@ std::shared_ptr<Process> VmService::FindNativeProcess(DWORD nativepid)
 {
 	if(nativepid == m_initprocess->NativeProcessId) return m_initprocess;
 
-	for(const auto& iterator : m_processes)
-		if(nativepid == iterator.second->NativeProcessId) return iterator.second;
+	for(const auto& iterator : m_processes) {
+
+		auto p = iterator.second.lock();
+		if((p) && (nativepid == p->NativeProcessId)) return p;
+	}
 
 	return nullptr;
 }
@@ -571,7 +574,7 @@ void VmService::OnStart(int, LPTSTR*)
 void VmService::OnStop(void)
 {
 	// TODO: TESTING
-	//m_initprocess.reset();
+	m_initprocess.reset();
 
 	m_sessions.clear();
 

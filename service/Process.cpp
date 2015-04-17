@@ -89,8 +89,14 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 
 Process::~Process()
 {
-	ClearThreads();					// Terminate/remove all threads
-	m_vm->ReleasePID(m_pid);		// Release the process PID
+	auto vm = m_vm.lock();			// Parent virtual machine instance
+
+	// There should not be any threads left in this process
+	_ASSERTE(m_threads.size() == 0);
+
+	// Release the TIDs for any threads that still exist in the collection
+	for(const auto& iterator : m_threads)
+		if((iterator.first != m_pid) && vm) vm->ReleasePID(iterator.first);
 }
 
 //-----------------------------------------------------------------------------
@@ -137,6 +143,10 @@ std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
 {
 	std::shared_ptr<::Thread>		thread;				// Attached Thread instance
 
+	// Lock the parent virtual machine instance in order to acquire the thread identifier
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	// Attempt to open a new NativeHandle with THREAD_ALL_ACCESS against the provided thread identifier
 	std::shared_ptr<NativeHandle> handle = NativeHandle::FromHandle(OpenThread(THREAD_ALL_ACCESS, FALSE, nativetid));
 	if(handle->Handle == nullptr) throw LinuxException(LINUX_ESRCH, Win32Exception());
@@ -153,11 +163,11 @@ std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
 
 	// Allocate a thread identifier for the new Thread instance; the first thread in the process
 	// (or a replacement main thread from Execute) inherits the process PID instead
-	uapi::pid_t tid = (m_threads.size() == 0) ? m_pid : m_vm->AllocatePID();
+	uapi::pid_t tid = (m_threads.size() == 0) ? m_pid : vm->AllocatePID();
 
-	// Attempt to create the Thread instance, releasing the allocated PID on exception
+	// Attempt to create the Thread instance, releasing the allocated thread identifier on exception
 	try { thread = Thread::Create(shared_from_this(), tid, handle, nativetid, std::move(iterator->second)); }
-	catch(...) { if(tid != m_pid) m_vm->ReleasePID(tid); throw; }
+	catch(...) { if(tid != m_pid) vm->ReleasePID(tid); throw; }
 
 	m_threads.emplace(tid, thread);			// Insert the new Thread
 	m_pendingthreads.erase(iterator);		// Remove pending thread entry
@@ -208,8 +218,11 @@ void Process::ClearThreads(void)
 
 std::shared_ptr<Process> Process::Clone(int flags, std::unique_ptr<TaskState>&& task)
 {
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	// Allocate the PID for the cloned process
-	uapi::pid_t pid = m_vm->AllocatePID();
+	uapi::pid_t pid = vm->AllocatePID();
 
 	try {
 
@@ -226,7 +239,7 @@ std::shared_ptr<Process> Process::Clone(int flags, std::unique_ptr<TaskState>&& 
 	}
 
 	// Release the allocated PID upon exception
-	catch(...) { m_vm->ReleasePID(pid); throw; }
+	catch(...) { vm->ReleasePID(pid); throw; }
 }
 
 //-----------------------------------------------------------------------------
@@ -243,6 +256,9 @@ std::shared_ptr<Process> Process::Clone(int flags, std::unique_ptr<TaskState>&& 
 template<::Architecture architecture>
 std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task)
 {
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	// FLAGS TO DEAL WITH:
 	//
 	//CLONE_FS
@@ -267,7 +283,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 	if(flags & LINUX_CLONE_VM) throw LinuxException(LINUX_EINVAL);
 
 	// Create a new host process for the current process architecture
-	std::unique_ptr<NativeProcess> childhost = NativeProcess::Create<architecture>(m_vm);
+	std::unique_ptr<NativeProcess> childhost = NativeProcess::Create<architecture>(vm);
 
 	try {
 
@@ -291,7 +307,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 
 		// Construct and insert a new Process instance to the child collection
 		process_map_lock_t::scoped_lock writer(m_childlock);
-		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(m_vm, m_architecture, pid, childparent, std::move(childhost), std::move(task),
+		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(vm, m_architecture, pid, childparent, std::move(childhost), std::move(task),
 			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childtermsig, m_rootdir, m_workingdir));
 
 		// todo: dirty hack
@@ -493,8 +509,11 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 	DWORD					nativetid;			// Native thread identifier
 	unsigned long			timeoutms;			// Thread attach timeout value
 
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	// Get the thread attach timeout value from the virtual machine properties
-	try { timeoutms = std::stoul(m_vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
+	try { timeoutms = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
 	catch(...) { throw Exception(E_PROCESSINVALIDTHREADTIMEOUT); }
 
 	// Suspend the process; all existing threads will be terminated
@@ -539,7 +558,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
 		// Load the executable image into the process address space with a new stack allocation
-		Executable::LoadResult loaded = executable->Load(m_memory, CreateStack(m_vm, m_memory));
+		Executable::LoadResult loaded = executable->Load(m_memory, CreateStack(vm, m_memory));
 
 		// Reset the program break address based on the loaded executable 
 		m_programbreak = loaded.ProgramBreak;
@@ -581,6 +600,9 @@ void Process::DetachThread(const std::shared_ptr<::Thread>& thread, int exitcode
 
 void Process::ExitThread(uapi::pid_t tid, int exitcode)
 {
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	thread_map_lock_t::scoped_lock writer(m_threadslock);
 
 	// Locate the Thread instance associated with this thread id
@@ -588,7 +610,7 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	if(iterator == m_threads.end()) throw LinuxException(LINUX_ESRCH);
 
 	// Remove the Thread instance from the collection
-	if(tid != m_pid) m_vm->ReleasePID(tid);
+	if(tid != m_pid) vm->ReleasePID(tid);
 	m_threads.erase(iterator);
 
 	// If this was the last thread in the process, the process is exiting normally
@@ -1001,10 +1023,15 @@ void Process::NotifyParent(Waitable::State state, int32_t status)
 
 std::shared_ptr<Process> Process::getParent(void) const
 {
+	// TODO: this actually needs to return the reaper
+
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	// Try to get the parent instance, which may have disappeared orphaning
 	// this process.  In that case, use the root/init process as the parent
 	std::shared_ptr<Process> parent = m_parent.lock();
-	return (parent) ? parent : m_vm->RootProcess;
+	return (parent) ? parent : vm->RootProcess;
 }
 	
 //-----------------------------------------------------------------------------
@@ -1400,12 +1427,15 @@ void Process::Start(void)
 {
 	unsigned long			timeoutms;			// Thread attach timeout value
 
+	auto vm = m_vm.lock();
+	if(!vm) throw LinuxException(LINUX_ESRCH);
+
 	// Any exeception that occurs during process start is considered fatal and results
 	// in the process instance being terminated
 	try {
 
 		// Get the thread attach timeout value from the virtual machine properties
-		try { timeoutms = std::stoul(m_vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
+		try { timeoutms = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
 		catch(...) { throw Exception(E_PROCESSINVALIDTHREADTIMEOUT); }
 
 		// Start the process; there is no race condition to consider with the pending threads

@@ -29,6 +29,7 @@
 #include <concrt.h>
 #include <linux/types.h>
 #include "Process.h"
+#include "ProcessModel.h"
 
 #pragma warning(push, 4)
 
@@ -42,13 +43,13 @@ class Session;
 // Implements a process group, which is a collection of processes that can be 
 // managed as a single entity
 
-class ProcessGroup
+class ProcessGroup : public ProcessModel::Child<ProcessGroup>
 {
 public:
 
 	// Destructor
 	//
-	~ProcessGroup();
+	virtual ~ProcessGroup();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -113,11 +114,11 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::weak_ptr<VirtualMachine>	m_vm;				// Parent vm instance
-	std::weak_ptr<::Session>		m_session;			// Parent session instance
-	const uapi::pid_t				m_pgid;				// Process group identifier
-	process_map_t					m_processes;		// Owned processes
-	process_map_lock_t				m_processeslock;	// Synchronization object
+	const std::weak_ptr<VirtualMachine>	m_vm;				// Parent vm instance
+	const std::weak_ptr<::Session>		m_session;			// Parent session instance
+	const uapi::pid_t					m_pgid;				// Process group identifier
+	process_map_t						m_processes;		// Owned processes
+	process_map_lock_t					m_processeslock;	// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

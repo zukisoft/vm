@@ -31,6 +31,7 @@
 #include "Executable.h"
 #include "Process.h"
 #include "ProcessGroup.h"
+#include "ProcessModel.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
@@ -41,13 +42,13 @@
 // Implements a session, which is a collection of process groups that are 
 // associated with a controlling terminal (stdin/stdout).
 
-class Session
+class Session : public ProcessModel::Parent<::ProcessGroup>, public std::enable_shared_from_this<Session>
 {
 public:
 
 	// Destructor
 	//
-	~Session();
+	virtual ~Session();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -105,12 +106,21 @@ private:
 	friend class std::_Ref_count_obj<Session>;
 
 	//-------------------------------------------------------------------------
+	// ProcessModel::Parent<> Implementation
+
+	virtual std::shared_ptr<ProcessModel::Parent<::ProcessGroup>> getSharedPointer(void)
+	{
+		// todo: move me into CPP file
+		return std::static_pointer_cast<ProcessModel::Parent<::ProcessGroup>>(shared_from_this());
+	}
+
+	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::weak_ptr<::VirtualMachine>	m_vm;				// Parent VirtualMachine
-	const uapi::pid_t				m_sid;				// Session identifier
-	pgroup_map_t					m_pgroups;			// Owned process groups
-	pgroup_map_lock_t				m_pgroupslock;		// Synchronization object
+	const std::weak_ptr<::VirtualMachine>	m_vm;			// Parent VirtualMachine
+	const uapi::pid_t						m_sid;			// Session identifier
+	pgroup_map_t							m_pgroups;		// Owned process groups
+	pgroup_map_lock_t						m_pgroupslock;	// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

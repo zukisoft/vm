@@ -33,7 +33,8 @@
 //	vm			- Parent VirtualMachine instance
 //	sid			- Session identifier
 
-Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid) 
+Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid), 
+	ProcessModel::Parent<::ProcessGroup>(vm, sid)
 {
 }
 
@@ -49,7 +50,7 @@ Session::~Session()
 
 	// Release the PGIDs for any process groups that still exist in the collection
 	for(const auto& iterator : m_pgroups)
-		if(iterator.first != m_sid && vm) vm->ReleasePID(iterator.first);
+		if((iterator.first != m_sid) && vm) vm->ReleasePID(iterator.first);
 }
 
 //-----------------------------------------------------------------------------
@@ -101,6 +102,10 @@ std::shared_ptr<::ProcessGroup> Session::getProcessGroup(uapi::pid_t pgid)
 
 void Session::ReleaseProcessGroup(uapi::pid_t pgid)
 {
+	Add(0, nullptr);
+	Attach(nullptr);
+	auto r = Detach(0);
+
 	auto vm = m_vm.lock();			// Parent virtual machine instance
 
 	pgroup_map_lock_t::scoped_lock writer(m_pgroupslock);

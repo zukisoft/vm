@@ -412,11 +412,18 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::shared_ptr<VirtualMachine>	m_vm;				// Virtual machine instance
-	std::weak_ptr<::ProcessGroup>			m_pgroup;			// Parent ProcessGroup instance
-	const ::Architecture					m_architecture;		// Process architecture
-	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
+	// Immutable Properties
+	const std::weak_ptr<VirtualMachine>		m_vm;				// Parent VirtualMachine
 	const uapi::pid_t						m_pid;				// Process identifier
+
+	// Architecture may be mutable at some point, for example when a 32 bit process execve()s
+	// a 64-bit process.  The process properties should not change, but the host and architecture
+	// will
+
+	const ::Architecture					m_architecture;		// Process architecture
+
+	std::weak_ptr<::ProcessGroup>			m_pgroup;			// Parent ProcessGroup instance
+	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
 
 	// Parent and Children
 	//
@@ -424,6 +431,10 @@ private:
 	process_map_t						m_children;			// Collection of child processes
 	process_map_lock_t					m_childlock;		// Synchronization object
 	ScalarCondition<bool>				m_nochildren;		// "No Children" condition variable
+
+	// Subreaper Flag
+	//
+	std::atomic<bool>	m_subreaper = false;
 
 	// Memory
 	//

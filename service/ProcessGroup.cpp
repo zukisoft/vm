@@ -36,7 +36,7 @@
 //	pgid			- Process group identifier
 
 ProcessGroup::ProcessGroup(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid) 
-	: m_vm(vm), m_session(session), m_pgid(pgid)
+	: m_vm(vm), m_session(session), m_pgid(pgid), ProcessModel::Child<ProcessGroup>(pgid)
 {
 }
 
@@ -52,7 +52,7 @@ ProcessGroup::~ProcessGroup()
 
 	// Release the PIDs for any processes that still exist in the collection
 	for(const auto& iterator : m_processes)
-		if(iterator.first != m_pgid && vm) vm->ReleasePID(iterator.first);
+		if((iterator.first != m_pgid) && vm) vm->ReleasePID(iterator.first);
 }
 
 //-----------------------------------------------------------------------------

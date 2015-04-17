@@ -168,7 +168,7 @@ private:
 	// process_map_t
 	//
 	// 
-	using process_map_t = std::map<uapi::pid_t, std::shared_ptr<Process>>;
+	using process_map_t = std::map<uapi::pid_t, std::weak_ptr<Process>>;
 
 	// process_map_lock_t
 	//

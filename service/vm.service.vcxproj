@@ -375,6 +375,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="NativeProcess.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ProcessMemory.h" />
+    <ClInclude Include="ProcessModel.h" />
     <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Session.h" />
