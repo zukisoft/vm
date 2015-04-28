@@ -32,7 +32,7 @@
 #include "Process.h"
 #include "ProcessGroup.h"
 #include "ProcessModel.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 
 #pragma warning(push, 4)
 
@@ -56,7 +56,7 @@ public:
 	// FromExecutable (static)
 	//
 	// Creates a new Session from an Executable instance
-	static std::shared_ptr<Session> FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
+	static std::shared_ptr<Session> FromExecutable(const std::shared_ptr<::_VmOld>& vm, uapi::pid_t sid,
 		const std::unique_ptr<Executable>& executable);
 
 	// ReleaseProcessGroup
@@ -79,11 +79,11 @@ public:
 	__declspec(property(get=getSessionId)) uapi::pid_t SessionId;
 	uapi::pid_t getSessionId(void) const;
 
-	// VirtualMachine
+	// _VmOld
 	//
 	// Gets the parent virtual machine instance
-	__declspec(property(get=getVirtualMachine)) std::shared_ptr<::VirtualMachine> VirtualMachine;
-	std::shared_ptr<::VirtualMachine> getVirtualMachine(void) const;
+	__declspec(property(get=get_VmOld)) std::shared_ptr<::_VmOld> _VmOld;
+	std::shared_ptr<::_VmOld> get_VmOld(void) const;
 
 private:
 
@@ -102,7 +102,7 @@ private:
 
 	// Instance Constructor
 	//
-	Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid);
+	Session(const std::shared_ptr<::_VmOld>& vm, uapi::pid_t sid);
 	friend class std::_Ref_count_obj<Session>;
 
 	//-------------------------------------------------------------------------
@@ -117,7 +117,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::weak_ptr<::VirtualMachine>	m_vm;			// Parent VirtualMachine
+	const std::weak_ptr<::_VmOld>	m_vm;			// Parent _VmOld
 	const uapi::pid_t						m_sid;			// Session identifier
 	pgroup_map_t							m_pgroups;		// Owned process groups
 	pgroup_map_lock_t						m_pgroupslock;	// Synchronization object

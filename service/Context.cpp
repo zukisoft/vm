@@ -30,9 +30,9 @@
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance to associate with the context
+//	vm			- _VmOld instance to associate with the context
 
-Context::Context(const std::shared_ptr<::VirtualMachine>& vm) : VirtualMachine(vm) 
+Context::Context(const std::shared_ptr<::_VmOld>& vm) : _VmOld(vm) 
 {
 	_ASSERTE(vm);
 }
@@ -42,10 +42,10 @@ Context::Context(const std::shared_ptr<::VirtualMachine>& vm) : VirtualMachine(v
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance to associate with the context
+//	vm			- _VmOld instance to associate with the context
 //	process		- Process instance to associate with the context
 
-Context::Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process) : VirtualMachine(vm), Process(process)
+Context::Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process) : _VmOld(vm), Process(process)
 {
 	_ASSERTE(vm);
 	_ASSERTE(process);
@@ -56,12 +56,12 @@ Context::Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance to associate with the context
+//	vm			- _VmOld instance to associate with the context
 //	process		- Process instance to associate with the context
 //	thread		- Thread instance to associate with the context
 
-Context::Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
-	: VirtualMachine(vm), Process(process), Thread(thread) 
+Context::Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
+	: _VmOld(vm), Process(process), Thread(thread) 
 {
 	_ASSERTE(vm);
 	_ASSERTE(process);
@@ -75,9 +75,9 @@ Context::Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance to associate with the context
+//	vm			- _VmOld instance to associate with the context
 
-Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm)
+Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm)
 {
 	// Allocate the storage for the Context with MIDL_user_allocate
 	void* instance = MIDL_user_allocate(sizeof(Context));
@@ -94,10 +94,10 @@ Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm)
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance to associate with the context
+//	vm			- _VmOld instance to associate with the context
 //	process		- Process instance to associate with the context
 
-Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process)
+Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process)
 {
 	// Allocate the storage for the Context with MIDL_user_allocate
 	void* instance = MIDL_user_allocate(sizeof(Context));
@@ -114,11 +114,11 @@ Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const st
 //
 // Arguments:
 //
-//	vm			- VirtualMachine instance to associate with the context
+//	vm			- _VmOld instance to associate with the context
 //	process		- Process instance to associate with the context
 //	thread		- Thread instance to associate with the context
 
-Context* Context::Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
+Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
 {
 	// Allocate the storage for the Context with MIDL_user_allocate
 	void* instance = MIDL_user_allocate(sizeof(Context));

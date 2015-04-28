@@ -25,73 +25,108 @@
 
 #pragma warning(push, 4)
 
-// VirtualMachine::s_objects
+// VirtualMachine::s_instances
 //
-// Static collection of active VirtualMachine instances
+// Static collection of active virtual machine instances
 VirtualMachine::instance_map_t VirtualMachine::s_instances;
 
 // VirtualMachine::s_lock
 //
-// Synchronization object for concurrent access to the collection
-VirtualMachine::rwlock_t VirtualMachine::s_lock;
+// Synchronization object for active virtual machine collection
+VirtualMachine::instance_map_lock_t VirtualMachine::s_instancelock;
 
-//-----------------------------------------------------------------------------
-// VirtualMachine::CreateDeviceId (static)
-//
-// Creates a device identifier from major and minor components
-//
-// Arguments:
-//
-//	major		- Device major code
-//	minor		- Device minor code
-
-uapi::dev_t VirtualMachine::CreateDeviceId(uint32_t major, uint32_t minor)
-{
-	// MKDEV() from kdev_t.h
-	return ((major << 20) | (minor));
-}
-	
-//-----------------------------------------------------------------------------
-// VirtualMachine::FindVirtualMachine (static)
-//
-// Retrieves a VirtualMachine instance from the static collection
-//
-// Arguments:
-//
-//	instanceid		- UUID to be mapped back to a VirtualMachine instance
-
-std::shared_ptr<VirtualMachine> VirtualMachine::FindVirtualMachine(const uuid_t& instanceid)
-{
-	read_lock reader(s_lock);
-
-	// Attempt to locate the instanceid in the collection and ask it to generate an
-	// std::shared_ptr<VirtualMachine> from itself; understood this is a hack job
-	auto iterator = s_instances.find(instanceid);
-	return (iterator != s_instances.end()) ? iterator->second->ToSharedPointer() : nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// VirtualMachine Constructor (protected)
+//---------------------------------------------------------------------------
+// VirtualMachine Constructor
 //
 // Arguments:
 //
 //	NONE
 
-VirtualMachine::VirtualMachine()
+VirtualMachine::VirtualMachine() : m_instanceid(GenerateInstanceId())
 {
-	UuidCreate(&m_instanceid);			// Generate a new unique identifier
-
-	// Repeatedly try to insert the new instance, regenerating the UUID as necessary
-	write_lock writer(s_lock);
-	while(!s_instances.insert(std::make_pair(m_instanceid, this)).second) UuidCreate(&m_instanceid);
 }
 
-//-----------------------------------------------------------------------------
-// VirtualMachine Destructor
+//---------------------------------------------------------------------------
+// VirtualMachine::Find (static)
+//
+// Locates an active virtual machine instance based on its uuid
+//
+// Arguments:
+//
+//	instanceid	- Virtual machine instance identifier
 
-VirtualMachine::~VirtualMachine()
+std::shared_ptr<VirtualMachine> VirtualMachine::Find(const uuid_t& instanceid)
 {
-	write_lock writer(s_lock);
+	instance_map_lock_t::scoped_lock_read reader(s_instancelock);
+
+	// Attempt to locate the instanceid in the collection
+	auto iterator = s_instances.find(instanceid);
+	return (iterator != s_instances.end()) ? iterator->second : nullptr;
+}
+
+//---------------------------------------------------------------------------
+// VirtualMachine::GenerateInstanceId (static, private)
+//
+// Generate the universally unique identifier for this virtual machine instance
+//
+// Arguments:
+//
+//	NONE
+
+uuid_t VirtualMachine::GenerateInstanceId(void)
+{
+	uuid_t			instanceid;			// Generated instance identifier
+
+	// Attempt to generate a new uuid_t for this virtual machine instance
+	RPC_STATUS rpcresult = UuidCreate(&instanceid);
+	if(rpcresult != RPC_S_OK) throw Win32Exception(rpcresult);
+
+	return instanceid;
+}
+
+//---------------------------------------------------------------------------
+// VirtualMachine::OnStart (private)
+//
+// Invoked when the service is started
+//
+// Arguments:
+//
+//	argc		- Number of command line arguments
+//	argv		- Array of command line argument strings
+
+void VirtualMachine::OnStart(int argc, LPTSTR* argv)
+{
+	UNREFERENCED_PARAMETER(argc);
+	UNREFERENCED_PARAMETER(argv);
+
+	try {
+
+		// Construct the root namespace for this virtual machine instance
+		m_rootns = Namespace::Create();
+
+		// Add this virtual machine instance to the active instance collection
+		instance_map_lock_t::scoped_lock writer(s_instancelock);
+		s_instances.emplace(m_instanceid, shared_from_this());
+	}
+
+	// Win32Exception and Exception can be translated into a ServiceException
+	catch(Win32Exception& ex) { throw ServiceException(static_cast<DWORD>(ex.Code)); }
+	catch(Exception& ex) { throw ServiceException(ex.HResult); }
+}
+
+//---------------------------------------------------------------------------
+// VirtualMachine::OnStop
+//
+// Invoked when the service is stopped
+//
+// Arguments:
+//
+//	NONE
+
+void VirtualMachine::OnStop(void)
+{
+	// Remove this virtual machine from the active instance collection
+	instance_map_lock_t::scoped_lock writer(s_instancelock);
 	s_instances.erase(m_instanceid);
 }
 

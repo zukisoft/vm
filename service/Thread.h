@@ -36,7 +36,7 @@
 #include "NativeHandle.h"
 #include "NtApi.h"
 #include "TaskState.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 #include "Win32Exception.h"
 
 class Process;

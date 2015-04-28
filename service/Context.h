@@ -26,7 +26,7 @@
 
 #include "Process.h"
 #include "Thread.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -49,9 +49,9 @@ public:
 	// Allocate
 	//
 	// Allocates a new Context instance
-	static Context* Allocate(const std::shared_ptr<::VirtualMachine>& vm);
-	static Context* Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process);
-	static Context* Allocate(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
+	static Context* Allocate(const std::shared_ptr<::_VmOld>& vm);
+	static Context* Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process);
+	static Context* Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
 
 	// Release
 	//
@@ -71,10 +71,10 @@ public:
 	// Process thread instance
 	const std::shared_ptr<::Thread> Thread;
 
-	// VirtualMachine
+	// _VmOld
 	//
 	// Virtual machine instance
-	const std::shared_ptr<::VirtualMachine> VirtualMachine;
+	const std::shared_ptr<::_VmOld> _VmOld;
 
 private:
 
@@ -84,9 +84,9 @@ private:
 
 	// Instance Constructors
 	//
-	Context(const std::shared_ptr<::VirtualMachine>& vm);
-	Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process);
-	Context(const std::shared_ptr<::VirtualMachine>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
+	Context(const std::shared_ptr<::_VmOld>& vm);
+	Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process);
+	Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
 };
 
 //-----------------------------------------------------------------------------

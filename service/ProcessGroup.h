@@ -62,7 +62,7 @@ public:
 	// FromExecutable (static)
 	//
 	// Creates a new ProcessGroup from an Executable instance
-	static std::shared_ptr<ProcessGroup> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, 
+	static std::shared_ptr<ProcessGroup> FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::Session>& session, 
 		uapi::pid_t pgid, const std::unique_ptr<Executable>& executable);
 
 	// ReleaseProcess
@@ -108,13 +108,13 @@ private:
 
 	// Instance Constructor
 	//
-	ProcessGroup(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid);
+	ProcessGroup(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid);
 	friend class std::_Ref_count_obj<ProcessGroup>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::weak_ptr<VirtualMachine>	m_vm;				// Parent vm instance
+	const std::weak_ptr<_VmOld>	m_vm;				// Parent vm instance
 	const std::weak_ptr<::Session>		m_session;			// Parent session instance
 	const uapi::pid_t					m_pgid;				// Process group identifier
 	process_map_t						m_processes;		// Owned processes

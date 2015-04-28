@@ -39,13 +39,13 @@ uapi::long_t sys_olduname(const Context* context, uapi::oldold_utsname* buf)
 {
 	if(buf == nullptr) return -LINUX_EFAULT;
 
-	auto vm = context->VirtualMachine;
+	auto vm = context->_VmOld;
 
-	vm->GetProperty(VirtualMachine::Properties::OperatingSystemType,	buf->sysname,	LINUX__OLD_UTS_LEN + 1);
-	vm->GetProperty(VirtualMachine::Properties::HostName,				buf->nodename,	LINUX__OLD_UTS_LEN + 1);
-	vm->GetProperty(VirtualMachine::Properties::OperatingSystemRelease, buf->release,	LINUX__OLD_UTS_LEN + 1);
-	vm->GetProperty(VirtualMachine::Properties::OperatingSystemVersion, buf->version,	LINUX__OLD_UTS_LEN + 1);
-	vm->GetProperty(VirtualMachine::Properties::HardwareIdentifier,		buf->machine,	LINUX__OLD_UTS_LEN + 1);
+	vm->GetProperty(_VmOld::Properties::OperatingSystemType,	buf->sysname,	LINUX__OLD_UTS_LEN + 1);
+	vm->GetProperty(_VmOld::Properties::HostName,				buf->nodename,	LINUX__OLD_UTS_LEN + 1);
+	vm->GetProperty(_VmOld::Properties::OperatingSystemRelease, buf->release,	LINUX__OLD_UTS_LEN + 1);
+	vm->GetProperty(_VmOld::Properties::OperatingSystemVersion, buf->version,	LINUX__OLD_UTS_LEN + 1);
+	vm->GetProperty(_VmOld::Properties::HardwareIdentifier,		buf->machine,	LINUX__OLD_UTS_LEN + 1);
 
 	return 0;
 }

@@ -275,9 +275,6 @@
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualMachine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SystemCall.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -400,6 +397,12 @@
     </ClInclude>
     <ClInclude Include="UtsNamespace.h">
       <Filter>Header Files\Namespace</Filter>
+    </ClInclude>
+    <ClInclude Include="_VmOld.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualMachine.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -576,9 +579,6 @@
     </ClCompile>
     <ClCompile Include="HostFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
-    </ClCompile>
-    <ClCompile Include="VirtualMachine.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sys_set_tid_address.cpp">
       <Filter>Source Files\System Calls</Filter>
@@ -849,6 +849,12 @@
     </ClCompile>
     <ClCompile Include="UtsNamespace.cpp">
       <Filter>Source Files\Namespace</Filter>
+    </ClCompile>
+    <ClCompile Include="_VmOld.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualMachine.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

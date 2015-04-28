@@ -49,7 +49,7 @@
 #include "SignalActions.h"
 #include "TaskState.h"
 #include "Thread.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 #include "Waitable.h"
 
 #pragma warning(push, 4)
@@ -117,7 +117,7 @@ public:
 	// FromExecutable (static)
 	//
 	// Creates a new Process from an Executable instance
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
 		uapi::pid_t pid, const std::unique_ptr<Executable>& executable);
 
 	// GetResourceUsage
@@ -345,12 +345,12 @@ private:
 
 	// Instance Constructors
 	//
-	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
 		Bitmap&& ldtslots, const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
-	Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
 		Bitmap&& ldtslots, const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
 		int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 	const std::shared_ptr<FileSystem::Alias>& workingdir);
@@ -379,7 +379,7 @@ private:
 	// CreateStack
 	//
 	// Allocates a new stack in the process
-	static const void* CreateStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory);
+	static const void* CreateStack(const std::shared_ptr<_VmOld>& vm, const std::unique_ptr<ProcessMemory>& memory);
 
 	// Execute<Architecture>
 	//
@@ -391,7 +391,7 @@ private:
 	//
 	// Creates a new process instance from an executable image
 	template<::Architecture architecture>
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid, 
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid, 
 		const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable);
 
 	// NotifyParent
@@ -413,7 +413,7 @@ private:
 	// Member Variables
 
 	// Immutable Properties
-	const std::weak_ptr<VirtualMachine>		m_vm;				// Parent VirtualMachine
+	const std::weak_ptr<_VmOld>		m_vm;				// Parent _VmOld
 	const uapi::pid_t						m_pid;				// Process identifier
 
 	// Architecture may be mutable at some point, for example when a 32 bit process execve()s

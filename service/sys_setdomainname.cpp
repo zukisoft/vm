@@ -41,7 +41,7 @@ uapi::long_t sys_setdomainname(const Context* context, const uapi::char_t* name,
 	if(name == nullptr) return -LINUX_EFAULT;
 	if(len == 0) return -LINUX_EINVAL;
 
-	context->VirtualMachine->SetProperty(VirtualMachine::Properties::DomainName, name, len); 
+	context->_VmOld->SetProperty(_VmOld::Properties::DomainName, name, len); 
 
 	return 0;
 }

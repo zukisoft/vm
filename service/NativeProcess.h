@@ -29,7 +29,7 @@
 #include "HeapBuffer.h"
 #include "NativeHandle.h"
 #include "SystemInformation.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
@@ -55,7 +55,7 @@ public:
 	//
 	// Creates a new NativeProcess instance for the specified architecture
 	template<Architecture architecture>
-	static std::unique_ptr<NativeProcess> Create(const std::shared_ptr<VirtualMachine>& vm);
+	static std::unique_ptr<NativeProcess> Create(const std::shared_ptr<_VmOld>& vm);
 
 	// Terminate
 	//

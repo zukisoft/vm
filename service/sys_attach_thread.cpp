@@ -59,7 +59,7 @@ HRESULT sys32_attach_thread(handle_t rpchandle, sys32_uint_t tid, sys32_thread_t
 	try {
 
 		// Use the RPC object id to locate the virtual machine instance
-		auto vm = VirtualMachine::FindVirtualMachine(objectid);
+		auto vm = _VmOld::Find_VmOld(objectid);
 		if(vm == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
 		// Use the client's native process identifier to find the process

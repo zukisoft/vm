@@ -27,158 +27,56 @@
 #include <concrt.h>
 #include <map>
 #include <memory>
-#include <linux/types.h>
-#include "FileSystem.h"
+#include "Namespace.h"
+#include "RpcInterface.h"
+#include "Session.h"
 
 #pragma warning(push, 4)
-
-// Forward Declarations
-//
-class Process;
 
 //-----------------------------------------------------------------------------
 // Class VirtualMachine
 //
-// VirtualMachine provides the abstraction layer that sits between the system
-// calls interface and the underlying implementation.  Only functions that are
-// needed by system calls should be defined in this class, and they should use
-// exceptions to indicate failure conditions -- don't return linux error codes, 
-// throw a LinuxException
-//
-// The final class that inherits from VirtualMachine needs to derived from the
-// std::enable_shared_from_this<> class and provide an implementation of the
-// virtual GetSharedPointer() method.  The original plan was to have this class
-// derived from enable_shared_from_this<> so it could implement the instance
-// find method on its own, but that didn't really work out
+// VirtualMachine the top-level virtual machine instance
 
-//////  THIS SHOULD BE AN INTERFACE ONLY, LIKE FILESYSTEM
-//////  ALSO SHOULD HAVE VirtualMachine::Process THESE ARE THE OBJECTS THAT THE
-//////  SYSTEM CALLS INTERACT WITH
-
-class VirtualMachine
+class VirtualMachine : public Service<VirtualMachine>, public std::enable_shared_from_this<VirtualMachine>
 {
 public:
-
-	// Destructor
-	//
-	~VirtualMachine();
-
-	// Properties Enumeration
-	//
-	// Defines all of the virtual machine properties accessible via GetProperty/SetProperty
-	enum class Properties
-	{
-		DomainName					= 0,
-		HardwareIdentifier,
-		HostName,
-		OperatingSystemRelease,
-		OperatingSystemType,
-		OperatingSystemVersion,
-
-		HostProcessArguments,		// Arguments to be passed to a hosted process
-		HostProcessBinary32,		// Path to the 32-bit host process executable
-#ifdef _M_X64
-		HostProcessBinary64,		// Path to the 64-bit host process executable
-#endif
-
-		ThreadStackSize,			// Default size of a new thread stack
-		ThreadAttachTimeout,		// Timeout, in milliseconds for a thread to attach
-	};
-	
-	// PROCESSID_INIT
-	//
-	// Defines the process identifier to assign to the init proces
-	static const uapi::pid_t PROCESSID_INIT = 1;
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
-	virtual uapi::pid_t AllocatePID(void) = 0;
-	virtual void ReleasePID(uapi::pid_t pid) = 0;
-
-	virtual std::shared_ptr<Process> CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* taskstate, size_t taskstatelen) = 0;
-
-	///virtual void RemoveProcess(uapi::pid_t pid) = 0;
-
-	// sessions
-	virtual void ReleaseSession(uapi::pid_t sid) = 0;
-
-
-	// CreateDeviceId (static)
-	//
-	// Creates a device identifier from major and minor components
-	static uapi::dev_t CreateDeviceId(uint32_t major, uint32_t minor);
-
-	// FindProcessByHostID	// <--- TODO: Rename/repurpose to allow a wait for the host to register?
-	//
-	// Locates a Process instance by the host process' PID, necessary for the system
-	// call interface to establish the context
-	virtual std::shared_ptr<Process> FindNativeProcess(DWORD nativepid) = 0;
-
-	// FindVirtualMachine (static)
-	//
-	// Locates an active VirtualMachine instance and returns its shared_ptr<>
-	static std::shared_ptr<VirtualMachine> FindVirtualMachine(const uuid_t& instanceid);
-
-	//
-	// FILE SYSTEM
-	//
-
-	virtual void MountFileSystem(const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, void* data, size_t datalen) = 0;
-
-	//
-	// PROPERTY MANAGEMENT
-	//
-
-	// GetProperty
-	//
-	// Retrieves a virtual machine property value
-	virtual const std::tstring& GetProperty(VirtualMachine::Properties id) = 0;
-	virtual size_t GetProperty(VirtualMachine::Properties id, char_t* value, size_t length) = 0;
-	virtual size_t GetProperty(VirtualMachine::Properties id, wchar_t* value, size_t length) = 0;
-
-	// SetProperty
-	//
-	// Sets a virtual machine property value
-	virtual void SetProperty(VirtualMachine::Properties id, const std::tstring& value) = 0;
-	virtual void SetProperty(VirtualMachine::Properties id, const char_t* value) = 0;
-	virtual void SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length) = 0;
-	virtual void SetProperty(VirtualMachine::Properties id, const wchar_t* value) = 0;
-	virtual void SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length) = 0;
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// InstanceID
-	//
-	// Gets the unique identifier for this virtual machine instance
-	__declspec(property(get=getInstanceID)) const uuid_t& InstanceID;
-	const uuid_t& getInstanceID(void) const { return m_instanceid; }
-
-	__declspec(property(get=getRootProcess)) std::shared_ptr<Process> RootProcess;
-	virtual std::shared_ptr<Process> getRootProcess(void) const = 0;
-
-	__declspec(property(get=getRootFileSystem)) std::shared_ptr<FileSystem> RootFileSystem;
-	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) = 0;
-
-protected:
 
 	// Instance Constructor
 	//
 	VirtualMachine();
 
-	// ToSharedPointer
+	// Destructor
 	//
-	// Gets an std::shared_ptr<VirtualMachine> from the derived class
-	virtual std::shared_ptr<VirtualMachine> ToSharedPointer(void) = 0;
+	~VirtualMachine()=default;
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Find (static)
+	//
+	// Locates a virtual machine instance based on its uuid
+	static std::shared_ptr<VirtualMachine> Find(const uuid_t& instanceid);
+
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// InstanceId
+	//
+	// Gets the unique identifier for this virtual machine instance
+	__declspec(property(get=getInstanceId)) uuid_t InstanceId;
+	uuid_t getInstanceID(void) const { return m_instanceid; }
 
 private:
 
 	VirtualMachine(const VirtualMachine&)=delete;
 	VirtualMachine& operator=(const VirtualMachine&)=delete;
 
-	//-------------------------------------------------------------------------
-	// Private Type Declarations
+	// Service<> Control Handler Map
+	//
+	BEGIN_CONTROL_HANDLER_MAP(VirtualMachine)
+		CONTROL_HANDLER_ENTRY(SERVICE_CONTROL_STOP, OnStop)
+	END_CONTROL_HANDLER_MAP()
 
 	// uuid_key_comp_t
 	//
@@ -190,22 +88,42 @@ private:
 
 	// instance_map_t
 	//
-	// Instance ID -> VirtualMachine implementation collection
-	using instance_map_t = std::map<uuid_t, VirtualMachine*, uuid_key_comp_t>;
+	// Collection of virtual machine instances
+	using instance_map_t = std::map<uuid_t, std::shared_ptr<VirtualMachine>, uuid_key_comp_t>;
 
-	// rw_lock_t, write_lock, read_lock
+	// instance_map_lock_t
 	//
-	// Mappings for Concurrency::reader_writer_lock
-	using rwlock_t = Concurrency::reader_writer_lock;
-	using write_lock = Concurrency::reader_writer_lock::scoped_lock;
-	using read_lock = Concurrency::reader_writer_lock::scoped_lock_read;
+	// Synchronization object for the instance collection
+	using instance_map_lock_t = Concurrency::reader_writer_lock;
+
+	// session_map_t
+	//
+	// Collection of sessions created within this virtual machine
+	using session_map_t = std::map<std::shared_ptr<Pid>, std::shared_ptr<Session>>;
+
+	// GenerateInstanceId
+	//
+	// Generates the universally unique identifier for this instance
+	static uuid_t GenerateInstanceId(void);
+
+	// OnStart (Service)
+	//
+	// Invoked when the service is started
+	void OnStart(int argc, LPTSTR* argv);
+
+	// OnStop
+	//
+	// Invoked when the service is stopped
+	void OnStop(void);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	uuid_t					m_instanceid;	// VirtualMachine instance identifier
-	static instance_map_t	s_instances;	// Object instance collection
-	static rwlock_t			s_lock;			// Collection synchronization lock
+	static instance_map_t		s_instances;		// Collection of all instances
+	static instance_map_lock_t	s_instancelock;		// Synchronization object
+
+	const uuid_t				m_instanceid;		// Instance identifier
+	std::shared_ptr<Namespace>	m_rootns;			// Root namespace instance
 };
 
 //-----------------------------------------------------------------------------

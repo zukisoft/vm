@@ -46,7 +46,7 @@
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+Process::Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
 	Process(vm, architecture, pid, parent, std::move(host), std::move(task), std::move(memory), ldt, std::move(ldtslots), programbreak, 
@@ -73,7 +73,7 @@ Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture archi
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<VirtualMachine>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+Process::Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, int termsignal, 
 	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : m_vm(vm), m_architecture(architecture), 
@@ -394,14 +394,14 @@ std::vector<std::shared_ptr<Waitable>> Process::CollectWaitables(uapi::idtype_t 
 //
 // Arguments:
 //
-//	vm			- Parent VirtualMachine instance
+//	vm			- Parent _VmOld instance
 //	memory		- ProcessMemory instance to use for allocation
 
-const void* Process::CreateStack(const std::shared_ptr<VirtualMachine>& vm, const std::unique_ptr<ProcessMemory>& memory)
+const void* Process::CreateStack(const std::shared_ptr<_VmOld>& vm, const std::unique_ptr<ProcessMemory>& memory)
 {
-	// Get the default thread stack size from the VirtualMachine instance and convert it 
+	// Get the default thread stack size from the _VmOld instance and convert it 
 	size_t stacklen;
-	try { stacklen = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadStackSize)); }
+	try { stacklen = std::stoul(vm->GetProperty(_VmOld::Properties::ThreadStackSize)); }
 	catch(...) { throw Exception(E_PROCESSINVALIDSTACKSIZE); }
 		
 	// Allocate the stack memory and calculate the stack pointer, which will be reduced by the length of a guard page
@@ -513,7 +513,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 	if(!vm) throw LinuxException(LINUX_ESRCH);
 
 	// Get the thread attach timeout value from the virtual machine properties
-	try { timeoutms = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
+	try { timeoutms = std::stoul(vm->GetProperty(_VmOld::Properties::ThreadAttachTimeout)); }
 	catch(...) { throw Exception(E_PROCESSINVALIDTHREADTIMEOUT); }
 
 	// Suspend the process; all existing threads will be terminated
@@ -649,7 +649,7 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 //	ns			- Namespace instance
 //	executable	- Executable to construct into a process
 
-std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
 	const std::unique_ptr<Executable>& executable)
 {
 	// Architecture::x86 --> 32-bit executable
@@ -676,7 +676,7 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMa
 //	executable		- Executable instance
 
 template<::Architecture architecture>
-std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
 	uapi::pid_t pid, const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable)
 {
 	// Create a host process for the specified architecture
@@ -1435,7 +1435,7 @@ void Process::Start(void)
 	try {
 
 		// Get the thread attach timeout value from the virtual machine properties
-		try { timeoutms = std::stoul(vm->GetProperty(VirtualMachine::Properties::ThreadAttachTimeout)); }
+		try { timeoutms = std::stoul(vm->GetProperty(_VmOld::Properties::ThreadAttachTimeout)); }
 		catch(...) { throw Exception(E_PROCESSINVALIDTHREADTIMEOUT); }
 
 		// Start the process; there is no race condition to consider with the pending threads

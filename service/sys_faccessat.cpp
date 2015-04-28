@@ -47,7 +47,7 @@ uapi::long_t sys_faccessat(const Context* context, int dirfd, const uapi::char_t
 	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
 		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
 
-	// Use the VirtualMachine interface to check permissions to the specified file system object
+	// Use the _VmOld interface to check permissions to the specified file system object
 	FileSystem::CheckPermissions(context->Process->RootDirectory, base, pathname, flags, mode);
 
 	return 0;

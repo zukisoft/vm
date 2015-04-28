@@ -50,12 +50,12 @@ uapi::long_t sys_mount(const Context* context, const uapi::char_t* source, const
 		HeapBuffer<uint8_t> datapage(SystemInformation::PageSize);
 		size_t datalen = context->Process->ReadMemory(data, &datapage, datapage.Size);
 
-		// Invoke the VirtualMachine with the custom mounting data read from the process
-		context->VirtualMachine->MountFileSystem(source, target, filesystem, flags, &datapage, datalen);
+		// Invoke the _VmOld with the custom mounting data read from the process
+		context->_VmOld->MountFileSystem(source, target, filesystem, flags, &datapage, datalen);
 	}
 
-	// No custom mounting data, just invoke the VirtualMachine without it
-	else context->VirtualMachine->MountFileSystem(source, target, filesystem, flags, nullptr, 0);
+	// No custom mounting data, just invoke the _VmOld without it
+	else context->_VmOld->MountFileSystem(source, target, filesystem, flags, nullptr, 0);
 
 	return 0;
 }

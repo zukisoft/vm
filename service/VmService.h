@@ -42,7 +42,7 @@
 #include "RpcInterface.h"
 #include "Session.h"
 #include "SystemLog.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 
 // File systems
 //
@@ -60,21 +60,21 @@
 
 // Needs to inherit from enable_shared_from_this<VmService> to trigger the 
 // use of std::shared_ptr<> in servicelib.  Shared pointer currently needs to
-// be used to implement VirtualMachine
+// be used to implement _VmOld
 //
 // Should rename this to "Vm" or "VmInstance", VmService is accurate but is
 // not really representative anymore since this is becoming the one-stop shop
-// for the entire VirtualMachine interface implementation.  VmFileSystem still
+// for the entire _VmOld interface implementation.  VmFileSystem still
 // exists for now, but will likely be collapsed into this like the others
 
-class VmService : public Service<VmService>, public VirtualMachine,	public std::enable_shared_from_this<VmService>
+class VmService : public Service<VmService>, public _VmOld,	public std::enable_shared_from_this<VmService>
 {
 public:
 
 	// TODO: Minimum PID is actually based on a constant multiplied by the number of CPUs (or something like that)
 	VmService() : m_pidpool(MIN_PROCESS_INDEX) {}
 
-	// VirtualMachine Implementation
+	// _VmOld Implementation
 	//
 	virtual uapi::pid_t							AllocatePID(void);
 	virtual void								ReleasePID(uapi::pid_t pid);
@@ -93,14 +93,14 @@ public:
 	virtual std::shared_ptr<FileSystem> getRootFileSystem(void) { return m_rootfs; }
 	virtual std::shared_ptr<Process> getRootProcess(void) const { return m_initprocess; }
 
-	virtual const std::tstring&	GetProperty(VirtualMachine::Properties id);
-	virtual size_t				GetProperty(VirtualMachine::Properties id, char_t* value, size_t length);
-	virtual size_t				GetProperty(VirtualMachine::Properties id, wchar_t* value, size_t length);
-	virtual void				SetProperty(VirtualMachine::Properties id, const std::tstring& value);
-	virtual void				SetProperty(VirtualMachine::Properties id, const char_t* value);
-	virtual void				SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length);
-	virtual void				SetProperty(VirtualMachine::Properties id, const wchar_t* value);
-	virtual void				SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length);
+	virtual const std::tstring&	GetProperty(_VmOld::Properties id);
+	virtual size_t				GetProperty(_VmOld::Properties id, char_t* value, size_t length);
+	virtual size_t				GetProperty(_VmOld::Properties id, wchar_t* value, size_t length);
+	virtual void				SetProperty(_VmOld::Properties id, const std::tstring& value);
+	virtual void				SetProperty(_VmOld::Properties id, const char_t* value);
+	virtual void				SetProperty(_VmOld::Properties id, const char_t* value, size_t length);
+	virtual void				SetProperty(_VmOld::Properties id, const wchar_t* value);
+	virtual void				SetProperty(_VmOld::Properties id, const wchar_t* value, size_t length);
 
 private:
 
@@ -109,7 +109,7 @@ private:
 
 	// TEST - HACK JOB TO SOLVE THE PROBLEM FOR NOW
 	// GET RID OF THIS
-	virtual std::shared_ptr<VirtualMachine> ToSharedPointer(void)
+	virtual std::shared_ptr<_VmOld> ToSharedPointer(void)
 	{
 		return shared_from_this();
 	}
@@ -178,7 +178,7 @@ private:
 	// property_map_t
 	//
 	// Typedef for a concurrent map<> of property strings
-	using property_map_t = Concurrency::concurrent_unordered_map<VirtualMachine::Properties, std::tstring>;
+	using property_map_t = Concurrency::concurrent_unordered_map<_VmOld::Properties, std::tstring>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

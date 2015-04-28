@@ -89,11 +89,11 @@ void NativeProcess::CheckArchitecture<Architecture::x86_64>(const std::unique_pt
 //	vm			- Parent virtual machine instance
 
 template<>
-std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
+std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<_VmOld>& vm)
 {
 	// Get the architecture-specific filename and arguments from the virtual machine instance
-	std::tstring filename = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary32);
-	std::tstring arguments = vm->GetProperty(VirtualMachine::Properties::HostProcessArguments);
+	std::tstring filename = vm->GetProperty(_VmOld::Properties::HostProcessBinary32);
+	std::tstring arguments = vm->GetProperty(_VmOld::Properties::HostProcessArguments);
 
 	// Construct the specified process and validate that it's Architecture::x86
 	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
@@ -113,11 +113,11 @@ std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const st
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<VirtualMachine>& vm)
+std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<_VmOld>& vm)
 {
 	// Get the architecture-specific filename and arguments from the virtual machine instance
-	std::tstring filename = vm->GetProperty(VirtualMachine::Properties::HostProcessBinary64);
-	std::tstring arguments = vm->GetProperty(VirtualMachine::Properties::HostProcessArguments);
+	std::tstring filename = vm->GetProperty(_VmOld::Properties::HostProcessBinary64);
+	std::tstring arguments = vm->GetProperty(_VmOld::Properties::HostProcessArguments);
 
 	// Construct the specified process and validate that it's Architecture::x86
 	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);

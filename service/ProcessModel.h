@@ -29,7 +29,7 @@
 #include <concrt.h>
 #include <linux/types.h>
 #include "LinuxException.h"
-#include "VirtualMachine.h"
+#include "_VmOld.h"
 
 #pragma warning(push, 4)
 
@@ -231,7 +231,7 @@ protected:
 
 	// Instance Constructor
 	//
-	Parent(const std::shared_ptr<VirtualMachine>& vm, uapi::pid_t pid) : m_vm(vm), m_pid(pid)
+	Parent(const std::shared_ptr<_VmOld>& vm, uapi::pid_t pid) : m_vm(vm), m_pid(pid)
 	{
 	}
 
@@ -259,7 +259,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::weak_ptr<VirtualMachine>	m_vm;			// Virtual machine instance
+	const std::weak_ptr<_VmOld>	m_vm;			// Virtual machine instance
 	const uapi::pid_t					m_pid;			// Object identifier
 	child_map_t							m_children;		// Owned child objects
 	child_map_lock_t					m_childrenlock;	// Synchronization object

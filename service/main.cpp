@@ -26,6 +26,7 @@
 #include "Console.h"
 #include "StructuredException.h"
 #include "VmService.h"
+#include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 
@@ -73,7 +74,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		Console console(L"VM Service Console");
 
 		// todo: make sure -initramfs: switch and value exists
-		ServiceHarness<VmService> harness;
+		//ServiceHarness<VmService> harness;
+		ServiceHarness<VirtualMachine> harness;
 //#ifdef _M_X64
 //		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
 //#else
@@ -110,7 +112,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	else if(commandline.Switches.Contains(L"service")) {
 
 		// todo: make sure the service name has been specified; this may change to a UUID for RPC binding instead
-		ServiceTable services = { ServiceTableEntry<VmService>(commandline.Switches.GetValue(L"service")) };
+		//ServiceTable services = { ServiceTableEntry<VmService>(commandline.Switches.GetValue(L"service")) };
+		ServiceTable services = { ServiceTableEntry<VirtualMachine>(commandline.Switches.GetValue(L"service")) };
 		services.Dispatch();
 	}
 

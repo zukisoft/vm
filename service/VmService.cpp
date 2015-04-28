@@ -65,7 +65,7 @@ uapi::pid_t VmService::AllocatePID(void)
 
 std::shared_ptr<Process> VmService::CloneProcess(const std::shared_ptr<Process>& process, uint32_t flags, void* tss, size_t tsslen)
 {
-	VirtualMachine::Properties hostprop;
+	_VmOld::Properties hostprop;
 
 	if(process->Architecture == Architecture::x86) hostprop = Properties::HostProcessBinary32;
 
@@ -148,7 +148,7 @@ FileSystemPtr VmService::MountProcFileSystem(const char_t* name, uint32_t flags,
 //
 //	id			- Property identifier
 
-const std::tstring& VmService::GetProperty(VirtualMachine::Properties id)
+const std::tstring& VmService::GetProperty(_VmOld::Properties id)
 {
 	return m_properties[id];
 }
@@ -164,7 +164,7 @@ const std::tstring& VmService::GetProperty(VirtualMachine::Properties id)
 //	value		- Destination buffer to receive the value
 //	length		- Length of the destination buffer
 
-size_t VmService::GetProperty(VirtualMachine::Properties id, char_t* value, size_t length)
+size_t VmService::GetProperty(_VmOld::Properties id, char_t* value, size_t length)
 {
 	const std::tstring& found = m_properties[id];
 
@@ -187,7 +187,7 @@ size_t VmService::GetProperty(VirtualMachine::Properties id, char_t* value, size
 //	value		- Destination buffer to receive the value
 //	length		- Length of the destination buffer, in characters
 
-size_t VmService::GetProperty(VirtualMachine::Properties id, wchar_t* value, size_t length)
+size_t VmService::GetProperty(_VmOld::Properties id, wchar_t* value, size_t length)
 {
 	const std::tstring& found = m_properties[id];
 
@@ -260,7 +260,7 @@ void VmService::ReleasePID(uapi::pid_t pid)
 //	id			- Property identifier
 //	value		- Value to set/replace the existing value
 
-void VmService::SetProperty(VirtualMachine::Properties id, const std::tstring& value)
+void VmService::SetProperty(_VmOld::Properties id, const std::tstring& value)
 {
 	m_properties[id] = value;
 }
@@ -275,7 +275,7 @@ void VmService::SetProperty(VirtualMachine::Properties id, const std::tstring& v
 //	id			- Property identifier
 //	value		- Value to set/replace the existing value
 
-void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value)
+void VmService::SetProperty(_VmOld::Properties id, const char_t* value)
 {
 	m_properties[id] = std::move(std::to_tstring(value));
 }
@@ -291,7 +291,7 @@ void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value)
 //	value		- Value to set/replace the existing value
 //	length		- Length of the value character buffer, in bytes/chars
 
-void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value, size_t length)
+void VmService::SetProperty(_VmOld::Properties id, const char_t* value, size_t length)
 {
 	m_properties[id] = std::move(std::to_tstring(value, static_cast<int>(length)));
 }
@@ -306,7 +306,7 @@ void VmService::SetProperty(VirtualMachine::Properties id, const char_t* value, 
 //	id			- Property identifier
 //	value		- Value to set/replace the existing value
 
-void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value)
+void VmService::SetProperty(_VmOld::Properties id, const wchar_t* value)
 {
 	m_properties[id] = std::move(std::to_tstring(value));
 }
@@ -322,7 +322,7 @@ void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value)
 //	value		- Value to set/replace the existing value
 //	length		- Length of the value character buffer, in bytes/chars
 
-void VmService::SetProperty(VirtualMachine::Properties id, const wchar_t* value, size_t length)
+void VmService::SetProperty(_VmOld::Properties id, const wchar_t* value, size_t length)
 {
 	m_properties[id] = std::move(std::to_tstring(value, static_cast<int>(length)));
 }

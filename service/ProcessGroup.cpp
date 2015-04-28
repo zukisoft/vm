@@ -35,7 +35,7 @@
 //	session			- Parent session instance
 //	pgid			- Process group identifier
 
-ProcessGroup::ProcessGroup(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid) 
+ProcessGroup::ProcessGroup(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::Session>& session, uapi::pid_t pgid) 
 	: m_vm(vm), m_session(session), m_pgid(pgid), ProcessModel::Child<ProcessGroup>(pgid)
 {
 }
@@ -79,12 +79,12 @@ void ProcessGroup::AttachProcess(const std::shared_ptr<::Process>& process)
 //
 // Arguments:
 //
-//	vm			- Parent VirtualMachine instance
+//	vm			- Parent _VmOld instance
 //	session		- Parent Session instance
 //	pgid		- Process group identifier
 //	executable	- Executable instance to use to seed the session
 
-std::shared_ptr<ProcessGroup> ProcessGroup::FromExecutable(const std::shared_ptr<VirtualMachine>& vm, const std::shared_ptr<::Session>& session, 
+std::shared_ptr<ProcessGroup> ProcessGroup::FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::Session>& session, 
 	uapi::pid_t pgid, const std::unique_ptr<Executable>& executable)
 {
 	// Create and initialize a new process group instance with a new process

@@ -30,10 +30,10 @@
 //
 // Arguments:
 //
-//	vm			- Parent VirtualMachine instance
+//	vm			- Parent _VmOld instance
 //	sid			- Session identifier
 
-Session::Session(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid), 
+Session::Session(const std::shared_ptr<::_VmOld>& vm, uapi::pid_t sid) : m_vm(vm), m_sid(sid), 
 	ProcessModel::Parent<::ProcessGroup>(vm, sid)
 {
 }
@@ -60,12 +60,12 @@ Session::~Session()
 //
 // Arguments:
 //
-//	vm			- Parent VirtualMachine instance
+//	vm			- Parent _VmOld instance
 //	sid			- Session identifier
 //	ns			- Namespace instance
 //	executable	- Executable instance to use to seed the session
 
-std::shared_ptr<Session> Session::FromExecutable(const std::shared_ptr<::VirtualMachine>& vm, uapi::pid_t sid,
+std::shared_ptr<Session> Session::FromExecutable(const std::shared_ptr<::_VmOld>& vm, uapi::pid_t sid,
 	const std::unique_ptr<Executable>& executable)
 {
 	// Create and initialize a new session instance with a new process group
@@ -131,11 +131,11 @@ uapi::pid_t Session::getSessionId(void) const
 }
 
 //-----------------------------------------------------------------------------
-// Session::getVirtualMachine
+// Session::get_VmOld
 //
 // Gets a reference to the parent virtual machine instance
 
-std::shared_ptr<::VirtualMachine> Session::getVirtualMachine(void) const
+std::shared_ptr<::_VmOld> Session::get_VmOld(void) const
 {
 	return m_vm.lock();
 }

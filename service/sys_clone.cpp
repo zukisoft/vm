@@ -46,7 +46,7 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 	// (0x01200011)
 
 	auto parent = context->Process;
-	auto child = context->VirtualMachine->CloneProcess(parent, flags, taskstate, taskstatelen);
+	auto child = context->_VmOld->CloneProcess(parent, flags, taskstate, taskstatelen);
 
 	//
 	// TODO: CHILD IS RUNNING; EVERYTHING BELOW IS A RACE CONDITION
