@@ -39,7 +39,7 @@
 #include "NativeHandle.h"
 #include "PathSplitter.h"
 #include "Process.h"
-#include "RpcInterface.h"
+#include "RpcObject.h"
 #include "Session.h"
 #include "SystemLog.h"
 #include "_VmOld.h"
@@ -205,6 +205,8 @@ private:
 
 	process_map_t						m_processes;
 	process_map_lock_t					m_processeslock;
+
+	std::unique_ptr<RpcObject>			m_syscalls32;
 
 	//
 	// PARAMETERS PULLED BACK IN FROM VMSERVICEPARAMETERS CLASS

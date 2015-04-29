@@ -102,10 +102,6 @@ std::shared_ptr<::ProcessGroup> Session::getProcessGroup(uapi::pid_t pgid)
 
 void Session::ReleaseProcessGroup(uapi::pid_t pgid)
 {
-	Add(0, nullptr);
-	Attach(nullptr);
-	auto r = Detach(0);
-
 	auto vm = m_vm.lock();			// Parent virtual machine instance
 
 	pgroup_map_lock_t::scoped_lock writer(m_pgroupslock);

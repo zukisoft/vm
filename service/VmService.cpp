@@ -25,14 +25,9 @@
 
 #pragma warning(push, 4)
 
-// 32-bit listener
 #include <syscalls32.h>
-using syscall32_listener = RpcInterface<&SystemCalls32_v1_0_s_ifspec>;
-
 #ifdef _M_X64
-// 64-bit listener
 #include <syscalls64.h>
-using syscall64_listener = RpcInterface<&SystemCalls64_v1_0_s_ifspec>;
 #endif
 
 // INTERPRETER_SCRIPT_MAGIC
@@ -495,17 +490,9 @@ void VmService::OnStart(int, LPTSTR*)
 		// RPC INTERFACES
 		//
 
-		// TODO: I want to rework the RpcInterface thing at some point, but this
-		// is a LOT cleaner than making the RPC calls here.  Should also have
-		// some kind of rundown to deal with exceptions properly, need nested try/catches here
-
-		// This may work better as a general single registrar in syscalls/SystemCalls
-		// since the service really doesn't care that it has 2 RPC interfaces, they
-		// both just come back to this single service instance via the entry point vectors
-		syscall32_listener::Register(RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
-		syscall32_listener::AddObject(this->InstanceID);
-
-		SetProperty(Properties::HostProcessArguments, syscall32_listener::GetBindingString(this->InstanceID));
+		// New RpcObject replaced RpcInterface here (need to do below for x64)
+		m_syscalls32 = RpcObject::Create(SystemCalls32_v1_0_s_ifspec, this->InstanceID, RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
+		SetProperty(Properties::HostProcessArguments, m_syscalls32->BindingString);
 
 #ifdef _M_X64
 		// x64 builds also register the 64-bit system calls interface
@@ -585,8 +572,11 @@ void VmService::OnStop(void)
 #endif
 
 	// Remove the 32-bit system calls RPC interface
-	syscall32_listener::RemoveObject(this->InstanceID);
-	syscall32_listener::Unregister(true);
+	//syscall32_listener::RemoveObject(this->InstanceID);
+	//syscall32_listener::Unregister(true);
+
+	// Remove the 32-bit system calls object (waits for clients)
+	m_syscalls32.reset();
 }
 
 //---------------------------------------------------------------------------

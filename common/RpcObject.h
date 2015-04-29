@@ -97,7 +97,6 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	bool					m_revoked = false;		// Flag if object was revoked
 	const RPC_IF_HANDLE		m_ifspec;				// Interface specification
 	const uuid_t			m_objectid;				// Object unique identifier
 	const uuid_t			m_mgrtypeid;			// Entry point vector manager type

@@ -218,9 +218,6 @@
     <ClInclude Include="FilePermission.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\RpcInterface.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\Console.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
