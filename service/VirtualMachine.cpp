@@ -23,6 +23,13 @@
 #include "stdafx.h"
 #include "VirtualMachine.h"
 
+// System Call RPC Interfaces
+//
+#include <syscalls32.h>
+#ifdef _M_X64
+#include <syscalls64.h>
+#endif
+
 #pragma warning(push, 4)
 
 // VirtualMachine::s_instances
@@ -101,21 +108,48 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 	try {
 
-		// Construct the root namespace for this virtual machine instance
+		// ROOT NAMESPACE
+		//
 		m_rootns = Namespace::Create();
 
-		// Add this virtual machine instance to the active instance collection
-		instance_map_lock_t::scoped_lock writer(s_instancelock);
-		s_instances.emplace(m_instanceid, shared_from_this());
+		// PROPERTIES
+		//
+
+		// SYSTEM LOG
+		//
+
+		// ROOT FILE SYSTEM
+		//
+
+		// INITRAMFS
+		//
+
+		// INIT PROCESS
+		//
+		auto initpid = m_rootns->Pid->CreatePid();
+		_ASSERTE(initpid->Value[m_rootns] == 1);
+
+		// SYSTEM CALL RPC OBJECTS
+		//
+		m_syscalls32 = RpcObject::Create(SystemCalls32_v1_0_s_ifspec, m_instanceid, RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
+#ifdef _M_X64
+		m_syscalls64 = RpcObject::Create(SystemCalls64_v1_0_s_ifspec, m_instanceid, RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
+#endif
+
+		// NOTE: DON'T START INIT PROCESS UNTIL AFTER THE RPC OBJECTS HAVE BEEN CONSTRUCTED
 	}
 
-	// Win32Exception and Exception can be translated into a ServiceException
+	// Win32Exception and Exception can be translated into ServiceExceptions
 	catch(Win32Exception& ex) { throw ServiceException(static_cast<DWORD>(ex.Code)); }
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
+
+	// Add this virtual machine instance to the active instance collection
+	instance_map_lock_t::scoped_lock writer(s_instancelock);
+	s_instances.emplace(m_instanceid, shared_from_this());
 }
 
 //---------------------------------------------------------------------------
-// VirtualMachine::OnStop
+// VirtualMachine::OnStop (private)
 //
 // Invoked when the service is stopped
 //
@@ -125,6 +159,11 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 void VirtualMachine::OnStop(void)
 {
+	m_syscalls32.reset();			// Revoke the 32-bit system calls object
+#ifdef _M_X64
+	m_syscalls64.reset();			// Revoke the 64-bit system calls object
+#endif
+
 	// Remove this virtual machine from the active instance collection
 	instance_map_lock_t::scoped_lock writer(s_instancelock);
 	s_instances.erase(m_instanceid);

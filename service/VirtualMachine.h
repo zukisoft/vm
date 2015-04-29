@@ -27,16 +27,17 @@
 #include <concrt.h>
 #include <map>
 #include <memory>
+#include "Exception.h"
 #include "Namespace.h"
-#include "RpcInterface.h"
-#include "Session.h"
+#include "RpcObject.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
 // Class VirtualMachine
 //
-// VirtualMachine the top-level virtual machine instance
+// Implements the top-level virtual machine instance
 
 class VirtualMachine : public Service<VirtualMachine>, public std::enable_shared_from_this<VirtualMachine>
 {
@@ -80,7 +81,7 @@ private:
 
 	// uuid_key_comp_t
 	//
-	// Key comparison type for UUIDs when used as a collection key
+	// Comparison type for uuid_t when used as a collection key
 	struct uuid_key_comp_t 
 	{ 
 		bool operator() (const uuid_t& lhs, const uuid_t& rhs) const { return (memcmp(&lhs, &rhs, sizeof(uuid_t)) < 0); }
@@ -96,12 +97,7 @@ private:
 	// Synchronization object for the instance collection
 	using instance_map_lock_t = Concurrency::reader_writer_lock;
 
-	// session_map_t
-	//
-	// Collection of sessions created within this virtual machine
-	using session_map_t = std::map<std::shared_ptr<Pid>, std::shared_ptr<Session>>;
-
-	// GenerateInstanceId
+	// GenerateInstanceId (static)
 	//
 	// Generates the universally unique identifier for this instance
 	static uuid_t GenerateInstanceId(void);
@@ -109,7 +105,7 @@ private:
 	// OnStart (Service)
 	//
 	// Invoked when the service is started
-	void OnStart(int argc, LPTSTR* argv);
+	virtual void OnStart(int argc, LPTSTR* argv);
 
 	// OnStop
 	//
@@ -123,6 +119,12 @@ private:
 	static instance_map_lock_t	s_instancelock;		// Synchronization object
 
 	const uuid_t				m_instanceid;		// Instance identifier
+	std::unique_ptr<RpcObject>	m_syscalls32;		// 32-bit system calls object
+
+#ifdef _M_X64
+	std::unique_ptr<RpcObject>	m_syscalls64;		// 64-bit system calls object
+#endif
+
 	std::shared_ptr<Namespace>	m_rootns;			// Root namespace instance
 };
 
