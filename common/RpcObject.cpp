@@ -45,11 +45,11 @@ RpcObject::~RpcObject()
 {
 	// Attempt to remove the object mapping from the interface first
 	try { RemoveObjectMapping(m_ifspec, m_objectid); }
-	catch(...) { /* DO NOTHING */ }
+	catch(...) { _ASSERTE(false); }
 
 	// Unregister the interface, waiting for calls to complete and context handle rundown to occur
 	RPC_STATUS rpcresult = RpcServerUnregisterIfEx(m_ifspec, const_cast<uuid_t*>(&m_mgrtypeid), TRUE);
-	if(rpcresult != RPC_S_OK) throw Win32Exception(rpcresult);
+	_ASSERTE(rpcresult == RPC_S_OK);
 }
 
 //-----------------------------------------------------------------------------
