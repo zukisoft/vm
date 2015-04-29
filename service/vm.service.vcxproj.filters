@@ -404,6 +404,9 @@
     <ClInclude Include="VirtualMachine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\RpcObject.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -855,6 +858,9 @@
     </ClCompile>
     <ClCompile Include="VirtualMachine.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\RpcObject.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
