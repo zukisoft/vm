@@ -95,6 +95,11 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		//harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
 		harness.SetParameter(_T("vm.initpath"), _T("/init"));
 
+
+		// new parameters
+		harness.SetParameter(_T("init"), _T("/init"));
+		harness.SetParameter(_T("initrd"), _T("D:\\rootfs_x86.cpio.gz"));
+
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()
 

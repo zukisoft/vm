@@ -30,6 +30,12 @@
 #include <syscalls64.h>
 #endif
 
+// File Systems
+//
+#include "HostFileSystem.h"
+#include "RootFileSystem.h"
+#include "TempFileSystem.h"
+
 #pragma warning(push, 4)
 
 // VirtualMachine::s_instances
@@ -103,6 +109,9 @@ uuid_t VirtualMachine::GenerateInstanceId(void)
 
 void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 {
+	// The command line arguments should be used to override defaults
+	// set in the service parameters.  This functionality should be
+	// provided by servicelib directly -- look into that
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
@@ -118,14 +127,30 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		// SYSTEM LOG
 		//
 
+		// FILE SYSTEMS
+		//
+		m_filesystems.emplace("hostfs",	HostFileSystem::Mount);
+		m_filesystems.emplace("rootfs",	RootFileSystem::Mount);
+		m_filesystems.emplace("tmpfs",	TempFileSystem::Mount);
+
 		// ROOT FILE SYSTEM
 		//
+		auto root = std::to_string(m_paramroot.Value);
+		auto rootflags = std::to_string(m_paramrootflags.Value);
+		auto rootfstype = std::to_string(m_paramrootfstype.Value);
+		uint32_t mountflags = 0;
+
+		// Convert the string-based mounting options into standard flags and extra arguments
+		rootflags = MountOptions::Parse(rootflags.c_str(), mountflags);
 
 		// INITRAMFS
 		//
+		auto initrd = std::to_string(m_paraminitrd.Value);
 
 		// INIT PROCESS
 		//
+		auto init = std::to_string(m_paraminit.Value);
+
 		auto initpid = m_rootns->Pid->CreatePid();
 		_ASSERTE(initpid->Value[m_rootns] == 1);
 

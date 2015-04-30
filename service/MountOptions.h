@@ -51,6 +51,18 @@ public:
 	MountOptions(uint32_t flags, const void* data, size_t datalen) : m_flags(flags), m_arguments(MakeVector(data, datalen)) {}
 
 	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Parse (static)
+	//
+	// Parses a string-based set of mounting options into flags and extra data
+	static std::string Parse(const char_t* options, uint32_t& flags)
+	{
+		flags = 0;
+		return "";
+	}
+
+	//-------------------------------------------------------------------------
 	// Properties
 
 	// AllowMandatoryLocks
