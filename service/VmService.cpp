@@ -458,7 +458,7 @@ void VmService::OnStart(int, LPTSTR*)
 		// no need to lock, service has not gone multi-threaded yet; no RPC listener
 		m_availfs.insert(std::make_pair("hostfs", HostFileSystem::Mount));
 		m_availfs.insert(std::make_pair("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2, _3)));
-		//m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));		// <--- FIX ME
+		m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));
 		m_availfs.insert(std::make_pair("tmpfs", TempFileSystem::Mount));
 
 		//MountFileSystem("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr, 0);

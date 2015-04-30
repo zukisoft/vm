@@ -61,7 +61,15 @@ struct RootFileSystem_Directory : public FileSystem::Directory
 	virtual uapi::stat getStatus(void) { return DirectoryStatus; }
 };
 
-class RootFileSystem : public RootFileSystem_FileSystem, public RootFileSystem_Directory, public FileSystem::Alias,
+// Mount() is ambiguous
+struct RootFileSystem_Alias : public FileSystem::Alias
+{
+	virtual void MountAlias(const FileSystem::NodePtr& node) = 0;
+
+	virtual void Mount(const FileSystem::NodePtr& node) { return MountAlias(node); }
+};
+
+class RootFileSystem : public RootFileSystem_FileSystem, public RootFileSystem_Directory, public RootFileSystem_Alias,
 	public std::enable_shared_from_this<RootFileSystem>
 {
 public:
@@ -91,7 +99,8 @@ private:
 
 	// FileSystem::Alias Implementation
 	//
-	virtual void					Mount(const FileSystem::NodePtr& node);
+	//virtual void					Mount(const FileSystem::NodePtr& node);
+	virtual void					MountAlias(const FileSystem::NodePtr& node);
 	virtual void					Unmount(void);	
 	virtual const uapi::char_t*		getName(void) { return ""; }
 	virtual FileSystem::NodePtr		getNode(void);

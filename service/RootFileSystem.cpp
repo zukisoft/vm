@@ -87,7 +87,7 @@ FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 //
 //	node		- Foreign node to be mounted on this alias
 
-void RootFileSystem::Mount(const FileSystem::NodePtr& node)
+void RootFileSystem::MountAlias(const FileSystem::NodePtr& node)
 {
 	_ASSERTE(node);
 
