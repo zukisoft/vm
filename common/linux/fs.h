@@ -70,9 +70,10 @@
 #define LINUX_MS_KERNMOUNT		(1<<22)	/* this is a kern_mount call */
 #define LINUX_MS_I_VERSION		(1<<23)	/* Update inode I_version field */
 #define LINUX_MS_STRICTATIME	(1<<24)	/* Always perform atime updates */
+#define LINUX_MS_LAZYTIME		(1<<25) /* Update the on-disk [acm]times lazily */
 
 // MS_RMT_MASK - Mount options that can be changed during an MS_REMOUNT operation
-#define LINUX_MS_RMT_MASK     (LINUX_MS_RDONLY | LINUX_MS_SYNCHRONOUS | LINUX_MS_MANDLOCK | LINUX_MS_I_VERSION)
+#define LINUX_MS_RMT_MASK     (LINUX_MS_RDONLY | LINUX_MS_SYNCHRONOUS | LINUX_MS_MANDLOCK | LINUX_MS_I_VERSION | LINUX_MS_LAZYTIME)
 
 //-----------------------------------------------------------------------------
 
