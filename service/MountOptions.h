@@ -26,6 +26,7 @@
 
 #include <atomic>
 #include <map>
+#include <memory>
 #include <vector>
 #include <linux/fs.h>
 
@@ -55,12 +56,9 @@ public:
 
 	// Parse (static)
 	//
-	// Parses a string-based set of mounting options into flags and extra data
-	static std::string Parse(const char_t* options, uint32_t& flags)
-	{
-		flags = 0;
-		return "";
-	}
+	// Parses a string-based set of mounting options 
+	static std::unique_ptr<MountOptions> Parse(const char_t* options);
+	static std::unique_ptr<MountOptions> Parse(uint32_t flags, const char_t* options);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -77,6 +75,12 @@ public:
 	// Gets a reference to the contained MountArguments instance
 	__declspec(property(get=getExtraArguments)) const MountArguments& ExtraArguments;
 	const MountArguments& getExtraArguments(void) const { return m_arguments; }
+
+	// LazyTimes
+	//
+	// Gets the MS_LAZYTIME mount flag
+	__declspec(property(get=LazyTimes)) bool LazyTimes;
+	bool getLazyTimes(void) const { return getFlag(LINUX_MS_LAZYTIME); }
 
 	// NoAccessTimes
 	//
@@ -161,6 +165,8 @@ private:
 	{
 	public:
 
+		// TODO: CONVERT TO CHAR_T/STD::STRING EXCLUSIVELY
+
 		// Constructor
 		explicit MountArguments(const std::vector<std::tstring>& rawargs);
 
@@ -201,6 +207,12 @@ private:
 		std::multimap<std::tstring, std::tstring, ArgumentCompare> m_col;
 	};
 
+	// TODO: add this; call from .Parse().  Remove old constructor, change
+	// FS::Mount to accept a MountOptions&& and then fix everywhere that breaks
+	//
+	// MountOptions(uint32_t flags, std::vector<std::string>&& extraargs);
+	// also need the make_unique friend declaration
+
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -214,6 +226,11 @@ private:
 	//
 	// Converts the raw argument data into a temporary vector<>
 	static std::vector<std::tstring> MakeVector(const void* data, size_t datalen);
+
+	// ParseToken (static)
+	//
+	// Parses a single mounting options string token
+	static void ParseToken(std::string&& token, uint32_t& flags, std::vector<std::string>& extraarguments);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

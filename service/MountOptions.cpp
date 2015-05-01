@@ -63,6 +63,126 @@ std::vector<std::tstring> MountOptions::MakeVector(const void* data, size_t data
 }
 
 //-----------------------------------------------------------------------------
+// MountOptions::Parse (static)
+//
+// Parses a mounting options string into a MountOptions instance
+//
+// Arguments:
+//
+//	options			- String containing the mounting options to parse
+
+std::unique_ptr<MountOptions> MountOptions::Parse(const char_t* options)
+{
+	return Parse(0, options);
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::Parse (static)
+//
+// Parses a mounting options string into a MountOptions instance
+//
+// Arguments:
+//
+//	flags			- Initial set of mounting flags to apply before parsing
+//	options			- String containing the mounting options to parse
+
+std::unique_ptr<MountOptions> MountOptions::Parse(uint32_t flags, const char_t* options)
+{
+	std::vector<std::string>	extraargs;		// vector<> of extra arguments
+
+	while((options) && (*options)) {
+
+		const char_t* begin = options;
+		const char_t* end;
+
+		// skip leading whitespace and commas
+		while((*begin) && (std::isspace(*begin) || (*begin == ','))) begin++;
+		
+		// double quote - read until the next double quote
+		if(*begin == '\"') {
+
+			end = ++begin;
+			while((*end) && (*end != '\"')) end++;
+			//tokens.emplace_back(std::trim(std::string(begin, end)));
+			ParseToken(std::trim(std::string(begin, end)), flags, extraargs);
+			options = (*end) ? ++end : end;
+		}
+
+		// read until a comma or whitespace is detected
+		else {
+
+			end = begin;
+			while((*end) && (!std::isspace(*end) && (*end != ','))) end++;
+			ParseToken(std::trim(std::string(begin, end)), flags, extraargs);
+			options = (*end) ? ++end : end;
+		}
+	}
+
+	return std::make_unique<MountOptions>(flags, nullptr, 0);
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::ParseToken (private, static)
+//
+// Parses a single mount options string token into flags or extra arguments
+//
+// Arguments:
+//
+//	token		- Token to be parsed
+//	flags		- Reference to the working set of mount flags
+//	extraargs	- Reference to the working set of extra arguments
+
+void MountOptions::ParseToken(std::string&& token, uint32_t& flags, std::vector<std::string>& extraargs)
+{
+	if(token.length() == 0) return;
+
+	else if(token == "ro")			flags |= LINUX_MS_RDONLY;
+	else if(token == "rw")			flags &= ~LINUX_MS_RDONLY;
+
+	else if(token == "suid")		flags &= ~LINUX_MS_NOSUID;
+	else if(token == "nosuid")		flags |= LINUX_MS_NOSUID;
+
+	else if(token == "dev")			flags &= ~LINUX_MS_NODEV;
+	else if(token == "nodev")		flags |= LINUX_MS_NODEV;
+
+	else if(token == "exec")		flags &= ~LINUX_MS_NOEXEC;
+	else if(token == "noexec")		flags |= LINUX_MS_NOEXEC;
+
+	else if(token == "async")		flags &= ~LINUX_MS_SYNCHRONOUS;
+	else if(token == "sync")		flags |= LINUX_MS_SYNCHRONOUS;
+
+	else if(token == "remount")		flags |= LINUX_MS_REMOUNT;
+	
+	else if(token == "mand")		flags |= LINUX_MS_MANDLOCK;
+	else if(token == "nomand")		flags &= ~LINUX_MS_MANDLOCK;
+
+	else if(token == "dirsync")		flags |= LINUX_MS_DIRSYNC;
+
+	else if(token == "atime")		flags &= ~LINUX_MS_NOATIME;
+	else if(token == "noatime")		flags |= LINUX_MS_NOATIME;
+
+	else if(token == "diratime")	flags &= ~LINUX_MS_NODIRATIME;
+	else if(token == "nodiratime")	flags |= LINUX_MS_NODIRATIME;
+
+	else if(token == "relatime")	flags |= LINUX_MS_RELATIME;
+	else if(token == "norelatime")	flags &= ~LINUX_MS_RELATIME;
+
+	else if(token == "silent")		flags |= LINUX_MS_SILENT;
+	else if(token == "loud")		flags &= ~LINUX_MS_SILENT;
+
+	else if(token == "strictatime")	flags |= LINUX_MS_STRICTATIME;
+	
+	else if(token == "lazytime")	flags |= LINUX_MS_LAZYTIME;
+	else if(token == "nolazytime")	flags &= ~LINUX_MS_LAZYTIME;
+
+	else if(token == "iversion")	flags |= LINUX_MS_I_VERSION;
+	else if(token == "noiversion")	flags &= ~LINUX_MS_I_VERSION;
+
+	// Unrecognized tokens are inserted into the vector<> of extra arguments
+	else extraargs.emplace_back(std::move(token));
+}
+
+//-----------------------------------------------------------------------------
 // MountOptions::MountArguments Constructor
 //
 // Arguments:

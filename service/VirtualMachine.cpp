@@ -138,10 +138,10 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto root = std::to_string(m_paramroot.Value);
 		auto rootflags = std::to_string(m_paramrootflags.Value);
 		auto rootfstype = std::to_string(m_paramrootfstype.Value);
-		uint32_t mountflags = 0;
 
-		// Convert the string-based mounting options into standard flags and extra arguments
-		rootflags = MountOptions::Parse(rootflags.c_str(), mountflags);
+		auto opts = MountOptions::Parse(LINUX_MS_KERNMOUNT, rootflags.c_str());
+		// mount root with options, will be rvalue reference so inline MountOptions::Parse()
+		(opts);
 
 		// INITRAMFS
 		//

@@ -99,6 +99,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		// new parameters
 		harness.SetParameter(_T("init"), _T("/init"));
 		harness.SetParameter(_T("initrd"), _T("D:\\rootfs_x86.cpio.gz"));
+		harness.SetParameter(_T("rootflags"), _T("\"  ro\",noatime,notnolazytime, nosuid ,\"mycustomargument=me,me,me  \",lazytime"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()

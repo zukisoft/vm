@@ -27,6 +27,7 @@
 #include <concrt.h>
 #include <map>
 #include <memory>
+#include <linux/fs.h>
 #include "Exception.h"
 #include "FileSystem.h"
 #include "MountOptions.h"
