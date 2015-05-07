@@ -139,9 +139,8 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto rootflags = std::to_string(m_paramrootflags.Value);
 		auto rootfstype = std::to_string(m_paramrootfstype.Value);
 
-		auto opts = MountOptions::Parse(LINUX_MS_KERNMOUNT, rootflags.c_str());
-		// mount root with options, will be rvalue reference so inline MountOptions::Parse()
-		(opts);
+		try { m_rootfs = m_filesystems.at(rootfstype.c_str())(root.c_str(), MountOptions::Parse(LINUX_MS_KERNMOUNT, rootflags.c_str())); }
+		catch(...) { throw; } // <--- todo
 
 		// INITRAMFS
 		//
@@ -167,6 +166,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// Win32Exception and Exception can be translated into ServiceExceptions
 	catch(Win32Exception& ex) { throw ServiceException(static_cast<DWORD>(ex.Code)); }
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
+	// catch(std::exception& ex) { /* PUT SOMETHING HERE */ }
 
 	// Add this virtual machine instance to the active instance collection
 	instance_map_lock_t::scoped_lock writer(s_instancelock);

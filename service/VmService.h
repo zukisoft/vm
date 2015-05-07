@@ -125,7 +125,7 @@ private:
 	// Loads the initial file system from an initramfs CPIO archive
 	void LoadInitialFileSystem(const std::shared_ptr<FileSystem::Alias>& target, const tchar_t* archivefile);
 
-	FileSystemPtr MountProcFileSystem(const char_t* name, uint32_t flags, const void* data);
+	FileSystemPtr MountProcFileSystem(const char_t* name, std::unique_ptr<MountOptions>&& options);
 
 	// OnStart (Service)
 	//

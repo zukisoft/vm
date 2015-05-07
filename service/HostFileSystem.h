@@ -77,7 +77,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data, size_t datalen);
+	static FileSystemPtr Mount(const uapi::char_t* source, std::unique_ptr<MountOptions>&& options);
 
 	// FileSystem Implementation
 	//
@@ -442,7 +442,7 @@ private:
 
 		// Constructor / Destructor
 		//
-		MountPoint(HANDLE handle, uint32_t flags, const void* data, size_t datalen);
+		MountPoint(HANDLE handle, std::unique_ptr<MountOptions>&& options);
 		~MountPoint();
 
 		// HostPath
@@ -455,7 +455,7 @@ private:
 		//
 		// Gets a reference to the contained MountOptions instance
 		__declspec(property(get=getOptions)) MountOptions& Options;
-		MountOptions& getOptions(void) { return m_options; }
+		MountOptions& getOptions(void) { return *m_options; }
 
 	private:
 
@@ -464,9 +464,9 @@ private:
 
 		// Member Variables
 		//
-		HANDLE					m_handle;			// Mounted directory handle
-		MountOptions			m_options;			// Standard mounting options
-		HeapBuffer<tchar_t>		m_hostpath;			// The mounted host path
+		HANDLE							m_handle;		// Mounted directory handle
+		std::unique_ptr<MountOptions>	m_options;		// Mounting options
+		HeapBuffer<tchar_t>				m_hostpath;		// The mounted host path
 	};
 };
 

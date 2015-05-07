@@ -30,6 +30,7 @@
 #include <linux/statfs.h>
 #include <linux/types.h>
 #include "LinuxException.h"
+#include "MountOptions.h"
 #include "PathSplitter.h"
 
 #pragma warning(push, 4)
@@ -86,7 +87,8 @@ public:
 
 	// need typedef for Mount(const uapi::char_t* device, uint32_t flags, const void* data)
 	// need table type for mountable file systems -> Mount() function pointers
-	using mount_func = std::function<FileSystemPtr(const uapi::char_t* device, uint32_t flags, const void* data, size_t length)>;
+	//using mount_func = std::function<FileSystemPtr(const uapi::char_t* device, uint32_t flags, const void* data, size_t length)>;
+	using mount_func = std::function<FileSystemPtr(const char_t* device, std::unique_ptr<MountOptions>&& options)>;
 	using MountFunction = mount_func;
 
 	// NodeType

@@ -113,11 +113,10 @@ std::shared_ptr<Process> VmService::FindNativeProcess(DWORD nativepid)
 	return nullptr;
 }
 
-FileSystemPtr VmService::MountProcFileSystem(const char_t* name, uint32_t flags, const void* data)
+FileSystemPtr VmService::MountProcFileSystem(const char_t* name, std::unique_ptr<MountOptions>&& options)
 {
 	(name);
-	(flags);
-	(data);
+	(options);
 
 	_ASSERTE(m_procfs);
 
@@ -217,7 +216,7 @@ void VmService::MountFileSystem(const uapi::char_t* source, const uapi::char_t* 
 	if(result == m_availfs.end()) throw LinuxException(LINUX_ENODEV);
 
 	// Create the file system by passing the arguments into it's mount function
-	auto mounted = result->second(source, flags, data, datalen);
+	auto mounted = result->second(source, MountOptions::Create(flags, data, datalen));
 
 	// Resolve the target alias and check that it's referencing a directory object
 	auto alias = FileSystem::ResolvePath(m_rootfs->Root, m_rootfs->Root, target, 0);
@@ -452,12 +451,12 @@ void VmService::OnStart(int, LPTSTR*)
 
 		// temporary -- mount the root file system; this needs to actually be something
 		// specified by the options for the service instance
-		m_rootfs = RootFileSystem::Mount(nullptr, 0, nullptr, 0);
+		m_rootfs = RootFileSystem::Mount(nullptr, MountOptions::Create(LINUX_MS_KERNMOUNT));
 
 		// add filesystems
 		// no need to lock, service has not gone multi-threaded yet; no RPC listener
 		m_availfs.insert(std::make_pair("hostfs", HostFileSystem::Mount));
-		m_availfs.insert(std::make_pair("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2, _3)));
+		//m_availfs.insert(std::make_pair("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2)));
 		m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));
 		m_availfs.insert(std::make_pair("tmpfs", TempFileSystem::Mount));
 

@@ -60,7 +60,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t*, uint32_t flags, const void* data, size_t datalen);
+	static FileSystemPtr Mount(const uapi::char_t*, std::unique_ptr<MountOptions>&& options);
 
 	// FileSystem Implementation
 	//
@@ -93,7 +93,7 @@ private:
 	{
 	public:
 
-		MountPoint(uint32_t flags, const void* data, size_t datalen);
+		MountPoint(std::unique_ptr<MountOptions>&& options);
 		~MountPoint()=default;
 
 		// AllocateIndex
@@ -105,7 +105,7 @@ private:
 		//
 		// Gets a reference to the contained MountOptions instance
 		__declspec(property(get=getOptions)) MountOptions& Options;
-		MountOptions& getOptions(void) { return m_options; }
+		MountOptions& getOptions(void) { return *m_options; }
 
 	private:
 
@@ -114,8 +114,8 @@ private:
 
 		// Member Variables
 		//
-		MountOptions				m_options;			// Mounting options
-		std::atomic<uint64_t>		m_nextindex;		// Next inode index
+		std::unique_ptr<MountOptions>	m_options;			// Mounting options
+		std::atomic<uint64_t>		    m_nextindex;		// Next inode index
 	};
 
 	//-------------------------------------------------------------------------

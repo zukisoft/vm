@@ -274,11 +274,9 @@ FileSystem::HandlePtr HostFileSystem::DuplicateFileHandle(const std::shared_ptr<
 // Arguments:
 //
 //	source		- Host path; must reference a directory object
-//	flags		- Standard mounting options and flags
-//	data		- Filesystem-specific mounting data
-//	datalen		- Length of the filesystem specific mounting data
+//  options     - MountOptions instance
 
-FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, const void* data, size_t datalen)
+FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, std::unique_ptr<MountOptions>&& options)
 {
 	std::shared_ptr<MountPoint>			mountpoint;			// MountPoint instance
 
@@ -298,7 +296,7 @@ FileSystemPtr HostFileSystem::Mount(const uapi::char_t* source, uint32_t flags, 
 
 	// Attempt to create the MountPoint instance for this file system against the opened handle
 	// (MountPoint will take ownership of the handle at this point)
-	try { mountpoint = std::make_shared<MountPoint>(handle, flags, data, datalen); }
+	try { mountpoint = std::make_shared<MountPoint>(handle, std::move(options)); }
 	catch(...) { CloseHandle(handle); throw; }
 
 	// Construct the HostFileSystem instance, providing an alias attached to the target directory
@@ -1461,8 +1459,8 @@ uapi::size_t HostFileSystem::PathHandle::WriteAt(uapi::loff_t, const void*, uapi
 //	data		- Optional custom mounting flags and data
 //	datalen		- Length of available custom mounting options
 
-HostFileSystem::MountPoint::MountPoint(HANDLE handle, uint32_t flags, const void* data, size_t datalen) : 
-	m_handle(handle), m_options(flags, data, datalen), m_hostpath(HandleToPath(handle))
+HostFileSystem::MountPoint::MountPoint(HANDLE handle, std::unique_ptr<MountOptions>&& options) : 
+	m_handle(handle), m_options(std::move(options)), m_hostpath(HandleToPath(handle))
 {
 	_ASSERTE(handle != INVALID_HANDLE_VALUE);
 }

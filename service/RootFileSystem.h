@@ -80,7 +80,7 @@ public:
 	// Mount
 	//
 	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t* source, uint32_t flags, const void* data, size_t datalen);
+	static FileSystemPtr Mount(const uapi::char_t* source, std::unique_ptr<MountOptions>&& options);
 
 private:
 

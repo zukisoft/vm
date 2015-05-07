@@ -26,40 +26,28 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// MountOptions::MakeVector (private, static)
-//
-// Converts a mount data argument string into a vector of individual strings
+// MountOptions Constructor (private)
 //
 // Arguments:
 //
-//	data		- String passed into mount(2) to be converted
-//	datalen		- Maximum length of the available data
+//	flags		- Standard mount option flags bitmask
+//	extraargs	- Extra mount options provided by caller
 
-std::vector<std::tstring> MountOptions::MakeVector(const void* data, size_t datalen)
+MountOptions::MountOptions(uint32_t flags, std::vector<std::string>&& extraargs) : 
+m_flags(flags), m_arguments(std::move(extraargs)) {}
+
+
+std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags)
 {
-	std::vector<std::tstring>	args;			// vector<> of argument strings
+	return Create(flags, nullptr, 0);
+}
 
-	// null is acceptable as the data argument value here, just skip it
-	if(data) {
-
-		// Copy the data into a local buffer that can be trashed by strtok()
-		size_t length = min(_tcslen(reinterpret_cast<const tchar_t*>(data)), datalen) + 1;
-		std::vector<tchar_t> buffer(length);
-		memcpy(buffer.data(), data, buffer.size() * sizeof(tchar_t));
-
-		// Use good old strtok() to break up the copy of the string by commas
-		tchar_t separators[] = _T(",");
-		tchar_t* context = nullptr;
-
-		const tchar_t* next = _tcstok_s(buffer.data(), separators, &context);
-		while(next) {
-
-			args.push_back(next);
-			next = _tcstok_s(nullptr, separators, &context);
-		}
-	}
-
-	return args;								// Return generated vector<>
+std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const void* data, size_t datalen)
+{
+	std::vector<std::string> extraargs;
+	
+	// TODO - parse extra options here; see deleted code in GitHub -- "MakeVector"
+	return std::make_unique<MountOptions>(flags, std::move(extraargs));
 }
 
 //-----------------------------------------------------------------------------
@@ -118,7 +106,7 @@ std::unique_ptr<MountOptions> MountOptions::Parse(uint32_t flags, const char_t* 
 		}
 	}
 
-	return std::make_unique<MountOptions>(flags, nullptr, 0);
+	return std::make_unique<MountOptions>(flags, std::move(extraargs));
 }
 
 //-----------------------------------------------------------------------------
@@ -189,17 +177,16 @@ void MountOptions::ParseToken(std::string&& token, uint32_t& flags, std::vector<
 //
 //	rawargs		- Vector<> of all raw mount argument strings
 
-MountOptions::MountArguments::MountArguments(const std::vector<std::tstring>& rawargs)
+MountOptions::MountArguments::MountArguments(const std::vector<std::string>& args)
 {
-	// Iterate over all the raw arguments to find and process the switched ones
-	for(const auto& arg : rawargs) {
+	for(const auto& arg : args) {
 
 		// Ignore blank arguments
 		if(arg.length() > 0) {
 
-			// Insert the switch into the collection, with or with the optional value after a colon
+			// Insert the argument into the collection, with or with the optional value after an equal sign
 			size_t equalsign = arg.find(_T('='));
-			if(equalsign == std::tstring::npos) { m_col.insert(std::make_pair(trim(arg), std::tstring())); }
+			if(equalsign == std::string::npos) { m_col.insert(std::make_pair(trim(arg), std::string())); }
 			else { m_col.insert(std::make_pair(trim(arg.substr(0, equalsign)), trim(arg.substr(equalsign + 1)))); }
 		}
 	}
@@ -214,7 +201,7 @@ MountOptions::MountArguments::MountArguments(const std::vector<std::tstring>& ra
 //
 //	key		- Switch name/key to check in the collection
 
-bool MountOptions::MountArguments::Contains(const std::tstring& key) const
+bool MountOptions::MountArguments::Contains(const std::string& key) const
 {
 	// Use the count of the specified key in the collection to determine this
 	return (m_col.count(key) > 0);
@@ -229,11 +216,11 @@ bool MountOptions::MountArguments::Contains(const std::tstring& key) const
 //
 //	key		- Switch name/key to retrieve a single value for
 
-std::tstring MountOptions::MountArguments::GetValue(const std::tstring& key) const
+std::string MountOptions::MountArguments::GetValue(const std::string& key) const
 {
 	// Use find to locate the first element with the specified key
 	const auto& iterator = m_col.find(key);
-	return (iterator == m_col.cend()) ? std::tstring() : iterator->second;
+	return (iterator == m_col.cend()) ? std::string() : iterator->second;
 }
 
 //-----------------------------------------------------------------------------
@@ -245,9 +232,9 @@ std::tstring MountOptions::MountArguments::GetValue(const std::tstring& key) con
 //
 //	key		- Switch name/key to retrieve all values for
 
-std::vector<std::tstring> MountOptions::MountArguments::GetValues(const std::tstring key) const
+std::vector<std::string> MountOptions::MountArguments::GetValues(const std::string key) const
 {
-	std::vector<std::tstring> values;			// vector<> of values to return
+	std::vector<std::string> values;			// vector<> of values to return
 
 	// Use equal_range to retrieve all the elements with the specified key
 	const auto& range = m_col.equal_range(key);

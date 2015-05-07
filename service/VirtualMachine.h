@@ -147,6 +147,7 @@ private:
 	// File Systems
 	//
 	filesystem_map_t			m_filesystems;		// Available file systems
+	std::shared_ptr<FileSystem>	m_rootfs;			// Root file system
 
 	// Service<> Parameters
 	//

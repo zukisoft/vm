@@ -47,14 +47,12 @@ TempFileSystem::TempFileSystem(const std::shared_ptr<MountPoint>& mountpoint, co
 // Arguments:
 //
 //	source		- Unused for TempFileSystem
-//	flags		- Standard mounting options and flags
-//	data		- Filesystem-specific mounting data
-//	datalen		- Length of the filesystem specific mounting data
+//  options     - Mounting options
 
-FileSystemPtr TempFileSystem::Mount(const uapi::char_t*, uint32_t flags, const void* data, size_t datalen)
+FileSystemPtr TempFileSystem::Mount(const uapi::char_t*, std::unique_ptr<MountOptions>&& options)
 {
 	// Create the shared MountPoint instance to be passed to all file system objects
-	std::shared_ptr<MountPoint> mountpoint = std::make_shared<MountPoint>(flags, data, datalen);
+	std::shared_ptr<MountPoint> mountpoint = std::make_shared<MountPoint>(std::move(options));
 
 	// Construct the TempFileSystem instance, providing an alias attached to a
 	// new DirectoryNode instance that serves as the root node
@@ -771,8 +769,8 @@ uapi::size_t TempFileSystem::FileNode::Handle::WriteAt(uapi::loff_t offset, cons
 //	data		- Addtional custom mounting information for this file system
 //	datalen		- Length of additional custom mounting information buffer
 
-TempFileSystem::MountPoint::MountPoint(uint32_t flags, const void* data, size_t datalen) : 
-	m_options(flags, data, datalen), m_nextindex(FileSystem::NODE_INDEX_FIRSTDYNAMIC)
+TempFileSystem::MountPoint::MountPoint(std::unique_ptr<MountOptions>&& options) : 
+	m_options(std::move(options)), m_nextindex(FileSystem::NODE_INDEX_FIRSTDYNAMIC)
 {
 }
 

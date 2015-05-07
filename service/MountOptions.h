@@ -31,6 +31,7 @@
 #include <linux/fs.h>
 
 #pragma warning(push, 4)				
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // MountOptions
@@ -47,12 +48,14 @@ class MountOptions
 
 public:
 
-	// Instance Constructor
-	//
-	MountOptions(uint32_t flags, const void* data, size_t datalen) : m_flags(flags), m_arguments(MakeVector(data, datalen)) {}
-
 	//-------------------------------------------------------------------------
 	// Member Functions
+
+	// Create (static)
+	//
+	// Constructs a new MountOptions instance based on standard mount arguments
+	static std::unique_ptr<MountOptions> Create(uint32_t flags);
+	static std::unique_ptr<MountOptions> Create(uint32_t flags, const void* data, size_t datalen);
 
 	// Parse (static)
 	//
@@ -76,10 +79,16 @@ public:
 	__declspec(property(get=getExtraArguments)) const MountArguments& ExtraArguments;
 	const MountArguments& getExtraArguments(void) const { return m_arguments; }
 
+	// KernelMount
+	//
+	// Gets the MS_KERNMOUNT mount flag
+	__declspec(property(get=getKernelMount)) bool KernelMount;
+	bool getKernelMount(void) const { return getFlag(LINUX_MS_KERNMOUNT); }
+
 	// LazyTimes
 	//
 	// Gets the MS_LAZYTIME mount flag
-	__declspec(property(get=LazyTimes)) bool LazyTimes;
+	__declspec(property(get=getLazyTimes)) bool LazyTimes;
 	bool getLazyTimes(void) const { return getFlag(LINUX_MS_LAZYTIME); }
 
 	// NoAccessTimes
@@ -125,6 +134,12 @@ public:
 	__declspec(property(get=getRelativeAccessTimes)) bool RelativeAccessTimes;
 	bool getRelativeAccessTimes(void) const { return getFlag(LINUX_MS_RELATIME); }
 
+	// Remount
+	//
+	// Gets the MS_REMOUNT mount flag
+	__declspec(property(get=getRemount)) bool Remount;
+	bool getRemount(void) const { return getFlag(LINUX_MS_REMOUNT); }
+
 	// Silent
 	//
 	// Gets the MS_SILENT mount flag
@@ -165,25 +180,23 @@ private:
 	{
 	public:
 
-		// TODO: CONVERT TO CHAR_T/STD::STRING EXCLUSIVELY
-
 		// Constructor
-		explicit MountArguments(const std::vector<std::tstring>& rawargs);
+		explicit MountArguments(const std::vector<std::string>& args);
 
 		// Contains
 		//
 		// Determines if the collection contains at least one of the switches
-		bool Contains(const std::tstring& key) const;
+		bool Contains(const std::string& key) const;
 
 		// GetValue
 		//
 		// Gets the first value associated with a switch key
-		std::tstring GetValue(const std::tstring& key) const;
+		std::string GetValue(const std::string& key) const;
 
 		// GetValues
 		//
 		// Gets all values associated with a switch key
-		std::vector<std::tstring> GetValues(const std::tstring key) const;
+		std::vector<std::string> GetValues(const std::string key) const;
 
 	private:
 
@@ -195,23 +208,23 @@ private:
 		// Case-insensitive key comparison for the argument collection
 		struct ArgumentCompare 
 		{ 
-			bool operator() (const std::tstring& lhs, const std::tstring& rhs) const 
+			bool operator() (const std::string& lhs, const std::string& rhs) const 
 			{ 
-				return _tcsicmp(lhs.c_str(), rhs.c_str()) < 0; 
+				return _stricmp(lhs.c_str(), rhs.c_str()) < 0; 
 			}
 		};
 	
 		// m_col
 		//
 		// Collection of non-standard mounting arguments
-		std::multimap<std::tstring, std::tstring, ArgumentCompare> m_col;
+		std::multimap<std::string, std::string, ArgumentCompare> m_col;
 	};
 
-	// TODO: add this; call from .Parse().  Remove old constructor, change
-	// FS::Mount to accept a MountOptions&& and then fix everywhere that breaks
+	// Instance Constructor
 	//
-	// MountOptions(uint32_t flags, std::vector<std::string>&& extraargs);
-	// also need the make_unique friend declaration
+
+	MountOptions(uint32_t flags, std::vector<std::string>&& extraargs);
+	friend std::unique_ptr<MountOptions> std::make_unique<MountOptions, uint32_t&, std::vector<std::string>>(uint32_t&, std::vector<std::string>&&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -221,11 +234,6 @@ private:
 	// Helper function to get/set specific flag bits
 	inline bool getFlag(uint32_t flag) const { return (m_flags & flag) == flag; }
 	inline void putFlag(uint32_t flag, bool value) { if(value) m_flags |= flag; else m_flags &= ~flag; }
-
-	// MakeVector
-	//
-	// Converts the raw argument data into a temporary vector<>
-	static std::vector<std::tstring> MakeVector(const void* data, size_t datalen);
 
 	// ParseToken (static)
 	//
