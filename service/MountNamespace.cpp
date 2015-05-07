@@ -21,43 +21,48 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Pid.h"
-
-// Forward Declarations
-//
-#include "Namespace.h"
-#include "PidNamespace.h"
+#include "MountNamespace.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Pid Destructor
+// MountNamespace Constructor (private)
+//
+// Arguments:
+//
+//	NONE
 
-Pid::~Pid()
+MountNamespace::MountNamespace()
 {
-	// Iterate over all allocated pid_ts for this Pid instance and release them
-	for(const auto& iterator : m_pids) iterator.first->ReleasePid(iterator.second);
 }
 
 //-----------------------------------------------------------------------------
-// Pid::getValue
+// MountNamespace::Create (static)
 //
-// Retrieves the pid_t value associated with a specific namespace
+// Creates a new MountNamespace instance
+//
+// Arguments:
+//
+//	NONE
 
-uapi::pid_t Pid::getValue(const std::shared_ptr<Namespace>& ns) const
+std::shared_ptr<MountNamespace> MountNamespace::Create(void)
 {
-	return getValue(ns->Pids);		// Call through the Namespace
+	return std::make_shared<MountNamespace>();
 }
 
 //-----------------------------------------------------------------------------
-// Pid::getValue
+// MountNamespace::Create (static)
 //
-// Retrieves the pid_t value associated with a specific namespace
+// Creates a new MountNamespace instance
+//
+// Arguments:
+//
+//	mountns		- Existing MountNamespace to be copied
 
-uapi::pid_t Pid::getValue(const std::shared_ptr<PidNamespace>& ns) const
+std::shared_ptr<MountNamespace> MountNamespace::Create(const std::shared_ptr<MountNamespace>& mountns)
 {
-	try { return m_pids.at(ns); }
-	catch(...) { throw std::exception("todo"); } // todo: exception
+	(mountns);
+	return std::make_shared<MountNamespace>();
 }
 
 //-----------------------------------------------------------------------------

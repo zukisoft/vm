@@ -30,11 +30,12 @@
 //
 // Arguments:
 //
+//	mountns		- MountNamespace instance to contain
 //	pidns		- PidNamespace instance to contain
 //	utsns		- UtsNamespace instance to contain
 
-Namespace::Namespace(const std::shared_ptr<PidNamespace>& pidns, const std::shared_ptr<UtsNamespace>& utsns) : 
-	m_pidns(pidns), m_utsns(utsns)
+Namespace::Namespace(const std::shared_ptr<MountNamespace>& mountns, const std::shared_ptr<PidNamespace>& pidns, 
+	const std::shared_ptr<UtsNamespace>& utsns) : m_mountns(mountns), m_pidns(pidns), m_utsns(utsns)
 {
 }
 
@@ -58,7 +59,7 @@ std::shared_ptr<Namespace> Namespace::Clone(int flags)
 	// auto ipcns = (flags & LINUX_CLONE_NEWIPC) ? 
 
 	// MOUNTNAMESPACE
-	// auto mountns = (flags & LINUX_CLONE_NEWNS) ? 
+	auto mountns = (flags & LINUX_CLONE_NEWNS) ? MountNamespace::Create(m_mountns) : m_mountns;
 
 	// NETWORKNAMESPACE
 	// auto networkns = (flags & LINUX_CLONE_NEWNET) ? 
@@ -74,7 +75,7 @@ std::shared_ptr<Namespace> Namespace::Clone(int flags)
 	auto utsns = (flags & LINUX_CLONE_NEWUTS) ? UtsNamespace::Create(m_utsns) : m_utsns;
 
 	// Construct the new Namespace with the selected individual components
-	return std::make_shared<Namespace>(pidns, utsns);
+	return std::make_shared<Namespace>(mountns, pidns, utsns);
 }
 
 //-----------------------------------------------------------------------------
@@ -88,25 +89,35 @@ std::shared_ptr<Namespace> Namespace::Clone(int flags)
 
 std::shared_ptr<Namespace> Namespace::Create(void)
 {
-	return std::make_shared<Namespace>(PidNamespace::Create(), UtsNamespace::Create());
+	return std::make_shared<Namespace>(MountNamespace::Create(), PidNamespace::Create(), UtsNamespace::Create());
 }
 
 //-----------------------------------------------------------------------------
-// Namespace::getPid
+// Namespace::getMounts
+//
+// Accesses the contained MountNamespace instance
+
+std::shared_ptr<MountNamespace> Namespace::getMounts(void) const
+{
+	return m_mountns;
+}
+
+//-----------------------------------------------------------------------------
+// Namespace::getPids
 //
 // Accesses the contained PidNamespace instance
 
-std::shared_ptr<PidNamespace> Namespace::getPid(void) const
+std::shared_ptr<PidNamespace> Namespace::getPids(void) const
 {
 	return m_pidns;
 }
 
 //-----------------------------------------------------------------------------
-// Namespace::getUts
+// Namespace::getUtsNames
 //
 // Accesses the contained UtsNamespace instance
 
-std::shared_ptr<UtsNamespace> Namespace::getUts(void) const
+std::shared_ptr<UtsNamespace> Namespace::getUtsNames(void) const
 {
 	return m_utsns;
 }

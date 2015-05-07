@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <linux/sched.h>
+#include "MountNamespace.h"
 #include "PidNamespace.h"
 #include "UtsNamespace.h"
 
@@ -39,7 +40,7 @@
 // of these resources:
 //
 //	Ipc			- Isolates System V IPC and posix message queues
-//	MountPoint	- Isolates mount points
+//	Mount		- Isolates file system mount points
 //	Network		- Isolates network devices, ports, stacks, etc.
 //	Pid			- Isolates process identifiers
 //	User		- Isolates user and group identifiers
@@ -69,17 +70,23 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Pid
+	// Mounts
+	//
+	// Accesses the contained MountNamespace instance
+	__declspec(property(get=getMounts)) std::shared_ptr<MountNamespace> Mounts;
+	std::shared_ptr<MountNamespace> getMounts(void) const;
+
+	// Pids
 	//
 	// Accesses the contained PidNamespace instance
-	__declspec(property(get=getPid)) std::shared_ptr<PidNamespace> Pid;
-	std::shared_ptr<PidNamespace> getPid(void) const;
+	__declspec(property(get=getPids)) std::shared_ptr<PidNamespace> Pids;
+	std::shared_ptr<PidNamespace> getPids(void) const;
 
-	// Uts
+	// UtsNames
 	//
 	// Acceses the contained UtsNamespace instance
-	__declspec(property(get=getUts)) std::shared_ptr<UtsNamespace> Uts;
-	std::shared_ptr<UtsNamespace> getUts(void) const;
+	__declspec(property(get=getUts)) std::shared_ptr<UtsNamespace> UtsNames;
+	std::shared_ptr<UtsNamespace> getUtsNames(void) const;
 
 private:
 
@@ -93,12 +100,13 @@ private:
 
 	// Instance Constructor
 	//
-	Namespace(const std::shared_ptr<PidNamespace>& pidns, const std::shared_ptr<UtsNamespace>& utsns);
+	Namespace(const std::shared_ptr<MountNamespace>& mountns, const std::shared_ptr<PidNamespace>& pidns, const std::shared_ptr<UtsNamespace>& utsns);
 	friend class std::_Ref_count_obj<Namespace>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
+	const std::shared_ptr<MountNamespace>	m_mountns;		// MountNamespace
 	const std::shared_ptr<PidNamespace>		m_pidns;		// PidNamespace
 	const std::shared_ptr<UtsNamespace>		m_utsns;		// UtsNamespace
 };

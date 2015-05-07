@@ -48,16 +48,16 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Allocate
+	//
+	// Creates a new Pid instance from this namespace and all ancestors
+	std::shared_ptr<Pid> Allocate(void);
+
 	// Create (static)
 	//
 	// Creates a new PidNamespace instance
 	static std::shared_ptr<PidNamespace> Create(void);
 	static std::shared_ptr<PidNamespace> Create(const std::shared_ptr<PidNamespace>& ancestor);
-
-	// CreatePid
-	//
-	// Creates a new Pid instance from this namespace and all ancestors
-	std::shared_ptr<Pid> CreatePid(void);
 
 private:
 
@@ -77,15 +77,15 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// Allocate
+	// AllocatePid
 	//
 	// Allocates a raw pid_t from this namespace pid_t pool
-	uapi::pid_t Allocate(void);
+	uapi::pid_t AllocatePid(void);
 
-	// Release
+	// ReleasePid
 	//
 	// Releases a pid_t that has been allocated in this namespace
-	void Release(uapi::pid_t pid);
+	void ReleasePid(uapi::pid_t pid);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

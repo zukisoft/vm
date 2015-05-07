@@ -37,7 +37,35 @@ PidNamespace::PidNamespace(const std::shared_ptr<PidNamespace>& ancestor) : m_an
 }
 
 //-----------------------------------------------------------------------------
-// PidNamespace::Allocate (private)
+// PidNamespace::Allocate
+//
+// Allocates a new Pid instance.  The Pid will receive unique pid_t values for
+// this namespace as well as any/all direct ancestor namespaces
+//
+// Arguments:
+//
+//	NONE
+
+std::shared_ptr<Pid> PidNamespace::Allocate(void)
+{
+	// Construct a new Pid instance and assign a pid_t from this namespace
+	auto pid = std::make_shared<Pid>();
+	pid->m_pids.emplace(shared_from_this(), AllocatePid());
+
+	// Iterate over all ancestors to this namespace and assign pid_ts
+	// from each of them to the Pid instance as well
+	auto ancestor = m_ancestor.lock();
+	while(ancestor) {
+
+		pid->m_pids.emplace(ancestor, ancestor->AllocatePid());
+		ancestor = ancestor->m_ancestor.lock();
+	}
+
+	return pid;
+}
+
+//-----------------------------------------------------------------------------
+// PidNamespace::AllocatePid (private)
 //
 // Allocates a unique pid_t from the available pool of values
 //
@@ -45,7 +73,7 @@ PidNamespace::PidNamespace(const std::shared_ptr<PidNamespace>& ancestor) : m_an
 //
 //	NONE
 
-uapi::pid_t PidNamespace::Allocate(void)
+uapi::pid_t PidNamespace::AllocatePid(void)
 {
 	uapi::pid_t pid;				// Allocated pid_t value
 
@@ -86,35 +114,7 @@ std::shared_ptr<PidNamespace> PidNamespace::Create(const std::shared_ptr<PidName
 }
 
 //-----------------------------------------------------------------------------
-// PidNamespace::CreatePid
-//
-// Allocates a new Pid instance.  The Pid will receive unique pid_t values for
-// this namespace as well as any/all direct ancestor namespaces
-//
-// Arguments:
-//
-//	NONE
-
-std::shared_ptr<Pid> PidNamespace::CreatePid(void)
-{
-	// Construct a new Pid instance and assign a pid_t from this namespace
-	auto pid = std::make_shared<Pid>();
-	pid->m_pids.emplace(shared_from_this(), Allocate());
-
-	// Iterate over all ancestors to this namespace and assign pid_ts
-	// from each of them to the Pid instance as well
-	auto ancestor = m_ancestor.lock();
-	while(ancestor) {
-
-		pid->m_pids.emplace(ancestor, ancestor->Allocate());
-		ancestor = ancestor->m_ancestor.lock();
-	}
-
-	return pid;
-}
-
-//-----------------------------------------------------------------------------
-// PidNamespace::Release (private)
+// PidNamespace::ReleasePid (private)
 //
 // Releases a previously allocated pid_t for reuse
 //
@@ -122,7 +122,7 @@ std::shared_ptr<Pid> PidNamespace::CreatePid(void)
 //
 //	pid		- pid_t previous allocated by this instance
 
-void PidNamespace::Release(uapi::pid_t pid)
+void PidNamespace::ReleasePid(uapi::pid_t pid)
 {
 	// This class reuses pid_ts aggressively, push it into the spent queue
 	// so that it will be grabbed before allocating a new one

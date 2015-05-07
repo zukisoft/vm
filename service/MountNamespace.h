@@ -20,46 +20,55 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Pid.h"
+#ifndef __MOUNTNAMESPACE_H_
+#define __MOUNTNAMESPACE_H_
+#pragma once
 
-// Forward Declarations
-//
-#include "Namespace.h"
-#include "PidNamespace.h"
+#include <memory>
 
-#pragma warning(push, 4)
+#pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------
-// Pid Destructor
-
-Pid::~Pid()
-{
-	// Iterate over all allocated pid_ts for this Pid instance and release them
-	for(const auto& iterator : m_pids) iterator.first->ReleasePid(iterator.second);
-}
-
-//-----------------------------------------------------------------------------
-// Pid::getValue
+// MountNamespace
 //
-// Retrieves the pid_t value associated with a specific namespace
+// Provides an isolated view of file system mounts
 
-uapi::pid_t Pid::getValue(const std::shared_ptr<Namespace>& ns) const
+class MountNamespace : public std::enable_shared_from_this<MountNamespace>
 {
-	return getValue(ns->Pids);		// Call through the Namespace
-}
+public:
 
-//-----------------------------------------------------------------------------
-// Pid::getValue
-//
-// Retrieves the pid_t value associated with a specific namespace
+	// Destructor
+	//
+	~MountNamespace()=default;
 
-uapi::pid_t Pid::getValue(const std::shared_ptr<PidNamespace>& ns) const
-{
-	try { return m_pids.at(ns); }
-	catch(...) { throw std::exception("todo"); } // todo: exception
-}
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Create (static)
+	//
+	// Creates a new MountNamespace instance
+	static std::shared_ptr<MountNamespace> Create(void);
+	static std::shared_ptr<MountNamespace> Create(const std::shared_ptr<MountNamespace>& mountns);
+
+private:
+
+	MountNamespace(const MountNamespace&)=delete;
+	MountNamespace& operator=(const MountNamespace&)=delete;
+
+	// Instance Constructor
+	//
+	MountNamespace();
+	friend class std::_Ref_count_obj<MountNamespace>;
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+};
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __MOUNTNAMESPACE_H_
