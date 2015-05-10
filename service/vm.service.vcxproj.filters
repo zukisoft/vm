@@ -407,6 +407,9 @@
     <ClInclude Include="MountNamespace.h">
       <Filter>Header Files\Namespace</Filter>
     </ClInclude>
+    <ClInclude Include="Mount.h">
+      <Filter>Header Files\Namespace</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -863,6 +866,9 @@
       <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="MountNamespace.cpp">
+      <Filter>Source Files\Namespace</Filter>
+    </ClCompile>
+    <ClCompile Include="Mount.cpp">
       <Filter>Source Files\Namespace</Filter>
     </ClCompile>
   </ItemGroup>
