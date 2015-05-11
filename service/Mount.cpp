@@ -32,9 +32,21 @@
 //
 //	source		- Source device name of the mount point
 //	target		- Target alias of the mount point
+//	fs			- File system instance referenced by the mount point
 
-Mount::Mount(const char_t* const source, const std::shared_ptr<FileSystem::Alias>& target) : m_source(source), m_target(target)
+Mount::Mount(const char_t* const source, const std::shared_ptr<::FileSystem::Alias>& target,
+	const std::shared_ptr<::FileSystem>& fs) : m_source(source), m_target(target), m_fs(fs)
 {
+}
+
+//-----------------------------------------------------------------------------
+// Mount::getFileSystem
+//
+// Gets the FileSystem instance referenced by this mount point
+
+std::shared_ptr<::FileSystem> Mount::getFileSystem(void) const
+{
+	return m_fs;
 }
 
 //-----------------------------------------------------------------------------

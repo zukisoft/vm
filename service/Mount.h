@@ -46,6 +46,12 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// FileSystem
+	//
+	// Retrieves the referenced file system of the mount point
+	__declspec(property(get=getFileSystem)) std::shared_ptr<::FileSystem> FileSystem;
+	std::shared_ptr<::FileSystem> getFileSystem(void) const;
+
 	// Source
 	//
 	// Retrieves the source device name for the mount point
@@ -65,14 +71,15 @@ private:
 
 	// Instance Constructor
 	//
-	Mount(const char_t* const source, const std::shared_ptr<FileSystem::Alias>& target);
+	Mount(const char_t* const source, const std::shared_ptr<::FileSystem::Alias>& target, const std::shared_ptr<::FileSystem>& fs);
 	friend class std::_Ref_count_obj<Mount>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
 	const std::string							m_source;	// Mount source device
-	const std::shared_ptr<FileSystem::Alias>	m_target;	// Target alias instance
+	const std::shared_ptr<::FileSystem::Alias>	m_target;	// Target alias instance
+	const std::shared_ptr<::FileSystem>			m_fs;		// File system instance
 };
 
 //-----------------------------------------------------------------------------
