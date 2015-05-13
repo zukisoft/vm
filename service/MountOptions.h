@@ -53,15 +53,11 @@ public:
 
 	// Create (static)
 	//
-	// Constructs a new MountOptions instance based on standard mount arguments
+	// Constructs a new MountOptions instance
 	static std::unique_ptr<MountOptions> Create(uint32_t flags);
+	static std::unique_ptr<MountOptions> Create(const char_t* options);
+	static std::unique_ptr<MountOptions> Create(uint32_t flags, const char_t* options);
 	static std::unique_ptr<MountOptions> Create(uint32_t flags, const void* data, size_t datalen);
-
-	// Parse (static)
-	//
-	// Parses a string-based set of mounting options 
-	static std::unique_ptr<MountOptions> Parse(const char_t* options);
-	static std::unique_ptr<MountOptions> Parse(uint32_t flags, const char_t* options);
 
 	//-------------------------------------------------------------------------
 	// Properties

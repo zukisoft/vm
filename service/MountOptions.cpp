@@ -33,39 +33,25 @@
 //	flags		- Standard mount option flags bitmask
 //	extraargs	- Extra mount options provided by caller
 
-MountOptions::MountOptions(uint32_t flags, std::vector<std::string>&& extraargs) : 
-m_flags(flags), m_arguments(std::move(extraargs)) {}
-
-
-std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags)
-{
-	return Create(flags, nullptr, 0);
-}
-
-std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const void* data, size_t datalen)
-{
-	std::vector<std::string> extraargs;
-	
-	// TODO - parse extra options here; see deleted code in GitHub -- "MakeVector"
-	return std::make_unique<MountOptions>(flags, std::move(extraargs));
-}
+MountOptions::MountOptions(uint32_t flags, std::vector<std::string>&& extraargs)
+	: m_flags(flags), m_arguments(std::move(extraargs)) {}
 
 //-----------------------------------------------------------------------------
-// MountOptions::Parse (static)
+// MountOptions::Create (static)
 //
-// Parses a mounting options string into a MountOptions instance
+// Creates a MountOptions instance based on standard mount flags
 //
 // Arguments:
 //
-//	options			- String containing the mounting options to parse
+//	flags		- Standard mounting option flags
 
-std::unique_ptr<MountOptions> MountOptions::Parse(const char_t* options)
+std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags)
 {
-	return Parse(0, options);
+	return Create(flags, nullptr);
 }
 
 //-----------------------------------------------------------------------------
-// MountOptions::Parse (static)
+// MountOptions::Create (static)
 //
 // Parses a mounting options string into a MountOptions instance
 //
@@ -74,7 +60,7 @@ std::unique_ptr<MountOptions> MountOptions::Parse(const char_t* options)
 //	flags			- Initial set of mounting flags to apply before parsing
 //	options			- String containing the mounting options to parse
 
-std::unique_ptr<MountOptions> MountOptions::Parse(uint32_t flags, const char_t* options)
+std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const char_t* options)
 {
 	std::vector<std::string>	extraargs;		// vector<> of extra arguments
 
@@ -91,7 +77,6 @@ std::unique_ptr<MountOptions> MountOptions::Parse(uint32_t flags, const char_t* 
 
 			end = ++begin;
 			while((*end) && (*end != '\"')) end++;
-			//tokens.emplace_back(std::trim(std::string(begin, end)));
 			ParseToken(std::trim(std::string(begin, end)), flags, extraargs);
 			options = (*end) ? ++end : end;
 		}
@@ -107,6 +92,39 @@ std::unique_ptr<MountOptions> MountOptions::Parse(uint32_t flags, const char_t* 
 	}
 
 	return std::make_unique<MountOptions>(flags, std::move(extraargs));
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::Create (static)
+//
+// Parses a mounting options string into a MountOptions instance
+//
+// Arguments:
+//
+//	options			- String containing the mounting options to parse
+
+std::unique_ptr<MountOptions> MountOptions::Create(const char_t* options)
+{
+	return Create(0, options);
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::Create (static)
+//
+// Creates a MountOptions instance based on flags and optional extra parameters
+//
+// Arguments:
+//
+//	flags		- Standard mounting option flags
+//	data		- Optional pointer to extra parameter data
+//	datalen		- Length, in bytes, of the extra parameter data
+
+std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const void* data, size_t datalen)
+{
+	// All file systems currently expect data to be a string pointer, but it may not be
+	// null-terminated -- just convert into an std::string and pass it along
+	std::string options(reinterpret_cast<const char_t*>(data), datalen);
+	return Create(flags, options.c_str());
 }
 
 //-----------------------------------------------------------------------------
