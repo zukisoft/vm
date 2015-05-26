@@ -139,8 +139,14 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto rootflags = std::to_string(m_paramrootflags.Value);
 		auto rootfstype = std::to_string(m_paramrootfstype.Value);
 
-		try { m_rootfs = m_filesystems.at(rootfstype.c_str())(root.c_str(), MountOptions::Parse(LINUX_MS_KERNMOUNT, rootflags.c_str())); }
-		catch(...) { throw; } // <--- todo
+		//try { m_rootfs = m_filesystems.at(rootfstype.c_str())(root.c_str(), MountOptions::Create(LINUX_MS_KERNMOUNT, rootflags.c_str())); }
+		//catch(...) { throw; } // <--- todo
+
+		// add mount to root namespace
+		// link mount to root alias
+
+		//m_rootmount = RootFileSystem::Mount(
+		m_vfsroot = std::dynamic_pointer_cast<FileSystem::Alias>(RootAlias::Create(m_rootns, nullptr));	// <-- needs a <Node>
 
 		// INITRAMFS
 		//

@@ -31,6 +31,7 @@
 #include <linux/fs.h>
 #include "FileSystem.h"
 #include "LinuxException.h"
+#include "Mount.h"
 
 #pragma warning(push, 4)
 
@@ -122,7 +123,7 @@ private:
 	virtual void					CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t*, uapi::mode_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const uapi::char_t*, int, uapi::mode_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
 	virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); } 
-		
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 

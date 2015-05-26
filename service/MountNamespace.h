@@ -25,6 +25,10 @@
 #pragma once
 
 #include <memory>
+#include <set>
+#include <concrt.h>
+#include "Alias.h"
+#include "Mount.h"
 
 #pragma warning(push, 4)				
 
@@ -55,9 +59,19 @@ private:
 	MountNamespace(const MountNamespace&)=delete;
 	MountNamespace& operator=(const MountNamespace&)=delete;
 
+	// mount_set_t
+	//
+	// Collection type used to store the mounts for this namespace
+	using mount_set_t = std::set<std::pair<std::unique_ptr<Mount>, std::shared_ptr<Alias>>>;
+
+	// mount_set_lock_t
+	//
+	// Synchronization object used with mount_set_t collection
+	using mount_set_lock_t = Concurrency::reader_writer_lock;
+
 	// Instance Constructor
 	//
-	MountNamespace();
+	MountNamespace(mount_set_t&& mounts);
 	friend class std::_Ref_count_obj<MountNamespace>;
 
 	//-------------------------------------------------------------------------
@@ -65,6 +79,9 @@ private:
 
 	//-------------------------------------------------------------------------
 	// Member Variables
+
+	mount_set_t					m_mounts;			// Collection of mounts
+	mount_set_lock_t			m_mountlock;		// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

@@ -20,42 +20,22 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Mount.h"
+#ifndef __ALIAS_H_
+#define __ALIAS_H_
+#pragma once
+
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Mount Constructor (protected)
-//
-// Arguments:
-//
-//	source		- Source device name of the mount point
-//	options		- Reference to the MountOptions instance for this mount
+// Alias
 
-Mount::Mount(const char_t* source, std::unique_ptr<MountOptions>&& options) 
-	: m_source(source), m_options(std::move(options)) {}
-
-//-----------------------------------------------------------------------------
-// Mount::getOptions
-//
-// Gets a pointer to the contained MountOptions instance
-
-const MountOptions* Mount::getOptions(void) const
-{
-	return m_options.get();
-}
-
-//-----------------------------------------------------------------------------
-// Mount::getSource
-//
-// Gets the source device name for the mount point
-
-const char_t* const Mount::getSource(void) const
-{
-	return m_source.c_str();
-}
+// TODO: STUB; INTEND TO MOVE ALIAS OUT OF FILESYSTEM?
+using Alias = FileSystem::Alias;
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __ALIAS_H_

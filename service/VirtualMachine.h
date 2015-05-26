@@ -27,6 +27,7 @@
 #include <concrt.h>
 #include <map>
 #include <memory>
+#include <stack>
 #include <linux/fs.h>
 #include "Exception.h"
 #include "FileSystem.h"
@@ -72,6 +73,70 @@ private:
 
 	VirtualMachine(const VirtualMachine&)=delete;
 	VirtualMachine& operator=(const VirtualMachine&)=delete;
+
+	// VirtualMachine::RootAlias
+	//
+	// Implements the absolute root of the virtual file system (/)
+	class RootAlias : /* public FileSystem::Alias,*/ public std::enable_shared_from_this<RootAlias>
+	{
+	friend class VirtualMachine;
+	public:
+
+		// AddMount
+		//
+		// Adds a mount point to this Alias
+		virtual void AddMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
+
+		// RemoveMount
+		//
+		// Removes a mount point from this Alias
+		virtual void RemoveMount(const std::shared_ptr<Namespace>& ns);
+
+		// Name
+		//
+		// Gets the name associated with the alias
+		virtual const char_t* getName(void) const;
+
+		// Node
+		//
+		// Gets a reference to the node that this alias refers to
+		virtual std::shared_ptr<FileSystem::Node> getNode(void) const;
+
+		// Parent
+		//
+		// Gets the parent alias of this alias instance
+		virtual std::shared_ptr<FileSystem::Alias> getParent(void) const;
+
+	private:
+
+		RootAlias(const RootAlias&)=delete;
+		RootAlias& operator=(const RootAlias&)=delete;
+
+		// mounts_t
+		//
+		// Collection of mounts, organized by Namespace
+		using mounts_t = std::map<std::shared_ptr<Namespace>, std::stack<std::shared_ptr<FileSystem::Mount>>>;
+
+		// mounts_lock_t
+		//
+		// Synchronization object for the mounts collection
+		using mounts_lock_t = Concurrency::reader_writer_lock;
+
+		// Instance Constructor
+		//
+		RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
+		friend class std::_Ref_count_obj<RootAlias>;
+
+		// Create (static)
+		//
+		// Creates a new RootAlias instance
+		static std::shared_ptr<RootAlias> Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
+
+		// Member Variables
+		//
+		mounts_t						m_mounts;			// Collection of mounts
+		mounts_lock_t					m_mountslock;		// Synchronization object
+	};
 
 	// Service<> Control Handler Map
 	//
@@ -146,8 +211,8 @@ private:
 
 	// File Systems
 	//
-	filesystem_map_t			m_filesystems;		// Available file systems
-	std::shared_ptr<FileSystem>	m_rootfs;			// Root file system
+	filesystem_map_t					m_filesystems;	// Available file systems
+	std::shared_ptr<FileSystem::Alias>	m_vfsroot;		// Root file system alias (/)
 
 	// Service<> Parameters
 	//

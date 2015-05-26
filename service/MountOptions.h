@@ -51,6 +51,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Clone (static)
+	//
+	// Clones a MountOptions instance
+	static std::unique_ptr<MountOptions> Clone(const std::unique_ptr<MountOptions>& options);
+
 	// Create (static)
 	//
 	// Constructs a new MountOptions instance
@@ -174,10 +179,8 @@ private:
 	// Collection type for mounting options passed through data
 	class MountArguments
 	{
+	friend class MountOptions;
 	public:
-
-		// Constructor
-		explicit MountArguments(const std::vector<std::string>& args);
 
 		// Contains
 		//
@@ -198,6 +201,10 @@ private:
 
 		MountArguments(const MountArguments&)=delete;
 		MountArguments& operator=(const MountArguments&)=delete;
+
+		// Instance Constructor
+		//
+		MountArguments(const std::vector<std::string>& args);
 
 		// ArgumentCompare
 		//

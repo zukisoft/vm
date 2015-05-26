@@ -161,6 +161,39 @@ public:
 		virtual AliasPtr getParent(void) = 0;
 	};
 
+	// Mount
+	//
+	struct __declspec(novtable) Mount
+	{
+		// Duplicate
+		//
+		// Duplicates this mount instance
+		virtual std::shared_ptr<Mount> Duplicate(void) const = 0;
+
+		// Remount
+		//
+		// Remounts this mount point with different flags and arguments
+		virtual void Remount(uint32_t flags, const void* data, size_t datalen) = 0;
+
+		// Options
+		//
+		// Gets a pointer to the contained MountOptions instance
+		__declspec(property(get=getOptions)) const MountOptions* Options;
+		virtual const MountOptions* getOptions(void) const = 0;
+
+		// Root
+		//
+		// Gets a pointer to the root node of this mount point
+		__declspec(property(get=getRoot)) std::shared_ptr<Node> Root;
+		virtual std::shared_ptr<Node> getRoot(void) const = 0;
+
+		// Source
+		//
+		// Retrieves the source device name for the mount point
+		__declspec(property(get=getSource)) const char_t* Source;
+		virtual const char_t* getSource(void) const = 0;
+	};
+
 	// Node
 	//
 	// todo: need permission arguments (mode_t)

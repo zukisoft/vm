@@ -30,11 +30,9 @@
 //
 // Arguments:
 //
-//	NONE
+//	mounts		- Collection of mounts to contain upon construction
 
-MountNamespace::MountNamespace()
-{
-}
+MountNamespace::MountNamespace(mount_set_t&& mounts) : m_mounts(std::move(mounts)) {}
 
 //-----------------------------------------------------------------------------
 // MountNamespace::Create (static)
@@ -47,13 +45,14 @@ MountNamespace::MountNamespace()
 
 std::shared_ptr<MountNamespace> MountNamespace::Create(void)
 {
-	return std::make_shared<MountNamespace>();
+	// Create a new empty MountNamespace instance
+	return std::make_shared<MountNamespace>(mount_set_t());
 }
 
 //-----------------------------------------------------------------------------
 // MountNamespace::Create (static)
 //
-// Creates a new MountNamespace instance
+// Creates a clone of an existing MountNamespace instance
 //
 // Arguments:
 //
@@ -61,8 +60,19 @@ std::shared_ptr<MountNamespace> MountNamespace::Create(void)
 
 std::shared_ptr<MountNamespace> MountNamespace::Create(const std::shared_ptr<MountNamespace>& mountns)
 {
-	(mountns);
-	return std::make_shared<MountNamespace>();
+	mount_set_t				mounts;			// New collection of mounts
+
+	// Iterate over the existing collection of mounts and copy each of them
+	for(const auto& iterator : mountns->m_mounts) {
+
+		// CREATE NEW MOUNT
+		mounts.emplace(nullptr, nullptr);
+
+		// ADD NEW NAMESPACE/MOUNT to existing target Alias
+		// ?? I don't have the parent namespace instance here!!!
+	}
+
+	return std::make_shared<MountNamespace>(mount_set_t());
 }
 
 //-----------------------------------------------------------------------------

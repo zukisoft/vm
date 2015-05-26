@@ -37,6 +37,20 @@ MountOptions::MountOptions(uint32_t flags, std::vector<std::string>&& extraargs)
 	: m_flags(flags), m_arguments(std::move(extraargs)) {}
 
 //-----------------------------------------------------------------------------
+// MountOptions::Clone (static)
+//
+// Clones a MountOptions instance into a new instance
+//
+// Arguments:
+//
+//	options		- Existing MountOptions instance to be cloned
+
+std::unique_ptr<MountOptions> MountOptions::Clone(const std::unique_ptr<MountOptions>& options)
+{
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
 // MountOptions::Create (static)
 //
 // Creates a MountOptions instance based on standard mount flags
@@ -189,7 +203,7 @@ void MountOptions::ParseToken(std::string&& token, uint32_t& flags, std::vector<
 }
 
 //-----------------------------------------------------------------------------
-// MountOptions::MountArguments Constructor
+// MountOptions::MountArguments Constructor (private)
 //
 // Arguments:
 //
@@ -202,7 +216,7 @@ MountOptions::MountArguments::MountArguments(const std::vector<std::string>& arg
 		// Ignore blank arguments
 		if(arg.length() > 0) {
 
-			// Insert the argument into the collection, with or with the optional value after an equal sign
+			// Insert the argument into the collection, with or without the optional value after an equal sign
 			size_t equalsign = arg.find(_T('='));
 			if(equalsign == std::string::npos) { m_col.insert(std::make_pair(trim(arg), std::string())); }
 			else { m_col.insert(std::make_pair(trim(arg.substr(0, equalsign)), trim(arg.substr(equalsign + 1)))); }

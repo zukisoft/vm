@@ -26,14 +26,15 @@
 
 #include <memory>
 #include <string>
-#include "FileSystem.h"
+#include "Alias.h"
+#include "MountOptions.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Mount
+// Mount (abstract)
 //
-// Represents a namespace mount point
+// Implements a file system mount point
 
 class Mount
 {
@@ -41,16 +42,35 @@ public:
 
 	// Destructor
 	//
-	~Mount()=default;
+	virtual ~Mount()=default;
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Duplicate
+	//
+	// Duplicates this mount instance with same flags and extra arguments
+	virtual std::shared_ptr<Mount> Duplicate(void) = 0;
+
+	// Remount
+	//
+	// Remounts this mount point with different flags and arguments
+	virtual void Remount(uint32_t flags, const void* data, size_t datalen) = 0;
 
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// FileSystem
+	// Options
 	//
-	// Retrieves the referenced file system of the mount point
-	__declspec(property(get=getFileSystem)) std::shared_ptr<::FileSystem> FileSystem;
-	std::shared_ptr<::FileSystem> getFileSystem(void) const;
+	// Gets a pointer to the contained MountOptions instance
+	__declspec(property(get=getOptions)) const MountOptions* Options;
+	const MountOptions* getOptions(void) const;
+
+	// Root
+	//
+	// Gets a pointer to the root alias for this mount point
+	__declspec(property(get=getRoot)) std::shared_ptr<Alias> Root;
+	virtual std::shared_ptr<Alias> getRoot(void) const = 0;
 
 	// Source
 	//
@@ -58,28 +78,22 @@ public:
 	__declspec(property(get=getSource)) const char_t* const Source;
 	const char_t* const getSource(void) const;
 
-	// Target
+protected:
+
+	// Instance Constructor
 	//
-	// Gets a reference to the mount point target alias
-	__declspec(property(get=getTarget)) std::shared_ptr<FileSystem::Alias> Target;
-	std::shared_ptr<FileSystem::Alias> getTarget(void) const;
+	Mount(const char_t* source, std::unique_ptr<MountOptions>&& options);
 
 private:
 
 	Mount(const Mount&)=delete;
 	Mount& operator=(const Mount&)=delete;
 
-	// Instance Constructor
-	//
-	Mount(const char_t* const source, const std::shared_ptr<::FileSystem::Alias>& target, const std::shared_ptr<::FileSystem>& fs);
-	friend class std::_Ref_count_obj<Mount>;
-
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::string							m_source;	// Mount source device
-	const std::shared_ptr<::FileSystem::Alias>	m_target;	// Target alias instance
-	const std::shared_ptr<::FileSystem>			m_fs;		// File system instance
+	const std::string						m_source;	// Source device
+	const std::unique_ptr<MountOptions>		m_options;	// Mount options
 };
 
 //-----------------------------------------------------------------------------
