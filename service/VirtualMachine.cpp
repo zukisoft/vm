@@ -143,10 +143,9 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		//catch(...) { throw; } // <--- todo
 
 		// add mount to root namespace
-		// link mount to root alias
 
 		//m_rootmount = RootFileSystem::Mount(
-		m_vfsroot = std::dynamic_pointer_cast<FileSystem::Alias>(RootAlias::Create(m_rootns, nullptr));	// <-- needs a <Node>
+		m_vfsroot = RootAlias::Create(m_rootns, nullptr);	// <-- needs a <Node> from initial mount
 
 		// INITRAMFS
 		//
@@ -198,6 +197,116 @@ void VirtualMachine::OnStop(void)
 	// Remove this virtual machine from the active instance collection
 	instance_map_lock_t::scoped_lock writer(s_instancelock);
 	s_instances.erase(m_instanceid);
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias Constructor (private)
+//
+// Arguments:
+//
+//	ns			- Namespace of the initial node
+//	node		- Initial node to mount into the root alias
+
+VirtualMachine::RootAlias::RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
+{
+	_ASSERTE(ns);
+	_ASSERTE(node);
+	m_mounts.emplace_front(ns, node);
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias::Create (static)
+//
+// Creates a new RootAlias instance, seeding it with the specified intial
+// namespace/node pair
+//
+// Arguments:
+//
+//	ns			- Namespace of the initial node
+//	node		- Initial node to mount into the root alias
+
+std::shared_ptr<Alias> VirtualMachine::RootAlias::Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
+{
+	return std::make_shared<RootAlias>(ns, node);
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias::Follow (private)
+//
+// Follows this alias to the topmost node within the specified namespace
+//
+// Arguments:
+//
+//	ns			- Namespace to use to locate the appropriate node
+
+std::shared_ptr<FileSystem::Node> VirtualMachine::RootAlias::Follow(const std::shared_ptr<Namespace>& ns)
+{
+	mounts_lock_t::scoped_lock_read reader(m_mountslock);
+
+	// The root alias is special in that there is never an unmounted node available,
+	// just return the first matching node in the specified namespace to the caller
+	for(const auto& iterator : m_mounts) if(iterator.first == ns) return iterator.second;
+
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias::Mount
+//
+// Adds a mountpoint node to this alias
+//
+// Arguments:
+//
+//	ns			- Namespace for the mountpoint
+//	node		- The mountpoint node instance
+
+void VirtualMachine::RootAlias::Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
+{
+	mounts_lock_t::scoped_lock writer(m_mountslock);
+	m_mounts.emplace_front(ns, node);
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias::getName
+//
+// Gets the name associated with this alias
+
+const char_t* VirtualMachine::RootAlias::getName(void)
+{
+	return "";
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias::getParent
+//
+// Gets a reference to the parent alias
+
+std::shared_ptr<Alias> VirtualMachine::RootAlias::getParent(void)
+{
+	// The root alias is always its own parent
+	return shared_from_this();
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::RootAlias::Unmount
+//
+// Removes a mountpoint node from this alias
+//
+// Arguments:
+//
+//	ns			- Namespace for the mountpoint
+//	node		- The mountpoint node instance
+
+void VirtualMachine::RootAlias::Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
+{
+	mounts_lock_t::scoped_lock writer(m_mountslock);
+
+	// There is not expected to be more than a couple mounted nodes for any given alias,
+	// a simple linear search should be sufficient
+	auto iterator = std::find(m_mounts.begin(), m_mounts.end(), std::make_pair(ns, node));
+	if(iterator == m_mounts.end()) throw LinuxException(LINUX_EINVAL); 
+
+	m_mounts.erase(iterator);
 }
 
 //---------------------------------------------------------------------------

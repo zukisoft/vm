@@ -25,6 +25,7 @@
 #pragma once
 
 #include <concrt.h>
+#include <deque>
 #include <map>
 #include <memory>
 #include <stack>
@@ -77,35 +78,14 @@ private:
 	// VirtualMachine::RootAlias
 	//
 	// Implements the absolute root of the virtual file system (/)
-	class RootAlias : /* public FileSystem::Alias,*/ public std::enable_shared_from_this<RootAlias>
+	class RootAlias : public Alias, public std::enable_shared_from_this<Alias>
 	{
-	friend class VirtualMachine;
 	public:
 
-		// AddMount
+		// Create (static)
 		//
-		// Adds a mount point to this Alias
-		virtual void AddMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
-
-		// RemoveMount
-		//
-		// Removes a mount point from this Alias
-		virtual void RemoveMount(const std::shared_ptr<Namespace>& ns);
-
-		// Name
-		//
-		// Gets the name associated with the alias
-		virtual const char_t* getName(void) const;
-
-		// Node
-		//
-		// Gets a reference to the node that this alias refers to
-		virtual std::shared_ptr<FileSystem::Node> getNode(void) const;
-
-		// Parent
-		//
-		// Gets the parent alias of this alias instance
-		virtual std::shared_ptr<FileSystem::Alias> getParent(void) const;
+		// Creates a new RootAlias instance
+		static std::shared_ptr<Alias> Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
 
 	private:
 
@@ -114,8 +94,8 @@ private:
 
 		// mounts_t
 		//
-		// Collection of mounts, organized by Namespace
-		using mounts_t = std::map<std::shared_ptr<Namespace>, std::stack<std::shared_ptr<FileSystem::Mount>>>;
+		// Collection of mounted nodes
+		using mounts_t = std::deque<std::pair<std::shared_ptr<Namespace>, std::shared_ptr<FileSystem::Node>>>;
 
 		// mounts_lock_t
 		//
@@ -127,10 +107,30 @@ private:
 		RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
 		friend class std::_Ref_count_obj<RootAlias>;
 
-		// Create (static)
+		// Follow (Alias)
 		//
-		// Creates a new RootAlias instance
-		static std::shared_ptr<RootAlias> Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
+		// Follows this alias to the file system node that it refers to
+		virtual std::shared_ptr<FileSystem::Node> Follow(const std::shared_ptr<Namespace>& ns);
+
+		// Mount (Alias)
+		//
+		// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
+		virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
+
+		// Unmount (Alias)
+		//
+		// Removes a mountpoint node from this alias
+		virtual void Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
+
+		// Name (Alias)
+		//
+		// Gets the name associated with the alias
+		virtual const char_t* getName(void);
+
+		// Parent (Alias)
+		//
+		// Gets the parent alias of this alias instance, or nullptr if none exists
+		virtual std::shared_ptr<Alias> getParent(void);
 
 		// Member Variables
 		//
@@ -211,8 +211,8 @@ private:
 
 	// File Systems
 	//
-	filesystem_map_t					m_filesystems;	// Available file systems
-	std::shared_ptr<FileSystem::Alias>	m_vfsroot;		// Root file system alias (/)
+	filesystem_map_t			m_filesystems;		// Available file systems
+	std::shared_ptr<Alias>		m_vfsroot;			// Root file system alias (/)
 
 	// Service<> Parameters
 	//

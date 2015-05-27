@@ -42,6 +42,8 @@
 class FileSystem;
 using FileSystemPtr = std::shared_ptr<FileSystem>;
 
+class Namespace;
+
 //-----------------------------------------------------------------------------
 // FileSystem
 //
@@ -128,7 +130,8 @@ public:
 	//-------------------------------------------------------------------------
 	// FileSystem::Alias
 	//
-	// Alias implements a file system object name that points to an underlying node
+	// DEPRECATED: REMOVE ME
+
 	struct __declspec(novtable) Alias
 	{
 		// Mount
@@ -181,11 +184,11 @@ public:
 		__declspec(property(get=getOptions)) const MountOptions* Options;
 		virtual const MountOptions* getOptions(void) const = 0;
 
-		// Root
+		// Node
 		//
 		// Gets a pointer to the root node of this mount point
-		__declspec(property(get=getRoot)) std::shared_ptr<Node> Root;
-		virtual std::shared_ptr<Node> getRoot(void) const = 0;
+		__declspec(property(get=getRoot)) std::shared_ptr<FileSystem::Node> Node;
+		virtual std::shared_ptr<FileSystem::Node> getNode(void) const = 0;
 
 		// Source
 		//
