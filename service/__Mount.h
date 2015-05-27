@@ -20,81 +20,84 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __NEWROOTFILESYSTEM_H_
-#define __NEWROOTFILESYSTEM_H_
+#ifndef ____MOUNT_H_
+#define ____MOUNT_H_
 #pragma once
 
 #include <memory>
-#include "LinuxException.h"
-#include "Directory.h"
-#include "Mount.h"
+#include <string>
+#include "Alias.h"
+#include "MountOptions.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem
+// Mount (abstract)
 //
-// RootFileSystem implements a virtual single directory node file system in which
-// no additional objects can be created.  Typically used only to provide a default
-// virtual file system root node until a proper file system can be mounted
+// Implements a file system mount point
 
-class NewRootFileSystem : public ::Mount, public Directory, public std::enable_shared_from_this<Directory>
+class __Mount
 {
 public:
 
 	// Destructor
 	//
-	virtual ~NewRootFileSystem()=default;
+	virtual ~__Mount()=default;
 
-	// Mount (static)
+	//-------------------------------------------------------------------------
+	// Member Functions
+
+	// Duplicate
 	//
-	// Mounts the file system
-	static std::shared_ptr<::Mount> Mount(const char_t* const source, uint32_t flags, const void* data, size_t datalen);
+	// Duplicates this mount instance with same flags and extra arguments
+	virtual std::shared_ptr<__Mount> Duplicate(void) = 0;
 
-private:
-
-	NewRootFileSystem(const NewRootFileSystem&)=delete;
-	NewRootFileSystem& operator=(const NewRootFileSystem&)=delete;
-
-	// (Node)
-	//
-
-	// (Directory)
-	//
-
-	// Duplicate (Mount)
-	//
-	// Duplicates this mount instance
-	virtual std::shared_ptr<::Mount> Duplicate(void);
-
-	// Remount (Mount)
+	// Remount
 	//
 	// Remounts this mount point with different flags and arguments
-	virtual void Remount(uint32_t flags, const void* data, size_t datalen);
+	virtual void Remount(uint32_t flags, const void* data, size_t datalen) = 0;
 
-	// Node (Mount)
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// Options
 	//
-	// Gets a reference to the root node of this mount
-	virtual std::shared_ptr<FileSystem::Node> getNode(void);
+	// Gets a pointer to the contained MountOptions instance
+	__declspec(property(get=getOptions)) const MountOptions* Options;
+	const MountOptions* getOptions(void) const;
+
+	// Root
+	//
+	// Gets a pointer to the root alias for this mount point
+	__declspec(property(get=getRoot)) std::shared_ptr<Alias> Root;
+	virtual std::shared_ptr<Alias> getRoot(void) const = 0;
 
 	// Source
 	//
-	// Retrieves the source device name used to create the mount
-	virtual const char_t* getSource(void);
+	// Retrieves the source device name for the mount point
+	__declspec(property(get=getSource)) const char_t* const Source;
+	const char_t* const getSource(void) const;
+
+protected:
 
 	// Instance Constructor
 	//
-	NewRootFileSystem(const char_t* source);
-	friend class std::_Ref_count_obj<NewRootFileSystem>;
+	__Mount(const char_t* source, std::unique_ptr<MountOptions>&& options);
+
+private:
+
+	__Mount(const __Mount&)=delete;
+	__Mount& operator=(const __Mount&)=delete;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::string					m_source;			// Source device
+	const std::string						m_source;	// Source device
+	const std::unique_ptr<MountOptions>		m_options;	// Mount options
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __NEWROOTFILESYSTEM_H_
+#endif	// __MOUNT_H_

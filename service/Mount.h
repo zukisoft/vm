@@ -24,32 +24,20 @@
 #define __MOUNT_H_
 #pragma once
 
-#include <memory>
-#include <string>
-#include "Alias.h"
-#include "MountOptions.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Mount (abstract)
+// Mount
 //
-// Implements a file system mount point
+// todo: words
 
-class Mount
+struct __declspec(novtable) Mount
 {
-public:
-
-	// Destructor
-	//
-	virtual ~Mount()=default;
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-
 	// Duplicate
 	//
-	// Duplicates this mount instance with same flags and extra arguments
+	// Duplicates this mount instance
 	virtual std::shared_ptr<Mount> Duplicate(void) = 0;
 
 	// Remount
@@ -57,43 +45,17 @@ public:
 	// Remounts this mount point with different flags and arguments
 	virtual void Remount(uint32_t flags, const void* data, size_t datalen) = 0;
 
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Options
+	// Node
 	//
-	// Gets a pointer to the contained MountOptions instance
-	__declspec(property(get=getOptions)) const MountOptions* Options;
-	const MountOptions* getOptions(void) const;
-
-	// Root
-	//
-	// Gets a pointer to the root alias for this mount point
-	__declspec(property(get=getRoot)) std::shared_ptr<Alias> Root;
-	virtual std::shared_ptr<Alias> getRoot(void) const = 0;
+	// Gets a reference to the root node of this mount
+	__declspec(property(get=getNode)) std::shared_ptr<FileSystem::Node> Node;
+	virtual std::shared_ptr<FileSystem::Node> getNode(void) = 0;
 
 	// Source
 	//
-	// Retrieves the source device name for the mount point
-	__declspec(property(get=getSource)) const char_t* const Source;
-	const char_t* const getSource(void) const;
-
-protected:
-
-	// Instance Constructor
-	//
-	Mount(const char_t* source, std::unique_ptr<MountOptions>&& options);
-
-private:
-
-	Mount(const Mount&)=delete;
-	Mount& operator=(const Mount&)=delete;
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	const std::string						m_source;	// Source device
-	const std::unique_ptr<MountOptions>		m_options;	// Mount options
+	// Retrieves the source device name used to create the mount
+	__declspec(property(get=getSource)) const char_t* Source;
+	virtual const char_t* getSource(void) = 0;
 };
 
 //-----------------------------------------------------------------------------

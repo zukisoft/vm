@@ -20,42 +20,34 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Mount.h"
+#ifndef __NODETYPE_H_
+#define __NODETYPE_H_
+#pragma once
+
+#include <linux/stat.h>
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Mount Constructor (protected)
+// NodeType
 //
-// Arguments:
 //
-//	source		- Source device name of the mount point
-//	options		- Reference to the MountOptions instance for this mount
+// Strogly typed enumeration for the S_IFxxx inode type constants, every node
+// instance must indicate what type it is using one of these values
 
-Mount::Mount(const char_t* source, std::unique_ptr<MountOptions>&& options) 
-	: m_source(source), m_options(std::move(options)) {}
-
-//-----------------------------------------------------------------------------
-// Mount::getOptions
-//
-// Gets a pointer to the contained MountOptions instance
-
-const MountOptions* Mount::getOptions(void) const
+enum class NodeType
 {
-	return m_options.get();
-}
-
-//-----------------------------------------------------------------------------
-// Mount::getSource
-//
-// Gets the source device name for the mount point
-
-const char_t* const Mount::getSource(void) const
-{
-	return m_source.c_str();
-}
+	BlockDevice			= LINUX_S_IFBLK,
+	CharacterDevice		= LINUX_S_IFCHR,
+	Directory			= LINUX_S_IFDIR,
+	File				= LINUX_S_IFREG,
+	Pipe				= LINUX_S_IFIFO,
+	Socket				= LINUX_S_IFSOCK,
+	SymbolicLink		= LINUX_S_IFLNK,
+};
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __NODETYPE_H_

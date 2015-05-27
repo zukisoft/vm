@@ -20,56 +20,42 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ALIAS_H_
-#define __ALIAS_H_
-#pragma once
-
-#include "FileSystem.h"
-#include "Namespace.h"
+#include "stdafx.h"
+#include "__Mount.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Alias
+// Mount Constructor (protected)
 //
-// Interface that must be implemented by a file system alias.  Similiar to a 
-// dentry, an alias defines a name associated with a file system node.
+// Arguments:
 //
-// Alias instances may support mounting, in which a reference to a foreign
-// node can be provided to mask/override how the alias will be resolved.  If an
-// alias does not support mounting, the Mount and Unmount functions should throw
-// LinuxException(LINUX_EPERM, Exception(E_NOTIMPL))
+//	source		- Source device name of the mount point
+//	options		- Reference to the MountOptions instance for this mount
 
-struct __declspec(novtable) Alias
+__Mount::__Mount(const char_t* source, std::unique_ptr<MountOptions>&& options) 
+	: m_source(source), m_options(std::move(options)) {}
+
+//-----------------------------------------------------------------------------
+// __Mount::getOptions
+//
+// Gets a pointer to the contained MountOptions instance
+
+const MountOptions* __Mount::getOptions(void) const
 {
-	// Follow
-	//
-	// Follows this alias to the file system node that it refers to
-	virtual std::shared_ptr<FileSystem::Node> Follow(const std::shared_ptr<Namespace>& ns) = 0;
+	return m_options.get();
+}
 
-	// Mount
-	//
-	// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-	virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node) = 0;
+//-----------------------------------------------------------------------------
+// __Mount::getSource
+//
+// Gets the source device name for the mount point
 
-	// Unmount
-	//
-	// Removes a mountpoint node from this alias
-	virtual void Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node) = 0;
-
-	// Name
-	//
-	// Gets the name associated with the alias
-	virtual const char_t* getName(void) = 0;
-
-	// Parent
-	//
-	// Gets the parent alias of this alias instance, or nullptr if none exists
-	virtual std::shared_ptr<Alias> getParent(void) = 0;
-};
+const char_t* const __Mount::getSource(void) const
+{
+	return m_source.c_str();
+}
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
-
-#endif	// __ALIAS_H_

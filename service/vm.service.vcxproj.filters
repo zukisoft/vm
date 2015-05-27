@@ -410,10 +410,22 @@
     <ClInclude Include="Alias.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Mount.h">
+    <ClInclude Include="NewRootFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="__Mount.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NewRootFileSystem.h">
+    <ClInclude Include="Mount.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Node.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Directory.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeType.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
   </ItemGroup>
@@ -871,14 +883,14 @@
     <ClCompile Include="MountNamespace.cpp">
       <Filter>Source Files\Namespace</Filter>
     </ClCompile>
-    <ClCompile Include="Mount.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FileSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NewRootFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="__Mount.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
