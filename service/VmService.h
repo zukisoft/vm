@@ -46,10 +46,10 @@
 
 // File systems
 //
-#include "HostFileSystem.h"
-#include "ProcFileSystem.h"
-#include "RootFileSystem.h"
-#include "TempFileSystem.h"
+//#include "HostFileSystem.h"
+//#include "ProcFileSystem.h"
+//#include "RootFileSystem.h"
+//#include "TempFileSystem.h"
 
 #pragma warning(push, 4)
 

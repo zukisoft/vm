@@ -24,16 +24,19 @@
 #define __ALIAS_H_
 #pragma once
 
-#include "FileSystem.h"
 #include "Namespace.h"
 
 #pragma warning(push, 4)
+
+// Forward Declarations
+//
+struct __declspec(novtable) Node;
 
 //-----------------------------------------------------------------------------
 // Alias
 //
 // Interface that must be implemented by a file system alias.  Similiar to a 
-// dentry, an alias defines a name associated with a file system node.
+// linux dentry, an alias defines a name associated with a file system node.
 //
 // Alias instances may support mounting, in which a reference to a foreign
 // node can be provided to mask/override how the alias will be resolved.  If an
@@ -45,26 +48,28 @@ struct __declspec(novtable) Alias
 	// Follow
 	//
 	// Follows this alias to the file system node that it refers to
-	virtual std::shared_ptr<FileSystem::Node> Follow(const std::shared_ptr<Namespace>& ns) = 0;
+	virtual std::shared_ptr<Node> Follow(const std::shared_ptr<Namespace>& ns) = 0;
 
 	// Mount
 	//
 	// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-	virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node) = 0;
+	virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<Node>& node) = 0;
 
 	// Unmount
 	//
 	// Removes a mountpoint node from this alias
-	virtual void Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node) = 0;
+	virtual void Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<Node>& node) = 0;
 
 	// Name
 	//
 	// Gets the name associated with the alias
+	__declspec(property(get=getName)) const char_t* Name;
 	virtual const char_t* getName(void) = 0;
 
 	// Parent
 	//
 	// Gets the parent alias of this alias instance, or nullptr if none exists
+	__declspec(property(get=getParent)) std::shared_ptr<Alias> Parent;
 	virtual std::shared_ptr<Alias> getParent(void) = 0;
 };
 

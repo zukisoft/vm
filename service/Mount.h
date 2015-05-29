@@ -24,14 +24,19 @@
 #define __MOUNT_H_
 #pragma once
 
-#include "FileSystem.h"
+#include <memory>
 
 #pragma warning(push, 4)
+
+// Forward Declarations
+//
+struct __declspec(novtable) FileSystem2;
 
 //-----------------------------------------------------------------------------
 // Mount
 //
-// todo: words
+// Interface that must be implemented by a file system mount object.  A mount
+// is a view of a file system.
 
 struct __declspec(novtable) Mount
 {
@@ -45,17 +50,11 @@ struct __declspec(novtable) Mount
 	// Remounts this mount point with different flags and arguments
 	virtual void Remount(uint32_t flags, const void* data, size_t datalen) = 0;
 
-	// Node
+	// FileSystem
 	//
-	// Gets a reference to the root node of this mount
-	__declspec(property(get=getNode)) std::shared_ptr<FileSystem::Node> Node;
-	virtual std::shared_ptr<FileSystem::Node> getNode(void) = 0;
-
-	// Source
-	//
-	// Retrieves the source device name used to create the mount
-	__declspec(property(get=getSource)) const char_t* Source;
-	virtual const char_t* getSource(void) = 0;
+	// Gets a reference to the underlying file system instance
+	__declspec(property(get=getFileSystem)) std::shared_ptr<FileSystem2> FileSystem;
+	virtual std::shared_ptr<FileSystem2> getFileSystem(void) = 0;
 };
 
 //-----------------------------------------------------------------------------

@@ -26,115 +26,194 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::getNode (private)
+// RootFileSystem::CreateCharacterDevice (private)
 //
-// Accesses the topmost node referenced by this alias
-
-FileSystem::NodePtr RootFileSystem::getNode(void) 
-{ 
-	std::lock_guard<std::mutex> critsec(m_lock);
-	return m_mounted.empty() ? shared_from_this() : m_mounted.top();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::DemandPermission
-//
-// Demands read/write/execute permissions for the file system node
+// Creates a new character device node within the file system
 //
 // Arguments:
 //
-//	mode		- MAY_READ, MAY_WRITE, MAY_EXECUTE special mode values
+//	parent		- Parent alias to use when creating the new node
+//	name		- Name to assign to the newly created alias
+//	mode		- Mode flags to assign to the newly created node
+//	device		- Major and minor numbers of the newly created character device
 
-void RootFileSystem::DemandPermission(uapi::mode_t mode)
+void RootFileSystem::CreateCharacterDevice(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode, uapi::dev_t device)
 {
-	// A mode mask of zero is F_OK, and only determines that the node exists
-	if((mode & LINUX_MAY_ACCESS) == 0) return;
+	UNREFERENCED_PARAMETER(parent);
+	UNREFERENCED_PARAMETER(name);
+	UNREFERENCED_PARAMETER(mode);
+	UNREFERENCED_PARAMETER(device);
 
-	// RootFileSystem implements only a directory with no files or subdirectories,
-	// allow all users EXECUTE only access regardless of who they are
-	if((mode & LINUX_MAY_ACCESS) != LINUX_MAY_EXEC) throw LinuxException(LINUX_EACCES);
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::CreateDirectory (private)
+//
+// Creates a new directory node within the file system
+//
+// Arguments:
+//
+//	parent		- Parent alias to use when creating the new node
+//	name		- Name to assign to the newly created alias
+//	mode		- Mode flags to assign to the newly created node
+
+void RootFileSystem::CreateDirectory(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode)
+{
+	UNREFERENCED_PARAMETER(parent);
+	UNREFERENCED_PARAMETER(name);
+	UNREFERENCED_PARAMETER(mode);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::CreateFile (private)
+//
+// Creates a new regular file node within the file system
+//
+// Arguments:
+//
+//	parent		- Parent alias to use when creating the new node
+//	name		- Name to assign to the newly created alias
+//	flags		- File node access, creation and status flags
+//	mode		- Mode flags to assign to the newly created node
+
+std::shared_ptr<Handle> RootFileSystem::CreateFile(const std::shared_ptr<Alias>& parent, const char_t* name, int flags, uapi::mode_t mode)
+{
+	UNREFERENCED_PARAMETER(parent);
+	UNREFERENCED_PARAMETER(name);
+	UNREFERENCED_PARAMETER(flags);
+	UNREFERENCED_PARAMETER(mode);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::CreateSymbolicLink (private)
+//
+// Creates a new symbolic link node within the file system
+//
+// Arguments:
+//
+//	parent		- Parent alias to use when creating the new node
+//	name		- Name to assign to the newly created alias
+//	target		- Path to the symbolic link target alias
+
+void RootFileSystem::CreateSymbolicLink(const std::shared_ptr<Alias>& parent, const char_t* name, const char_t* target)
+{
+	UNREFERENCED_PARAMETER(parent);
+	UNREFERENCED_PARAMETER(name);
+	UNREFERENCED_PARAMETER(target);
+
+	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::getFileSystem (private)
+//
+// Gets a reference to the underlying node's file system
+
+std::shared_ptr<FileSystem2> RootFileSystem::getFileSystem(void)
+{
+	return shared_from_this();
 }
 	
 //-----------------------------------------------------------------------------
 // RootFileSystem::Mount (static)
 //
-// Mounts the root file system
+// Creates an instance of the file system
 //
 // Arguments:
 //
-//	source		- Unused for root file system
-//  options     - Mounting options
+//	source		- Source device path (ignored)
+//	flags		- Standard mount options bitmask
+//	data		- Extended mount options data
+//	datalen		- Length, in bytes, of the extended mount options data
 
-FileSystemPtr RootFileSystem::Mount(const uapi::char_t* source, std::unique_ptr<MountOptions>&& options)
+std::shared_ptr<::Mount> RootFileSystem::Mount(const char_t* source, uint32_t flags, const void* data, size_t datalen)
 {
-	UNREFERENCED_PARAMETER(source);
-	UNREFERENCED_PARAMETER(options);
+	if(source == nullptr) throw LinuxException(LINUX_EFAULT);
 
-	// Mounting the root file system is as simple as creating an instance of it
-	return std::make_shared<RootFileSystem>();
+	auto fs = std::make_shared<RootFileSystem>(source);
+
+	// Convert the flags and extended data into a MountOptions instance
+	//auto options = MountOptions::Create(flags, data, datalen);
+
+	// Construct and return an instance of the private Mount class
+	//return std::make_shared<class Mount>(source, std::move(options));
+
+	return nullptr;
+}
+
+////-----------------------------------------------------------------------------
+//// RootFileSystem::Mount::Duplicate
+////
+//// Duplicates this mount instance
+////
+//// Arguments:
+////
+////	NONE
+//
+//std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount::Duplicate(void) const
+//{
+//	return nullptr;
+//}
+//
+////-----------------------------------------------------------------------------
+//// RootFileSystem::Mount::getOptions
+////
+//// Gets a pointer to the contained MountOptions instance
+//
+//const MountOptions* RootFileSystem::Mount::getOptions(void) const
+//{
+//	return m_options.get();
+//}
+//
+////-----------------------------------------------------------------------------
+//// RootFileSystem::Mount::Remount
+////
+//// Remounts this mount point with different flags and arguments
+////
+//// Arguments:
+////
+////	flags		- Standard mount options bitmask
+////	data		- Extended mount options data
+////	datalen		- Length, in bytes, of the extended mount options data
+//
+//void RootFileSystem::Mount::Remount(uint32_t flags, const void* data, size_t datalen)
+//{
+//	// Allowed: MS_RDONLY, MS_SYNCHRONOUS, MS_MANDLOCK
+//}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::getRoot (private)
+//
+// Gets a reference to the file system root node
+
+std::shared_ptr<Node> RootFileSystem::getRoot(void)
+{
+	return shared_from_this();
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount (private)
+// RootFileSystem:get:Source (private)
 //
-// Mounts/binds a foreign node to this alias, obscuring the previous node
-//
-// Arguments:
-//
-//	node		- Foreign node to be mounted on this alias
+// Gets the device/name used as the source of the file system
 
-void RootFileSystem::MountAlias(const FileSystem::NodePtr& node)
+const char_t* RootFileSystem::getSource(void)
 {
-	_ASSERTE(node);
-
-	// All that needs to be done for this file system is push the node
-	std::lock_guard<std::mutex> critsec(m_lock);
-	m_mounted.push(node);
-}
-
-uapi::stat RootFileSystem::getDirectoryStatus(void)
-{
-	_RPTF0(_CRT_ASSERT, "RootFileSystem::ReadStatus -- not implemented yet");
-	return uapi::stat();
+	return m_source.c_str();
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Resolve
+// RootFileSystem::getType (private)
 //
-// Resolves a FileSystem::Alias from a relative object path
-//
-// Arguments:
-//
-//	root		- Root Alias for the file system
-//	current		- Current Alias instance that was used to resolve this node
-//	path		- Relative file system object path string
-//	flags		- Resolution flags (O_NOFOLLOW, O_DIRECTORY, etc)
-//	symlinks	- Number of followed symbolic links for O_LOOP processing
+// Gets the type of node that has been implemented
 
-FileSystem::AliasPtr RootFileSystem::Resolve(const AliasPtr&, const AliasPtr&, const uapi::char_t* path, int, int*)
+NodeType RootFileSystem::getType(void)
 {
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
-
-	// The RootFileSystem node doesn't support any child objects; if the
-	// name provided is an empty string, return ourselves otherwise fail
-	if(*path == 0) return shared_from_this();
-	throw LinuxException(LINUX_ENOENT);
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Unmount (private)
-//
-// Unmounts/unbinds a node from this alias, revealing the previously bound node
-//
-// Arguments:
-//
-//	NONE
-
-void RootFileSystem::Unmount(void)
-{
-	// Pop the topmost node instance from the stack, if one even exists
-	std::lock_guard<std::mutex> critsec(m_lock);
-	if(!m_mounted.empty()) m_mounted.pop();
+	return NodeType::Directory;
 }
 
 //-----------------------------------------------------------------------------

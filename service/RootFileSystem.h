@@ -25,11 +25,8 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
-#include <stack>
-#include <linux/errno.h>
-#include <linux/fs.h>
-#include "FileSystem.h"
+#include "Directory.h"
+#include "FileSystem2.h"
 #include "LinuxException.h"
 #include "Mount.h"
 
@@ -38,97 +35,71 @@
 //-----------------------------------------------------------------------------
 // RootFileSystem
 //
-// RootFileSystem implements a file system that contains one and only one node
-// that does not support creation of any child objects.  The intent behind this
-// file system is to provide a default master root that would be overmounted by
-// another file system when the virtual machine is starting up if no other
-// more robust default file system is available
+// RootFileSystem implements a virtual single directory node file system in which
+// no additional objects can be created.  Typically used only to provide a default
+// virtual file system root node until a proper file system can be mounted
+//
+// IMPLEMENTS:
+//
+//	FileSystem
+//	Mount
+//	Directory
 
-// getStatus() is ambiguous
-struct RootFileSystem_FileSystem : public FileSystem
-{
-	__declspec(property(get=getFileSystemStatus)) uapi::statfs FileSystemStatus;
-	virtual uapi::statfs getFileSystemStatus(void) = 0;
-
-	virtual uapi::statfs getStatus(void) { return FileSystemStatus; }
-};
-
-// getStatus() is ambiguous
-struct RootFileSystem_Directory : public FileSystem::Directory
-{
-	__declspec(property(get=getDirectoryStatus)) uapi::stat DirectoryStatus;
-	virtual uapi::stat getDirectoryStatus(void) = 0;
-
-	virtual uapi::stat getStatus(void) { return DirectoryStatus; }
-};
-
-// Mount() is ambiguous
-struct RootFileSystem_Alias : public FileSystem::Alias
-{
-	virtual void MountAlias(const FileSystem::NodePtr& node) = 0;
-
-	virtual void Mount(const FileSystem::NodePtr& node) { return MountAlias(node); }
-};
-
-class RootFileSystem : public RootFileSystem_FileSystem, public RootFileSystem_Directory, public RootFileSystem_Alias,
-	public std::enable_shared_from_this<RootFileSystem>
+class RootFileSystem : public FileSystem2, public Directory, public std::enable_shared_from_this<RootFileSystem>
 {
 public:
 
 	// Destructor
+	//
 	virtual ~RootFileSystem()=default;
 
-	// Mount
+	// Mount (static)
 	//
-	// Mounts the file system
-	static FileSystemPtr Mount(const uapi::char_t* source, std::unique_ptr<MountOptions>&& options);
+	// Creates an instance of the file system
+	static std::shared_ptr<::Mount> Mount(const char_t* const source, uint32_t flags, const void* data, size_t datalen);
 
 private:
 
 	RootFileSystem(const RootFileSystem&)=delete;
 	RootFileSystem& operator=(const RootFileSystem&)=delete;
 
-	// Constructor
+	// Instance Constructor
 	//
-	RootFileSystem()=default;
+	RootFileSystem(const char_t* source);
 	friend class std::_Ref_count_obj<RootFileSystem>;
 
-	// FileSystem Implementation
+	// FileSystem Methods
 	//
-	virtual AliasPtr				getRoot(void) { return shared_from_this(); }
-	virtual uapi::statfs			getFileSystemStatus(void) { throw LinuxException(LINUX_ENOSYS); }
+	virtual void Stat(uapi::statfs * stats);
 
-	// FileSystem::Alias Implementation
+	// FileSystem Properties
 	//
-	//virtual void					Mount(const FileSystem::NodePtr& node);
-	virtual void					MountAlias(const FileSystem::NodePtr& node);
-	virtual void					Unmount(void);	
-	virtual const uapi::char_t*		getName(void) { return ""; }
-	virtual FileSystem::NodePtr		getNode(void);
-	virtual FileSystem::AliasPtr	getParent(void) { return shared_from_this(); }
+	virtual std::shared_ptr<Node> getRoot(void);
+	virtual const char_t* getSource(void);
 
-	// FileSystem::Node Implementation
+	// Node Methods
 	//
-	virtual void					DemandPermission(uapi::mode_t mode);
-	virtual FileSystem::HandlePtr	Open(const AliasPtr&, int) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual FileSystem::AliasPtr	Resolve(const AliasPtr& root, const AliasPtr& current, const uapi::char_t* path, int flags, int* symlinks);
-	//virtual uint64_t				getIndex(void) { return FileSystem::NODE_INDEX_ROOT; }
-	virtual uapi::stat				getDirectoryStatus(void);
-	virtual FileSystemPtr			getFileSystem(void) { return shared_from_this(); }
-	virtual NodeType				getType(void) { return NodeType::Directory; }
+	virtual void DemandPermission(uapi::mode_t mode);
+	virtual std::shared_ptr<Handle> Open(const std::shared_ptr<Alias>& alias, int flags);
+	virtual std::shared_ptr<Alias> Lookup(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& current, const char_t* path, int flags, int* symlinks);
+	virtual void Stat(uapi::stat * stats);
 
-	// FileSystem::Directory Implementation
+	// Node Properties
 	//
-	virtual void					CreateCharacterDevice(const AliasPtr&, const uapi::char_t*, uapi::mode_t, uapi::dev_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual void					CreateDirectory(const FileSystem::AliasPtr&, const uapi::char_t*, uapi::mode_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual FileSystem::HandlePtr	CreateFile(const FileSystem::AliasPtr&, const uapi::char_t*, int, uapi::mode_t) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); }
-	virtual void					CreateSymbolicLink(const FileSystem::AliasPtr&, const uapi::char_t*, const uapi::char_t*) { throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL)); } 
+	virtual std::shared_ptr<FileSystem2> getFileSystem(void);
+	virtual NodeType getType(void);
+	
+	// Directory Methods
+	//
+	virtual void CreateCharacterDevice(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode, uapi::dev_t device);
+	virtual void CreateDirectory(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode);
+	virtual std::shared_ptr<Handle> CreateFile(const std::shared_ptr<Alias>& parent, const char_t* name, int flags, uapi::mode_t mode);
+	virtual void CreateSymbolicLink(const std::shared_ptr<Alias>& parent, const char_t* name, const char_t* target);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::mutex							m_lock;		// Synchronization object
-	std::stack<FileSystem::NodePtr>		m_mounted;	// Stack of mounted nodes
+	std::string						m_source;		// Source device
 };
 
 //-----------------------------------------------------------------------------

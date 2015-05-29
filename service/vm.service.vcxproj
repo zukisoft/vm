@@ -368,13 +368,14 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="elf_traits.h" />
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="HostFileSystem.h" />
+    <ClInclude Include="FileSystem2.h" />
+    <ClInclude Include="Handle.h" />
     <ClInclude Include="Mount.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="NodeType.h" />
     <ClInclude Include="__Mount.h" />
     <ClInclude Include="MountNamespace.h" />
-    <ClInclude Include="NewRootFileSystem.h" />
+    <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="VirtualMachine.h" />
     <ClInclude Include="MountOptions.h" />
     <ClInclude Include="Namespace.h" />
@@ -388,15 +389,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ProcessMemory.h" />
     <ClInclude Include="ProcessModel.h" />
-    <ClInclude Include="ProcFileSystem.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="SignalActions.h" />
     <ClInclude Include="TaskState.h" />
     <ClInclude Include="SystemCall.h" />
-    <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="Thread.h" />
@@ -656,10 +654,9 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="Executable.cpp" />
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="FileSystem.cpp" />
-    <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="__Mount.cpp" />
     <ClCompile Include="MountNamespace.cpp" />
-    <ClCompile Include="NewRootFileSystem.cpp" />
+    <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="VirtualMachine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MountOptions.cpp" />
@@ -672,7 +669,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="NativeProcess.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="ProcessMemory.cpp" />
-    <ClCompile Include="ProcFileSystem.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="SignalActions.cpp" />
     <ClCompile Include="sys_attach_process.cpp" />
@@ -741,8 +737,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="sys_write.cpp" />
     <ClCompile Include="sys_writev.cpp" />
     <ClCompile Include="TaskState.cpp" />
-    <ClCompile Include="TempFileSystem.cpp" />
-    <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

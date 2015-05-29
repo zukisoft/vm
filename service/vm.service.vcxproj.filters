@@ -203,17 +203,11 @@
     <ClInclude Include="..\common\LinuxException.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="RootFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\IndexPool.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="MountOptions.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TempFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
     </ClInclude>
     <ClInclude Include="FilePermission.h">
       <Filter>Header Files</Filter>
@@ -269,14 +263,8 @@
     <ClInclude Include="..\common\align.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="HostFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
-    </ClInclude>
     <ClInclude Include="SystemCall.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ProcFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
     </ClInclude>
     <ClInclude Include="SystemLog.h">
       <Filter>Header Files</Filter>
@@ -410,9 +398,6 @@
     <ClInclude Include="Alias.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="NewRootFileSystem.h">
-      <Filter>Header Files\File Systems</Filter>
-    </ClInclude>
     <ClInclude Include="__Mount.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -426,6 +411,15 @@
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
     <ClInclude Include="NodeType.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem2.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Handle.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="RootFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
   </ItemGroup>
@@ -565,14 +559,8 @@
     <ClCompile Include="..\common\StructuredException.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="RootFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
-    </ClCompile>
     <ClCompile Include="MountOptions.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TempFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
     <ClCompile Include="FilePermission.cpp">
       <Filter>Source Files</Filter>
@@ -600,9 +588,6 @@
     </ClCompile>
     <ClCompile Include="..\common\Random.cpp">
       <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="HostFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
     <ClCompile Include="sys_set_tid_address.cpp">
       <Filter>Source Files\System Calls</Filter>
@@ -639,9 +624,6 @@
     </ClCompile>
     <ClCompile Include="sys_write.cpp">
       <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="ProcFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
     <ClCompile Include="SystemLog.cpp">
       <Filter>Source Files</Filter>
@@ -886,11 +868,11 @@
     <ClCompile Include="FileSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NewRootFileSystem.cpp">
-      <Filter>Source Files\File Systems</Filter>
-    </ClCompile>
     <ClCompile Include="__Mount.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RootFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

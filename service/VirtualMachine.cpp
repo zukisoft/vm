@@ -32,9 +32,9 @@
 
 // File Systems
 //
-#include "HostFileSystem.h"
-#include "RootFileSystem.h"
-#include "TempFileSystem.h"
+//#include "HostFileSystem.h"
+//#include "RootFileSystem.h"
+//#include "TempFileSystem.h"
 
 #pragma warning(push, 4)
 
@@ -129,9 +129,9 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 		// FILE SYSTEMS
 		//
-		m_filesystems.emplace("hostfs",	HostFileSystem::Mount);
+		//m_filesystems.emplace("hostfs",	HostFileSystem::Mount);
 		m_filesystems.emplace("rootfs",	RootFileSystem::Mount);
-		m_filesystems.emplace("tmpfs",	TempFileSystem::Mount);
+		//m_filesystems.emplace("tmpfs",	TempFileSystem::Mount);
 
 		// ROOT FILE SYSTEM
 		//

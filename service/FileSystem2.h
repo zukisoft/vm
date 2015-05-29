@@ -20,48 +20,50 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __DIRECTORY_H_
-#define __DIRECTORY_H_
+#ifndef __FILESYSTEM2_H_
+#define __FILESYSTEM2_H_
 #pragma once
 
-#include "Node.h"
+#include <memory>
+#include <linux/statfs.h>
 
 #pragma warning(push, 4)
 
 // Forward Declarations
 //
-struct __declspec(novtable) Alias;
+struct __declspec(novtable) Node;
 
 //-----------------------------------------------------------------------------
-// Directory
+// FileSystem
 //
-// Specialization of Node for a file system directory object
+// Interface that must be implemented by a file system object
 
-struct Directory : public Node
+struct __declspec(novtable) FileSystem2
 {
-	// CreateCharacterDevice
 	//
-	// Creates a new character device node as a child of this node
-	virtual void CreateCharacterDevice(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode, uapi::dev_t device) = 0;
+	// MUST HAVE STATIC MOUNT() FUNCTION
+	//
 
-	// CreateDirectory
+	// Stat
 	//
-	// Creates a new directory node as a child of this node
-	virtual void CreateDirectory(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode) = 0;
+	// Provides statistical information about the file system
+	virtual void Stat(uapi::statfs* stats) = 0;
 
-	// CreateFile
+	// Root
 	//
-	// Creates a new regular file node as a child of this node
-	virtual std::shared_ptr<Handle> CreateFile(const std::shared_ptr<Alias>& parent, const char_t* name, int flags, uapi::mode_t mode) = 0;
+	// Gets a reference to the root file system node
+	__declspec(property(get=getRoot)) std::shared_ptr<Node> Root;
+	virtual std::shared_ptr<Node> getRoot(void) = 0;
 
-	// CreateSymbolicLink
+	// Source
 	//
-	// Creates a new symbolic link as a child of this node
-	virtual void CreateSymbolicLink(const std::shared_ptr<Alias>& parent, const char_t* name, const char_t* target) = 0;
+	// Gets the device/name used as the source of the file system
+	__declspec(property(get=getSource)) const char_t* Source;
+	virtual const char_t* getSource(void) = 0;
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __DIRECTORY_H_
+#endif	// __FILESYSTEM2_H_

@@ -447,18 +447,18 @@ void VmService::OnStart(int, LPTSTR*)
 		// VIRTUAL FILE SYSTEM
 		//
 
-		m_procfs = ProcFileSystem::Create();
+		////m_procfs = ProcFileSystem::Create();
 
 		// temporary -- mount the root file system; this needs to actually be something
 		// specified by the options for the service instance
-		m_rootfs = RootFileSystem::Mount(nullptr, MountOptions::Create(LINUX_MS_KERNMOUNT));
+		////m_rootfs = RootFileSystem::Mount(nullptr, MountOptions::Create(LINUX_MS_KERNMOUNT));
 
 		// add filesystems
 		// no need to lock, service has not gone multi-threaded yet; no RPC listener
-		m_availfs.insert(std::make_pair("hostfs", HostFileSystem::Mount));
+		/////m_availfs.insert(std::make_pair("hostfs", HostFileSystem::Mount));
 		//m_availfs.insert(std::make_pair("procfs", std::bind(&VmService::MountProcFileSystem, this, _1, _2)));
-		m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));
-		m_availfs.insert(std::make_pair("tmpfs", TempFileSystem::Mount));
+		////m_availfs.insert(std::make_pair("rootfs", RootFileSystem::Mount));
+		////m_availfs.insert(std::make_pair("tmpfs", TempFileSystem::Mount));
 
 		//MountFileSystem("D:\\Linux Stuff\\android-l-preview_r2-x86\\root", "/", "hostfs", 0, nullptr, 0);
 		MountFileSystem("tmpfs", "/", "tmpfs", 0, nullptr, 0);
