@@ -22,8 +22,80 @@
 
 #include "stdafx.h"
 #include "FileSystem.h"
+#include "LinuxException.h"
+#include "Namespace.h"
 
 #pragma warning(push, 4)
+
+//-----------------------------------------------------------------------------
+// FileSystem::BlockDeviceBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::BlockDeviceBase::getType(void)
+{
+	return FileSystem::NodeType::BlockDevice;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::CharacterDeviceBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::CharacterDeviceBase::getType(void)
+{
+	return FileSystem::NodeType::CharacterDevice;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::DirectoryBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::DirectoryBase::getType(void)
+{
+	return FileSystem::NodeType::Directory;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::FileBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::FileBase::getType(void)
+{
+	return FileSystem::NodeType::File;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::PipeBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::PipeBase::getType(void)
+{
+	return FileSystem::NodeType::Pipe;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::SocketBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::SocketBase::getType(void)
+{
+	return FileSystem::NodeType::Socket;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::SymbolicLinkBase::getType (private)
+//
+// Gets the type of node defined by this object
+
+FileSystem::NodeType FileSystem::SymbolicLinkBase::getType(void)
+{
+	return FileSystem::NodeType::SymbolicLink;
+}
 
 //-----------------------------------------------------------------------------
 // FileSystem::CheckPermissions (static)

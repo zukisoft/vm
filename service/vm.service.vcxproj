@@ -362,17 +362,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Alias.h" />
-    <ClInclude Include="Directory.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="elf_traits.h" />
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="FileSystem2.h" />
-    <ClInclude Include="Handle.h" />
-    <ClInclude Include="Mount.h" />
-    <ClInclude Include="Node.h" />
-    <ClInclude Include="NodeType.h" />
     <ClInclude Include="__Mount.h" />
     <ClInclude Include="MountNamespace.h" />
     <ClInclude Include="RootFileSystem.h" />

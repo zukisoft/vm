@@ -27,8 +27,7 @@
 #include <memory>
 #include <set>
 #include <concrt.h>
-#include "Alias.h"
-#include "Mount.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)				
 

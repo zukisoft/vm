@@ -159,7 +159,17 @@ std::shared_ptr<::Mount> RootFileSystem::Mount(const char_t* source, uint32_t fl
 //{
 //	return nullptr;
 //}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Mount::getFileSystem
 //
+// Gets a reference to the underlying file system instance
+
+std::shared_ptr<FileSystem2> RootFileSystem::Mount::getFileSystem(void)
+{
+	return m_fs;
+}
+
 ////-----------------------------------------------------------------------------
 //// RootFileSystem::Mount::getOptions
 ////

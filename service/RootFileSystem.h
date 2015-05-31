@@ -63,6 +63,37 @@ private:
 	RootFileSystem(const RootFileSystem&)=delete;
 	RootFileSystem& operator=(const RootFileSystem&)=delete;
 
+	// Mount
+	//
+	// Private implementation of the Mount interface
+	class Mount : public ::Mount
+	{
+	public:
+
+		// Constructor / Destructor
+		//
+		Mount(const std::shared_ptr<RootFileSystem>& fs);
+		~Mount()=default;
+
+	private:
+
+		Mount(const Mount&)=delete;
+		Mount& operator=(const Mount&)=delete;
+	
+		// Mount Methods
+		//
+		virtual std::shared_ptr<::Mount> Duplicate(void);
+		virtual void Remount(uint32_t flags, const void* data, size_t datalen);
+
+		// Mount Properties
+		//
+		virtual std::shared_ptr<FileSystem2> getFileSystem(void);
+
+		// Member Variables
+		//
+		std::shared_ptr<RootFileSystem> m_fs;
+	};
+
 	// Instance Constructor
 	//
 	RootFileSystem(const char_t* source);
@@ -99,7 +130,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::string						m_source;		// Source device
+	std::string				m_source;			// Source device
 };
 
 //-----------------------------------------------------------------------------
