@@ -57,7 +57,6 @@ struct __declspec(novtable) FileSystem
 	struct __declspec(novtable) File;
 	struct __declspec(novtable) Handle;
 	struct __declspec(novtable) Mount;
-	struct __declspec(novtable) MountOptions;
 	struct __declspec(novtable) Node;
 	struct __declspec(novtable) Pipe;
 	struct __declspec(novtable) Socket;
@@ -66,7 +65,7 @@ struct __declspec(novtable) FileSystem
 	// MountFunction
 	//
 	// Function signature for a file system's Mount() implementation, which must be a public static method
-	using MountFunction = std::function<std::shared_ptr<Mount>(const char_t* device, uint32_t flags, const void* data, size_t datalength)>;
+	using MountFunction = std::function<std::shared_ptr<Mount>(const char_t* source, uint32_t flags, const void* data, size_t datalength)>;
 
 	// NodeType
 	//
@@ -80,33 +79,6 @@ struct __declspec(novtable) FileSystem
 		Pipe				= LINUX_S_IFIFO,
 		Socket				= LINUX_S_IFSOCK,
 		SymbolicLink		= LINUX_S_IFLNK,
-	};
-
-
-	//// NODE_INDEX_ROOT
-	////
-	//// Constant indicating the node index for a file system root node
-	//static const uapi::ino_t NODE_INDEX_ROOT = 2;
-
-	//// NODE_INDEX_LOSTANDFOUND
-	////
-	//// Constant indicating the node index for a lost+found directory node
-	//static const uapi::ino_t NODE_INDEX_LOSTANDFOUND = 3;
-
-	//// NODE_INDEX_FIRSTDYNAMIC
-	////
-	//// Constant indicating the first dynamic node index that should be used
-	//static const uapi::ino_t NODE_INDEX_FIRSTDYNAMIC = 4;
-
-	//// MAXIMUM_PATH_SYMLINKS
-	////
-	//// The maximum number of symbolic links that can exist in a path
-	//static const int MAXIMUM_PATH_SYMLINKS = 40;
-
-	// FileSystem::MountOptions
-	//
-	struct __declspec(novtable) MountOptions
-	{
 	};
 
 	// FileSystem::Mount
@@ -131,11 +103,11 @@ struct __declspec(novtable) FileSystem
 		__declspec(property(get=getFileSystem)) std::shared_ptr<::FileSystem> FileSystem;
 		virtual std::shared_ptr<::FileSystem> getFileSystem(void) = 0;
 
-		// Options
+		// Flags
 		//
-		// Gets a reference to the current set of options associated with this mount
-		__declspec(property(get=getOptions)) std::shared_ptr<MountOptions> Options;
-		virtual std::shared_ptr<MountOptions> getOptions(void) = 0;
+		// Gets the flags set on this mount
+		__declspec(property(get=getFlags)) uint32_t Flags;
+		virtual uint32_t getFlags(void) = 0;
 	};
 
 	// FileSystem::Alias
@@ -384,6 +356,7 @@ struct __declspec(novtable) FileSystem
 	//
 	// FILE SYSTEM API
 	//
+	// todo: comments
 
 	static void CheckPermissions(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
 		int flags, uapi::mode_t mode);
@@ -414,9 +387,11 @@ struct __declspec(novtable) FileSystem
 	// BASE CLASSES
 	//
 
+	//-------------------------------------------------------------------------
 	// FileSystem::AliasBase
 	//
-	// todo: what is implemented
+	// todo: what is implemented by this base class
+
 	class AliasBase : public Alias
 	{
 	public:
@@ -437,9 +412,11 @@ struct __declspec(novtable) FileSystem
 		AliasBase& operator=(const AliasBase&)=delete;
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::BlockDeviceBase
 	//
 	// todo: what is implemented by this base class
+	
 	class BlockDeviceBase : public BlockDevice
 	{
 	public:
@@ -447,6 +424,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~BlockDeviceBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -458,16 +440,13 @@ struct __declspec(novtable) FileSystem
 
 		BlockDeviceBase(const BlockDeviceBase&)=delete;
 		BlockDeviceBase& operator=(const BlockDeviceBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::CharacterDeviceBase
 	//
 	// todo: what is implemented by this base class
+	
 	class CharacterDeviceBase : public CharacterDevice
 	{
 	public:
@@ -475,6 +454,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~CharacterDeviceBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -486,16 +470,13 @@ struct __declspec(novtable) FileSystem
 
 		CharacterDeviceBase(const CharacterDeviceBase&)=delete;
 		CharacterDeviceBase& operator=(const CharacterDeviceBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::DirectoryBase
 	//
 	// todo: what is implemented by this base class
+	
 	class DirectoryBase : public Directory
 	{
 	public:
@@ -503,6 +484,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~DirectoryBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -514,16 +500,13 @@ struct __declspec(novtable) FileSystem
 
 		DirectoryBase(const DirectoryBase&)=delete;
 		DirectoryBase& operator=(const DirectoryBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::FileBase
 	//
 	// todo: what is implemented by this base class
+	
 	class FileBase : public File
 	{
 	public:
@@ -531,6 +514,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~FileBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -542,16 +530,13 @@ struct __declspec(novtable) FileSystem
 
 		FileBase(const FileBase&)=delete;
 		FileBase& operator=(const FileBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::HandleBase
 	//
 	// todo: what is implemented
+	
 	class HandleBase : public Handle
 	{
 	public:
@@ -572,9 +557,11 @@ struct __declspec(novtable) FileSystem
 		HandleBase& operator=(const HandleBase&)=delete;
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::MountBase
 	//
 	// todo: what is implemented
+	
 	class MountBase : public Mount
 	{
 	public:
@@ -595,32 +582,11 @@ struct __declspec(novtable) FileSystem
 		MountBase& operator=(const MountBase&)=delete;
 	};
 
-	// FileSystem::MountOptionsBase
-	//
-	// todo: what is implemented
-	class MountOptionsBase : public MountOptions
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~MountOptionsBase()=default;
-
-	protected:
-
-		// Instance Constructor
-		//
-		MountOptionsBase()=default;
-
-	private:
-
-		MountOptionsBase(const MountOptionsBase&)=delete;
-		MountOptionsBase& operator=(const MountOptionsBase&)=delete;
-	};
-
+	//-------------------------------------------------------------------------
 	// FileSystem::PipeBase
 	//
 	// todo: what is implemented by this base class
+	
 	class PipeBase : public Pipe
 	{
 	public:
@@ -628,6 +594,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~PipeBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -639,16 +610,13 @@ struct __declspec(novtable) FileSystem
 
 		PipeBase(const PipeBase&)=delete;
 		PipeBase& operator=(const PipeBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::SocketBase
 	//
 	// todo: what is implemented by this base class
+	
 	class SocketBase : public Socket
 	{
 	public:
@@ -656,6 +624,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~SocketBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -667,16 +640,13 @@ struct __declspec(novtable) FileSystem
 
 		SocketBase(const SocketBase&)=delete;
 		SocketBase& operator=(const SocketBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 
+	//-------------------------------------------------------------------------
 	// FileSystem::SymbolicLinkBase
 	//
 	// todo: what is implemented by this base class
+	
 	class SymbolicLinkBase : public SymbolicLink
 	{
 	public:
@@ -684,6 +654,11 @@ struct __declspec(novtable) FileSystem
 		// Destructor
 		//
 		virtual ~SymbolicLinkBase()=default;
+
+		// Node::getType
+		//
+		// Gets the type of node defined by the derived class
+		virtual NodeType getType(void);
 
 	protected:
 
@@ -695,11 +670,6 @@ struct __declspec(novtable) FileSystem
 
 		SymbolicLinkBase(const SymbolicLinkBase&)=delete;
 		SymbolicLinkBase& operator=(const SymbolicLinkBase&)=delete;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
 	};
 };
 

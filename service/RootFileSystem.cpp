@@ -26,6 +26,41 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
+// RootFileSystem Constructor (private)
+//
+// Arguments:
+//
+//	source		- Source/device name to use for the file system
+
+RootFileSystem::RootFileSystem(const char_t* source) : m_source(source)
+{
+	_ASSERTE(source);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Mount (static)
+//
+// Creates an instance of the file system
+//
+// Arguments:
+//
+//	source		- Source device path (ignored)
+//	flags		- Standard mount options bitmask
+//	data		- Extended mount options data
+//	datalength	- Length of the extended mount options data in bytes
+
+std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount(const char_t* source, uint32_t flags, const void* data, size_t datalength)
+{
+	if(source == nullptr) throw LinuxException(LINUX_EFAULT);
+
+	// Construct the file system instance, using whatever string was passed as a source
+	auto fs = std::make_shared<RootFileSystem>(source);
+
+	// todo
+	return nullptr;
+}
+
+//-----------------------------------------------------------------------------
 // RootFileSystem::CreateCharacterDevice (private)
 //
 // Creates a new character device node within the file system
@@ -37,7 +72,7 @@
 //	mode		- Mode flags to assign to the newly created node
 //	device		- Major and minor numbers of the newly created character device
 
-void RootFileSystem::CreateCharacterDevice(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode, uapi::dev_t device)
+void RootFileSystem::CreateCharacterDevice(const std::shared_ptr<FileSystem::Alias>& parent, const char_t* name, uapi::mode_t mode, uapi::dev_t device)
 {
 	UNREFERENCED_PARAMETER(parent);
 	UNREFERENCED_PARAMETER(name);
@@ -58,7 +93,7 @@ void RootFileSystem::CreateCharacterDevice(const std::shared_ptr<Alias>& parent,
 //	name		- Name to assign to the newly created alias
 //	mode		- Mode flags to assign to the newly created node
 
-void RootFileSystem::CreateDirectory(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode)
+void RootFileSystem::CreateDirectory(const std::shared_ptr<FileSystem::Alias>& parent, const char_t* name, uapi::mode_t mode)
 {
 	UNREFERENCED_PARAMETER(parent);
 	UNREFERENCED_PARAMETER(name);
@@ -79,7 +114,7 @@ void RootFileSystem::CreateDirectory(const std::shared_ptr<Alias>& parent, const
 //	flags		- File node access, creation and status flags
 //	mode		- Mode flags to assign to the newly created node
 
-std::shared_ptr<Handle> RootFileSystem::CreateFile(const std::shared_ptr<Alias>& parent, const char_t* name, int flags, uapi::mode_t mode)
+std::shared_ptr<FileSystem::Handle> RootFileSystem::CreateFile(const std::shared_ptr<FileSystem::Alias>& parent, const char_t* name, int flags, uapi::mode_t mode)
 {
 	UNREFERENCED_PARAMETER(parent);
 	UNREFERENCED_PARAMETER(name);
@@ -100,7 +135,7 @@ std::shared_ptr<Handle> RootFileSystem::CreateFile(const std::shared_ptr<Alias>&
 //	name		- Name to assign to the newly created alias
 //	target		- Path to the symbolic link target alias
 
-void RootFileSystem::CreateSymbolicLink(const std::shared_ptr<Alias>& parent, const char_t* name, const char_t* target)
+void RootFileSystem::CreateSymbolicLink(const std::shared_ptr<FileSystem::Alias>& parent, const char_t* name, const char_t* target)
 {
 	UNREFERENCED_PARAMETER(parent);
 	UNREFERENCED_PARAMETER(name);
@@ -110,41 +145,77 @@ void RootFileSystem::CreateSymbolicLink(const std::shared_ptr<Alias>& parent, co
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::getFileSystem (private)
+// RootFileSystem::getFileSystem
 //
 // Gets a reference to the underlying node's file system
 
-std::shared_ptr<FileSystem2> RootFileSystem::getFileSystem(void)
+std::shared_ptr<FileSystem> RootFileSystem::getFileSystem(void)
 {
 	return shared_from_this();
 }
-	
+
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount (static)
+// RootFileSystem::getRoot
 //
-// Creates an instance of the file system
+// Gets a reference to the file system root node
+
+std::shared_ptr<FileSystem::Node> RootFileSystem::getRoot(void)
+{
+	return shared_from_this();
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::getSource
+//
+// Gets the device/name used as the source of the file system
+
+const char_t* RootFileSystem::getSource(void)
+{
+	return m_source.c_str();
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Stat
+//
+// Provides statistical information about the file system
 //
 // Arguments:
 //
-//	source		- Source device path (ignored)
-//	flags		- Standard mount options bitmask
-//	data		- Extended mount options data
-//	datalen		- Length, in bytes, of the extended mount options data
+//	stats		- statfs structure to receive statistics
 
-std::shared_ptr<::Mount> RootFileSystem::Mount(const char_t* source, uint32_t flags, const void* data, size_t datalen)
+void RootFileSystem::Stat(uapi::statfs* stats)
 {
-	if(source == nullptr) throw LinuxException(LINUX_EFAULT);
+	_ASSERTE(stats);
+	if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
 
-	auto fs = std::make_shared<RootFileSystem>(source);
+	// note that rootfs is technically tmpfs or ramfs, so return stats
+	// accordingly; just check a live system to be sure
 
-	// Convert the flags and extended data into a MountOptions instance
-	//auto options = MountOptions::Create(flags, data, datalen);
-
-	// Construct and return an instance of the private Mount class
-	//return std::make_shared<class Mount>(source, std::move(options));
-
-	return nullptr;
+	// todo
+	memset(stats, 0, sizeof(uapi::statfs));
 }
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Stat
+//
+// Provides statistical information about the node
+//
+// Arguments:
+//
+//	stats		- stat structure to receive statistics
+
+void RootFileSystem::Stat(uapi::stat* stats)
+{
+	_ASSERTE(stats);
+	if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
+
+	// todo
+	memset(stats, 0, sizeof(uapi::stat));
+}
+	
+//
+// ROOTFILESYSTEM::MOUNT
+//
 
 ////-----------------------------------------------------------------------------
 //// RootFileSystem::Mount::Duplicate
@@ -160,15 +231,15 @@ std::shared_ptr<::Mount> RootFileSystem::Mount(const char_t* source, uint32_t fl
 //	return nullptr;
 //}
 
-//-----------------------------------------------------------------------------
-// RootFileSystem::Mount::getFileSystem
+////-----------------------------------------------------------------------------
+//// RootFileSystem::Mount::getFileSystem
+////
+//// Gets a reference to the underlying file system instance
 //
-// Gets a reference to the underlying file system instance
-
-std::shared_ptr<FileSystem2> RootFileSystem::Mount::getFileSystem(void)
-{
-	return m_fs;
-}
+//std::shared_ptr<FileSystem2> RootFileSystem::Mount::getFileSystem(void)
+//{
+//	return m_fs;
+//}
 
 ////-----------------------------------------------------------------------------
 //// RootFileSystem::Mount::getOptions
@@ -195,36 +266,6 @@ std::shared_ptr<FileSystem2> RootFileSystem::Mount::getFileSystem(void)
 //{
 //	// Allowed: MS_RDONLY, MS_SYNCHRONOUS, MS_MANDLOCK
 //}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::getRoot (private)
-//
-// Gets a reference to the file system root node
-
-std::shared_ptr<Node> RootFileSystem::getRoot(void)
-{
-	return shared_from_this();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem:get:Source (private)
-//
-// Gets the device/name used as the source of the file system
-
-const char_t* RootFileSystem::getSource(void)
-{
-	return m_source.c_str();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::getType (private)
-//
-// Gets the type of node that has been implemented
-
-NodeType RootFileSystem::getType(void)
-{
-	return NodeType::Directory;
-}
 
 //-----------------------------------------------------------------------------
 

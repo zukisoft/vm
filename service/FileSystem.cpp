@@ -110,7 +110,7 @@ FileSystem::NodeType FileSystem::SymbolicLinkBase::getType(void)
 //	flags		- Operation flags (AT_EACCESS, AT_SYMLINK_NO_FOLLOW)
 //	mode		- Special MAY_READ, MAY_WRITE, MAY_EXECUTE flags
 
-void FileSystem::CheckPermissions(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
+void FileSystem::CheckPermissions(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
 	int flags, uapi::mode_t mode)
 {
 	// per path_resolution(7), empty paths are not allowed
@@ -139,7 +139,7 @@ void FileSystem::CheckPermissions(const std::shared_ptr<Alias>& root, const std:
 //	mode		- Mode bitmask to use when creating the object
 //	device		- Target device identifier
 
-void FileSystem::CreateCharacterDevice(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
+void FileSystem::CreateCharacterDevice(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
 	uapi::mode_t mode, uapi::dev_t device)
 {
 	// per path_resolution(7), empty paths are not allowed
@@ -173,7 +173,7 @@ void FileSystem::CreateCharacterDevice(const std::shared_ptr<Alias>& root, const
 //	mode		- Mode bitmask to use if a new object is created
 
 void FileSystem::CreateDirectory(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-	const uapi::char_t* path, uapi::mode_t mode)
+	const char_t* path, uapi::mode_t mode)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -206,7 +206,7 @@ void FileSystem::CreateDirectory(const std::shared_ptr<Alias>& root, const std::
 //	mode		- Mode bitmask to use if a new object is created
 
 std::shared_ptr<FileSystem::Handle> FileSystem::CreateFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-	const uapi::char_t* path, int flags, uapi::mode_t mode)
+	const char_t* path, int flags, uapi::mode_t mode)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -241,8 +241,8 @@ std::shared_ptr<FileSystem::Handle> FileSystem::CreateFile(const std::shared_ptr
 //	path		- Path to the object to be opened/created
 //	target		- Symbolic link target
 
-void FileSystem::CreateSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
-	const uapi::char_t* target)
+void FileSystem::CreateSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
+	const char_t* target)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -272,7 +272,7 @@ void FileSystem::CreateSymbolicLink(const std::shared_ptr<Alias>& root, const st
 //	base		- Base alias from which to start path resolution
 //	path		- Relative path to be converted into an absolute path
 
-void FileSystem::GetAbsolutePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& alias, uapi::char_t* path, size_t pathlen)
+void FileSystem::GetAbsolutePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& alias, char_t* path, size_t pathlen)
 {
 	std::vector<std::string> pathvec;
 
@@ -329,7 +329,7 @@ void FileSystem::GetAbsolutePath(const std::shared_ptr<Alias>& root, const std::
 //	path		- Path to the object to be opened/created
 
 std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(const std::shared_ptr<Alias>& root, 
-	const std::shared_ptr<Alias>& base, const uapi::char_t* path)
+	const std::shared_ptr<Alias>& base, const char_t* path)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -360,7 +360,7 @@ std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(const std::shared
 //	mode		- Mode bitmask to use if a new object is created
 
 std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-	const uapi::char_t* path, int flags, uapi::mode_t mode)
+	const char_t* path, int flags, uapi::mode_t mode)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -416,8 +416,8 @@ std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(const std::shared_ptr<A
 //	buffer		- Target string output buffer
 //	length		- Length of the target string output buffer
 
-size_t FileSystem::ReadSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const uapi::char_t* path, 
-	uapi::char_t* buffer, size_t length)
+size_t FileSystem::ReadSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
+	char_t* buffer, size_t length)
 {
 	// per path_resolution(7), empty paths are not allowed
 	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
@@ -450,7 +450,7 @@ size_t FileSystem::ReadSymbolicLink(const std::shared_ptr<Alias>& root, const st
 //	flags		- Path resolution flags
 
 std::shared_ptr<FileSystem::Alias> FileSystem::ResolvePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-	const uapi::char_t* path, int flags)
+	const char_t* path, int flags)
 {
 	int	symlinks = 0;							// Number of symbolic links encountered
 
