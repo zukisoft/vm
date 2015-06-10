@@ -24,6 +24,7 @@
 #define __BITMAP_H_
 #pragma once
 
+#include <algorithm>
 #include <stdint.h>
 #include "align.h"
 #include "Exception.h"
@@ -34,9 +35,9 @@
 //-----------------------------------------------------------------------------
 // Bitmap
 //
-// Wrapper around the Windows RTL bitmap management functions. Uses a naive
-// automatic hint mechanism that assumes the next bit(s) in the bitmap after
-// any operation are of the opposite state.
+// Wrapper around the Windows RTL bitmap management functions. Note that these 
+// functions are not natively thread-safe, so this class must be externally 
+// protected from concurrent access
 
 class Bitmap
 {
@@ -56,6 +57,10 @@ public:
 	//
 	Bitmap& operator=(const Bitmap& rhs);
 
+	// Array Index Operator
+	//
+	bool operator[](uint32_t bit) const;
+
 	//-------------------------------------------------------------------------
 	// Member Functions
 
@@ -71,11 +76,6 @@ public:
 
 	// Clear
 	//
-	// Clears all bits in the bitmap
-	void Clear(void);
-
-	// Clear
-	//
 	// Clears a specific bit in the bitmap
 	void Clear(uint32_t bit);
 
@@ -83,6 +83,11 @@ public:
 	//
 	// Clears a range of bits in the bitmap
 	void Clear(uint32_t startbit, uint32_t count);
+
+	// ClearAll
+	//
+	// Clears all bits in the bitmap
+	void ClearAll(void);
 
 	// FindClear
 	//
@@ -146,11 +151,6 @@ public:
 
 	// Set
 	//
-	// Sets all bits in the bitmap
-	void Set(void);
-
-	// Set
-	//
 	// Sets a specific bit in the bitmap
 	void Set(uint32_t bit);
 
@@ -158,6 +158,11 @@ public:
 	//
 	// Sets a range of bits in the bitmap
 	void Set(uint32_t startbit, uint32_t count);
+
+	// SetAll
+	//
+	// Sets all bits in the bitmap
+	void SetAll(void);
 
 	//-------------------------------------------------------------------------
 	// Fields
@@ -170,17 +175,36 @@ public:
 	//-------------------------------------------------------------------------
 	// Properties
 
+	// Available
+	//
+	// Gets the number of available bits in the bitmap
+	__declspec(property(get=getAvailable)) uint32_t Available;
+	uint32_t getAvailable(void) const;
+
+	// Consumed
+	//
+	// Gets the number of consumed bits in the bitmap
+	__declspec(property(get=getConsumed)) uint32_t Consumed;
+	uint32_t getConsumed(void) const;
+
 	// Empty
 	//
 	// Determines if the bitmap is empty
 	__declspec(property(get=getEmpty)) bool Empty;
-	bool getEmpty(void) const { return NtApi::RtlNumberOfSetBits(&m_bitmap) == 0; }
+	bool getEmpty(void) const;
 
 	// Full
 	//
 	// Determines if the bitmap is full
 	__declspec(property(get=getFull)) bool Full;
-	bool getFull(void) const { return NtApi::RtlNumberOfClearBits(&m_bitmap) == 0; }
+	bool getFull(void) const;
+
+	// Size
+	//
+	// Gets/sets the size of the bitmap
+	__declspec(property(get=getSize, put=putSize)) uint32_t Size;
+	uint32_t getSize(void) const;
+	void putSize(uint32_t value);
 
 private:
 	
@@ -188,8 +212,6 @@ private:
 	// Member Variables
 
 	NtApi::RTL_BITMAP	m_bitmap;			// Contained RTL bitmap struct
-	uint32_t			m_sethint = 0;		// Automatic hint for setting bits
-	uint32_t			m_clearhint = 0;	// Automatic hint for clearing bits
 };
 
 //-----------------------------------------------------------------------------

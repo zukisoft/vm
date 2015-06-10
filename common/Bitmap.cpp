@@ -32,46 +32,37 @@
 //
 //	bits		- Number of bits to define for a new, zero-initialized bitmap
 
-Bitmap::Bitmap(uint32_t bits)
+Bitmap::Bitmap(uint32_t bits) : m_bitmap({ 0, nullptr })
 {
-	// Determine the number of 32-bit ULONG elements required for the bitmap
-	uint32_t ulongs = (align::up(bits, 32) >> 5);
+	// Allocate a zero-initialized buffer for the bitmap off the process heap; the buffer size
+	// must be a multiple of 32 bits for compatibility with the bitmap API
+	m_bitmap.Buffer = reinterpret_cast<PULONG>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, align::up(bits, 32) >> 3));
+	if(!m_bitmap.Buffer) throw Exception(E_OUTOFMEMORY);
 
-	// Allocate the storage for the bitmap and zero-initialize it
-	m_bitmap.Buffer = new ULONG[ulongs];
-	if(m_bitmap.Buffer == nullptr) throw Exception(E_OUTOFMEMORY);
-
-	// Initialize the bitmap bits to clear and set the allowable size
-	memset(m_bitmap.Buffer, 0, sizeof(ULONG) * ulongs);
-	m_bitmap.SizeOfBitMap = bits;
+	m_bitmap.SizeOfBitMap = bits;		// Bitmap was successfully allocated
 }
 
 //-----------------------------------------------------------------------------
 // Bitmap Copy Constructor
 
-Bitmap::Bitmap(const Bitmap& rhs)
+Bitmap::Bitmap(const Bitmap& rhs) : m_bitmap({ 0, nullptr })
 {
-	// Determine the number of 32-bit ULONG elements required for the bitmap
-	uint32_t ulongs = (align::up(rhs.m_bitmap.SizeOfBitMap, 32) >> 5);
+	// Determine the size of the referenced object's bitmap buffer, in bytes
+	size_t size = align::up(rhs.m_bitmap.SizeOfBitMap, 32) >> 3;
 
-	// Allocate the storage for the bitmap and zero-initialize it
-	m_bitmap.Buffer = new ULONG[ulongs];
+	// Allocate a new heap buffer to contain the copy of the referenced object
+	m_bitmap.Buffer = reinterpret_cast<PULONG>(HeapAlloc(GetProcessHeap(), 0, size));
 	if(m_bitmap.Buffer == nullptr) throw Exception(E_OUTOFMEMORY);
 
-	// Copy the bitmap bits from the referenced object and set the size
-	memcpy(m_bitmap.Buffer, rhs.m_bitmap.Buffer, sizeof(ULONG) * ulongs);
+	// Copy the bitmap bits and size from the referenced object
+	memcpy(m_bitmap.Buffer, rhs.m_bitmap.Buffer, size);
 	m_bitmap.SizeOfBitMap = rhs.m_bitmap.SizeOfBitMap;
-
-	// Copy the hints from the referenced object
-	m_clearhint = rhs.m_clearhint;
-	m_sethint = rhs.m_sethint;
 }
 
 //-----------------------------------------------------------------------------
 // Bitmap Move Constructor
 
-Bitmap::Bitmap(Bitmap&& rhs) : m_bitmap(rhs.m_bitmap), m_clearhint(rhs.m_clearhint),
-	m_sethint(rhs.m_sethint)
+Bitmap::Bitmap(Bitmap&& rhs) : m_bitmap(rhs.m_bitmap)
 {
 	rhs.m_bitmap.Buffer = nullptr;
 	rhs.m_bitmap.SizeOfBitMap = 0;
@@ -82,40 +73,37 @@ Bitmap::Bitmap(Bitmap&& rhs) : m_bitmap(rhs.m_bitmap), m_clearhint(rhs.m_clearhi
 
 Bitmap::~Bitmap()
 {
-	// Release the ULONG buffer allocated for the bitmap
-	if(m_bitmap.Buffer) delete[] m_bitmap.Buffer;
+	if(m_bitmap.Buffer) HeapFree(GetProcessHeap(), 0, m_bitmap.Buffer);
 }
 
 //-----------------------------------------------------------------------------
-// Bitmap Assignmnent Operator
+// Bitmap::operator=
 
 Bitmap& Bitmap::operator=(const Bitmap& rhs)
 {
-	// Determine the number of 32-bit ULONG elements required for the bitmap
-	uint32_t ulongs = (align::up(rhs.m_bitmap.SizeOfBitMap, 32) >> 5);
+	// Determine the size of the referenced object's bitmap buffer, in bytes
+	size_t size = align::up(rhs.m_bitmap.SizeOfBitMap, 32) >> 3;
 
-	// If the bitmaps aren't the same length, it needs to be reallocated
-	if(m_bitmap.SizeOfBitMap != rhs.m_bitmap.SizeOfBitMap) {
+	// Reallocate the heap buffer to match the referenced object's buffer size
+	void* newbuffer = HeapReAlloc(GetProcessHeap(), 0, m_bitmap.Buffer, size);
+	if(newbuffer == nullptr) throw Exception(E_OUTOFMEMORY);
 
-		// Release the old storage
-		delete[] m_bitmap.Buffer;
+	// Copy the bits from the referenced object into the reallocated buffer
+	memcpy(newbuffer, rhs.m_bitmap.Buffer, size);
 
-		// Attempt to allocate new storage of the same length
-		m_bitmap.Buffer = new ULONG[ulongs];
-		if(m_bitmap.Buffer == nullptr) throw Exception(E_OUTOFMEMORY);
+	// Assign the updated buffer pointer and bitmap size information
+	m_bitmap.Buffer = reinterpret_cast<PULONG>(newbuffer);
+	m_bitmap.SizeOfBitMap = rhs.m_bitmap.SizeOfBitMap;
 
-		// Set the new bitmap length to be the same
-		m_bitmap.SizeOfBitMap = rhs.m_bitmap.SizeOfBitMap;
-	}
-
-	// Copy the bitmap bits from the referenced object
-	memcpy(m_bitmap.Buffer, rhs.m_bitmap.Buffer, sizeof(ULONG) * ulongs);
-
-	// Copy the hints from the referenced object
-	m_clearhint = rhs.m_clearhint;
-	m_sethint = rhs.m_sethint;
-	
 	return *this;
+}
+
+//-----------------------------------------------------------------------------
+// Bitmap::operator[]
+
+bool Bitmap::operator[](uint32_t bit) const
+{
+	return (bit < m_bitmap.SizeOfBitMap) ? NtApi::RtlTestBit(&m_bitmap, bit) == TRUE : false;
 }
 
 //-----------------------------------------------------------------------------
@@ -157,19 +145,13 @@ bool Bitmap::AreBitsSet(uint32_t startbit, uint32_t count) const
 }
 
 //-----------------------------------------------------------------------------
-// Bitmap::Clear
+// Bitmap::getAvailable
 //
-// Clears all bits in the bitmap
-//
-// Arguments:
-//
-//	NONE
+// Gets the number of available bits in the bitmap
 
-void Bitmap::Clear(void)
+uint32_t Bitmap::getAvailable(void) const
 {
-	// Clear all the bitmap bits and reset the hints
-	NtApi::RtlClearAllBits(&m_bitmap);
-	m_sethint = m_clearhint = 0;
+	return NtApi::RtlNumberOfClearBits(&m_bitmap);
 }
 
 //-----------------------------------------------------------------------------
@@ -183,12 +165,7 @@ void Bitmap::Clear(void)
 
 void Bitmap::Clear(uint32_t bit)
 {
-	// Verify the position is in bounds for the bitmap
-	if(bit >= m_bitmap.SizeOfBitMap) return;
-
-	// Clear the bit and generate a new automatic hint
-	NtApi::RtlClearBit(&m_bitmap, bit);
-	m_sethint = (bit + 1);
+	if(bit < m_bitmap.SizeOfBitMap) NtApi::RtlClearBit(&m_bitmap, bit);
 }
 
 //-----------------------------------------------------------------------------
@@ -203,13 +180,42 @@ void Bitmap::Clear(uint32_t bit)
 
 void Bitmap::Clear(uint32_t startbit, uint32_t count)
 {
-	// Verify the starting bit is in range and don't allow count to overrun
-	if(startbit >= m_bitmap.SizeOfBitMap) return;
-	count = min(count, (m_bitmap.SizeOfBitMap - startbit));
+	if(startbit < m_bitmap.SizeOfBitMap) 
+		NtApi::RtlClearBits(&m_bitmap, startbit, std::min(static_cast<ULONG>(count), m_bitmap.SizeOfBitMap - startbit));
+}
 
-	// Clear the range of bits and generate a new automatic hint
-	NtApi::RtlClearBits(&m_bitmap, startbit, count);
-	m_sethint = (startbit + count);
+//-----------------------------------------------------------------------------
+// Bitmap::ClearAll
+//
+// Clears all bits in the bitmap
+//
+// Arguments:
+//
+//	NONE
+
+void Bitmap::ClearAll(void)
+{
+	NtApi::RtlClearAllBits(&m_bitmap);
+}
+
+//-----------------------------------------------------------------------------
+// Bitmap::getConsumed
+//
+// Gets the number of bits consumed in the bitmap
+
+uint32_t Bitmap::getConsumed(void) const
+{
+	return NtApi::RtlNumberOfSetBits(&m_bitmap);
+}
+
+//-----------------------------------------------------------------------------
+// Bitmap::getEmpty
+//
+// Determines if the bitmap is empty
+
+bool Bitmap::getEmpty(void) const
+{
+	return NtApi::RtlNumberOfSetBits(&m_bitmap) == 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -223,8 +229,7 @@ void Bitmap::Clear(uint32_t startbit, uint32_t count)
 
 uint32_t Bitmap::FindClear(void) const
 { 
-	// Find a single clear bit using the automatic hint
-	return FindClear(1, m_clearhint); 
+	return NtApi::RtlFindClearBits(&m_bitmap, 1, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -238,8 +243,7 @@ uint32_t Bitmap::FindClear(void) const
 
 uint32_t Bitmap::FindClear(uint32_t quantity) const
 { 
-	// Find a range of clear bits using the automatic hint
-	return FindClear(quantity, m_clearhint);
+	return NtApi::RtlFindClearBits(&m_bitmap, quantity, 0);
 }
 	
 //-----------------------------------------------------------------------------
@@ -254,7 +258,6 @@ uint32_t Bitmap::FindClear(uint32_t quantity) const
 
 uint32_t Bitmap::FindClear(uint32_t quantity, uint32_t hint) const
 {
-	// Attempt to locate a range of clear bits with the specified quantity
 	return NtApi::RtlFindClearBits(&m_bitmap, quantity, hint);
 }
 	
@@ -269,8 +272,7 @@ uint32_t Bitmap::FindClear(uint32_t quantity, uint32_t hint) const
 
 uint32_t Bitmap::FindClearAndSet(void) 
 { 
-	// Set a single clear bit using the automatic hint
-	return FindClearAndSet(1, m_clearhint); 
+	return NtApi::RtlFindClearBitsAndSet(&m_bitmap, 1, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -284,8 +286,7 @@ uint32_t Bitmap::FindClearAndSet(void)
 
 uint32_t Bitmap::FindClearAndSet(uint32_t quantity) 
 {
-	// Set a range of clear bits using the automatic hint
-	return FindClearAndSet(quantity, m_clearhint);
+	return NtApi::RtlFindClearBitsAndSet(&m_bitmap, quantity, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -301,12 +302,7 @@ uint32_t Bitmap::FindClearAndSet(uint32_t quantity)
 
 uint32_t Bitmap::FindClearAndSet(uint32_t quantity, uint32_t hint)
 {
-	// Attempt to locate a range of clear bits with the specified quantity
-	uint32_t result = NtApi::RtlFindClearBitsAndSet(&m_bitmap, quantity, hint);
-
-	// If a range was set successfully, generate a new automatic hint
-	if(result != 0xFFFFFFFF) m_clearhint = (result + quantity);
-	return result;
+	return NtApi::RtlFindClearBitsAndSet(&m_bitmap, quantity, hint);
 }
 	
 //-----------------------------------------------------------------------------
@@ -320,8 +316,7 @@ uint32_t Bitmap::FindClearAndSet(uint32_t quantity, uint32_t hint)
 
 uint32_t Bitmap::FindSet(void) const
 { 
-	// Find a single set bit using the automatic hint
-	return FindSet(1, m_sethint); 
+	return NtApi::RtlFindSetBits(&m_bitmap, 1, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -335,8 +330,7 @@ uint32_t Bitmap::FindSet(void) const
 
 uint32_t Bitmap::FindSet(uint32_t quantity) const
 { 
-	// Find a range of set bits using the automatic hint
-	return FindSet(quantity, m_sethint);
+	return NtApi::RtlFindSetBits(&m_bitmap, quantity, 0);
 }
 	
 //-----------------------------------------------------------------------------
@@ -351,7 +345,6 @@ uint32_t Bitmap::FindSet(uint32_t quantity) const
 
 uint32_t Bitmap::FindSet(uint32_t quantity, uint32_t hint) const
 {
-	// Attempt to locate a range of set bits with the specified quantity
 	return NtApi::RtlFindSetBits(&m_bitmap, quantity, hint);
 }
 	
@@ -366,8 +359,7 @@ uint32_t Bitmap::FindSet(uint32_t quantity, uint32_t hint) const
 
 uint32_t Bitmap::FindSetAndClear(void) 
 { 
-	// Clear a single set bit using the automatic hint
-	return FindSetAndClear(1, m_sethint);
+	return NtApi::RtlFindSetBitsAndClear(&m_bitmap, 1, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -381,8 +373,7 @@ uint32_t Bitmap::FindSetAndClear(void)
 
 uint32_t Bitmap::FindSetAndClear(uint32_t quantity) 
 {
-	// Clear a range of set bits using the automatic hint
-	return FindSetAndClear(quantity, m_sethint);
+	return NtApi::RtlFindSetBitsAndClear(&m_bitmap, quantity, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -398,28 +389,17 @@ uint32_t Bitmap::FindSetAndClear(uint32_t quantity)
 
 uint32_t Bitmap::FindSetAndClear(uint32_t quantity, uint32_t hint)
 {
-	// Attempt to locate a range of set bits with the specified quantity
-	uint32_t result = NtApi::RtlFindSetBitsAndClear(&m_bitmap, quantity, hint);
-
-	// If a range was set successfully, update the automatic hint
-	if(result != 0xFFFFFFFF) m_sethint = (result + quantity);
-	return result;
+	return NtApi::RtlFindSetBitsAndClear(&m_bitmap, quantity, hint);
 }
 	
 //-----------------------------------------------------------------------------
-// Bitmap::Set
+// Bitmap::getFull
 //
-// Sets all bits in the bitmap
-//
-// Arguments:
-//
-//	NONE
+// Determines if the bitmap is full
 
-void Bitmap::Set(void)
+bool Bitmap::getFull(void) const
 {
-	// Set all the bitmap bits and reset the hints back to zero
-	NtApi::RtlSetAllBits(&m_bitmap);
-	m_sethint = m_clearhint = 0;
+	return NtApi::RtlNumberOfClearBits(&m_bitmap) == 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -433,12 +413,7 @@ void Bitmap::Set(void)
 
 void Bitmap::Set(uint32_t bit)
 {
-	// Verify the position is in bounds for the bitmap
-	if(bit >= m_bitmap.SizeOfBitMap) return;
-
-	// Set the bit and generate a new automatic hint
-	NtApi::RtlSetBit(&m_bitmap, bit);
-	m_clearhint = (bit + 1);
+	if(bit < m_bitmap.SizeOfBitMap) NtApi::RtlSetBit(&m_bitmap, bit);
 }
 
 //-----------------------------------------------------------------------------
@@ -453,13 +428,52 @@ void Bitmap::Set(uint32_t bit)
 
 void Bitmap::Set(uint32_t startbit, uint32_t count)
 {
-	// Verify the starting bit is in range and don't allow count to overrun
-	if(startbit >= m_bitmap.SizeOfBitMap) return;
-	count = min(count, (m_bitmap.SizeOfBitMap - startbit));
+	if(startbit < m_bitmap.SizeOfBitMap)
+		NtApi::RtlSetBits(&m_bitmap, startbit, std::min(static_cast<ULONG>(count), m_bitmap.SizeOfBitMap - startbit));
+}
 
-	// Set the range of bits and generate a new automatic hint
-	NtApi::RtlSetBits(&m_bitmap, startbit, count);
-	m_clearhint = (startbit + count);
+//-----------------------------------------------------------------------------
+// Bitmap::SetAll
+//
+// Sets all bits in the bitmap
+//
+// Arguments:
+//
+//	NONE
+
+void Bitmap::SetAll(void)
+{
+	NtApi::RtlSetAllBits(&m_bitmap);
+}
+
+//-----------------------------------------------------------------------------
+// Bitmap::getSize
+//
+// Gets the size of the bitmap
+
+uint32_t Bitmap::getSize(void) const
+{
+	return m_bitmap.SizeOfBitMap;
+}
+
+//-----------------------------------------------------------------------------
+// Bitmap::putSize
+//
+// Sets the size of the bitmap
+
+void Bitmap::putSize(uint32_t bits)
+{
+	// When reducing the size of a bitmap, any bits that will dangle between
+	// the new size and the 32-bit buffer alignment must be cleared first
+	if(bits < m_bitmap.SizeOfBitMap) Clear(bits, bits - m_bitmap.SizeOfBitMap);
+
+	// Reallocate the heap buffer to match the requested new size
+	void* newbuffer = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, m_bitmap.Buffer, align::up(bits, 32) >> 3);
+	if(newbuffer == nullptr) throw Exception(E_OUTOFMEMORY);
+
+	// Assign the updated buffer pointer and bitmap size information
+	m_bitmap.Buffer = reinterpret_cast<PULONG>(newbuffer);
+	m_bitmap.SizeOfBitMap = bits;
 }
 
 //-----------------------------------------------------------------------------
