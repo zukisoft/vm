@@ -463,17 +463,23 @@ uint32_t Bitmap::getSize(void) const
 
 void Bitmap::putSize(uint32_t bits)
 {
-	// When reducing the size of a bitmap, any bits that will dangle between
-	// the new size and the 32-bit buffer alignment must be cleared first
-	if(bits < m_bitmap.SizeOfBitMap) Clear(bits, bits - m_bitmap.SizeOfBitMap);
+	uint32_t aligned = align::up(bits, 32);		// Align to ULONG boundary
 
-	// Reallocate the heap buffer to match the requested new size
-	void* newbuffer = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, m_bitmap.Buffer, align::up(bits, 32) >> 3);
+	// Reallocate the heap buffer to match the requested new aligned size
+	void* newbuffer = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, m_bitmap.Buffer, aligned >> 3);
 	if(newbuffer == nullptr) throw Exception(E_OUTOFMEMORY);
 
-	// Assign the updated buffer pointer and bitmap size information
+	// Replace the original pointer and length with the aligned buffer
 	m_bitmap.Buffer = reinterpret_cast<PULONG>(newbuffer);
-	m_bitmap.SizeOfBitMap = bits;
+	m_bitmap.SizeOfBitMap = aligned;
+
+	// Clear any bits that lie between the unaligned and aligned length
+	// prior to assigning the final requested bitmap size
+	if(bits != aligned) {
+
+		NtApi::RtlClearBits(&m_bitmap, bits, aligned - bits);
+		m_bitmap.SizeOfBitMap = bits;
+	}
 }
 
 //-----------------------------------------------------------------------------
