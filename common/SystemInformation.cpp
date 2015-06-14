@@ -25,6 +25,11 @@
 
 #pragma warning(push, 4)				
 
+// g_memstatus
+//
+// Global copy of the MEMORYSTATUSEX structure
+static MEMORYSTATUSEX g_memstatus;
+
 // g_sysinfo (local)
 //
 // Global copy of the SYSTEM_INFO structure
@@ -40,7 +45,11 @@ static INIT_ONCE g_initonce = INIT_ONCE_STATIC_INIT;
 // One-time initialization handler to retrieve system information
 static BOOL CALLBACK InitOnceSystemInformation(PINIT_ONCE, PVOID, PVOID*)
 {
+	g_memstatus.dwLength = sizeof(MEMORYSTATUSEX);
+	
+	GlobalMemoryStatusEx(&g_memstatus);	
 	GetNativeSystemInfo(&g_sysinfo);
+
 	return TRUE;
 }
 
@@ -108,6 +117,22 @@ uint32_t const SystemInformation::ProcessorFeatureMask = []() -> uint32_t {
 	__cpuid(&cpuinfo[0], 1);	// Use the compiler intrinsic __cpuid
 
 	return cpuinfo[3];			// EDX has the bitmask we're looking for
+}();
+
+// SystemInformation::TotalPhysicalMemory
+//
+uint64_t const SystemInformation::TotalPhysicalMemory = []() -> uint64_t {
+
+	InitOnceExecuteOnce(&g_initonce, InitOnceSystemInformation, nullptr, nullptr);
+	return g_memstatus.ullTotalPhys;
+}();
+
+// SystemInformation::TotalVirtualMemory
+//
+uint64_t const SystemInformation::TotalVirtualMemory = []() -> uint64_t {
+
+	InitOnceExecuteOnce(&g_initonce, InitOnceSystemInformation, nullptr, nullptr);
+	return g_memstatus.ullTotalVirtual;
 }();
 
 //-----------------------------------------------------------------------------

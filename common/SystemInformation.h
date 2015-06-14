@@ -101,6 +101,16 @@ public:
 	// Acquires the CPUID processor feature bitmask
 	static uint32_t const ProcessorFeatureMask;
 
+	// TotalPhysicalMemory
+	//
+	// Provides the total physical memory installed in the system
+	static uint64_t const TotalPhysicalMemory;
+
+	// TotalVirtualMemory
+	//
+	// Provides the total virtual memory accessible to the process
+	static uint64_t const TotalVirtualMemory;
+
 private:
 
 	SystemInformation()=delete;
