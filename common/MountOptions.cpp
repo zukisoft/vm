@@ -26,58 +26,26 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// MountOptions Constructor (private)
-//
-// Arguments:
-//
-//	flags		- Standard mount option flags bitmask
-//	extraargs	- Extra mount options provided by caller
-
-MountOptions::MountOptions(uint32_t flags, std::vector<std::string>&& extraargs)
-	: m_flags(flags), m_arguments(std::move(extraargs)) {}
-
-//-----------------------------------------------------------------------------
-// MountOptions::Clone (static)
-//
-// Clones a MountOptions instance into a new instance
-//
-// Arguments:
-//
-//	options		- Existing MountOptions instance to be cloned
-
-std::unique_ptr<MountOptions> MountOptions::Clone(const std::unique_ptr<MountOptions>& options)
-{
-	return nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// MountOptions::Create (static)
-//
-// Creates a MountOptions instance based on standard mount flags
+// MountOptions Constructor
 //
 // Arguments:
 //
 //	flags		- Standard mounting option flags
 
-std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags)
-{
-	return Create(flags, nullptr);
-}
+MountOptions::MountOptions(uint32_t flags) : m_flags(flags) {}
 
 //-----------------------------------------------------------------------------
-// MountOptions::Create (static)
-//
-// Parses a mounting options string into a MountOptions instance
+// MountOptions Constructor
 //
 // Arguments:
 //
 //	flags			- Initial set of mounting flags to apply before parsing
 //	options			- String containing the mounting options to parse
 
-std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const char_t* options)
+MountOptions::MountOptions(uint32_t flags, const char_t* options) : m_flags(flags)
 {
-	std::vector<std::string>	extraargs;		// vector<> of extra arguments
-
+	// Process all of the string-based options provided, either modifying the
+	// standard flags or collecting them as extra/custom option strings
 	while((options) && (*options)) {
 
 		const char_t* begin = options;
@@ -91,7 +59,7 @@ std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const char_t*
 
 			end = ++begin;
 			while((*end) && (*end != '\"')) end++;
-			ParseToken(std::trim(std::string(begin, end)), flags, extraargs);
+			ParseToken(std::trim(std::string(begin, end)), m_flags, m_arguments);
 			options = (*end) ? ++end : end;
 		}
 
@@ -100,32 +68,24 @@ std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const char_t*
 
 			end = begin;
 			while((*end) && (!std::isspace(*end) && (*end != ','))) end++;
-			ParseToken(std::trim(std::string(begin, end)), flags, extraargs);
+			ParseToken(std::trim(std::string(begin, end)), m_flags, m_arguments);
 			options = (*end) ? ++end : end;
 		}
 	}
-
-	return std::make_unique<MountOptions>(flags, std::move(extraargs));
 }
 
 //-----------------------------------------------------------------------------
-// MountOptions::Create (static)
-//
-// Parses a mounting options string into a MountOptions instance
+// MountOptions Constructor
 //
 // Arguments:
 //
 //	options			- String containing the mounting options to parse
 
-std::unique_ptr<MountOptions> MountOptions::Create(const char_t* options)
-{
-	return Create(0, options);
-}
+MountOptions::MountOptions(const char_t* options) : 
+	MountOptions(0, options) {}
 
 //-----------------------------------------------------------------------------
-// MountOptions::Create (static)
-//
-// Creates a MountOptions instance based on flags and optional extra parameters
+// MountOptions Constructor
 //
 // Arguments:
 //
@@ -133,12 +93,51 @@ std::unique_ptr<MountOptions> MountOptions::Create(const char_t* options)
 //	data		- Optional pointer to extra parameter data
 //	datalen		- Length, in bytes, of the extra parameter data
 
-std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const void* data, size_t datalen)
+MountOptions::MountOptions(uint32_t flags, const void* data, size_t datalen) : 
+	MountOptions(flags, std::string(reinterpret_cast<const char_t*>(data), datalen).c_str()) {}
+
+//-----------------------------------------------------------------------------
+// MountOptions::operator[]
+//
+// Arguments:
+//
+//	flag	- Standard mounting option flag to check
+
+bool MountOptions::operator[](uint32_t flag) const
 {
-	// All file systems currently expect data to be a string pointer, but it may not be
-	// null-terminated -- just convert into an std::string and pass it along
-	std::string options(reinterpret_cast<const char_t*>(data), datalen);
-	return Create(flags, options.c_str());
+	return (m_flags & flag) == flag;
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::operator[]
+//
+// Arguments:
+//
+//	key		- Non-standard mounting option key to retrieve
+
+std::string MountOptions::operator[](const std::string& key) const
+{
+	return m_arguments[key];
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::getArguments
+//
+// Accesses the contained non-standard mounting options collection
+
+const MountOptions::MountArguments& MountOptions::getArguments(void) const
+{
+	return m_arguments;
+}
+
+//-----------------------------------------------------------------------------
+// MountOptions::getFlags
+//
+// Accesses the contained standard mounting options flags
+
+uint32_t MountOptions::getFlags(void) const
+{
+	return m_flags;
 }
 
 //-----------------------------------------------------------------------------
@@ -149,12 +148,16 @@ std::unique_ptr<MountOptions> MountOptions::Create(uint32_t flags, const void* d
 // Arguments:
 //
 //	token		- Token to be parsed
-//	flags		- Reference to the working set of mount flags
-//	extraargs	- Reference to the working set of extra arguments
+//	flags		- Reference to the working set of standard mount flags
+//	arguments	- Reference to the working set of non-standard arguments
 
-void MountOptions::ParseToken(std::string&& token, uint32_t& flags, std::vector<std::string>& extraargs)
+void MountOptions::ParseToken(std::string&& token, uint32_t& flags, MountArguments& arguments)
 {
 	if(token.length() == 0) return;
+
+	//
+	// STANDARD OPTIONS --> FLAGS
+	//
 
 	else if(token == "ro")			flags |= LINUX_MS_RDONLY;
 	else if(token == "rw")			flags &= ~LINUX_MS_RDONLY;
@@ -198,30 +201,34 @@ void MountOptions::ParseToken(std::string&& token, uint32_t& flags, std::vector<
 	else if(token == "iversion")	flags |= LINUX_MS_I_VERSION;
 	else if(token == "noiversion")	flags &= ~LINUX_MS_I_VERSION;
 
-	// Unrecognized tokens are inserted into the vector<> of extra arguments
-	else extraargs.emplace_back(std::move(token));
+	//
+	// NON-STANDARD OPTIONS --> ARGUMENTS
+	//
+
+	else {
+
+		size_t equalsign = token.find(_T('='));
+		if(equalsign == std::string::npos) { arguments.m_col.emplace(trim(token), std::string()); }
+		else { arguments.m_col.emplace(trim(token.substr(0, equalsign)), trim(token.substr(equalsign + 1))); }
+	}
 }
 
+//
+// MOUNTOPTIONS::MOUNTARGUMENTS
+//
+
 //-----------------------------------------------------------------------------
-// MountOptions::MountArguments Constructor (private)
+// MountOptions::MountArguments::operator[]
 //
 // Arguments:
 //
-//	rawargs		- Vector<> of all raw mount argument strings
+//	key		- Switch name/key to retrieve a single value for
 
-MountOptions::MountArguments::MountArguments(const std::vector<std::string>& args)
+std::string MountOptions::MountArguments::operator[](const std::string& key) const
 {
-	for(const auto& arg : args) {
-
-		// Ignore blank arguments
-		if(arg.length() > 0) {
-
-			// Insert the argument into the collection, with or without the optional value after an equal sign
-			size_t equalsign = arg.find(_T('='));
-			if(equalsign == std::string::npos) { m_col.insert(std::make_pair(trim(arg), std::string())); }
-			else { m_col.insert(std::make_pair(trim(arg.substr(0, equalsign)), trim(arg.substr(equalsign + 1)))); }
-		}
-	}
+	// Use find to locate the first element with the specified key
+	const auto& iterator = m_col.find(key);
+	return (iterator == m_col.cend()) ? std::string() : iterator->second;
 }
 
 //-----------------------------------------------------------------------------

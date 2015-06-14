@@ -336,6 +336,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\MappedFileView.h" />
     <ClInclude Include="..\common\MemoryRegion.h" />
     <ClInclude Include="..\common\MemorySection.h" />
+    <ClInclude Include="..\common\MountOptions.h" />
     <ClInclude Include="..\common\NativeHandle.h" />
     <ClInclude Include="..\common\NtApi.h" />
     <ClInclude Include="..\common\PathIterator.h" />
@@ -370,7 +371,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="MountNamespace.h" />
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="VirtualMachine.h" />
-    <ClInclude Include="MountOptions.h" />
     <ClInclude Include="Namespace.h" />
     <ClInclude Include="Pid.h" />
     <ClInclude Include="PidNamespace.h" />
@@ -606,6 +606,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\MappedFileView.cpp" />
     <ClCompile Include="..\common\MemoryRegion.cpp" />
     <ClCompile Include="..\common\MemorySection.cpp" />
+    <ClCompile Include="..\common\MountOptions.cpp" />
     <ClCompile Include="..\common\NativeHandle.cpp" />
     <ClCompile Include="..\common\NtApi.cpp" />
     <ClCompile Include="..\common\PathIterator.cpp" />
@@ -652,7 +653,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="VirtualMachine.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MountOptions.cpp" />
     <ClCompile Include="Namespace.cpp" />
     <ClCompile Include="Pid.cpp" />
     <ClCompile Include="PidNamespace.cpp" />
