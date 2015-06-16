@@ -308,6 +308,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\IndexPool2.h" />
     <ClInclude Include="..\common\LinuxException.h" />
     <ClInclude Include="..\common\linux\auxvec.h" />
+    <ClInclude Include="..\common\linux\capability.h" />
     <ClInclude Include="..\common\linux\elf-em.h" />
     <ClInclude Include="..\common\linux\elf.h" />
     <ClInclude Include="..\common\linux\errno.h" />
@@ -363,6 +364,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Capabilities.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="elf_traits.h" />
     <ClInclude Include="Executable.h" />
@@ -643,6 +645,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Capabilities.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="Executable.cpp" />

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <linux/types.h>
+#include <linux/capability.h>
 #include <linux/fcntl.h>
 #include <linux/ldt.h>
 #include <linux/ptrace.h>

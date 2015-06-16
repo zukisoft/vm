@@ -401,6 +401,12 @@
     <ClInclude Include="..\common\MountOptions.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\capability.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="Capabilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -852,6 +858,9 @@
     </ClCompile>
     <ClCompile Include="..\common\MountOptions.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Capabilities.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

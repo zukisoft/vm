@@ -20,35 +20,25 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Interface LinuxTypes
-//
-// Dummy interface used to bring the <linux/types.h> header file into the IDL
-// without MIDL dumping all of the declarations themselves into the output
-//
-// See "Importing System Header Files" MSDN topic:
-// http://msdn.microsoft.com/en-us/library/windows/desktop/aa367049(v=vs.85).aspx
-//
-// This file should be excluded from compilation, it's for import purposes only
+#include "stdafx.h"
+#include "Capabilities.h"
 
-[ local ]
-interface LinuxTypes
+#pragma warning(push, 4)
+
+//-----------------------------------------------------------------------------
+// Capabilities::Demand (static)
+//
+// Demands that the specified capabilities are available for the calling thread
+//
+// Arguments:
+//
+//	caps		- Capabilities to demand (bitmask)
+
+void Capabilities::Demand(const Capability& caps)
 {
-	#include "linux/types.h"
-	#include "linux/capability.h"
-	#include "linux/fcntl.h"
-	#include "linux/ldt.h"
-	#include "linux/ptrace.h"
-	#include "linux/resource.h"
-	#include "linux/sched.h"
-	#include "linux/siginfo.h"
-	#include "linux/signal.h"
-	#include "linux/stat.h"
-	#include "linux/statfs.h"
-	#include "linux/time.h"
-	#include "linux/uio.h"
-	#include "linux/utask.h"
-	#include "linux/utsname.h"
+	(caps);
 }
 
 //-----------------------------------------------------------------------------
+
+#pragma warning(pop)
