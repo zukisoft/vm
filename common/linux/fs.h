@@ -75,6 +75,10 @@
 // MS_RMT_MASK - Mount options that can be changed during an MS_REMOUNT operation
 #define LINUX_MS_RMT_MASK     (LINUX_MS_RDONLY | LINUX_MS_SYNCHRONOUS | LINUX_MS_MANDLOCK | LINUX_MS_I_VERSION | LINUX_MS_LAZYTIME)
 
+// MS_PERMOUNT_MASK - Mount options that are per-mount rather than applicable to
+// an entire file system (see mount(2) man page)
+#define LINUX_MS_PERMOUNT_MASK	(LINUX_MS_NODEV | LINUX_MS_NOEXEC | LINUX_MS_NOSUID | LINUX_MS_NOATIME | LINUX_MS_NODIRATIME | LINUX_MS_RELATIME)
+
 //-----------------------------------------------------------------------------
 
 #endif		// __LINUX_FS_H_

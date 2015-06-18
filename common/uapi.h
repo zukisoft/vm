@@ -28,6 +28,7 @@
 #include <linux/capability.h>
 #include <linux/fcntl.h>
 #include <linux/ldt.h>
+#include <linux/magic.h>
 #include <linux/ptrace.h>
 #include <linux/resource.h>
 #include <linux/sched.h>
