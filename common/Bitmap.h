@@ -57,7 +57,7 @@ public:
 	//
 	Bitmap& operator=(const Bitmap& rhs);
 
-	// Array Index Operator
+	// Array subscript operator
 	//
 	bool operator[](uint32_t bit) const;
 

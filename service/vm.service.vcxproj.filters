@@ -410,6 +410,9 @@
     <ClInclude Include="..\common\linux\magic.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\Capabilities.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -864,6 +867,9 @@
     </ClCompile>
     <ClCompile Include="Capabilities.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Capabilities.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

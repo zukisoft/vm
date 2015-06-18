@@ -295,6 +295,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\Bitmap.h" />
     <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
+    <ClInclude Include="..\common\Capabilities.h" />
     <ClInclude Include="..\common\CommandLine.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
     <ClInclude Include="..\common\Console.h" />
@@ -594,6 +595,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\BufferStreamReader.cpp" />
     <ClCompile Include="..\common\BZip2StreamReader.cpp" />
     <ClCompile Include="..\common\bz_internal_error.cpp" />
+    <ClCompile Include="..\common\Capabilities.cpp" />
     <ClCompile Include="..\common\CommandLine.cpp" />
     <ClCompile Include="..\common\CompressedStreamReader.cpp" />
     <ClCompile Include="..\common\Console.cpp" />
