@@ -125,7 +125,7 @@ namespace uapi {
 	typedef linux_itimerspec64		itimerspec;
 	typedef linux_itimerval64		itimerval;
 
-	// Converts Windows FILEFILE to Linux timespec
+	// Converts Windows FILETIME to Linux timespec
 	//
 	inline timespec FILETIMEToTimeSpec(const FILETIME& ft)
 	{
@@ -137,7 +137,16 @@ namespace uapi {
 		return { static_cast<__kernel_time_t>(seconds), static_cast<__kernel_long_t>(nanoseconds) };
 	}
 
-	// Converts Windows FILEFILE to Linux timespec
+	// Get the current time as a Linux timespec
+	//
+	inline timespec GetCurrentTimeSpec(void)
+	{
+		FILETIME ft;
+		GetSystemTimeAsFileTime(&ft);
+		return FILETIMEToTimeSpec(ft);
+	}
+
+	// Converts Windows FILETIME to Linux timespec
 	//
 	inline void FILETIMEToTimeSpec(const FILETIME& ft, uint64_t* tv_sec, uint64_t* tv_nsec)
 	{
@@ -145,6 +154,15 @@ namespace uapi {
 		__int64 filetime = *reinterpret_cast<const __int64*>(&ft);
 		*tv_sec = (filetime - OFFSET) / 10000000;
 		*tv_nsec = ((filetime - OFFSET) * 100) % 1000000000;
+	}
+
+	// Gets the current time as a Linux timespec
+	//
+	inline void GetCurrentTimeSpec(uint64_t* tv_sec, uint64_t* tv_nsec)
+	{
+		FILETIME ft;
+		GetSystemTimeAsFileTime(&ft);
+		FILETIMEToTimeSpec(ft, tv_sec, tv_nsec);
 	}
 
 	// Converts Linux timespec to Windows FILETIME

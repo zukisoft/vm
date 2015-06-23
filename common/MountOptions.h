@@ -58,7 +58,7 @@ public:
 
 	// Array subscript operators
 	//
-	bool operator[](uint32_t flag) const;
+	uint32_t operator[](uint32_t flag) const;
 	std::string operator[](const std::string& key) const;
 
 	//-------------------------------------------------------------------------

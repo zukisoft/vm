@@ -452,7 +452,7 @@ private:
 	std::shared_ptr<FileSystem::Alias>	m_rootdir;			// Current root directory
 	std::shared_ptr<FileSystem::Alias>	m_workingdir;		// Current working directory
 	std::shared_ptr<ProcessHandles>		m_handles;			// File system handles
-	std::atomic<uapi::mode_t>			m_umask = 0022;		// Process file creation mask
+	std::atomic<uapi::mode_t>			m_umask = 0022;		// Process file creation mask	TODOTODO: should this be 0002??
 
 	// Signals
 	//

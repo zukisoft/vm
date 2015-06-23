@@ -96,6 +96,7 @@ typedef __kernel_ino_t				linux_ino_t;
 typedef __kernel_mode_t				linux_mode_t;
 typedef unsigned short				linux_umode_t;
 typedef uint32_t					linux_nlink_t;
+typedef __kernel_fsid_t				linux_fsid_t;
 typedef __kernel_off_t				linux_off_t;
 typedef __kernel_pid_t				linux_pid_t;
 typedef __kernel_daddr_t			linux_daddr_t;
@@ -128,6 +129,7 @@ namespace uapi {
 	typedef linux_mode_t			mode_t;
 	typedef linux_umode_t			umode_t;
 	typedef linux_nlink_t			nlink_t;
+	typedef linux_fsid_t			fsid_t;
 	typedef linux_off_t				off_t;
 	typedef linux_pid_t				pid_t;
 	typedef linux_daddr_t			daddr_t;

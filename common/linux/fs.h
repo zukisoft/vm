@@ -28,13 +28,17 @@
 // include/linux/fs.h
 //-----------------------------------------------------------------------------
 
-#define LINUX_MAY_EXEC			0x00000001
-#define LINUX_MAY_WRITE			0x00000002
-#define LINUX_MAY_READ			0x00000004
-#define LINUX_MAY_APPEND		0x00000008
-#define LINUX_MAY_ACCESS		0x00000010
-#define LINUX_MAY_OPEN			0x00000020
-#define LINUX_MAY_CHDIR			0x00000040
+// shouldn't use these, they are internal to the Linux kernel implementation
+// and don't necessarily match all the cases I need
+//
+//#define LINUX_MAY_EXEC			0x00000001
+//#define LINUX_MAY_WRITE			0x00000002
+//#define LINUX_MAY_READ			0x00000004
+//#define LINUX_MAY_APPEND		0x00000008
+//#define LINUX_MAY_ACCESS		0x00000010
+//#define LINUX_MAY_OPEN			0x00000020
+//#define LINUX_MAY_CHDIR			0x00000040
+//#define LINUX_MAY_NOT_BLOCK		0x00000080
 
 //-----------------------------------------------------------------------------
 // include/uapi/linux/fs.h

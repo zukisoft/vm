@@ -101,11 +101,11 @@ MountOptions::MountOptions(uint32_t flags, const void* data, size_t datalen) :
 //
 // Arguments:
 //
-//	flag	- Standard mounting option flag to check
+//	flag	- Standard mounting option flag to return set or clear
 
-bool MountOptions::operator[](uint32_t flag) const
+uint32_t MountOptions::operator[](uint32_t flag) const
 {
-	return (m_flags & flag) == flag;
+	return (m_flags & flag);
 }
 
 //-----------------------------------------------------------------------------

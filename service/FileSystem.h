@@ -31,6 +31,7 @@
 #include <linux/types.h>
 
 #pragma warning(push, 4)
+#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 // Forward Declarations
 //
@@ -48,7 +49,7 @@ class Namespace;
 
 struct __declspec(novtable) FileSystem
 {
-	// Forward Declarations
+	// Forward Interface Declarations
 	//
 	struct __declspec(novtable) Alias;
 	struct __declspec(novtable) BlockDevice;
@@ -62,12 +63,18 @@ struct __declspec(novtable) FileSystem
 	struct __declspec(novtable) Socket;
 	struct __declspec(novtable) SymbolicLink;
 
+	// Forward Class Declarations
+	//
+	class ExecuteHandle;
+	class Path;
+	class PathHandle;
+
 	// MountFunction
 	//
 	// Function signature for a file system's Mount() implementation, which must be a public static method
 	using MountFunction = std::function<std::shared_ptr<Mount>(const char_t* source, uint32_t flags, const void* data, size_t datalength)>;
 
-	// NodeType
+	// FileSystem::NodeType
 	//
 	// Strogly typed enumeration for the S_IFxxx inode type constants
 	enum class NodeType
@@ -79,6 +86,16 @@ struct __declspec(novtable) FileSystem
 		Pipe				= LINUX_S_IFIFO,
 		Socket				= LINUX_S_IFSOCK,
 		SymbolicLink		= LINUX_S_IFLNK,
+	};
+
+	// FileSystem::Permission (bitmask)
+	//
+	// Strongly typed enumeration for generic permission flags
+	enum class Permission
+	{
+		Execute				= 0x01,
+		Write				= 0x02,
+		Read				= 0x04,
 	};
 
 	// FileSystem::Mount
@@ -96,18 +113,29 @@ struct __declspec(novtable) FileSystem
 		//
 		// Remounts this mount point with different flags and arguments
 		virtual void Remount(uint32_t flags, const void* data, size_t datalen) = 0;
-
-		// FileSystem
+	
+		// Stat
 		//
-		// Gets a reference to the underlying file system instance
-		__declspec(property(get=getFileSystem)) std::shared_ptr<::FileSystem> FileSystem;
-		virtual std::shared_ptr<::FileSystem> getFileSystem(void) = 0;
+		// Provides statistical information about the file system
+		virtual void Stat(uapi::statfs* stats) = 0;
 
 		// Flags
 		//
-		// Gets the flags set on this mount
+		// Gets the flags set on this mount, includes file system flags
 		__declspec(property(get=getFlags)) uint32_t Flags;
 		virtual uint32_t getFlags(void) = 0;
+
+		// Root
+		//
+		// Gets a reference to the root node of the mount point
+		__declspec(property(get=getRoot)) std::shared_ptr<Node> Root;
+		virtual std::shared_ptr<Node> getRoot(void) = 0;
+
+		// Source
+		//
+		// Gets the device/name used as the source of the file system
+		__declspec(property(get=getSource)) const char_t* Source;
+		virtual const char_t* getSource(void) = 0;
 	};
 
 	// FileSystem::Alias
@@ -115,7 +143,8 @@ struct __declspec(novtable) FileSystem
 	// Interface that must be implemented by a file system alias.  An alias defines a name
 	// that is associated with a file system node.  An alias may also serve as a mount point
 	// in the file system hierarchy; mounting a node to an existing alias will obscure the
-	// original node reference within that namespace
+	// original node reference within that namespace. All aliases must have a parent, in the
+	// case of a root node, the parent would be self-referential
 	struct __declspec(novtable) Alias
 	{
 		// Follow
@@ -126,12 +155,12 @@ struct __declspec(novtable) FileSystem
 		// Mount
 		//
 		// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-		virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<Node>& node) = 0;
+		virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<struct Mount>& mount) = 0;
 
 		// Unmount
 		//
 		// Removes a mountpoint node from this alias
-		virtual void Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<Node>& node) = 0;
+		virtual void Unmount(const std::shared_ptr<Namespace>& ns) = 0;
 
 		// Name
 		//
@@ -146,11 +175,59 @@ struct __declspec(novtable) FileSystem
 		virtual std::shared_ptr<Alias> getParent(void) = 0;
 	};
 
+	// FileSystem::Path
+	//
+	// Path represents the means to fully reference a file system object. While an Alias
+	// provides the name->object mapping, the active Mount instance is also required in
+	// order to check file system permissions, which can vary per mount point
+	class Path
+	{
+	public:
+
+		// Create
+		//
+		// Creates a new Path instance from component Mount and Alias instances
+		static std::unique_ptr<Path> Create(const std::shared_ptr<FileSystem::Mount>& mount, const std::shared_ptr<FileSystem::Alias>& alias);
+
+		// Duplicate
+		//
+		// Duplicates this Path instance
+		std::unique_ptr<Path> Duplicate(void) const;
+
+		// Alias
+		//
+		// Gets a reference to the contained Alias instance
+		__declspec(property(get=getAlias)) std::shared_ptr<FileSystem::Alias> Alias;
+		std::shared_ptr<FileSystem::Alias> getAlias(void) const;
+
+		// Mount
+		//
+		// Gets a reference to the contained Mount instance
+		__declspec(property(get=getMount)) std::shared_ptr<FileSystem::Mount> Mount;
+		std::shared_ptr<FileSystem::Mount> getMount(void) const;
+
+	private:
+
+		Path(const Path&)=delete;
+		Path& operator=(const Path&)=delete;
+
+		// Instance Constructor
+		//
+		Path(const std::shared_ptr<struct Mount>& mount, const std::shared_ptr<struct Alias>& alias);
+		friend std::unique_ptr<Path> std::make_unique<Path, const std::shared_ptr<struct Mount>&, const std::shared_ptr<struct Alias>&>
+			(const std::shared_ptr<struct Mount>& mount, const std::shared_ptr<struct Alias>& alias);
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		const std::shared_ptr<struct Alias>		m_alias;	// Alias reference
+		const std::shared_ptr<struct Mount>		m_mount;	// Mount reference
+	};
+
 	// FileSystem::Handle
 	//
 	// Handle is the interface that must be implemented for a file system handle object.
-	// A handle is a view of a file system node instance, for intention of reading/writing
-	// information to/from that node.
+	// A handle is a view of a file system node
 	struct __declspec(novtable) Handle
 	{
 		// Duplicate
@@ -193,64 +270,58 @@ struct __declspec(novtable) FileSystem
 		// Synchronously writes data from a buffer to the underlying node
 		virtual uapi::size_t WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count) = 0;
 
-		// Alias
-		//
-		// Gets a reference to the Alias used to open this handle
-		__declspec(property(get=getAlias)) std::shared_ptr<FileSystem::Alias> Alias;
-		virtual std::shared_ptr<FileSystem::Alias> getAlias(void) = 0;
+		//// Alias
+		////
+		//// Gets a reference to the Alias used to open this handle
+		//__declspec(property(get=getAlias)) std::shared_ptr<FileSystem::Alias> Alias;
+		//virtual std::shared_ptr<FileSystem::Alias> getAlias(void) = 0;
 
-		// CloseOnExec
-		//
-		// Gets/sets the flag to close this handle during an execute operation
-		__declspec(property(get=getCloseOnExec, put=putCloseOnExec)) bool CloseOnExec;
-		virtual bool getCloseOnExec(void) = 0;
-		virtual void putCloseOnExec(bool value) = 0;
+		//// CloseOnExec
+		////
+		//// Gets/sets the flag to close this handle during an execute operation
+		//__declspec(property(get=getCloseOnExec, put=putCloseOnExec)) bool CloseOnExec;
+		//virtual bool getCloseOnExec(void) = 0;
+		//virtual void putCloseOnExec(bool value) = 0;
 
-		// Flags
-		//
-		// Gets a copy of the current handle flags
-		__declspec(property(get=getFlags)) int Flags;
-		virtual int getFlags(void) = 0;
+		//// Flags
+		////
+		//// Gets a copy of the current handle flags
+		//__declspec(property(get=getFlags)) int Flags;
+		//virtual int getFlags(void) = 0;
 
-		// Node
-		//
-		// Gets the node instance to which this handle refers
-		__declspec(property(get=getNode)) std::shared_ptr<FileSystem::Node> Node;
-		virtual std::shared_ptr<FileSystem::Node> getNode(void) = 0;
+		//// Node
+		////
+		//// Gets the node instance to which this handle refers
+		//__declspec(property(get=getNode)) std::shared_ptr<FileSystem::Node> Node;
+		//virtual std::shared_ptr<FileSystem::Node> getNode(void) = 0;
 	};
 
 	// FileSystem::Node
 	//
 	// Interface that must be implemented for a file system node object.  A node represents
-	// any object (file, directory, socket, etc) that is part of a file system
+	// any object (file, directory, socket, etc) that is a member of a file system
 	struct __declspec(novtable) Node
 	{
 		// DemandPermission
 		//
-		// Demands read/write/execute permissions for the node (MAY_READ, MAY_WRITE, MAY_EXECUTE)
-		virtual void DemandPermission(uapi::mode_t mode) = 0;
-
-		// Open
-		//
-		// Creates a Handle instance against this node
-		virtual std::shared_ptr<Handle> Open(const std::shared_ptr<Alias>& alias, int flags) = 0;
+		// Demands combination of read/write/execute permissions for the node
+		virtual void DemandPermission(Permission mask) = 0;
 
 		// Lookup
 		//
-		// Resolves a relative path to an alias from this node
-		virtual std::shared_ptr<Alias> Lookup(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& current, 
-			const char_t* path, int flags, int* symlinks) = 0;
+		// Resolves a file system path using this node as the starting point
+		virtual std::unique_ptr<FileSystem::Path> Lookup(const std::unique_ptr<Path>& rootpath, const std::unique_ptr<Path>& currentpath, 
+			const char_t* path, int flags, int* reparses) = 0;
 		
+		// Open
+		//
+		// Creates a Handle instance against this node
+		virtual std::shared_ptr<Handle> Open(const std::unique_ptr<Path>& thispath, int flags) = 0;
+
 		// Stat
 		//
 		// Provides statistical information about the node
 		virtual void Stat(uapi::stat* stats) = 0;
-
-		// FileSystem
-		//
-		// Gets a reference to this node's parent file system instance
-		__declspec(property(get=getFileSystem)) std::shared_ptr<::FileSystem> FileSystem;
-		virtual std::shared_ptr<::FileSystem> getFileSystem(void) = 0;
 
 		// Type
 		//
@@ -281,22 +352,22 @@ struct __declspec(novtable) FileSystem
 		// CreateCharacterDevice
 		//
 		// Creates a new character device node as a child of this node
-		virtual void CreateCharacterDevice(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode, uapi::dev_t device) = 0;
+		virtual void CreateCharacterDevice(const std::unique_ptr<Path>& thispath, const char_t* name, uapi::mode_t mode, uapi::dev_t device) = 0;
 
 		// CreateDirectory
 		//
 		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const std::shared_ptr<Alias>& parent, const char_t* name, uapi::mode_t mode) = 0;
+		virtual void CreateDirectory(const std::unique_ptr<Path>& thispath, const char_t* name, uapi::mode_t mode) = 0;
 
 		// CreateFile
 		//
 		// Creates a new regular file node as a child of this node
-		virtual std::shared_ptr<Handle> CreateFile(const std::shared_ptr<Alias>& parent, const char_t* name, int flags, uapi::mode_t mode) = 0;
+		virtual std::shared_ptr<Handle> CreateFile(const std::unique_ptr<Path>& thispath, const char_t* name, int flags, uapi::mode_t mode) = 0;
 
 		// CreateSymbolicLink
 		//
 		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const std::shared_ptr<Alias>& parent, const char_t* name, const char_t* target) = 0;
+		virtual void CreateSymbolicLink(const std::unique_ptr<Path>& thispath, const char_t* name, const char_t* target) = 0;
 	};
 
 	// FileSystem::File
@@ -328,7 +399,7 @@ struct __declspec(novtable) FileSystem
 	// FileSystem::SymbolicLink
 	//
 	// Specialization of Node for file system symbolic link objects
-	struct __declspec(novtable) SymbolicLink : public virtual Node
+	struct __declspec(novtable) SymbolicLink : public Node
 	{
 		// ReadTarget
 		//
@@ -336,27 +407,168 @@ struct __declspec(novtable) FileSystem
 		virtual uapi::size_t ReadTarget(char_t* buffer, size_t count) = 0; 
 	};
 
-	// Stat
+	// FileSystem::ExecuteHandle
 	//
-	// Provides statistical information about the file system
-	virtual void Stat(uapi::statfs* stats) = 0;
+	// Specialized handle wrapper used for handles generated for the purpose
+	// of executing a binary from the file system.  Construct around a custom
+	// file system handle with the Create() method.
+	class ExecuteHandle : public Handle
+	{
+	public:
 
-	// Root
-	//
-	// Gets a reference to the root file system node
-	__declspec(property(get=getRoot)) std::shared_ptr<Node> Root;
-	virtual std::shared_ptr<Node> getRoot(void) = 0;
+		// Destructor
+		//
+		~ExecuteHandle()=default;
 
-	// Source
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Create (static)
+		//
+		// Constructs an ExecuteHandle wrapper around an existing handle instance
+		static std::shared_ptr<Handle> Create(const std::shared_ptr<Handle>& handle);
+
+		//---------------------------------------------------------------------
+		// FileSystem::Handle Implementation
+
+		// Duplicate
+		//
+		// Creates a duplicate Handle instance
+		virtual std::shared_ptr<Handle> Duplicate(int flags);
+
+		// Read
+		//
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
+
+		// ReadAt
+		//
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count);
+
+		// Seek
+		//
+		// Changes the file position
+		virtual uapi::loff_t Seek(uapi::loff_t offset, int whence);
+
+		// Sync
+		//
+		// Synchronizes all metadata and data associated with the file to storage
+		virtual void Sync(void);
+
+		// SyncData
+		//
+		// Synchronizes all data associated with the file to storage, not metadata
+		virtual void SyncData(void);
+
+		// Write
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
+
+		// WriteAt
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count);
+
+	private:
+
+		ExecuteHandle(const ExecuteHandle&)=delete;
+		ExecuteHandle& operator=(const ExecuteHandle&)=delete;
+
+		// Instance Constructor
+		//
+		ExecuteHandle(const std::shared_ptr<Handle>& handle);
+		friend class std::_Ref_count_obj<ExecuteHandle>;
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		const std::shared_ptr<Handle>	m_handle;	// Contained handle instance
+	};
+
+	// FileSystem::PathHandle
 	//
-	// Gets the device/name used as the source of the file system
-	__declspec(property(get=getSource)) const char_t* Source;
-	virtual const char_t* getSource(void) = 0;
+	// Specialized Handle wrapper used for handles opened for O_PATH purposes.
+	// Construct around a custom file system handle with the Create() method.
+	class PathHandle : public Handle
+	{
+	public:
+
+		// Destructor
+		//
+		~PathHandle()=default;
+
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Create (static)
+		//
+		// Constructs an ExecuteHandle wrapper around an existing handle instance
+		static std::shared_ptr<Handle> Create(const std::shared_ptr<Handle>& handle);
+
+		//---------------------------------------------------------------------
+		// FileSystem::Handle Implementation
+
+		// Duplicate
+		//
+		// Creates a duplicate Handle instance
+		virtual std::shared_ptr<Handle> Duplicate(int flags);
+
+		// Read
+		//
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
+
+		// ReadAt
+		//
+		// Synchronously reads data from the underlying node into a buffer
+		virtual uapi::size_t ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count);
+
+		// Seek
+		//
+		// Changes the file position
+		virtual uapi::loff_t Seek(uapi::loff_t offset, int whence);
+
+		// Sync
+		//
+		// Synchronizes all metadata and data associated with the file to storage
+		virtual void Sync(void);
+
+		// SyncData
+		//
+		// Synchronizes all data associated with the file to storage, not metadata
+		virtual void SyncData(void);
+
+		// Write
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
+
+		// WriteAt
+		//
+		// Synchronously writes data from a buffer to the underlying node
+		virtual uapi::size_t WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count);
+
+	private:
+
+		PathHandle(const PathHandle&)=delete;
+		PathHandle& operator=(const PathHandle&)=delete;
+
+		// Instance Constructor
+		//
+		PathHandle(const std::shared_ptr<Handle>& handle);
+		friend class std::_Ref_count_obj<PathHandle>;
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		const std::shared_ptr<Handle>	m_handle;	// Contained handle instance
+	};
 
 	//
 	// FILE SYSTEM API
 	//
-	// todo: comments
 
 	static void CheckPermissions(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
 		int flags, uapi::mode_t mode);
@@ -371,6 +583,11 @@ struct __declspec(novtable) FileSystem
 
 	static void CreateSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, const char_t* target);
 
+	// GenerateFileSystemId
+	//
+	// Generates a unique file system identifier (fsid)
+	static uapi::fsid_t GenerateFileSystemId(void);
+
 	static void GetAbsolutePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& alias, char_t* path, size_t pathlen);
 
 	static std::shared_ptr<Handle> OpenExecutable(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path);
@@ -382,296 +599,45 @@ struct __declspec(novtable) FileSystem
 		char_t* buffer, size_t length);
 
 	static std::shared_ptr<Alias> ResolvePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, int flags);
-
-	//
-	// BASE CLASSES
-	//
-
-	//-------------------------------------------------------------------------
-	// FileSystem::AliasBase
-	//
-	// todo: what is implemented by this base class
-
-	class AliasBase : public Alias
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~AliasBase()=default;
-
-	protected:
-
-		// Instance Constructor
-		//
-		AliasBase()=default;
-
-	private:
-
-		AliasBase(const AliasBase&)=delete;
-		AliasBase& operator=(const AliasBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::BlockDeviceBase
-	//
-	// todo: what is implemented by this base class
-	
-	class BlockDeviceBase : public BlockDevice
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~BlockDeviceBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		BlockDeviceBase()=default;
-
-	private:
-
-		BlockDeviceBase(const BlockDeviceBase&)=delete;
-		BlockDeviceBase& operator=(const BlockDeviceBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::CharacterDeviceBase
-	//
-	// todo: what is implemented by this base class
-	
-	class CharacterDeviceBase : public CharacterDevice
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~CharacterDeviceBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		CharacterDeviceBase()=default;
-
-	private:
-
-		CharacterDeviceBase(const CharacterDeviceBase&)=delete;
-		CharacterDeviceBase& operator=(const CharacterDeviceBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::DirectoryBase
-	//
-	// todo: what is implemented by this base class
-	
-	class DirectoryBase : public Directory
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~DirectoryBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		DirectoryBase()=default;
-
-	private:
-
-		DirectoryBase(const DirectoryBase&)=delete;
-		DirectoryBase& operator=(const DirectoryBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::FileBase
-	//
-	// todo: what is implemented by this base class
-	
-	class FileBase : public File
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~FileBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		FileBase()=default;
-
-	private:
-
-		FileBase(const FileBase&)=delete;
-		FileBase& operator=(const FileBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::HandleBase
-	//
-	// todo: what is implemented
-	
-	class HandleBase : public Handle
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~HandleBase()=default;
-
-	protected:
-
-		// Instance Constructor
-		//
-		HandleBase()=default;
-
-	private:
-
-		HandleBase(const HandleBase&)=delete;
-		HandleBase& operator=(const HandleBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::MountBase
-	//
-	// todo: what is implemented
-	
-	class MountBase : public Mount
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~MountBase()=default;
-
-	protected:
-
-		// Instance Constructor
-		//
-		MountBase()=default;
-
-	private:
-
-		MountBase(const MountBase&)=delete;
-		MountBase& operator=(const MountBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::PipeBase
-	//
-	// todo: what is implemented by this base class
-	
-	class PipeBase : public Pipe
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~PipeBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		PipeBase()=default;
-
-	private:
-
-		PipeBase(const PipeBase&)=delete;
-		PipeBase& operator=(const PipeBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::SocketBase
-	//
-	// todo: what is implemented by this base class
-	
-	class SocketBase : public Socket
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~SocketBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		SocketBase()=default;
-
-	private:
-
-		SocketBase(const SocketBase&)=delete;
-		SocketBase& operator=(const SocketBase&)=delete;
-	};
-
-	//-------------------------------------------------------------------------
-	// FileSystem::SymbolicLinkBase
-	//
-	// todo: what is implemented by this base class
-	
-	class SymbolicLinkBase : public SymbolicLink
-	{
-	public:
-
-		// Destructor
-		//
-		virtual ~SymbolicLinkBase()=default;
-
-		// Node::getType
-		//
-		// Gets the type of node defined by the derived class
-		virtual NodeType getType(void);
-
-	protected:
-
-		// Instance Constructor
-		//
-		SymbolicLinkBase()=default;
-
-	private:
-
-		SymbolicLinkBase(const SymbolicLinkBase&)=delete;
-		SymbolicLinkBase& operator=(const SymbolicLinkBase&)=delete;
-	};
 };
+
+// FileSystem::Permission bitwise operators
+//
+inline FileSystem::Permission operator~(FileSystem::Permission lhs) {
+	return static_cast<FileSystem::Permission>(~static_cast<uint32_t>(lhs));
+}
+
+inline FileSystem::Permission operator&(FileSystem::Permission lhs, FileSystem::Permission rhs) {
+	return static_cast<FileSystem::Permission>(static_cast<uint32_t>(lhs) & (static_cast<uint32_t>(rhs)));
+}
+
+inline FileSystem::Permission operator|(FileSystem::Permission lhs, FileSystem::Permission rhs) {
+	return static_cast<FileSystem::Permission>(static_cast<uint32_t>(lhs) | (static_cast<uint32_t>(rhs)));
+}
+
+inline FileSystem::Permission operator^(FileSystem::Permission lhs, FileSystem::Permission rhs) {
+	return static_cast<FileSystem::Permission>(static_cast<uint32_t>(lhs) ^ (static_cast<uint32_t>(rhs)));
+}
+
+// FileSystem::Permission compound assignment operators
+//
+inline FileSystem::Permission& operator&=(FileSystem::Permission& lhs, FileSystem::Permission rhs) 
+{
+	lhs = lhs & rhs;
+	return lhs;
+}
+
+inline FileSystem::Permission& operator|=(FileSystem::Permission& lhs, FileSystem::Permission rhs) 
+{
+	lhs = lhs | rhs;
+	return lhs;
+}
+
+inline FileSystem::Permission& operator^=(FileSystem::Permission& lhs, FileSystem::Permission rhs) 
+{
+	lhs = lhs ^ rhs;
+	return lhs;
+}
 
 //-----------------------------------------------------------------------------
 

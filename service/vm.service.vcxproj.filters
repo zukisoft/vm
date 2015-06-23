@@ -410,8 +410,11 @@
     <ClInclude Include="..\common\linux\magic.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\Capabilities.h">
-      <Filter>Header Files\Common</Filter>
+    <ClInclude Include="RootAlias.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TempFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -868,8 +871,11 @@
     <ClCompile Include="Capabilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\Capabilities.cpp">
-      <Filter>Source Files\Common</Filter>
+    <ClCompile Include="RootAlias.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TempFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

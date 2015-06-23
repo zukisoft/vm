@@ -295,7 +295,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\Bitmap.h" />
     <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
-    <ClInclude Include="..\common\Capabilities.h" />
     <ClInclude Include="..\common\CommandLine.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
     <ClInclude Include="..\common\Console.h" />
@@ -371,6 +370,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="elf_traits.h" />
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="RootAlias.h" />
+    <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="__Mount.h" />
     <ClInclude Include="MountNamespace.h" />
     <ClInclude Include="RootFileSystem.h" />
@@ -595,7 +596,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\BufferStreamReader.cpp" />
     <ClCompile Include="..\common\BZip2StreamReader.cpp" />
     <ClCompile Include="..\common\bz_internal_error.cpp" />
-    <ClCompile Include="..\common\Capabilities.cpp" />
     <ClCompile Include="..\common\CommandLine.cpp" />
     <ClCompile Include="..\common\CompressedStreamReader.cpp" />
     <ClCompile Include="..\common\Console.cpp" />
@@ -654,6 +654,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="Executable.cpp" />
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="RootAlias.cpp" />
+    <ClCompile Include="TempFileSystem.cpp" />
     <ClCompile Include="__Mount.cpp" />
     <ClCompile Include="MountNamespace.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
