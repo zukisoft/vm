@@ -152,15 +152,27 @@ struct __declspec(novtable) FileSystem
 		// Follows this alias to the file system node that it refers to
 		virtual std::shared_ptr<Node> Follow(const std::shared_ptr<Namespace>& ns) = 0;
 
-		// Mount
-		//
-		// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-		virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<struct Mount>& mount) = 0;
-
-		// Unmount
+		// PopMount
 		//
 		// Removes a mountpoint node from this alias
-		virtual void Unmount(const std::shared_ptr<Namespace>& ns) = 0;
+		virtual void PopMount(const std::shared_ptr<Namespace>& ns) = 0;
+
+		// PushMount
+		//
+		// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
+		virtual void PushMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<struct Mount>& mount) = 0;
+
+		// Mount
+		//
+		// Retrieves the mountpoint instance for the specified namespace, or nullptr if not mounted
+		__declspec(property(get=getMount)) std::shared_ptr<FileSystem::Mount> Mount[];
+		virtual std::shared_ptr<FileSystem::Mount> getMount(const std::shared_ptr<Namespace>& ns) = 0;
+
+		// Mounted
+		//
+		// Determines if this alias serves as a mountpoint for the specified namespace
+		__declspec(property(get=getMounted)) bool Mounted[];
+		virtual bool getMounted(const std::shared_ptr<Namespace>& ns) = 0;
 
 		// Name
 		//
@@ -172,7 +184,7 @@ struct __declspec(novtable) FileSystem
 		//
 		// Gets the parent alias of this alias instance, or nullptr if none exists
 		__declspec(property(get=getParent)) std::shared_ptr<Alias> Parent;
-		virtual std::shared_ptr<Alias> getParent(void) = 0;
+		virtual std::shared_ptr<Alias> getParent(void) = 0;		
 	};
 
 	// FileSystem::Path
@@ -310,8 +322,8 @@ struct __declspec(novtable) FileSystem
 		// Lookup
 		//
 		// Resolves a file system path using this node as the starting point
-		virtual std::unique_ptr<FileSystem::Path> Lookup(const std::unique_ptr<Path>& rootpath, const std::unique_ptr<Path>& currentpath, 
-			const char_t* path, int flags, int* reparses) = 0;
+		virtual std::unique_ptr<FileSystem::Path> Lookup(const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Path>& root, 
+			const std::unique_ptr<Path>& current, const char_t* path, int flags, int* reparses) = 0;
 		
 		// Open
 		//

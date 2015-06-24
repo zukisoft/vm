@@ -37,7 +37,7 @@
 // RootAlias
 //
 // Implements the virtual file system absolute root alias object; must be
-// associated with a node at time of construction
+// associated with a namespace and mount at time of construction
 
 class RootAlias : public FileSystem::Alias, public std::enable_shared_from_this<RootAlias>
 {
@@ -50,29 +50,42 @@ public:
 	// Create
 	//
 	// Constructs a new RootAlias instance
-	static std::shared_ptr<FileSystem::Alias> Create(const std::shared_ptr<FileSystem::Node>& target);
+	static std::shared_ptr<FileSystem::Alias> Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
 
-	// Follow (FileSystem::Alias)
+	//-------------------------------------------------------------------------
+	// FileSystem::Alias Implementation
+
+	// Follow
 	//
 	// Follows this alias to the file system node that it refers to
 	virtual std::shared_ptr<FileSystem::Node> Follow(const std::shared_ptr<Namespace>& ns);
 
-	// Mount (FileSystem::Alias)
-	//
-	// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-	virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
-
-	// Unmount (FileSystem::Alias)
+	// PopMount
 	//
 	// Removes a mountpoint node from this alias
-	virtual void Unmount(const std::shared_ptr<Namespace>& ns);
+	virtual void PopMount(const std::shared_ptr<Namespace>& ns);
 
-	// getName (FileSystem::Alias)
+	// PushMount
+	//
+	// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
+	virtual void PushMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
+
+	// getMount
+	//
+	// Retrieves the mountpoint instance for the specified namespace, or nullptr if not mounted
+	virtual std::shared_ptr<FileSystem::Mount> getMount(const std::shared_ptr<Namespace>& ns);
+
+	// getMounted
+	//
+	// Determines if this alias is a mountpoint in the specified namespace
+	virtual bool getMounted(const std::shared_ptr<Namespace>& ns);
+
+	// getName
 	//
 	// Gets the name associated with the alias
 	virtual const char_t* getName(void);
 
-	// getParent (FileSystem::Alias)
+	// getParent
 	//
 	// Gets the parent alias of this alias instance, or nullptr if none exists
 	virtual std::shared_ptr<Alias> getParent(void);
@@ -94,15 +107,14 @@ private:
 
 	// Instance Constructor
 	//
-	RootAlias(const std::shared_ptr<FileSystem::Node>& target);
+	RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
 	friend class std::_Ref_count_obj<RootAlias>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::shared_ptr<FileSystem::Node>	m_target;		// Target node
-	mounts_t								m_mounts;		// Overmounts
-	mountslock_t							m_mountslock;	// Synchronziation
+	mounts_t				m_mounts;			// Namespace specific mounts
+	mountslock_t			m_mountslock;		// Synchronziation object
 };
 
 //-----------------------------------------------------------------------------
