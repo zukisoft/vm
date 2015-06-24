@@ -193,6 +193,30 @@
 //}
 
 //-----------------------------------------------------------------------------
+// FileSystem::FindMount (static)
+//
+// Locates the mountpoint associated with a specific file system alias
+//
+// Arguments:
+//
+//	ns		- Namespace in which to locate the mountpoint
+//	alias	- Alias representing the initial search location
+
+static std::shared_ptr<FileSystem::Mount> FindMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Alias>& alias)
+{
+	// Both a namespace and an alias must have been specified
+	if((ns == nullptr) || (alias == nullptr)) throw LinuxException(LINUX_ENOENT);
+
+	// Starting at the current position (which may be a mountpoint), continue to
+	// work backward in the file system tree until a mountpoint is located
+	auto current = alias;
+	while(!current->Mounted[ns]) current = current->Parent;
+
+	// Return the mountpoint that was located for the specified alias
+	return current->Mount[ns];
+}
+	
+//-----------------------------------------------------------------------------
 // FileSystem::GenerateFileSystemId (static)
 //
 // Generates a unique file system identifier (fsid)

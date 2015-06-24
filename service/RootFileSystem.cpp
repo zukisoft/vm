@@ -280,33 +280,73 @@ void RootFileSystem::Directory::DemandPermission(FileSystem::Permission permissi
 //
 // Arguments:
 //
-//	thispath	- Path that was used to resolve this node instance
-//	rootpath	- Root path to use when resolving a leading /
-//	pathname	- Path to be resolved
-//	flags		- Path resolution flags
-//	reparses	- The current number of reparse points (symlinks) encountered
+//	ns				- Namespace to use when resolving mount points
+//	root			- Root path to use when resolving a leading /
+//	current			- The current path (used to resolve this node)
+//	pathname		- Path to be resolved from this node
+//	flags			- Path resolution flags
+//	reparses		- Number of reparse points (symlinks) encountered
 
-std::unique_ptr<FileSystem::Path> RootFileSystem::Directory::Lookup(const std::unique_ptr<Path>& thispath, const std::unique_ptr<Path>& rootpath, 
-	const char_t* pathname, int flags, int* reparses)
+std::unique_ptr<FileSystem::Path> RootFileSystem::Directory::Lookup(const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Path>& root, 
+	const std::unique_ptr<Path>& current, const char_t* path, int flags, int* reparses)
 {
-	if((pathname == nullptr) || (reparses == nullptr)) throw LinuxException(LINUX_EFAULT);
+	if(reparses == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
+
+	// Construct a PathIterator instance to assist with traversing the path components
+	PathIterator iterator(path);
+
+	// Move past any "." components in the path before checking if the end of the
+	// traversal was reached; which indicates that this is the target node
+	while(strcmp(iterator.Current, ".") == 0) ++iterator;
+	if(!iterator) return current->Duplicate();
+
+	// The ".." component indicates that the parent alias' node needs to resolve the remainder
+	if(strcmp(iterator.Current, "..") == 0) {
+
+		// If the current alias is a mountpoint, backing up a level will move out of the
+		// mount and into the parent mount; that mountpoint must be located
+		if(current->Alias->Mounted[ns]) {
+
+			auto alias = current->Alias->Parent;
+			while(!alias->Mounted[ns]) alias = alias->Parent;
+			auto mount = nullptr;	// todo: get the mount from the alias/namespace
+		}
+
+		// Current alias is not a mountpoint, the parent alias will be in the same mount
+
+
+		//auto alias = current->Alias->Parent;
+		//auto mount = alias->Mount[ns];
+		//
+		//auto newpath = Path::Create((mount) ? mount : current->Mount, alias);
+
+		// todo: need a path to the parent, the mount may be different
+		return current->Alias->Parent->Follow(ns)->Lookup(ns, root, nullptr, iterator.Remaining, flags, reparses);
+
+		//return current->Parent->Node->Resolve(root, current->Parent, iterator.Remaining, flags, symlinks);
+	}
 
 	// The calling user must have EXECUTE permission on this node for a lookup to succeed
 	DemandPermission(FileSystem::Permission::Execute);
 
-	auto mountflags = thispath->Mount->Flags;
+	// Path component was not found
+	throw LinuxException(LINUX_ENOENT);
 
-	// todo
-	// do not update atime? this doesn't technically 'read' from the node, consider
-	// if data needed to be looked up from disk if it were a real block device
+	return nullptr;
+	//auto mountflags = thispath->Mount->Flags;
 
-	// can't do it this way, need to check for . and .., which are legitimate
-	// if ..; return thsipath->Alias->parent
-	// if . or zero length, return thispath->Duplicate
+	//// todo
+	//// do not update atime? this doesn't technically 'read' from the node, consider
+	//// if data needed to be looked up from disk if it were a real block device
 
-	if(*pathname) throw LinuxException(LINUX_ENOENT); 
-	
-	return thispath->Duplicate();
+	//// can't do it this way, need to check for . and .., which are legitimate
+	//// if ..; return thsipath->Alias->parent
+	//// if . or zero length, return thispath->Duplicate
+
+	//if(*pathname) throw LinuxException(LINUX_ENOENT); 
+	//
+	//return thispath->Duplicate();
 }
 
 //-----------------------------------------------------------------------------

@@ -33,6 +33,8 @@
 #include "FileSystem.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
+#include "Namespace.h"
+#include "PathIterator.h"
 #include "SystemInformation.h"
 
 #pragma warning(push, 4)
@@ -129,8 +131,8 @@ private:
 		// Lookup
 		//
 		// Resolves a file system path using this node as the starting point
-		virtual std::unique_ptr<FileSystem::Path> Lookup(const std::unique_ptr<Path>& rootpath, const std::unique_ptr<Path>& currentpath, 
-			const char_t* path, int flags, int* reparses);
+		virtual std::unique_ptr<FileSystem::Path> Lookup(const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Path>& root, 
+			const std::unique_ptr<Path>& current, const char_t* path, int flags, int* reparses);
 		
 		// Open
 		//

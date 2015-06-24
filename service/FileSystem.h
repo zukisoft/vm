@@ -595,6 +595,11 @@ struct __declspec(novtable) FileSystem
 
 	static void CreateSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, const char_t* target);
 
+	// FindMount
+	//
+	// Locates the mountpoint associated with a specific file system alias
+	static std::shared_ptr<Mount> FindMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<Alias>& alias);
+
 	// GenerateFileSystemId
 	//
 	// Generates a unique file system identifier (fsid)
