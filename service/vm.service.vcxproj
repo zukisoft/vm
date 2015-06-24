@@ -372,7 +372,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="RootAlias.h" />
     <ClInclude Include="TempFileSystem.h" />
-    <ClInclude Include="__Mount.h" />
     <ClInclude Include="MountNamespace.h" />
     <ClInclude Include="RootFileSystem.h" />
     <ClInclude Include="VirtualMachine.h" />
@@ -656,7 +655,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="RootAlias.cpp" />
     <ClCompile Include="TempFileSystem.cpp" />
-    <ClCompile Include="__Mount.cpp" />
     <ClCompile Include="MountNamespace.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="VirtualMachine.cpp" />
