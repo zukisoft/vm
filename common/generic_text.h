@@ -29,7 +29,6 @@
 #include <cwctype>
 #include <string>
 #include <type_traits>
-#include <vector>
 #include <tchar.h>
 #include <Windows.h>
 
@@ -65,12 +64,13 @@ namespace std {
 	{
 		if(psz == nullptr) return string();
 
-		// Create an std::vector big enough to hold the converted string data and convert it
-		vector<char_t> convert(WideCharToMultiByte(CP_UTF8, 0, psz, cch, nullptr, 0, nullptr, nullptr));
-		WideCharToMultiByte(CP_UTF8, 0, psz, cch, convert.data(), static_cast<int>(convert.size()), nullptr, nullptr);
+		// Create a buffer big enough to hold the converted string data and convert it
+		int buffercch = WideCharToMultiByte(CP_UTF8, 0, psz, cch, nullptr, 0, nullptr, nullptr);
+		auto buffer = std::make_unique<char_t[]>(buffercch);
+		WideCharToMultiByte(CP_UTF8, 0, psz, cch, buffer.get(), buffercch, nullptr, nullptr);
 
 		// Construct an std::string around the converted character data
-		return string(convert.data(), convert.size());
+		return string(buffer.get(), buffercch);
 	}
 
 
@@ -87,12 +87,13 @@ namespace std {
 	{
 		if(psz == nullptr) return wstring();
 
-		// Create an std::vector big enough to hold the converted string data and convert it
-		vector<wchar_t> convert(MultiByteToWideChar(CP_UTF8, 0, psz, cch, nullptr, 0));
-		MultiByteToWideChar(CP_UTF8, 0, psz, cch, convert.data(), static_cast<int>(convert.size()));
+		// Create a buffer big enough to hold the converted string data and convert it
+		int buffercch = MultiByteToWideChar(CP_UTF8, 0, psz, cch, nullptr, 0);
+		auto buffer = std::make_unique<wchar_t[]>(buffercch);
+		MultiByteToWideChar(CP_UTF8, 0, psz, cch, buffer.get(), buffercch);
 
 		// Construct an std::wstring around the converted character data
-		return wstring(convert.data(), convert.size());
+		return wstring(buffer.get(), buffercch);
 	}
 
 	// std::to_wstring overloads
@@ -213,6 +214,25 @@ namespace std {
 		return (right.base() <= left) ? wstring() : wstring(left, right.base());
 	}
 
+	inline bool startswith(const string& str, const char& value)
+	{
+		return !str.empty() && str[0] == value;
+	}
+
+	inline bool startswith(const wstring& str, const wchar_t& value)
+	{
+		return !str.empty() && str[0] == value;
+	}
+
+	inline bool endswith(const string& str, const char_t& value)
+	{
+		return !str.empty() && str[str.size() - 1] == value;
+	}
+
+	inline bool endswith(const wstring& str, const wchar_t& value)
+	{
+		return !str.empty() && str[str.size() - 1] == value;
+	}
 } // namespace std
 
 //-----------------------------------------------------------------------------
