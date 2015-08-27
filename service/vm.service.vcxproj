@@ -664,9 +664,19 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
-    <ClCompile Include="ProcessFileSystem.cpp" />
+    <ClCompile Include="ProcessFileSystem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="RootAlias.cpp" />
-    <ClCompile Include="TempFileSystem.cpp" />
+    <ClCompile Include="TempFileSystem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="MountNamespace.cpp" />
     <ClCompile Include="RootFileSystem.cpp" />
     <ClCompile Include="VirtualMachine.cpp" />
@@ -757,7 +767,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="UtsNamespace.cpp" />
     <ClCompile Include="_VmOld.cpp" />
-    <ClCompile Include="VmService.cpp" />
+    <ClCompile Include="VmService.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="SystemLog.cpp" />
     <ClCompile Include="Waitable.cpp" />
   </ItemGroup>

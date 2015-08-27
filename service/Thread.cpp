@@ -92,8 +92,8 @@ void Thread::BeginSignal(int signal, uapi::sigaction action)
 	bool expected = false;
 	if(m_insignal.compare_exchange_strong(expected, true)) {
 
-		queued_signal_t signal;
-		if(m_pendingsignals.try_pop(signal)) ProcessQueuedSignal(signal);
+		queued_signal_t queuedsig;
+		if(m_pendingsignals.try_pop(queuedsig)) ProcessQueuedSignal(queuedsig);
 		else m_insignal = false;
 	}
 }

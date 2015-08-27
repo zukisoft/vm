@@ -61,7 +61,7 @@ public:
 
 	// Destructor
 	//
-	~_VmOld();
+	virtual ~_VmOld();
 
 	// Properties Enumeration
 	//

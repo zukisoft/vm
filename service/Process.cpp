@@ -553,7 +553,7 @@ void Process::Execute(const std::unique_ptr<Executable>& executable)
 		m_memory->Clear();
 
 		// Reallocate the local descriptor table for the process at the original address
-		m_ldtslots.Clear();
+		m_ldtslots.ClearAll();
 		try { m_memory->Allocate(m_ldt, LINUX_LDT_ENTRIES * sizeof(uapi::user_desc32), LINUX_PROT_READ | LINUX_PROT_WRITE); }
 		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
@@ -872,7 +872,7 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 
 	// Non-anonymous mappings require a valid file descriptor to be specified
 	if(((flags & LINUX_MAP_ANONYMOUS) == 0) && (fd <= 0)) throw LinuxException(LINUX_EBADF);
-	if(fd > 0) handle = m_handles->Get(fd)->Duplicate(LINUX_O_RDONLY);
+	if(fd > 0) handle = m_handles->Get(fd)->Duplicate();
 
 	// Attempt to allocate the process memory and adjust address to that base if it was NULL
 	const void* base = m_memory->Allocate(address, length, prot);
