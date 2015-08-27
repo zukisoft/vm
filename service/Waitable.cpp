@@ -96,7 +96,7 @@ void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
 	siginfo.linux_si_status = status;
 
 	// Lock the waiters collection and pending siginfo member variables
-	std::lock_guard<std::mutex> critsec(m_lock);
+	std::lock_guard<std::mutex> cscollection(m_lock);
 
 	// Revoke any pending signal that was not processed by a waiter
 	memset(&m_pending, 0, sizeof(uapi::siginfo));
@@ -106,7 +106,7 @@ void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
 		// Take the lock for this waiter and check that it hasn't already been spent,
 		// this is necessary to prevent a race condition wherein a second call to this
 		// function before the waiter could be removed would resignal it
-		std::unique_lock<std::mutex> critsec(iterator.lock);
+		std::unique_lock<std::mutex> cswaiter(iterator.lock);
 		if(iterator.siginfo->linux_si_pid != 0) continue;
 
 		// If this waiter is not interested in the signal, move on to the next one
@@ -158,13 +158,13 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 	if(objects.size() == 0) return nullptr;
 
 	// Take the condition variable lock before adding any waiters
-	std::unique_lock<std::mutex> critsec(lock);
+	std::unique_lock<std::mutex> cscondvar(lock);
 
 	// Iterate over all of the Waitable instances to check for a pending signal that can be
 	// consumed immediately, or to register a wait operation against it
 	for(const auto& iterator : objects) {
 
-		std::lock_guard<std::mutex> critsec(iterator->m_lock);
+		std::lock_guard<std::mutex> cswaitable(iterator->m_lock);
 
 		// If there is already a pending state for this Waitable instance that matches the
 		// requested wait operation mask, pull it out and stop registering waits
@@ -190,7 +190,7 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 	if(options & LINUX_WNOHANG) return signaled;
 
 	// Wait indefinitely for the condition variable to become signaled and retake the lock
-	signal.wait(critsec, [&]() -> bool { return siginfo->linux_si_pid != 0; });
+	signal.wait(cscondvar, [&]() -> bool { return siginfo->linux_si_pid != 0; });
 
 	// Remove this wait from the provided Waitable instances
 	for(const auto& iterator : objects) {
