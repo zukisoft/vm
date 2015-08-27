@@ -413,6 +413,24 @@
     <ClInclude Include="TempFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\bitmask.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\convert.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\datetime.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\path.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\sync.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\timespan.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -870,6 +888,15 @@
     </ClCompile>
     <ClCompile Include="TempFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\convert.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\datetime.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\timespan.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -73,7 +73,6 @@ namespace std {
 		return string(buffer.get(), buffercch);
 	}
 
-
 	// std::to_string overloads
 	//
 	inline string to_string(const wchar_t* psz) { return to_string(psz, -1); }
@@ -233,6 +232,7 @@ namespace std {
 	{
 		return !str.empty() && str[str.size() - 1] == value;
 	}
+
 } // namespace std
 
 //-----------------------------------------------------------------------------

@@ -125,56 +125,6 @@ namespace uapi {
 	typedef linux_itimerspec64		itimerspec;
 	typedef linux_itimerval64		itimerval;
 
-	// Converts Windows FILETIME to Linux timespec
-	//
-	inline timespec FILETIMEToTimeSpec(const FILETIME& ft)
-	{
-		const __int64 OFFSET = 116444736000000000;
-		__int64 filetime = *reinterpret_cast<const __int64*>(&ft);
-		__int64 seconds = (filetime - OFFSET) / 10000000;
-		__int64 nanoseconds = ((filetime - OFFSET) * 100) % 1000000000;
-
-		return { static_cast<__kernel_time_t>(seconds), static_cast<__kernel_long_t>(nanoseconds) };
-	}
-
-	// Get the current time as a Linux timespec
-	//
-	inline timespec GetCurrentTimeSpec(void)
-	{
-		FILETIME ft;
-		GetSystemTimeAsFileTime(&ft);
-		return FILETIMEToTimeSpec(ft);
-	}
-
-	// Converts Windows FILETIME to Linux timespec
-	//
-	inline void FILETIMEToTimeSpec(const FILETIME& ft, uint64_t* tv_sec, uint64_t* tv_nsec)
-	{
-		const __int64 OFFSET = 116444736000000000;
-		__int64 filetime = *reinterpret_cast<const __int64*>(&ft);
-		*tv_sec = (filetime - OFFSET) / 10000000;
-		*tv_nsec = ((filetime - OFFSET) * 100) % 1000000000;
-	}
-
-	// Gets the current time as a Linux timespec
-	//
-	inline void GetCurrentTimeSpec(uint64_t* tv_sec, uint64_t* tv_nsec)
-	{
-		FILETIME ft;
-		GetSystemTimeAsFileTime(&ft);
-		FILETIMEToTimeSpec(ft, tv_sec, tv_nsec);
-	}
-
-	// Converts Linux timespec to Windows FILETIME
-	//
-	inline FILETIME TimeSpecToFILETIME(const timespec& ts)
-	{
-		const __int64 OFFSET = 116444736000000000;
-		__int64 filetime = (static_cast<__int64>(ts.tv_sec) * 10000000) + (static_cast<__int64>(ts.tv_nsec) / 100) + OFFSET;
-
-		return *reinterpret_cast<FILETIME*>(&filetime);
-	}
-
 }	// namespace uapi
 #endif	// !defined(__midl) && defined(__cplusplus)
 

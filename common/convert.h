@@ -20,72 +20,38 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __STDAFX_H_
-#define __STDAFX_H_
+#ifndef __CONVERT_H_
+#define __CONVERT_H_
 #pragma once
 
+#include <type_traits>
+
+#pragma warning(push, 4)
+
 //-----------------------------------------------------------------------------
-// Win32 Declarations
+// convert<> (integral type)
+//
+// Parameters:
+//
+//	_to		- Destination data type
+//	_from	- Source data type value
 
-#define NTDDI_VERSION			NTDDI_WIN8
-#define	_WIN32_WINNT			_WIN32_WINNT_WIN8
-#define WINVER					_WIN32_WINNT_WIN8
-#define	_WIN32_IE				_WIN32_IE_IE100
-#define NOMINMAX
+template<typename _to, typename _from> 
+typename std::enable_if<std::is_integral<_from>::value, _to>::type convert(_from rhs);
 
-// Windows / CRT
-#include <Windows.h>
-#include <Psapi.h>
-#include <rpc.h>
-#include <stdint.h>
-#include <memory>
-#include <string>
+//-----------------------------------------------------------------------------
+// convert<> (non-integral type)
+//
+// Parameters:
+//
+//	_to		- Destination data type
+//	_from	- Source data type const reference
 
-#pragma comment(lib, "rpcrt4.lib")
-#pragma comment(lib, "rpcns4.lib")
-
-// KiB / MiB / GiB
-
-#define KiB		*(1 << 10)		// KiB multiplier
-#define MiB		*(1 << 20)		// MiB multiplier
-#define GiB		*(1 << 30)		// GiB multiplier
-
-// Generic Text Mappings
-#include <generic_text.h>
-
-// Linux
-#include <linux/types.h>
-#include <linux/errno.h>
-
-//---------------------------------------------------------------------------
-// Service Template Library
-
-#include <servicelib.h>
-
-//#include <vm.service.h>
-#include <messages.h>
-
-// find a place to put this stuff
-#include <align.h>
-template <typename _type>
-struct zero_init : public _type
-{
-	zero_init() { memset(this, 0, sizeof(_type)); }
-};
-
-#include <functional>
-class onunwind
-{
-public:
-
-	onunwind(std::function<void(void)> onunwind) : m_onunwind(onunwind) {}
-	~onunwind() { m_onunwind(); }
-
-private:
-
-	std::function<void(void)> m_onunwind;
-};
+template<typename _to, typename _from> 
+typename std::enable_if<!std::is_integral<_from>::value, _to>::type convert(const _from& rhs);
 
 //-----------------------------------------------------------------------------
 
-#endif	// __STDAFX_H_
+#pragma warning(pop)
+
+#endif	// __CONVERT_H_

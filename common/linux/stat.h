@@ -25,6 +25,7 @@
 #pragma once
 
 #include "types.h"
+#include "time.h"
 
 //-----------------------------------------------------------------------------
 // include/uapi/linux/stat.h
@@ -113,24 +114,21 @@ typedef struct {
 // Used with 32-bit newstat() and family
 typedef struct {
 
-	uint32_t		st_dev;
-	uint32_t		st_ino;
-	uint16_t		st_mode;
-	uint16_t		st_nlink;
-	uint16_t		st_uid;
-	uint16_t		st_gid;
-	uint32_t		st_rdev;
-	uint32_t		st_size;
-	uint32_t		st_blksize;
-	uint32_t		st_blocks;
-	uint32_t		st_atime;
-	uint32_t		st_atime_nsec;
-	uint32_t		st_mtime;
-	uint32_t		st_mtime_nsec;
-	uint32_t		st_ctime;
-	uint32_t		st_ctime_nsec;
-	uint32_t		__unused4;
-	uint32_t		__unused5;
+	uint32_t			st_dev;
+	uint32_t			st_ino;
+	uint16_t			st_mode;
+	uint16_t			st_nlink;
+	uint16_t			st_uid;
+	uint16_t			st_gid;
+	uint32_t			st_rdev;
+	uint32_t			st_size;
+	uint32_t			st_blksize;
+	uint32_t			st_blocks;
+	linux_timespec32	st_atime;
+	linux_timespec32	st_mtime;
+	linux_timespec32	st_ctime;
+	uint32_t			__unused4;
+	uint32_t			__unused5;
 
 } linux_stat32;
 
@@ -139,24 +137,21 @@ typedef struct {
 // Used with 64-bit stat() and family
 typedef struct {
 
-	uint64_t		st_dev;
-	uint64_t		st_ino;
-	uint64_t		st_nlink;
-	uint32_t		st_mode;
-	uint32_t		st_uid;
-	uint32_t		st_gid;
-	uint32_t		__pad0;
-	uint64_t		st_rdev;
-	int64_t			st_size;
-	int64_t			st_blksize;
-	int64_t			st_blocks;
-	uint64_t		st_atime;
-	uint64_t		st_atime_nsec;
-	uint64_t		st_mtime;
-	uint64_t		st_mtime_nsec;
-	uint64_t		st_ctime;
-	uint64_t		st_ctime_nsec;
-	int64_t			__unused[3];
+	uint64_t			st_dev;
+	uint64_t			st_ino;
+	uint64_t			st_nlink;
+	uint32_t			st_mode;
+	uint32_t			st_uid;
+	uint32_t			st_gid;
+	uint32_t			__pad0;
+	uint64_t			st_rdev;
+	int64_t				st_size;
+	int64_t				st_blksize;
+	int64_t				st_blocks;
+	linux_timespec64	st_atime;
+	linux_timespec64	st_mtime;
+	linux_timespec64	st_ctime;	
+	int64_t				__unused[3];
 
 } linux_stat64;
 
@@ -165,25 +160,22 @@ typedef struct {
 // Used with 32-bit stat64() and family
 typedef struct {
 
-	uint64_t		st_dev;
-	uint8_t			__pad0[4];
-	uint32_t		__st_ino;
-	uint32_t		st_mode;
-	uint32_t		st_nlink;
-	uint32_t		st_uid;
-	uint32_t		st_gid;
-	uint64_t		st_rdev;
-	uint8_t			__pad3[4];
-	int64_t			st_size;
-	uint32_t		st_blksize;
-	uint64_t		st_blocks;
-	uint32_t		st_atime;
-	uint32_t		st_atime_nsec;
-	uint32_t		st_mtime;
-	uint32_t		st_mtime_nsec;
-	uint32_t		st_ctime;
-	uint32_t		st_ctime_nsec;
-	uint64_t		st_ino;
+	uint64_t			st_dev;
+	uint8_t				__pad0[4];
+	uint32_t			__st_ino;
+	uint32_t			st_mode;
+	uint32_t			st_nlink;
+	uint32_t			st_uid;
+	uint32_t			st_gid;
+	uint64_t			st_rdev;
+	uint8_t				__pad3[4];
+	int64_t				st_size;
+	uint32_t			st_blksize;
+	uint64_t			st_blocks;
+	linux_timespec32	st_atime;
+	linux_timespec32	st_mtime;
+	linux_timespec32	st_ctime;
+	uint64_t			st_ino;
 
 } linux_stat3264;
 

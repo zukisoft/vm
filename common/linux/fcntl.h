@@ -52,6 +52,7 @@
 #define LINUX_O_SYNC				(LINUX___O_SYNC | LINUX_O_DSYNC)
 #define LINUX_O_PATH				010000000
 #define LINUX___O_TMPFILE			020000000
+#define LINUX_O_TMPFILE				(LINUX_O_DIRECTORY | LINUX___O_TMPFILE)
 
 #define LINUX_F_DUPFD				0			/* dup */
 #define LINUX_F_GETFD				1			/* get close_on_exec */

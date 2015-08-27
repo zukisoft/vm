@@ -25,6 +25,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <linux/fs.h>
 
 #pragma warning(push, 4)				

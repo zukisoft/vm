@@ -293,12 +293,15 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\..\external\zlib\zlib.h" />
     <ClInclude Include="..\common\align.h" />
     <ClInclude Include="..\common\Bitmap.h" />
+    <ClInclude Include="..\common\bitmask.h" />
     <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
     <ClInclude Include="..\common\CommandLine.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
     <ClInclude Include="..\common\Console.h" />
+    <ClInclude Include="..\common\convert.h" />
     <ClInclude Include="..\common\CpioArchive.h" />
+    <ClInclude Include="..\common\datetime.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\generic_text.h" />
@@ -341,6 +344,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\MountOptions.h" />
     <ClInclude Include="..\common\NativeHandle.h" />
     <ClInclude Include="..\common\NtApi.h" />
+    <ClInclude Include="..\common\path.h" />
     <ClInclude Include="..\common\PathIterator.h" />
     <ClInclude Include="..\common\PathSplitter.h" />
     <ClInclude Include="..\common\Random.h" />
@@ -348,7 +352,9 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\ScalarCondition.h" />
     <ClInclude Include="..\common\StreamReader.h" />
     <ClInclude Include="..\common\StructuredException.h" />
+    <ClInclude Include="..\common\sync.h" />
     <ClInclude Include="..\common\SystemInformation.h" />
+    <ClInclude Include="..\common\timespan.h" />
     <ClInclude Include="..\common\uapi.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
     <ClInclude Include="..\common\XzStreamReader.h" />
@@ -598,7 +604,9 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\CommandLine.cpp" />
     <ClCompile Include="..\common\CompressedStreamReader.cpp" />
     <ClCompile Include="..\common\Console.cpp" />
+    <ClCompile Include="..\common\convert.cpp" />
     <ClCompile Include="..\common\CpioArchive.cpp" />
+    <ClCompile Include="..\common\datetime.cpp" />
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\File.cpp" />
     <ClCompile Include="..\common\GZipStreamReader.cpp" />
@@ -621,6 +629,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\StreamReader.cpp" />
     <ClCompile Include="..\common\StructuredException.cpp" />
     <ClCompile Include="..\common\SystemInformation.cpp" />
+    <ClCompile Include="..\common\timespan.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
     <ClCompile Include="..\common\XzStreamReader.cpp" />
     <ClCompile Include="..\tmp\vm.service\x64\syscalls32_s.c">

@@ -151,7 +151,7 @@ bool Exception::ModuleHasMessageTable(HMODULE module)
 		// If an RT_MESSAGETABLE resource is found, return the module handle back
 		// to the caller through param and stop the enumeration by returning FALSE
 		*reinterpret_cast<HMODULE*>(param) = nullptr;
-		if(type == MAKEINTRESOURCE(RT_MESSAGETABLE)) { *reinterpret_cast<HMODULE*>(param) = module; return FALSE; }
+		if(type == RT_MESSAGETABLE) { *reinterpret_cast<HMODULE*>(param) = module; return FALSE; }
 		else return TRUE;
 
 	}, reinterpret_cast<LONG_PTR>(&result));

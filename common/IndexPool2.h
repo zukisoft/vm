@@ -24,7 +24,6 @@
 #define __INDEXPOOL2_H_
 #pragma once
 
-#include <concrt.h>
 #include <stdint.h>
 #include "Bitmap.h"
 #include "Exception.h"
@@ -65,7 +64,7 @@ public:
 	// Allocates an index from the pool
 	uint32_t Allocate(void)
 	{
-		Concurrency::critical_section::scoped_lock critsec(m_lock);
+		sync::critical_section::scoped_lock critsec(m_lock);
 
 		// Locate a single clear bit in the bitmap and set it
 		uint32_t result = m_bitmap.FindClearAndSet();
@@ -80,7 +79,7 @@ public:
 	// Releases an index for re-use in the pool
 	void Release(uint32_t index)
 	{
-		Concurrency::critical_section::scoped_lock critsec(m_lock);
+		sync::critical_section::scoped_lock critsec(m_lock);
 
 		// Remove the reservation offset from the index and clear that bit
 		m_bitmap.Clear(index - m_reserved);
@@ -96,7 +95,7 @@ private:
 
 	uint32_t						m_reserved;		// Number of reserved indexes
 	Bitmap							m_bitmap;		// Contained Bitmap instance
-	Concurrency::critical_section	m_lock;			// Synchronization object
+	mutable sync::critical_section	m_lock;			// Synchronization object
 };
 
 //-----------------------------------------------------------------------------
