@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cwctype>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <tchar.h>
