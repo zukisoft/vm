@@ -230,7 +230,7 @@ size_t SystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, size_
 void SystemLog::Push(SystemLogLevel level, SystemLogFacility facility, const char_t* message)
 {
 	// The maximum message length is UINT16_MAX (64KiB)
-	size_t messagelength = min(strlen(message) * sizeof(char_t), UINT16_MAX);
+	size_t messagelength = std::min(strlen(message) * sizeof(char_t), static_cast<size_t>(UINT16_MAX));
 
 	// Determine the length of the entire log entry, and discard it if > UINT16_MAX
 	size_t entrylength = align::up(sizeof(LogEntry) + messagelength, __alignof(void*));

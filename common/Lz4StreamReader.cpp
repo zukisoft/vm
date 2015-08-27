@@ -170,7 +170,7 @@ size_t Lz4StreamReader::Read(void* buffer, size_t length)
 	while(length > 0) {
 
 		// Take the smaller of what we have and what we still need
-		uint32_t next = min(m_blockremain, static_cast<uint32_t>(length));
+		uint32_t next = std::min(m_blockremain, static_cast<uint32_t>(length));
 		if(next) {
 			
 			// The buffer pointer can be NULL to just skip over data

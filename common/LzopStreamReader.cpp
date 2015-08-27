@@ -415,7 +415,7 @@ size_t LzopStreamReader::Read(void* buffer, size_t length)
 	while(length > 0) {
 
 		// Take the smaller of what we have and what we still need
-		size_t next = min(m_blockremain, length);
+		size_t next = std::min(m_blockremain, length);
 		if(next) {
 			
 			// The buffer pointer can be NULL to just skip over data

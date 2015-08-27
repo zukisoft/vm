@@ -899,7 +899,7 @@ const void* Process::MapMemory(const void* address, size_t length, int prot, int
 		do {
 			
 			// Copy the next chunk of bytes from the source file into the process address space
-			read = handle->Read(buffer, min(length, buffer.Size));
+			read = handle->Read(buffer, std::min(length, buffer.Size));
 			size_t written = m_memory->Write(reinterpret_cast<void*>(dest), buffer, read);
 
 			dest += written;						// Increment destination pointer

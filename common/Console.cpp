@@ -417,7 +417,7 @@ std::tstring Console::getTitle(void) const
 	if(length == 0) throw Win32Exception();
 
 	// Use either the returned length or the buffer length
-	return std::tstring(title.data(), min(length, title.size()));
+	return std::tstring(title.data(), std::min(length, title.size()));
 }
 
 //-----------------------------------------------------------------------------

@@ -96,7 +96,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 		// If the region is free (MEM_FREE), create a new memory section in the free space
 		if(meminfo.State == MEM_FREE) {
 
-			size_t filllength = min(meminfo.RegionSize, align::up(fillend - fillbegin, SystemInformation::AllocationGranularity));
+			size_t filllength = std::min(static_cast<size_t>(meminfo.RegionSize), align::up(fillend - fillbegin, SystemInformation::AllocationGranularity));
 			m_sections.emplace_back(MemorySection::Create(m_process->Handle, meminfo.BaseAddress, filllength));
 		}
 
@@ -121,7 +121,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 		const auto& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
-		size_t alloclen = min(section->Length - (allocbegin - uintptr_t(section->BaseAddress)), allocend - allocbegin);
+		size_t alloclen = std::min(section->Length - (allocbegin - uintptr_t(section->BaseAddress)), allocend - allocbegin);
 		section->Allocate(reinterpret_cast<void*>(allocbegin), alloclen, uapi::LinuxProtToWindowsPageFlags(prot));
 
 		allocbegin += alloclen;
@@ -298,7 +298,7 @@ void ProcessMemory::ProtectInternal(const void* address, size_t length, uint32_t
 		const auto& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
-		size_t protectlen = min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
+		size_t protectlen = std::min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
 		section->Protect(reinterpret_cast<void*>(begin), protectlen, winprot);
 
 		begin += protectlen;
@@ -365,7 +365,7 @@ void ProcessMemory::Release(const void* address, size_t length)
 		const auto& section = *found;
 
 		// Determine how much to release from this section and release it
-		size_t freelength = min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
+		size_t freelength = std::min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
 		section->Release(reinterpret_cast<void*>(begin), freelength);
 
 		// If the section is empty after the release, remove it from the process

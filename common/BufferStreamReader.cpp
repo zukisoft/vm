@@ -66,7 +66,7 @@ size_t BufferStreamReader::Read(void* buffer, size_t length)
 #endif
 
 	// Calulate the number of output bytes that can be returned
-	size_t out = min(length, m_length - m_offset);
+	size_t out = std::min(length, m_length - m_offset);
 
 	// Copy the memory from the source buffer into the output buffer.  The caller
 	// can provide NULL if they just want to skip over some bytes ...

@@ -71,7 +71,7 @@ inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle
 	while(count) {
 
 		// Read the next chunk of memory into the heap buffer, break early if there is no more
-		size_t read = handle->Read(buffer, min(count, buffer.Size));
+		size_t read = handle->Read(buffer, std::min(count, buffer.Size));
 		if(read == 0) break;
 
 		// Write the data into the target native operating system process
@@ -153,8 +153,8 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
-			minvaddr = min(uintptr_t(progheader.p_vaddr), minvaddr);
-			maxvaddr = max(uintptr_t(progheader.p_vaddr + progheader.p_memsz), maxvaddr);
+			minvaddr = std::min(uintptr_t(progheader.p_vaddr), minvaddr);
+			maxvaddr = std::max(uintptr_t(progheader.p_vaddr + progheader.p_memsz), maxvaddr);
 		}
 
 		// PT_GNU_STACK - GNU executable stack segment
