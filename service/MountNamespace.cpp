@@ -24,6 +24,7 @@
 #include "MountNamespace.h"
 
 #pragma warning(push, 4)
+#pragma warning(disable:4127)		// conditional expression is constant
 
 //-----------------------------------------------------------------------------
 // MountNamespace Constructor (private)
@@ -32,7 +33,45 @@
 //
 //	mounts		- Collection of mounts to contain upon construction
 
-MountNamespace::MountNamespace(mount_set_t&& mounts) : m_mounts(std::move(mounts)) {}
+MountNamespace::MountNamespace(mount_map_t&& mounts) : m_mounts(std::move(mounts)) 
+{
+}
+
+//-----------------------------------------------------------------------------
+// MountNamespace::Add
+//
+// Adds an alias as a mount point in this namespace
+//
+// Arguments:
+//
+//	alias		- Alias instance associated with the mount point
+//	mount		- Mount instance to add to the namespace
+
+void MountNamespace::Add(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount)
+{
+	mount_map_lock_t::scoped_lock_write writer(m_mountslock);
+
+	// Push the mount to the top of the stack associated with this alias
+	try { m_mounts[alias].emplace(std::move(mount)); }
+	catch(...) { throw LinuxException(LINUX_ENOMEM); }
+}
+
+//-----------------------------------------------------------------------------
+// MountNamespace::Clone
+//
+// Creates a clone of the MountNamespace instance
+//
+// Arguments:
+//
+//	mountns		- Existing MountNamespace to be copied
+
+std::shared_ptr<MountNamespace> MountNamespace::Clone(void)
+{
+	mount_map_lock_t::scoped_lock_write writer(m_mountslock);
+
+	// Create a copy of the contained mounts collection for the new namespace
+	return std::make_shared<MountNamespace>(mount_map_t(m_mounts));
+}
 
 //-----------------------------------------------------------------------------
 // MountNamespace::Create (static)
@@ -46,33 +85,53 @@ MountNamespace::MountNamespace(mount_set_t&& mounts) : m_mounts(std::move(mounts
 std::shared_ptr<MountNamespace> MountNamespace::Create(void)
 {
 	// Create a new empty MountNamespace instance
-	return std::make_shared<MountNamespace>(mount_set_t());
+	return std::make_shared<MountNamespace>(mount_map_t());
 }
 
 //-----------------------------------------------------------------------------
-// MountNamespace::Create (static)
+// MountNamespace::Find
 //
-// Creates a clone of an existing MountNamespace instance
+// Finds the mount point associated with an alias, or nullptr if none
 //
 // Arguments:
 //
-//	mountns		- Existing MountNamespace to be copied
+//	alias		- Alias instance to look up in the mounts collection
 
-std::shared_ptr<MountNamespace> MountNamespace::Create(const std::shared_ptr<MountNamespace>& mountns)
+std::shared_ptr<FileSystem::Mount> MountNamespace::Find(std::shared_ptr<const FileSystem::Alias> alias)
 {
-	mount_set_t				mounts;			// New collection of mounts
+	mount_map_lock_t::scoped_lock_read reader(m_mountslock);
 
-	// Iterate over the existing collection of mounts and copy each of them
-	for(const auto& iterator : mountns->m_mounts) {
+	// Check if this alias is a mount point, and if so return the topmost mount
+	const auto& iterator = m_mounts.find(alias);
+	return (iterator == m_mounts.end()) ? nullptr : iterator->second.top();
+}
 
-		// CREATE NEW MOUNT
-		mounts.emplace(nullptr, nullptr);
+//-----------------------------------------------------------------------------
+// MountNamespace::Remove
+//
+// Removes the topmost mount point associated with an alias instance
+//
+// Arguments:
+//
+//	alias		- Alias instance from which to remove the top mount point
 
-		// ADD NEW NAMESPACE/MOUNT to existing target Alias
-		// ?? I don't have the parent namespace instance here!!!
+void MountNamespace::Remove(std::shared_ptr<const FileSystem::Alias> alias)
+{
+	mount_map_lock_t::scoped_lock_write writer(m_mountslock);
+
+	// Locate the target alias in the collection
+	const auto& iterator = m_mounts.find(alias);
+	if(iterator != m_mounts.end()) {
+
+		// The stack instance in the collection should never be empty, the entire
+		// thing should have been removed from the collection
+		_ASSERTE(!iterator->second.empty());
+
+		// Remove the topmost mount instance from the stack, if that reduces
+		// the size of the stack to zero, remove the entire entry
+		iterator->second.pop();
+		if(iterator->second.empty()) m_mounts.erase(iterator);
 	}
-
-	return std::make_shared<MountNamespace>(mount_set_t());
 }
 
 //-----------------------------------------------------------------------------

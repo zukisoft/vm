@@ -24,97 +24,55 @@
 #define __ROOTALIAS_H_
 #pragma once
 
-#include <map>
 #include <memory>
-#include <stack>
-#include <concrt.h>
 #include "FileSystem.h"
-#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
 // RootAlias
 //
-// Implements the virtual file system absolute root alias object; must be
-// associated with a namespace and mount at time of construction
+// Implements the virtual file system root alias object
 
-class RootAlias : public FileSystem::Alias, public std::enable_shared_from_this<RootAlias>
+class RootAlias : public FileSystem::Alias
 {
 public:
+
+	// Instance Constructor
+	//
+	RootAlias(std::shared_ptr<FileSystem::Node> node);
 
 	// Destructor
 	//
 	~RootAlias()=default;
 
-	// Create
-	//
-	// Constructs a new RootAlias instance
-	static std::shared_ptr<FileSystem::Alias> Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
-
-	//-------------------------------------------------------------------------
+	//---------------------------------------------------------------------
 	// FileSystem::Alias Implementation
 
-	// Follow
+	// GetName
 	//
-	// Follows this alias to the file system node that it refers to
-	virtual std::shared_ptr<FileSystem::Node> Follow(const std::shared_ptr<Namespace>& ns);
+	// Reads the name assigned to this alias
+	virtual uapi::size_t GetName(char_t* buffer, size_t count) const;
 
-	// PopMount
+	// Name
 	//
-	// Removes a mountpoint node from this alias
-	virtual void PopMount(const std::shared_ptr<Namespace>& ns);
+	// Gets the name assigned to this alias
+	virtual std::string getName(void) const;
 
-	// PushMount
+	// Node
 	//
-	// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-	virtual void PushMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
-
-	// getMount
-	//
-	// Retrieves the mountpoint instance for the specified namespace, or nullptr if not mounted
-	virtual std::shared_ptr<FileSystem::Mount> getMount(const std::shared_ptr<Namespace>& ns);
-
-	// getMounted
-	//
-	// Determines if this alias is a mountpoint in the specified namespace
-	virtual bool getMounted(const std::shared_ptr<Namespace>& ns);
-
-	// getName
-	//
-	// Gets the name associated with the alias
-	virtual const char_t* getName(void);
-
-	// getParent
-	//
-	// Gets the parent alias of this alias instance, or nullptr if none exists
-	virtual std::shared_ptr<Alias> getParent(void);
+	// Gets the node to which this alias refers
+	virtual std::shared_ptr<FileSystem::Node> getNode(void) const;
 
 private:
 
 	RootAlias(const RootAlias&)=delete;
 	RootAlias& operator=(const RootAlias&)=delete;
 
-	// mounts_t
-	//
-	// Collection that associates overmounts in a specific namespace
-	using mounts_t = std::map<std::shared_ptr<Namespace>, std::stack<std::shared_ptr<FileSystem::Mount>>>;
-
-	// mountslock_t
-	//
-	// Synchronization object for the overmounts collection
-	using mountslock_t = Concurrency::reader_writer_lock;
-
-	// Instance Constructor
-	//
-	RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount);
-	friend class std::_Ref_count_obj<RootAlias>;
-
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	mounts_t				m_mounts;			// Namespace specific mounts
-	mountslock_t			m_mountslock;		// Synchronziation object
+	const std::shared_ptr<FileSystem::Node>	m_node;		// Attached node
 };
 
 //-----------------------------------------------------------------------------

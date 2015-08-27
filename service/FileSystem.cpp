@@ -21,12 +21,77 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
+#include "path.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
-//#include "Namespace.h"
+#include "Namespace.h"
 #include "Random.h"
 
 #pragma warning(push, 4)
+
+//
+// FILESYSTEM::HANDLEACCESS
+//
+
+// FileSystem::HandleAccess::ReadOnly (static)
+//
+const FileSystem::HandleAccess FileSystem::HandleAccess::ReadOnly{ LINUX_O_RDONLY };
+
+// FileSystem::HandleAccess::WriteOnly (static)
+//
+const FileSystem::HandleAccess FileSystem::HandleAccess::WriteOnly{ LINUX_O_WRONLY };
+
+// FileSystem::HandleAccess::ReadWrite (static)
+//
+const FileSystem::HandleAccess FileSystem::HandleAccess::ReadWrite{ LINUX_O_RDWR };
+
+//
+// FILESYSTEM::HANDLEFLAGS
+//
+
+// FileSystem::HandleFlags::Append (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::Append{ LINUX_O_APPEND };
+
+// FileSystem::HandleFlags::DataSync (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::DataSync{ LINUX_O_DSYNC };
+
+// FileSystem::HandleFlags::Direct (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::Direct{ LINUX_O_DIRECT };
+
+// FileSystem::HandleFlags::NoAccessTime (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::NoAccessTime{ LINUX_O_NOATIME };
+
+// FileSystem::HandleFlags::None (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::None{ 0 };
+
+// FileSystem::HandleFlags::Sync (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::Sync{ LINUX_O_SYNC };
+
+// FileSystem::HandleFlags::Truncate (static)
+//
+const FileSystem::HandleFlags FileSystem::HandleFlags::Truncate{ LINUX_O_TRUNC };
+
+//
+// FILESYSTEM::LOOKUPFLAGS
+//
+
+// FileSystem::LookupFlags::Directory (static)
+//
+const FileSystem::LookupFlags FileSystem::LookupFlags::Directory{ LINUX_O_DIRECTORY };
+
+// FileSystem::LookupFlags::NoFollow (static)
+//
+const FileSystem::LookupFlags FileSystem::LookupFlags::NoFollow{ LINUX_O_NOFOLLOW };
+
+// FileSystem::LookupFlags::None (static)
+//
+const FileSystem::LookupFlags FileSystem::LookupFlags::None{ 0 };
 
 ////-----------------------------------------------------------------------------
 //// FileSystem::CheckPermissions (static)
@@ -193,30 +258,6 @@
 //}
 
 //-----------------------------------------------------------------------------
-// FileSystem::FindMount (static)
-//
-// Locates the mountpoint associated with a specific file system alias
-//
-// Arguments:
-//
-//	ns		- Namespace in which to locate the mountpoint
-//	alias	- Alias representing the initial search location
-
-static std::shared_ptr<FileSystem::Mount> FindMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Alias>& alias)
-{
-	// Both a namespace and an alias must have been specified
-	if((ns == nullptr) || (alias == nullptr)) throw LinuxException(LINUX_ENOENT);
-
-	// Starting at the current position (which may be a mountpoint), continue to
-	// work backward in the file system tree until a mountpoint is located
-	auto current = alias;
-	while(!current->Mounted[ns]) current = current->Parent;
-
-	// Return the mountpoint that was located for the specified alias
-	return current->Mount[ns];
-}
-	
-//-----------------------------------------------------------------------------
 // FileSystem::GenerateFileSystemId (static)
 //
 // Generates a unique file system identifier (fsid)
@@ -231,7 +272,6 @@ uapi::fsid_t FileSystem::GenerateFileSystemId(void)
 	// but for the immediate need a pseudo-random fsid_t structure will do
 	return Random::Generate<uapi::fsid_t>();
 }
-
 
 ////-----------------------------------------------------------------------------
 //// FileSystem::GetAbsolutePath (static)
@@ -288,315 +328,236 @@ uapi::fsid_t FileSystem::GenerateFileSystemId(void)
 //	if(tododeleteme.length() + 1 > pathlen) throw LinuxException(LINUX_ERANGE);
 //	strncpy_s(path, pathlen, tododeleteme.c_str(), _TRUNCATE);
 //}
+
+//-----------------------------------------------------------------------------
+// FileSystem::LookupPath (static)
 //
-////-----------------------------------------------------------------------------
-//// FileSystem::OpenExecutable (static)
-////
-//// Opens an executable file system object and returns a Handle instance
-////
-//// Arguments:
-////
-////	root		- Root alias to use for path resolution
-////	base		- Base alias from which to start path resolution
-////	path		- Path to the object to be opened/created
+// Resolves a path to a file system object
 //
-//std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(const std::shared_ptr<Alias>& root, 
-//	const std::shared_ptr<Alias>& base, const char_t* path)
-//{
-//	// per path_resolution(7), empty paths are not allowed
-//	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-//	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
+// Arguments:
 //
-//	// Attempt to resolve the file system object's name
-//	auto alias = ResolvePath(root, base, path, 0);
-//	
-//	// The only valid node type is a regular file object
-//	auto node = std::dynamic_pointer_cast<File>(alias->Node);
-//	if(node == nullptr) throw LinuxException(LINUX_ENOEXEC);
+//	ns			- Namespace associated with the calling process
+//	root		- Path to the contextual root node for the resolution
+//	current		- Path to the file system node from which to begin resolution
+//	path		- Path string to be resolved
+//	flags		- Path resolution flags (LINUX_O_XXXXX)
+
+std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root,
+	std::shared_ptr<FileSystem::Path> current, const char_t* path, int flags)
+{
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+
+	// Use the private version of this function that accepts the recursion depth
+	return LookupPath(ns, root, current, path, FileSystem::LookupFlags(flags), 0);
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::LookupPath (private)
 //
-//	// Create and return an executable handle for the file system object
-//	return node->OpenExec(alias);
-//}
+// Executes a path lookup operation
 //
-////-----------------------------------------------------------------------------
-//// FileSystem::OpenFile (static)
-////
-//// Opens a file system object and returns a Handle instance
-////
-//// Arguments:
-////
-////	root		- Root alias to use for path resolution
-////	base		- Base alias from which to start path resolution
-////	path		- Path to the object to be opened/created
-////	flags		- Flags indicating how the object should be opened
-////	mode		- Mode bitmask to use if a new object is created
+// Arguments:
 //
-//std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-//	const char_t* path, int flags, uapi::mode_t mode)
-//{
-//	// per path_resolution(7), empty paths are not allowed
-//	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-//	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
-//
-//	// O_PATH filter -> Only O_CLOEXEC, O_DIRECTORY and O_NOFOLLOW are evaluated
-//	if(flags & LINUX_O_PATH) flags &= (LINUX_O_PATH | LINUX_O_CLOEXEC | LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW);
-//
-//	// O_CREAT | O_EXCL indicates that a regular file object must be created, call CreateFile() instead.
-//	if((flags & (LINUX_O_CREAT | LINUX_O_EXCL)) == (LINUX_O_CREAT | LINUX_O_EXCL)) return CreateFile(root, base, path, flags, mode);
-//
-//	// O_CREAT indicates that if the object does not exist, a new regular file will be created
-//	else if((flags & LINUX_O_CREAT) == LINUX_O_CREAT) {
-//
-//		PathSplitter splitter(path);				// Path splitter
-//
-//		// Resolve the branch path to an Alias instance, must resolve to a Directory
-//		auto branch = ResolvePath(root, base, splitter.Branch, flags);
-//		if(branch->Node->Type != NodeType::Directory) throw LinuxException(LINUX_ENOTDIR);
-//
-//		// Ask the branch node to resolve the leaf, if that succeeds, just open it
-//		try { 
-//			
-//			auto leaf = ResolvePath(root, branch, splitter.Leaf, flags);
-//			return leaf->Node->Open(leaf, flags); 
-//		}
-//		
-//		catch(...) { /* DON'T CARE - KEEP GOING */ }
-//
-//		// The leaf didn't exist (or some other bad thing happened), cast out the branch
-//		// as a Directory node and attempt to create the file instead
-//		auto directory = std::dynamic_pointer_cast<Directory>(branch->Node);
-//		if(directory == nullptr) throw LinuxException(LINUX_ENOTDIR);
-//
-//		return directory->CreateFile(branch, splitter.Leaf, flags, mode);
-//	}
-//
-//	// Standard open, will throw exception if the object does not exist
-//	auto alias = ResolvePath(root, base, path, flags);
-//	return alias->Node->Open(alias, flags);
-//}
-//
-////-----------------------------------------------------------------------------
-//// FileSystem::ReadSymbolicLink (static)
-////
-//// Reads the target string from a file system symbolic link
-////
-//// Arguments:
-////
-////	root		- Root alias to use for path resolution
-////	base		- Base alias from which to start path resolution
-////	path		- Path to the object to be opened/created
-////	buffer		- Target string output buffer
-////	length		- Length of the target string output buffer
-//
-//size_t FileSystem::ReadSymbolicLink(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, const char_t* path, 
-//	char_t* buffer, size_t length)
-//{
-//	// per path_resolution(7), empty paths are not allowed
-//	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-//	if(*path == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
-//
-//	// Ensure that the buffer pointer is not null and is at least one byte in length
-//	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-//	if(length == 0) throw LinuxException(LINUX_ENOENT, Exception(E_INVALIDARG));
-//
-//	// Find the desired symbolic link in the file system
-//	auto alias = ResolvePath(root, base, path, LINUX_O_NOFOLLOW);
-//	
-//	// The only valid node type is a symbolic link object; EINVAL if it's not
-//	auto symlink = std::dynamic_pointer_cast<SymbolicLink>(alias->Node);
-//	if(symlink == nullptr) throw LinuxException(LINUX_EINVAL);
-//
-//	return symlink->ReadTarget(buffer, length);
-//}
-//
-////-----------------------------------------------------------------------------
-//// FileSystem::ResolvePath (static)
-////
-//// Resolves a file system path to an alias instance
-////
-//// Arguments:
-////
-////	root		- Root alias to use for path resolution
-////	base		- Base alias from which to start path resolution
-////	path		- Path string to be resolved
-////	flags		- Path resolution flags
-//
-//std::shared_ptr<FileSystem::Alias> FileSystem::ResolvePath(const std::shared_ptr<Alias>& root, const std::shared_ptr<Alias>& base, 
-//	const char_t* path, int flags)
-//{
-//	int	symlinks = 0;							// Number of symbolic links encountered
-//
-//	if(path == nullptr) throw LinuxException(LINUX_EFAULT, Exception(E_POINTER));
-//
-//	// If there is no path to consume, resolve to the base alias rather than
-//	// raising ENOENT.  This is a valid operation when a parent directory needs
-//	// to be resolved and it happens to be the base alias
-//	if(*path == 0) return base;
-//
-//	// Determine if the path was absolute or relative and remove leading slashes
-//	bool absolute = (*path == '/');
-//	while(*path == '/') path++;
-//
-//	// Start at either the root or the base depending on the path type, and ask
-//	// that node to resolve the now relative path string to an Alias instance
-//	auto current = (absolute) ? root : base;
-//	return current->Node->Resolve(root, current, path, flags, &symlinks);
-//}
+//	ns			- Namespace associated with the calling process
+//	root		- Path to the contextual root node for the resolution
+//	current		- Path to the file system node from which to begin resolution
+//	path		- Path string to be resolved
+//	flags		- Path resolution flags
+//	depth		- Current lookup recursion depth (symbolic links)
+
+std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+	std::shared_ptr<FileSystem::Path> current, const char_t* path, FileSystem::LookupFlags flags, int depth)
+{
+	// Increment and verify the recursion depth of the current lookup
+	if(++depth >= FileSystem::MaxSymbolicLinks) throw LinuxException(LINUX_ELOOP);
+
+	// Convert the path string into a posix_path instance and iterate over it
+	auto lookuppath = posix_path(path);
+	for(const auto& iterator : lookuppath) {
+
+		// Get the parent of the current component, this can be null which indicates that the
+		// component is a self-referential root path (".." leads to itself)
+		auto parent = (current->m_parent) ? current->m_parent : current;
+		auto node = current->m_alias->Node;
+
+		// ROOT [/]: switch current to the root alias and mount
+		if(strcmp(iterator, "/") == 0) { current = root; continue; }
+
+		// SELF [.]: skip to the next path component
+		if(strcmp(iterator, ".") == 0) continue;
+
+		// PARENT [..] move to the current component's parent path instance
+		if(strcmp(iterator, "..") == 0) { current = parent; continue; }
+
+		// If the current path component is a symbolic link, follow it (must result in a directory)
+		if(node->Type == FileSystem::NodeType::SymbolicLink) {
+
+			auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(node);
+			if(!symlink) throw LinuxException(LINUX_ENOENT);
+
+			current = LookupPath(ns, root, parent, symlink->Target.c_str(), FileSystem::LookupFlags::Directory, depth);
+		}
+
+		// If the current path component is a directory, look up the child path component
+		else if(node->Type == FileSystem::NodeType::Directory) {
+
+			auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(node);
+			if(!directory) throw LinuxException(LINUX_ENOTDIR);
+
+			// Retrieve the alias for the child object and check if it is a mount point
+			auto newalias = directory->Lookup(current->m_mount, iterator);
+			auto newmount = ns->Mounts->Find(newalias);
+
+			// Create the updated Path based on the new alias and optionally the new mount point
+			current = std::make_shared<FileSystem::Path>(current, newalias, (newmount) ? newmount : current->m_mount);
+		}
+
+		else throw LinuxException(LINUX_ENOTDIR);
+	}
+
+	// If the final path component is a symbolic link, the O_NOFOLLOW flag must be checked
+	if(current->m_alias->Node->Type == FileSystem::NodeType::SymbolicLink) {
+
+		// O_NOFOLLOW - return the symbolic link as the final component
+		if(flags & FileSystem::LookupFlags::NoFollow) return current;
+
+		// Not O_FOLLOW - read the symbolic link target and follow it (relative to parent)
+		auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->m_alias->Node);
+		if(!symlink) throw LinuxException(LINUX_ENOENT);
+
+		current = LookupPath(ns, root, current->m_parent, symlink->Target.c_str(), FileSystem::LookupFlags::None, depth);
+	}
+
+	// O_DIRECTORY indicates that the resolved path must indicate a directory object
+	if((flags & FileSystem::LookupFlags::Directory) && (current->m_alias->Node->Type != FileSystem::NodeType::Directory))
+		throw LinuxException(LINUX_ENOTDIR);
 	
-//
-// FILESYSTEM::EXECUTEHANDLE
-//
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle Constructor (private)
-//
-// Arguments:
-//
-//	handle		- Reference to the custom file system handle to wrap
-
-FileSystem::ExecuteHandle::ExecuteHandle(const std::shared_ptr<FileSystem::Handle>& handle) : m_handle(handle)
-{
-	_ASSERTE(handle);
+	return current;
 }
 
 //-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::Create (static)
+// FileSystem::OpenExecutable (static)
 //
-// Creates a new ExecuteHandle instance, wrapping an existing file system handle
-//
-// Arguments:
-//
-//	handle		- Reference to the custom file system handle to wrap
-
-std::shared_ptr<FileSystem::Handle> FileSystem::ExecuteHandle::Create(const std::shared_ptr<FileSystem::Handle>& handle)
-{
-	return std::make_shared<ExecuteHandle>(handle);
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::Duplicate
-//
-// Creates a duplicate Handle instance
+// Opens an executable file system object and returns a Handle instance
 //
 // Arguments:
 //
-//	flags		- Flags applicable to the new handle
+//	ns			- Namespace in which to perform name resolution
+//	root		- Path to the contextual root node for the resolution
+//	current		- Path to the file system node from which to begin resolution
+//	path		- Path to the object to be opened
 
-std::shared_ptr<FileSystem::Handle> FileSystem::ExecuteHandle::Duplicate(int flags)
+std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+	std::shared_ptr<FileSystem::Path> current, const char_t* path)
 {
-	return m_handle->Duplicate(flags);
-}
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*path == 0) throw LinuxException(LINUX_ENOENT);
 
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::Read
-//
-// Synchronously reads data from the underlying node into a buffer
-//
-// Arguments:
-//
-//	buffer		- Destination buffer
-//	count		- Maximum number of bytes to read
-
-uapi::size_t FileSystem::ExecuteHandle::Read(void* buffer, uapi::size_t count)
-{
-	return m_handle->Read(buffer, count);
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::ReadAt
-//
-// Synchronously reads data from the underlying node into a buffer
-//
-// Arguments:
-//
-//	offset		- Absolute file position to begin reading from
-//	buffer		- Destination buffer
-//	count		- Maximum number of bytes to read
-
-uapi::size_t FileSystem::ExecuteHandle::ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count)
-{
-	return m_handle->ReadAt(offset, buffer, count);
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::Seek
-//
-// Changes the file position
-//
-// Arguments:
-//
-//	offset		- Offset (relative to whence) to position the file pointer
-//	whence		- Flag indicating the file position from which offset applies
-
-uapi::loff_t FileSystem::ExecuteHandle::Seek(uapi::loff_t offset, int whence)
-{
-	return m_handle->Seek(offset, whence);
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::Sync
-//
-// Synchronizes all metadata and data associated with the file to storage
-//
-// Arguments:
-//
-//	NONE
-
-void FileSystem::ExecuteHandle::Sync(void)
-{
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::SyncData
-//
-// Synchronizes all data associated with the file to storage, not metadata
-//
-// Arguments:
-//
-//	NONE
-
-void FileSystem::ExecuteHandle::SyncData(void)
-{
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::Write
-//
-// Synchronously writes data from a buffer to the underlying node
-//
-// Arguments:
-//
-//	buffer		- Source buffer
-//	count		- Maximum number of bytes to write
-
-uapi::size_t FileSystem::ExecuteHandle::Write(const void* buffer, uapi::size_t count)
-{
-	UNREFERENCED_PARAMETER(buffer);
-	UNREFERENCED_PARAMETER(count);
+	// Attempt to resolve the file system object, it must be a regular file
+	auto exepath = LookupPath(ns, root, current, path, LookupFlags::None, 0);
 	
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
+	// Create and return an executable handle for the file system object
+	auto file = std::dynamic_pointer_cast<FileSystem::File>(exepath->m_alias->Node);
+	if(!file) throw LinuxException(LINUX_ENOEXEC);
+
+	return file->OpenExec(exepath->m_mount);
 }
 
 //-----------------------------------------------------------------------------
-// FileSystem::ExecuteHandle::WriteAt
+// FileSystem::OpenFile (static)
 //
-// Synchronously writes data from a buffer to the underlying node
+// Opens a file system object and returns a Handle instance
 //
 // Arguments:
 //
-//	offset		- Absolute file position to begin writing from
-//	buffer		- Source buffer
-//	count		- Maximum number of bytes to write
+//	ns			- Namespace in which to perform name resolution
+//	root		- Path to the contextual root node for the resolution
+//	current		- Path to the file system node from which to begin resolution
+//	path		- Path to the object to be opened or created
+//	flags		- Handle access mode and flags (LINUX_O_XXXXX)
+//	mode		- Permissions to assign if a new object is created
 
-uapi::size_t FileSystem::ExecuteHandle::WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count)
+std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+	std::shared_ptr<FileSystem::Path> current, const char_t* path, int flags, uapi::mode_t mode)
 {
-	UNREFERENCED_PARAMETER(offset);
-	UNREFERENCED_PARAMETER(buffer);
-	UNREFERENCED_PARAMETER(count);
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*path == 0) throw LinuxException(LINUX_ENOENT);
 
-	throw LinuxException(LINUX_EACCES, Exception(E_NOTIMPL));
+	// Break the requested path up into branch and leaf components
+	posix_path filepath(path);
+	auto branch = filepath.branch();
+	auto leaf = filepath.leaf();
+
+	// Change to the branch path, which must resolve to a directory instance
+	current = LookupPath(ns, root, current, branch, FileSystem::LookupFlags::Directory, 0);
+
+	// Cast the branch directory into a FileSystem::Directory node instance
+	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(current->m_alias->Node);
+	if(!directory) throw LinuxException(LINUX_ENOTDIR);
+
+	// O_CREAT - Handle special rules regarding optional creation of a new regular file
+	if(flags & LINUX_O_CREAT) {
+
+		// If there is no leaf component, the operation is referring to a directory
+		if(!leaf) throw LinuxException(LINUX_EISDIR);
+
+		// todo
+		(mode);
+		// check if the object exists -- add method to FileSystem::Directory
+		// if exists and O_EXCL, throw
+		// if exists and not O_EXCL, fall through
+		// create a new regular file object and return the handle
+	}
+
+	// O_TMPFILE (| O_EXCL)
+	// todo -- see open(2) for documentation, will need support in FileSystem::Directory
+
+	// Lookup the final path component
+	current = LookupPath(ns, root, current, leaf, FileSystem::LookupFlags(flags), 0);
+
+	// O_PATH is handled by a special PathHandle object, otherwise request the handle from the located node instance
+	if(flags & LINUX_O_PATH) return std::make_shared<PathHandle>(current->m_alias->Node, FileSystem::HandleAccess(flags));
+	else return current->m_alias->Node->Open(current->m_mount, FileSystem::HandleAccess(flags), FileSystem::HandleFlags(flags));
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::ReadSymbolicLink (static)
+//
+// Reads the target string from a file system symbolic link
+//
+// Arguments:
+//
+//	ns			- Namespace in which to perform name resolution
+//	root		- Path to the contextual root node for the resolution
+//	current		- Path to the file system node from which to begin resolution
+//	path		- Path to the symbolic link object
+//	buffer		- Target string output buffer
+//	length		- Length of the target string output buffer
+
+size_t FileSystem::ReadSymbolicLink(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+		std::shared_ptr<FileSystem::Path> current, const char_t* path, char_t* buffer, size_t length)
+{
+	// per path_resolution(7), empty paths are not allowed
+	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+
+	// Ensure that the buffer pointer is not null and is at least one byte in length
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(length == 0) throw LinuxException(LINUX_EINVAL);
+
+	// Attempt to resolve the file system object, do not follow a trailing symbolic link
+	current = LookupPath(ns, root, current, path, LookupFlags::NoFollow, 0);
+
+	// The provided path must have led to a symbolic link file system object
+	auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->m_alias->Node);
+	if(!symlink) throw LinuxException(LINUX_EINVAL);
+
+	// Read the target information from the symbolic link
+	return symlink->GetTarget(buffer, length);
 }
 
 //
@@ -604,67 +565,46 @@ uapi::size_t FileSystem::ExecuteHandle::WriteAt(uapi::loff_t offset, const void*
 //
 
 //-----------------------------------------------------------------------------
-// FileSystem::Path Constructor
+// FileSystem::Path Constructor (private)
 //
 // Arguments:
 //
-//	mount		- Mount object reference
 //	alias		- Alias object reference
-
-FileSystem::Path::Path(const std::shared_ptr<FileSystem::Mount>& mount, const std::shared_ptr<FileSystem::Alias>& alias) :
-	m_mount(mount), m_alias(alias)
-{
-	_ASSERTE(mount);
-	_ASSERTE(alias);
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::Path::getAlias
-//
-// Gets a reference to the contained Alias instance
-
-std::shared_ptr<FileSystem::Alias> FileSystem::Path::getAlias(void) const
-{
-	return m_alias;
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::Path::Create (static)
-//
-// Creates a new Path instance
-//
-// Arguments:
-//
 //	mount		- Mount object reference
-//	alias		- Alias object reference
 
-std::unique_ptr<FileSystem::Path> FileSystem::Path::Create(const std::shared_ptr<FileSystem::Mount>& mount, const std::shared_ptr<FileSystem::Alias>& alias)
+FileSystem::Path::Path(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount) : 
+	m_alias(std::move(alias)), m_mount(std::move(mount))
 {
-	return std::make_unique<Path>(mount, alias);
 }
 
 //-----------------------------------------------------------------------------
-// FileSystem::Path::Duplicate
-//
-// Duplicates this Path instance
+// FileSystem::Path Constructor (private)
 //
 // Arguments:
 //
-//	NONE
+//	parent		- Parent path instance
+//	alias		- Alias object reference
+//	mount		- Mount object reference
 
-std::unique_ptr<FileSystem::Path> FileSystem::Path::Duplicate(void) const
+FileSystem::Path::Path(std::shared_ptr<FileSystem::Path> parent, std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount) : 
+	m_parent(std::move(parent)), m_alias(std::move(alias)), m_mount(std::move(mount))
 {
-	return std::make_unique<Path>(m_mount, m_alias);
 }
 
 //-----------------------------------------------------------------------------
-// FileSystem::Path::getMount
-//
-// Gets a reference to the contained Mount instance
+// FileSystem::Path Copy Constructor
 
-std::shared_ptr<FileSystem::Mount> FileSystem::Path::getMount(void) const
+FileSystem::Path::Path(const FileSystem::Path& rhs) : 
+	m_parent(rhs.m_parent), m_alias(rhs.m_alias), m_mount(rhs.m_mount)
 {
-	return m_mount;
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::Path Move Constructor
+
+FileSystem::Path::Path(FileSystem::Path&& rhs) : 
+	m_parent(std::move(rhs.m_parent)), m_alias(std::move(rhs.m_alias)), m_mount(std::move(rhs.m_mount))
+{
 }
 
 //
@@ -672,29 +612,26 @@ std::shared_ptr<FileSystem::Mount> FileSystem::Path::getMount(void) const
 //
 
 //-----------------------------------------------------------------------------
-// FileSystem::PathHandle Constructor (private)
+// FileSystem::PathHandle Constructor
 //
 // Arguments:
 //
-//	handle		- Reference to the custom file system handle to wrap
+//	node		- Node instance to attach to the handle
+//	access		- Handle access mode
 
-FileSystem::PathHandle::PathHandle(const std::shared_ptr<FileSystem::Handle>& handle) : m_handle(handle)
+FileSystem::PathHandle::PathHandle(std::shared_ptr<Node> node, FileSystem::HandleAccess access)
+	: m_node(std::move(node)), m_access(access)
 {
-	_ASSERTE(handle);
 }
 
 //-----------------------------------------------------------------------------
-// FileSystem::PathHandle::Create (static)
+// FileSystem::PathHandle::getAccess
 //
-// Creates a new PathHandle instance, wrapping an existing file system handle
-//
-// Arguments:
-//
-//	handle		- Reference to the custom file system handle to wrap
+// Gets the handle access mode
 
-std::shared_ptr<FileSystem::Handle> FileSystem::PathHandle::Create(const std::shared_ptr<FileSystem::Handle>& handle)
+FileSystem::HandleAccess FileSystem::PathHandle::getAccess(void) const
 {
-	return std::make_shared<PathHandle>(handle);
+	return m_access;
 }
 
 //-----------------------------------------------------------------------------
@@ -704,11 +641,22 @@ std::shared_ptr<FileSystem::Handle> FileSystem::PathHandle::Create(const std::sh
 //
 // Arguments:
 //
-//	flags		- Flags applicable to the new handle
+//	NONE
 
-std::shared_ptr<FileSystem::Handle> FileSystem::PathHandle::Duplicate(int flags)
+std::shared_ptr<FileSystem::Handle> FileSystem::PathHandle::Duplicate(void) const
 {
-	return m_handle->Duplicate(flags);
+	// Construct a new PathHandle linked to the same node and with the same access
+	return std::make_shared<PathHandle>(m_node, m_access);
+}
+
+//-----------------------------------------------------------------------------
+// FileSystem::PathHandle::getFlags
+//
+// Gets the flags specified on the handle
+
+FileSystem::HandleFlags FileSystem::PathHandle::getFlags(void) const
+{
+	return HandleFlags::None;
 }
 
 //-----------------------------------------------------------------------------
@@ -726,7 +674,7 @@ uapi::size_t FileSystem::PathHandle::Read(void* buffer, uapi::size_t count)
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -746,7 +694,7 @@ uapi::size_t FileSystem::PathHandle::ReadAt(uapi::loff_t offset, void* buffer, u
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -764,7 +712,7 @@ uapi::loff_t FileSystem::PathHandle::Seek(uapi::loff_t offset, int whence)
 	UNREFERENCED_PARAMETER(offset);
 	UNREFERENCED_PARAMETER(whence);
 
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -776,9 +724,9 @@ uapi::loff_t FileSystem::PathHandle::Seek(uapi::loff_t offset, int whence)
 //
 //	NONE
 
-void FileSystem::PathHandle::Sync(void)
+void FileSystem::PathHandle::Sync(void) const
 {
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -790,9 +738,9 @@ void FileSystem::PathHandle::Sync(void)
 //
 //	NONE
 
-void FileSystem::PathHandle::SyncData(void)
+void FileSystem::PathHandle::SyncData(void) const
 {
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -809,8 +757,8 @@ uapi::size_t FileSystem::PathHandle::Write(const void* buffer, uapi::size_t coun
 {
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
-
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------
@@ -830,7 +778,7 @@ uapi::size_t FileSystem::PathHandle::WriteAt(uapi::loff_t offset, const void* bu
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EBADF, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EBADF);
 }
 
 //-----------------------------------------------------------------------------

@@ -25,9 +25,10 @@
 #pragma once
 
 #include <memory>
-#include <set>
-#include <concrt.h>
+#include <stack>
+#include <unordered_map>
 #include "FileSystem.h"
+#include "LinuxException.h"
 
 #pragma warning(push, 4)				
 
@@ -36,7 +37,7 @@
 //
 // Provides an isolated view of file system mounts
 
-class MountNamespace : public std::enable_shared_from_this<MountNamespace>
+class MountNamespace
 {
 public:
 
@@ -47,40 +48,56 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Add
+	//
+	// Adds an alias as a mount point in this namespace
+	void Add(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount);
+
+	// Clone
+	//
+	// Clones this MountNamespace instance
+	std::shared_ptr<MountNamespace> Clone(void);
+
 	// Create (static)
 	//
 	// Creates a new MountNamespace instance
 	static std::shared_ptr<MountNamespace> Create(void);
-	static std::shared_ptr<MountNamespace> Create(const std::shared_ptr<MountNamespace>& mountns);
+
+	// Find
+	//
+	// Finds the mount point associated with an alias, or nullptr if none
+	std::shared_ptr<FileSystem::Mount> Find(std::shared_ptr<const FileSystem::Alias> alias);
+
+	// Remove
+	//
+	// Removes the topmost mount point associated with an alias instance
+	void Remove(std::shared_ptr<const FileSystem::Alias> alias);
 
 private:
 
 	MountNamespace(const MountNamespace&)=delete;
 	MountNamespace& operator=(const MountNamespace&)=delete;
 
-	// mount_set_t
+	// mount_map_t
 	//
 	// Collection type used to store the mounts for this namespace
-	using mount_set_t = std::set<std::pair<std::unique_ptr<Mount>, std::shared_ptr<Alias>>>;
-
-	// mount_set_lock_t
+	using mount_map_t = std::unordered_map<std::shared_ptr<const FileSystem::Alias>, std::stack<std::shared_ptr<FileSystem::Mount>>>;
+	
+	// mount_map_lock_t
 	//
-	// Synchronization object used with mount_set_t collection
-	using mount_set_lock_t = Concurrency::reader_writer_lock;
+	// Synchronization object used with mount_map_t collection
+	using mount_map_lock_t = sync::reader_writer_lock;
 
 	// Instance Constructor
 	//
-	MountNamespace(mount_set_t&& mounts);
+	MountNamespace(mount_map_t&& mounts);
 	friend class std::_Ref_count_obj<MountNamespace>;
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	mount_set_t					m_mounts;			// Collection of mounts
-	mount_set_lock_t			m_mountlock;		// Synchronization object
+	mount_map_t					m_mounts;			// Collection of mounts
+	mount_map_lock_t			m_mountslock;		// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

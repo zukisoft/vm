@@ -22,156 +22,58 @@
 
 #include "stdafx.h"
 #include "RootAlias.h"
+#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootAlias Constructor (private)
+// RootAlias Constructor
 //
 // Arguments:
 //
-//	ns			- Namespace in which the initial mount is a member
-//	mount		- Reference to the initial mountpoint
+//	node		- Node to attach to this alias
 
-RootAlias::RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount)
+RootAlias::RootAlias(std::shared_ptr<FileSystem::Node> node) : m_node(std::move(node))
 {
-	_ASSERTE(ns);
-	_ASSERTE(mount);
-
-	// Add the initial namespace/mount combination to the collection
-	try { m_mounts[ns].push(mount); }
-	catch(...) { throw LinuxException(LINUX_ENOMEM); }
 }
 
 //-----------------------------------------------------------------------------
-// RootAlias::Create (static)
+// RootAlias::GetName
 //
-// Creates an instance of the root alias object
+// Reads the name assigned to this alias
 //
 // Arguments:
 //
-//	ns			- Namespace in which the initial mount is a member
-//	mount		- Reference to the initial mountpoint
+//	buffer			- Output buffer
+//	count			- Size of the output buffer, in bytes
 
-std::shared_ptr<FileSystem::Alias> RootAlias::Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount)
+uapi::size_t RootAlias::GetName(char_t* buffer, size_t count) const
 {
-	return std::make_shared<RootAlias>(ns, mount);
-}
+	UNREFERENCED_PARAMETER(count);
 
-//-----------------------------------------------------------------------------
-// RootAlias::Follow
-//
-// Follows this alias to the node that it refers to in the specified namespace
-//
-// Arguments:
-//
-//	ns		- Namespace in which to resolve the alias
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
 
-std::shared_ptr<FileSystem::Node> RootAlias::Follow(const std::shared_ptr<Namespace>& ns)
-{
-	mountslock_t::scoped_lock_read reader(m_mountslock);
-
-	// If this namespace has been overmounted, return the topmost mount root node
-	const auto& iterator = m_mounts.find(ns);
-	if(iterator != m_mounts.end()) return iterator->second.top()->Root;
-
-	// The root alias must have a mount entry in every namespace
-	throw LinuxException(LINUX_ENOENT);
-}
-
-//-----------------------------------------------------------------------------
-// RootAlias::PopMount
-//
-// Removes the topmost overmount within the specified namespace
-//
-// Arguments:
-//
-//	ns		- Namespace in which to remove the topmost mount
-
-void RootAlias::PopMount(const std::shared_ptr<Namespace>& ns)
-{
-	mountslock_t::scoped_lock writer(m_mountslock);
-
-	// Locate the target namespace entry in the overmounts collection
-	const auto& iterator = m_mounts.find(ns);
-	if(iterator != m_mounts.end()) {
-
-		// The stack instance in the collection should never be empty, the entire
-		// namespace key should have been removed from the collection (see below)
-		_ASSERTE(!iterator->second.empty());
-
-		// Remove the topmost mount instance from the overmount stack, if that
-		// reduces the size of the stack to zero, remove the entire entry
-		iterator->second.pop();
-		if(iterator->second.empty()) m_mounts.erase(iterator);
-	}
-}
-
-//-----------------------------------------------------------------------------
-// RootAlias::PushMount
-//
-// Overmounts this alias such that within the specified namespace it will refer
-// to the root node of a mount point rather than the directly associated node
-//
-// Arguments:
-//
-//	ns		- Namespace in which to register the mount
-//	mount	- Mount instance to be registered as the target for this alias
-
-void RootAlias::PushMount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Mount>& mount)
-{
-	mountslock_t::scoped_lock writer(m_mountslock);
-
-	try { m_mounts[ns].push(mount); }
-	catch(...) { throw LinuxException(LINUX_ENOMEM); }
-}
-
-//-----------------------------------------------------------------------------
-// RootAlias::getMount
-//
-// Retrieves the mountpoint instance for the specified namespace, or nullptr if not mounted
-
-std::shared_ptr<FileSystem::Mount> RootAlias::getMount(const std::shared_ptr<Namespace>& ns)
-{
-	mountslock_t::scoped_lock_read reader(m_mountslock);
-
-	// Locate the target namespace entry in the overmounts collection and
-	// return a shared pointer to the topmost mount instance
-	const auto& iterator = m_mounts.find(ns);
-	return (iterator != m_mounts.end()) ? iterator->second.top() : nullptr;
-}
-//-----------------------------------------------------------------------------
-// RootAlias::getMounted
-//
-// Determines if the alias serves as a mountpoint in the specified namespace
-
-bool RootAlias::getMounted(const std::shared_ptr<Namespace>& ns)
-{
-	mountslock_t::scoped_lock_read reader(m_mountslock);
-
-	// Locate the target namespace entry in the overmounts collection
-	const auto& iterator = m_mounts.find(ns);
-	return iterator != m_mounts.end();
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
 // RootAlias::getName
 //
-// Gets the name associated with this alias
+// Gets the name assigned to this alias
 
-const char_t* RootAlias::getName(void)
+std::string RootAlias::getName(void) const
 {
-	return "";
+	return std::string();
 }
 
 //-----------------------------------------------------------------------------
-// RootAlias::getParent
+// RootAlias::getNode
 //
-// Gets a reference to the parent alias
+// Gets the node to which this alias refers
 
-std::shared_ptr<FileSystem::Alias> RootAlias::getParent(void)
+std::shared_ptr<FileSystem::Node> RootAlias::getNode(void) const
 {
-	return shared_from_this();
+	return m_node;
 }
 
 //-----------------------------------------------------------------------------

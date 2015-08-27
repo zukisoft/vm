@@ -401,9 +401,6 @@
     <ClInclude Include="..\common\linux\capability.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="Capabilities.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\linux\magic.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
@@ -430,6 +427,12 @@
     </ClInclude>
     <ClInclude Include="..\common\timespan.h">
       <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="HostFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Capability.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -880,9 +883,6 @@
     <ClCompile Include="..\common\MountOptions.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Capabilities.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RootAlias.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -897,6 +897,15 @@
     </ClCompile>
     <ClCompile Include="..\common\timespan.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="HostFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessFileSystem.cpp">
+      <Filter>Source Files\File Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Capability.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

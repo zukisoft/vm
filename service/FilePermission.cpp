@@ -23,81 +23,82 @@
 #include "stdafx.h"
 #include "FilePermission.h"
 
+#include "LinuxException.h"
+
 #pragma warning(push, 4)
 
+// FilePermission::Execute (static)
+//
+const FilePermission FilePermission::Execute{ FilePermission::EXECUTE };
+
+// FilePermission::Read (static)
+//
+const FilePermission FilePermission::Read{ FilePermission::READ };
+
+// FilePermission::Write (static)
+//
+const FilePermission FilePermission::Write{ FilePermission::WRITE };
+
 //-----------------------------------------------------------------------------
-// FilePermission Constructor
+// FilePermission Constructor (private)
 //
 // Arguments:
 //
-//	mode		- Mode flags to assign to this FilePermission
+//	mask		- Access mask to be assigned to this instance
 
-FilePermission::FilePermission(uapi::mode_t mode) : m_mode(mode)
-{
-	// todo: need to get uid/gid from somewhere
-	m_uid = m_gid = 0;
-}
-
-//-----------------------------------------------------------------------------
-// FilePermission Constructor
-//
-// Arguments:
-//
-//	uid			- Owner UID to assign to this FilePermission
-//	gid			- Group owner GID to assign to this FilePermission
-//	mode		- Mode flags to assign to this FilePermission
-
-FilePermission::FilePermission(uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode) :
-	m_uid(uid), m_gid(gid), m_mode(mode)
+FilePermission::FilePermission(uint8_t mask) : m_mask(mask)
 {
 }
 
 //-----------------------------------------------------------------------------
-// FilePermission:Demand
-//
-// Demands the caller has the specified access to the securable object
-//
-// Arguments:
-//
-//	access		- Access mask being demanded
+// FilePermission bitwise or operator
 
-void FilePermission::Demand(const FilePermission::Access& access)
+FilePermission FilePermission::operator|(const FilePermission rhs) const
 {
-	(access);
-	// this will need to check the current uid/gid against the contained values
+	return FilePermission(m_mask | rhs.m_mask);
 }
 
 //-----------------------------------------------------------------------------
-// FilePermission::Narrow
+// FilePermission::Check (static)
 //
-// Narrows the permission set based on file access flags (O_RDONLY and so on)
+// Checks the specified access from permission components
 //
 // Arguments:
 //
-//	flags		- File access mask flags
+//	permission	- FilePermission representing requested access
+//	uid			- File system object user id
+//	gid			- File system object group id
+//	mode		- File system object mode flags
 
-void FilePermission::Narrow(int flags)
+bool FilePermission::Check(const FilePermission& permission, uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode)
 {
-	// TODO: what to do about execute for RDONLY and RDWR ?
-
-	switch(flags & LINUX_O_ACCMODE) {
-
-		// O_RDONLY: Remove write permissions from the mode
-		case LINUX_O_RDONLY: 
-			m_mode &= ~(LINUX_S_IWUSR | LINUX_S_IWGRP | LINUX_S_IWOTH); 
-			break;
-
-		// O_WRONLY: Remove read and execute permissions from the mode
-		case LINUX_O_WRONLY: 
-			m_mode &= ~(LINUX_S_IRUSR | LINUX_S_IRGRP | LINUX_S_IROTH | LINUX_S_IXUSR | LINUX_S_IXGRP | LINUX_S_IXOTH); 
-			break;
-
-		// O_RDWR: Permissions remain unmodified
-		case LINUX_O_RDWR:   
-			break;
-	}
+	// todo
+	(permission);
+	(uid);
+	(gid);
+	(mode);
+	
+	return true;
 }
 
+//-----------------------------------------------------------------------------
+// FilePermission::Demand (static)
+//
+// Demands the specified access from permission components
+//
+// Arguments:
+//
+//	permission	- FilePermission representing requested access
+//	uid			- File system object user id
+//	gid			- File system object group id
+//	mode		- File system object mode flags
+
+void FilePermission::Demand(const FilePermission& permission, uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode)
+{
+	// This is the same operation as Check(), it just throws an exception
+	if(!Check(permission, uid, gid, mode)) throw LinuxException(LINUX_EACCES);
+}
+	
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)

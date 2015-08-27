@@ -26,16 +26,9 @@
 
 #include <atomic>
 #include <memory>
-#include <concrt.h>
-#include <linux/magic.h>
-#include <linux/time.h>
-#include "Capabilities.h"
+#include <unordered_map>
+#include "datetime.h"
 #include "FileSystem.h"
-#include "LinuxException.h"
-#include "MountOptions.h"
-#include "Namespace.h"
-#include "PathIterator.h"
-#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 
@@ -43,27 +36,37 @@
 // RootFileSystem
 //
 // RootFileSystem implements a virtual single directory node file system in which
-// no additional objects can be created
+// no child nodes can be created
 //
 // Supported mount options:
 //
-//	TODO - LIST FLAGS THAT WILL BE SUPPORTED DURING MOUNT
-//	So far: MS_RDONLY, MS_KERNMOUNT
+//	MS_KERNMOUNT
+//	MS_NOATIME
+//	MS_NODIRATIME
+//	MS_RDONLY
+//	MS_RELATIME
+//	MS_STRICTATIME
 //
 //	mode=nnn	- Sets the permissions of the directory node
 //	uid=nnn		- Sets the owner user id of the directory node
 //	gid=nnn		- Sets the owner group id of the directory node
 //	
+//	(MS_NODEV, MS_NOEXEC and MS_NOSUID are always set)
+//
 // Supported remount options:
 //
 //	MS_RDONLY
 //
-// TODO: NEED TO TRACK OPEN HANDLES; REGARDLESS OF OWNER IN ORDER
-// TO KNOW IF CAN BE UNMOUNTED / REMOUNTED (This is getting complicated)
+// todo: document weird synchronization of unmount() with m_root and anything else
+// that might require clarification
 
-class RootFileSystem : public FileSystem
+class RootFileSystem
 {
 public:
+
+	// Instance Constructor
+	//
+	RootFileSystem(const char_t* source, uint32_t flags);
 
 	// Destructor
 	//
@@ -82,94 +85,96 @@ private:
 	RootFileSystem(const RootFileSystem&)=delete;
 	RootFileSystem& operator=(const RootFileSystem&)=delete;
 
-	// RootFileSystem::Directory
+	// Forward Declarations
 	//
-	class Directory : public FileSystem::Directory, public std::enable_shared_from_this<Directory>
+	class DirectoryHandle;
+
+	// handlemap_t
+	//
+	// Collection of active DirectoryHandle instances
+	using handlemap_t = std::unordered_map<DirectoryHandle*, std::weak_ptr<DirectoryHandle>>;
+
+	// RootFileSystem::DirectoryNode
+	//
+	class DirectoryNode : public FileSystem::Directory
 	{
 	public:
 
+		// Instance Constructor
+		//
+		DirectoryNode(std::shared_ptr<RootFileSystem> fs, uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid);
+
 		// Destructor
 		//
-		~Directory()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
-
-		// Create (static)
-		//
-		// Creates a Directory instance
-		static std::shared_ptr<Directory> Create(uapi::mode_t mode, uapi::pid_t uid, uapi::pid_t gid);
+		~DirectoryNode()=default;
 
 		//---------------------------------------------------------------------
 		// FileSystem::Directory Implementation
 
-		// CreateCharacterDevice
-		//
-		// Creates a new character device node as a child of this node
-		virtual void CreateCharacterDevice(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, uapi::mode_t mode, uapi::dev_t device);
-
 		// CreateDirectory
 		//
-		// Creates a new directory node as a child of this node
-		virtual void CreateDirectory(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, uapi::mode_t mode);
+		// Creates a new directory node as a child of this directory
+		virtual std::shared_ptr<FileSystem::Alias> CreateDirectory(std::shared_ptr<FileSystem::Mount> mount, const char_t* name, uapi::mode_t mode) override;
 
 		// CreateFile
 		//
-		// Creates a new regular file node as a child of this node
-		virtual std::shared_ptr<Handle> CreateFile(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, int flags, uapi::mode_t mode);
-
-		// CreateSymbolicLink
-		//
-		// Creates a new symbolic link as a child of this node
-		virtual void CreateSymbolicLink(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, const char_t* target);
-
-		// DemandPermission
-		//
-		// Demands read/write/execute permissions for the node (MAY_READ, MAY_WRITE, MAY_EXECUTE)
-		virtual void DemandPermission(FileSystem::Permission permission);
+		// Creates a new regular file node as a child of this directory
+		virtual std::shared_ptr<FileSystem::Alias> CreateFile(std::shared_ptr<FileSystem::Mount> mount, const char_t* name, uapi::mode_t mode) override;
 
 		// Lookup
 		//
-		// Resolves a file system path using this node as the starting point
-		virtual std::unique_ptr<FileSystem::Path> Lookup(const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Path>& root, 
-			const std::unique_ptr<Path>& current, const char_t* path, int flags, int* reparses);
-		
+		// Looks up the alias associated with a child of this directory
+		virtual std::shared_ptr<FileSystem::Alias> Lookup(std::shared_ptr<FileSystem::Mount> mount, const char_t* name) const override;
+
 		// Open
 		//
 		// Creates a Handle instance against this node
-		virtual std::shared_ptr<Handle> Open(const std::unique_ptr<Path>& thispath, int flags);
+		virtual std::shared_ptr<FileSystem::Handle> Open(std::shared_ptr<FileSystem::Mount> mount, FileSystem::HandleAccess access, FileSystem::HandleFlags flags) override;
+
+		// SetOwnership
+		//
+		// Changes the ownership of this node
+		virtual void SetOwnership(uapi::uid_t uid, uapi::gid_t gid) override;
+
+		// SetPermissions
+		//
+		// Changes the permission flags for this node
+		virtual void SetPermissions(uapi::mode_t permissions) override;
 
 		// Stat
 		//
 		// Provides statistical information about the node
-		virtual void Stat(uapi::stat* stats);
+		virtual void Stat(uapi::stat* stats) const override;
 
-		// getType
+		// Type
 		//
-		// Gets the type of node represented by this object
-		virtual FileSystem::NodeType getType(void);
+		// Gets the type of file system node being implemented
+		virtual FileSystem::NodeType getType(void) const override;
 
 	private:
 
-		Directory(const Directory&)=delete;
-		Directory& operator=(const Directory&)=delete;
+		DirectoryNode(const DirectoryNode&)=delete;
+		DirectoryNode& operator=(const DirectoryNode&)=delete;
 
-		// Instance Constructor
-		//
-		Directory(uapi::mode_t mode, uapi::pid_t uid, uapi::pid_t gid);
-		friend class std::_Ref_count_obj<Directory>;
+		//---------------------------------------------------------------------
+		// Private Member Functions
 
-		
-		// OpenPath
+		// UpdateAccessTime
 		//
-		// Creates a PathHandle instance against this node
-		std::shared_ptr<FileSystem::Handle> OpenPath(const std::unique_ptr<Path>& thispath, int flags);
+		// Updates the access time value of the node
+		void UpdateAccessTime(std::shared_ptr<FileSystem::Mount> mount);
 
 		//---------------------------------------------------------------------
 		// Member Variables
 
-		uapi::stat						m_stats;		// Node statistics
-		Concurrency::critical_section	m_statslock;	// Synchronization object
+		const std::shared_ptr<RootFileSystem>	m_fs;		// Parent file system instance
+		datetime								m_ctime;	// Change timestamp
+		datetime								m_mtime;	// Modification timestamp
+		datetime								m_atime;	// Access timestamp
+		uapi::mode_t							m_mode;		// Permission/mode flags
+		uapi::uid_t								m_uid;		// Node UID
+		uapi::gid_t								m_gid;		// Node GID
+		mutable sync::critical_section			m_cs;		// Synchronization object
 	};
 
 	// RootFileSystem::DirectoryHandle
@@ -178,17 +183,13 @@ private:
 	{
 	public:
 
+		// Instance Constructor
+		//
+		DirectoryHandle(std::shared_ptr<RootFileSystem> fs, FileSystem::HandleAccess access, FileSystem::HandleFlags flags);
+
 		// Destructor
 		//
-		~DirectoryHandle()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
-
-		// Create (static)
-		//
-		// Creates a new DirectoryHandle instance
-		static std::shared_ptr<DirectoryHandle> Create(const std::unique_ptr<FileSystem::Path>& path, const std::shared_ptr<Directory>& node);
+		~DirectoryHandle();
 
 		//---------------------------------------------------------------------
 		// FileSystem::Handle Implementation
@@ -196,58 +197,64 @@ private:
 		// Duplicate
 		//
 		// Creates a duplicate Handle instance
-		virtual std::shared_ptr<Handle> Duplicate(int flags);
+		virtual std::shared_ptr<Handle> Duplicate(void) const override;
 
 		// Read
 		//
 		// Synchronously reads data from the underlying node into a buffer
-		virtual uapi::size_t Read(void* buffer, uapi::size_t count);
+		virtual uapi::size_t Read(void* buffer, uapi::size_t count) override;
 
 		// ReadAt
 		//
 		// Synchronously reads data from the underlying node into a buffer
-		virtual uapi::size_t ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count);
+		virtual uapi::size_t ReadAt(uapi::loff_t offset, void* buffer, uapi::size_t count) override;
 
 		// Seek
 		//
 		// Changes the file position
-		virtual uapi::loff_t Seek(uapi::loff_t offset, int whence);
+		virtual uapi::loff_t Seek(uapi::loff_t offset, int whence) override;
 
 		// Sync
 		//
 		// Synchronizes all metadata and data associated with the file to storage
-		virtual void Sync(void);
+		virtual void Sync(void) const override;
 
 		// SyncData
 		//
 		// Synchronizes all data associated with the file to storage, not metadata
-		virtual void SyncData(void);
+		virtual void SyncData(void) const override;
 
 		// Write
 		//
 		// Synchronously writes data from a buffer to the underlying node
-		virtual uapi::size_t Write(const void* buffer, uapi::size_t count);
+		virtual uapi::size_t Write(const void* buffer, uapi::size_t count) override;
 
 		// WriteAt
 		//
 		// Synchronously writes data from a buffer to the underlying node
-		virtual uapi::size_t WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count);
+		virtual uapi::size_t WriteAt(uapi::loff_t offset, const void* buffer, uapi::size_t count) override;
+
+		// getAccess
+		//
+		// Gets the handle access mode
+		virtual FileSystem::HandleAccess getAccess(void) const override;
+
+		// getFlags
+		//
+		// Gets the handle flags
+		virtual FileSystem::HandleFlags getFlags(void) const override;
 
 	private:
 
 		DirectoryHandle(const DirectoryHandle&)=delete;
 		DirectoryHandle& operator=(const DirectoryHandle&)=delete;
 
-		// Instance Constructor
-		//
-		DirectoryHandle(const std::unique_ptr<FileSystem::Path>& path, const std::shared_ptr<RootFileSystem::Directory>& node);
-		friend class std::_Ref_count_obj<DirectoryHandle>; 
-
 		//---------------------------------------------------------------------
 		// Member Variables
 
-		const std::unique_ptr<FileSystem::Path>	m_path;		// Referenced path
-		const std::shared_ptr<Directory>		m_node;		// Referenced node
+		const std::shared_ptr<RootFileSystem>	m_fs;			// Parent file system instance
+		const FileSystem::HandleAccess			m_access;		// Handle access mode
+		const FileSystem::HandleFlags			m_flags;		// Handle flags
 	};
 
 	// RootFileSystem::Mount
@@ -256,17 +263,13 @@ private:
 	{
 	public:
 
+		// Instance Constructor
+		//
+		Mount(std::shared_ptr<RootFileSystem> fs, std::shared_ptr<DirectoryNode> root, uint32_t flags);
+
 		// Destructor
 		//
 		~Mount()=default;
-
-		//---------------------------------------------------------------------
-		// Member Functions
-
-		// Create (static)
-		//
-		// Creates a Mount instance
-		static std::shared_ptr<Mount> Create(const std::shared_ptr<RootFileSystem>& fs, uint32_t flags);
 
 		//---------------------------------------------------------------------
 		// FileSystem::Mount Implementation
@@ -274,62 +277,59 @@ private:
 		// Duplicate
 		//
 		// Duplicates this mount instance
-		virtual std::shared_ptr<FileSystem::Mount> Duplicate(void);
+		virtual std::shared_ptr<FileSystem::Mount> Duplicate(void) const override;
 
 		// Remount
 		//
 		// Remounts this mount point with different flags and arguments
-		virtual void Remount(uint32_t flags, const void* data, size_t datalen);
+		virtual void Remount(uint32_t flags, const void* data, size_t datalen) override;
 
 		// Stat
 		//
 		// Provides statistical information about the mounted file system
-		virtual void Stat(uapi::statfs* stats);
+		virtual void Stat(uapi::statfs* stats) const override;
+
+		// Unmount
+		//
+		// Unmounts the file system
+		virtual void Unmount(void) override;
 
 		// getFlags
 		//
 		// Gets the flags set on this mount, includes file system flags
-		virtual uint32_t getFlags(void);
+		virtual uint32_t getFlags(void) const override;
 
 		// getRoot
 		//
-		// Gets a reference to the root node of the mount point
-		virtual std::shared_ptr<FileSystem::Node> getRoot(void);
+		// Gets a reference to the root directory of the mount point
+		virtual std::shared_ptr<FileSystem::Directory> getRoot(void) const override;
 
 		// getSource
 		//
 		// Gets the device/name used as the source of the mount point
-		virtual const char_t* getSource(void);
+		virtual std::string getSource(void) const override;
 
 	private:
 
 		Mount(const Mount&)=delete;
 		Mount& operator=(const Mount&)=delete;
 
-		// Instance Constructor
-		//
-		Mount(const std::shared_ptr<RootFileSystem>& fs, uint32_t flags);
-		friend class std::_Ref_count_obj<Mount>;
-
 		//---------------------------------------------------------------------
 		// Member Variables
 
 		const std::shared_ptr<RootFileSystem>	m_fs;		// File system instance
-		std::atomic<uint32_t>					m_flags;	// Mounting flags
+		const uint32_t							m_flags;	// Mounting flags
+		std::shared_ptr<DirectoryNode>			m_root;		// The root directory node
 	};
-
-	// Instance Constructor
-	//
-	RootFileSystem(const char_t* source, uint32_t flags, const std::shared_ptr<Directory>& root);
-	friend class std::_Ref_count_obj<RootFileSystem>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const std::string					m_source;		// Source device name
-	const std::shared_ptr<Directory>	m_root;			// Root directory object
-	uapi::statfs						m_stats;		// File system statistics
-	Concurrency::critical_section		m_statslock;	// Synchronization object
+	const std::string				m_source;		// Source device name
+	std::atomic<uint32_t>			m_flags;		// File system flags
+	const uapi::fsid_t				m_fsid;			// File system unique identifier
+	handlemap_t						m_handles;		// Active handle instances
+	mutable sync::critical_section	m_cs;			// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

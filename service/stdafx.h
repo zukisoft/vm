@@ -53,6 +53,9 @@
 // Generic Text Mappings
 #include <generic_text.h>
 
+// Synchronization Primitives
+#include "sync.h"
+
 // Linux
 #include <linux/types.h>
 #include <linux/errno.h>

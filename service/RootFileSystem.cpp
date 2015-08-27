@@ -23,33 +23,30 @@
 #include "stdafx.h"
 #include "RootFileSystem.h"
 
+#include <linux/fs.h>
+#include <linux/magic.h>
+#include <linux/time.h>
+#include "Capability.h"
+#include "FilePermission.h"
+#include "MountOptions.h"
+#include "LinuxException.h"
+#include "SystemInformation.h"
+#include "convert.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// RootFileSystem Constructor (private)
+// RootFileSystem Constructor
 //
 // Arguments:
 //
 //	source		- Source/device name to use for the file system
 //	flags		- File system flags and options
-//	root		- Reference to the constructed root directory node
 
-RootFileSystem::RootFileSystem(const char_t* source, uint32_t flags, const std::shared_ptr<Directory>& root) : 
-	m_source(source), m_root(root)
+RootFileSystem::RootFileSystem(const char_t* source, uint32_t flags) : m_source(source), m_flags(flags), m_fsid(FileSystem::GenerateFileSystemId())
 {
-	_ASSERTE(source);
-	_ASSERTE(root);
-
-	// Initialize the statistics for this file system.  The file system itself will always
-	// report a zero size with zero available as there is only the single directory node
-	memset(&m_stats, 0, sizeof(uapi::statfs));
-
-	m_stats.f_type		= LINUX_TMPFS_MAGIC;
-	m_stats.f_bsize		= SystemInformation::PageSize;
-	m_stats.f_files		= 1;
-	m_stats.f_fsid		= FileSystem::GenerateFileSystemId();
-	m_stats.f_namelen	= 255;
-	m_stats.f_flags		= flags;
+	// No mount-specific flags should be specified for the file system instance
+	_ASSERTE((flags & LINUX_MS_PERMOUNT_MASK) == 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -68,27 +65,26 @@ std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount(const char_t* source, u
 {
 	if(source == nullptr) throw LinuxException(LINUX_EFAULT);
 
-	Capabilities::Demand(Capability::SystemAdmin);
+	Capability::Demand(Capability::SystemAdmin);
 
 	// Default mode, uid and gid for the root directory node
 	uapi::mode_t mode	= LINUX_S_IRWXU | LINUX_S_IRWXG | LINUX_S_IROTH | LINUX_S_IXOTH;	// 0775
-	uapi::pid_t uid		= 0;
-	uapi::pid_t gid		= 0;
+	uapi::uid_t uid		= 0;
+	uapi::gid_t gid		= 0;
 
 	// Parse the provided mounting options
-	// TODO: FILTER JUST THE ACCEPTED FLAGS HERE (SO FAR RDONLY AND KERNMOUNT)
 	MountOptions options(flags, data, datalength);
 
-	// Divide the mounting flags into overall file system and per-mount flags
-	auto fsflags = options.Flags & ~LINUX_MS_PERMOUNT_MASK;
-	auto mountflags = options.Flags & LINUX_MS_PERMOUNT_MASK;
+	// Break up the standard mounting options bitmask into file system and mount specific masks
+	auto fsflags = options.Flags & (LINUX_MS_RDONLY | LINUX_MS_KERNMOUNT | LINUX_MS_STRICTATIME);
+	auto mountflags = (options.Flags & LINUX_MS_PERMOUNT_MASK) | LINUX_MS_NOEXEC | LINUX_MS_NODEV | LINUX_MS_NOSUID;
 
 	try {
 
 		// mode=
 		//
 		// Sets the permission flags to apply to the root directory
-		if(options.Arguments.Contains("mode")) mode = std::stoul(options.Arguments["mode"], 0, 0);
+		if(options.Arguments.Contains("mode")) mode = (std::stoul(options.Arguments["mode"], 0, 0) & LINUX_S_IRWXUGO);
 
 		// uid=
 		//
@@ -103,322 +99,12 @@ std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount(const char_t* source, u
 
 	catch(...) { throw LinuxException(LINUX_EINVAL); }
 
-	// Construct the file system instance, using a new Directory as the root node
-	auto fs = std::make_shared<RootFileSystem>(source, fsflags, Directory::Create(mode, uid, gid));
+	// Construct the file system instance and the root directory node instance
+	auto fs = std::make_shared<RootFileSystem>(source, fsflags);
+	auto rootdir = std::make_shared<DirectoryNode>(fs, mode, uid, gid);
 
 	// Construct and return the mount instance
-	return Mount::Create(fs, mountflags);
-}
-
-//
-// ROOTFILESYSTEM::DIRECTORY
-//
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory Constructor (private)
-//
-// Arguments:
-//
-//	mode		- Permission flags to assign to the directory
-//	uid			- User ID of the directory owner
-//	gid			- Group ID of the directory owner
-
-RootFileSystem::Directory::Directory(uapi::mode_t mode, uapi::pid_t uid, uapi::pid_t gid)
-{
-	FILETIME		creationtime;			// Time this node was constructed
-
-	// The time at which this node was constructed in memory will serve as the 
-	// initial access/creation/modification time stamp for the node
-	GetSystemTimeAsFileTime(&creationtime);
-
-	// Initialize the statistics for this node, much of which is static
-	memset(&m_stats, 0, sizeof(uapi::stat));
-
-	m_stats.st_dev		= (0 << 16) | 0;	// TODO: DEVICE ID; MAJOR WILL BE ZERO MINOR SHOULD AUTO-INCREMENT
-	m_stats.st_ino		= 2;				// Always inode index 2
-	m_stats.st_nlink	= 2;				// Always 2 subdirectories, "." and ".."
-	m_stats.st_mode		= mode;
-	m_stats.st_uid		= uid;
-	m_stats.st_gid		= gid;
-	m_stats.st_blksize	= SystemInformation::PageSize;
-
-	uapi::FILETIMEToTimeSpec(creationtime, &m_stats.st_atime, &m_stats.st_atime_nsec);
-	uapi::FILETIMEToTimeSpec(creationtime, &m_stats.st_mtime, &m_stats.st_mtime_nsec);
-	uapi::FILETIMEToTimeSpec(creationtime, &m_stats.st_ctime, &m_stats.st_ctime_nsec);
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::Create (static)
-//
-// Constructs a new Directory instance
-//
-// Arguments:
-//
-//	mode		- Node permission flags
-//	uid			- User id of the directory owner
-//	gid			- Group id of the directory owner
-
-std::shared_ptr<RootFileSystem::Directory> RootFileSystem::Directory::Create(uapi::mode_t mode, uapi::pid_t uid, uapi::pid_t gid)
-{
-	// Force the mode_t flags to indicate this is a directory node
-	return std::make_shared<Directory>((mode & ~LINUX_S_IFMT) | LINUX_S_IFDIR, uid, gid);
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::CreateCharacterDevice (private)
-//
-// Creates a new character device node within the file system
-//
-// Arguments:
-//
-//	thispath	- Path that was used to resolve this node instance
-//	name		- Name to assign to the newly created alias
-//	mode		- Mode flags to assign to the newly created node
-//	device		- Major and minor numbers of the newly created character device
-
-void RootFileSystem::Directory::CreateCharacterDevice(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, 
-	uapi::mode_t mode, uapi::dev_t device)
-{
-	UNREFERENCED_PARAMETER(thispath);
-	UNREFERENCED_PARAMETER(name);
-	UNREFERENCED_PARAMETER(mode);
-	UNREFERENCED_PARAMETER(device);
-
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::CreateDirectory (private)
-//
-// Creates a new directory node within the file system
-//
-// Arguments:
-//
-//	thispath	- Path that was used to resolve this node instance
-//	name		- Name to assign to the newly created alias
-//	mode		- Permission flags to assign to the newly created node
-
-void RootFileSystem::Directory::CreateDirectory(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, uapi::mode_t mode)
-{
-	UNREFERENCED_PARAMETER(thispath);
-	UNREFERENCED_PARAMETER(name);
-	UNREFERENCED_PARAMETER(mode);
-
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::CreateFile (private)
-//
-// Creates a new regular file node within the file system
-//
-// Arguments:
-//
-//	thispath	- Path that was used to resolve this node instance
-//	name		- Name to assign to the newly created alias
-//	flags		- File node access, creation and status flags
-//	mode		- Mode flags to assign to the newly created node
-
-std::shared_ptr<FileSystem::Handle> RootFileSystem::Directory::CreateFile(const std::unique_ptr<FileSystem::Path>& thispath, 
-	const char_t* name, int flags, uapi::mode_t mode)
-{
-	UNREFERENCED_PARAMETER(thispath);
-	UNREFERENCED_PARAMETER(name);
-	UNREFERENCED_PARAMETER(flags);
-	UNREFERENCED_PARAMETER(mode);
-
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::CreateSymbolicLink (private)
-//
-// Creates a new symbolic link node within the file system
-//
-// Arguments:
-//
-//	thispath	- Path that was used to resolve this node instance
-//	name		- Name to assign to the newly created alias
-//	target		- Path to the symbolic link target alias
-
-void RootFileSystem::Directory::CreateSymbolicLink(const std::unique_ptr<FileSystem::Path>& thispath, const char_t* name, const char_t* target)
-{
-	UNREFERENCED_PARAMETER(thispath);
-	UNREFERENCED_PARAMETER(name);
-	UNREFERENCED_PARAMETER(target);
-
-	throw LinuxException(LINUX_EPERM, Exception(E_NOTIMPL));
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::DemandPermission
-//
-// Demands read/write/execute permissions for the node (MAY_READ, MAY_WRITE, MAY_EXECUTE)
-//
-// Arguments:
-//
-//	permission		- FileSystem::Permission bitmask to demand
-
-void RootFileSystem::Directory::DemandPermission(FileSystem::Permission permission)
-{
-	// Do a dirty read (non-concurrent) on the member stats to build a permission set
-
-	// todo how does the mount flags affect this (don't do it here)
-	// should build a new permission class that takes in capabilities, mountflags, etc.
-
-	// capabilities should be renamed, will include UID and GID as well, it's more
-	// like a security context
-
-	// this needs to be based on the node mode, the current uid/gid and the
-	// current capabilities
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::Lookup
-//
-// Resolves a file system path using this node as the starting point
-//
-// Arguments:
-//
-//	ns				- Namespace to use when resolving mount points
-//	root			- Root path to use when resolving a leading /
-//	current			- The current path (used to resolve this node)
-//	pathname		- Path to be resolved from this node
-//	flags			- Path resolution flags
-//	reparses		- Number of reparse points (symlinks) encountered
-
-std::unique_ptr<FileSystem::Path> RootFileSystem::Directory::Lookup(const std::shared_ptr<Namespace>& ns, const std::unique_ptr<Path>& root, 
-	const std::unique_ptr<Path>& current, const char_t* path, int flags, int* reparses)
-{
-	if(reparses == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(path == nullptr) throw LinuxException(LINUX_ENOENT);
-
-	// Construct a PathIterator instance to assist with traversing the path components
-	PathIterator iterator(path);
-
-	// Move past any "." components in the path before checking if the end of the
-	// traversal was reached; which indicates that this is the target node
-	while(strcmp(iterator.Current, ".") == 0) ++iterator;
-	if(!iterator) return current->Duplicate();
-
-	// The ".." component indicates that the parent alias' node needs to resolve the remainder
-	if(strcmp(iterator.Current, "..") == 0) {
-
-		// If the current alias is a mountpoint, backing up a level will move out of the
-		// mount and into the parent mount; that mountpoint must be located
-		if(current->Alias->Mounted[ns]) {
-
-			auto alias = current->Alias->Parent;
-			while(!alias->Mounted[ns]) alias = alias->Parent;
-			auto mount = nullptr;	// todo: get the mount from the alias/namespace
-		}
-
-		// Current alias is not a mountpoint, the parent alias will be in the same mount
-
-
-		//auto alias = current->Alias->Parent;
-		//auto mount = alias->Mount[ns];
-		//
-		//auto newpath = Path::Create((mount) ? mount : current->Mount, alias);
-
-		// todo: need a path to the parent, the mount may be different
-		return current->Alias->Parent->Follow(ns)->Lookup(ns, root, nullptr, iterator.Remaining, flags, reparses);
-
-		//return current->Parent->Node->Resolve(root, current->Parent, iterator.Remaining, flags, symlinks);
-	}
-
-	// The calling user must have EXECUTE permission on this node for a lookup to succeed
-	DemandPermission(FileSystem::Permission::Execute);
-
-	// Path component was not found
-	throw LinuxException(LINUX_ENOENT);
-
-	return nullptr;
-	//auto mountflags = thispath->Mount->Flags;
-
-	//// todo
-	//// do not update atime? this doesn't technically 'read' from the node, consider
-	//// if data needed to be looked up from disk if it were a real block device
-
-	//// can't do it this way, need to check for . and .., which are legitimate
-	//// if ..; return thsipath->Alias->parent
-	//// if . or zero length, return thispath->Duplicate
-
-	//if(*pathname) throw LinuxException(LINUX_ENOENT); 
-	//
-	//return thispath->Duplicate();
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::Open
-//
-// Creates a Handle instance against this node
-//
-// Arguments:
-//
-//	thispath	- Path that was used to resolve this node instance
-//	flags		- Flags to apply to the created handle instance
-
-std::shared_ptr<FileSystem::Handle> RootFileSystem::Directory::Open(const std::unique_ptr<Path>& thispath, int flags)
-{
-	// O_PATH is a special case that generates a FileSystem::PathHandle instead
-	if(flags & LINUX_O_PATH) return OpenPath(thispath, flags);
-
-	// Directory node handles must awlays be opened in read-only mode
-	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
-
-	// Handle operations against a directory require READ access to the node
-	if((flags & LINUX_O_PATH) == 0) DemandPermission(FileSystem::Permission::Read);
-
-	return DirectoryHandle::Create(thispath, shared_from_this());
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::OpenPath (private)
-//
-// Creates a PathHandle instance against this node
-//
-// Arguments:
-//
-//	thispath	- Path that was used to resolve this node instance
-//	flags		- Flags to apply to the created handle instance
-
-std::shared_ptr<FileSystem::Handle> RootFileSystem::Directory::OpenPath(const std::unique_ptr<Path>& thispath, int flags)
-{
-	// O_PATH operations ignore all flags except O_ACCMODE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW and O_PATH
-	if(flags & LINUX_O_PATH) flags &= (LINUX_O_ACCMODE | LINUX_O_CLOEXEC | LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW | LINUX_O_PATH);
-
-	// Directory node handles must awlays be opened in read-only mode
-	if((flags & LINUX_O_ACCMODE) != LINUX_O_RDONLY) throw LinuxException(LINUX_EISDIR);
-
-	return FileSystem::PathHandle::Create(DirectoryHandle::Create(thispath, shared_from_this()));
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::Stat
-//
-// Provides statistical information about this node
-//
-// Arguments:
-//
-//	stats		- Structure to receive the node statistics
-
-void RootFileSystem::Directory::Stat(uapi::stat* stats)
-{
-	if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
-
-	Concurrency::critical_section::scoped_lock cs(m_statslock);
-	memcpy(stats, &m_stats, sizeof(uapi::stat));
-}
-
-//-----------------------------------------------------------------------------
-// RootFileSystem::Directory::getType
-//
-// Gets the type of node represented by this object
-
-FileSystem::NodeType RootFileSystem::Directory::getType(void)
-{
-	return FileSystem::NodeType::Directory;
+	return std::make_shared<class Mount>(fs, rootdir, mountflags);
 }
 
 //
@@ -426,34 +112,37 @@ FileSystem::NodeType RootFileSystem::Directory::getType(void)
 //
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::DirectoryHandle Constructor (private)
+// RootFileSystem::DirectoryHandle Constructor
 //
 // Arguments:
 //
-//	path		- Reference to the Path that was used to locate the node
-//	node		- Reference to the underlying Directory node instance
+//	fs			- Parent file system instance
+//	access		- Handle access mode
+//	flags		- Handle flags
 
-RootFileSystem::DirectoryHandle::DirectoryHandle(const std::unique_ptr<FileSystem::Path>& path, const std::shared_ptr<RootFileSystem::Directory>& node)
-	: m_path(path->Duplicate()), m_node(node)
+RootFileSystem::DirectoryHandle::DirectoryHandle(std::shared_ptr<RootFileSystem> fs, FileSystem::HandleAccess access, FileSystem::HandleFlags flags)
+	: m_fs(std::move(fs)), m_access(access), m_flags(flags)
 {
-	_ASSERTE(path);
-	_ASSERTE(node);
 }
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::DirectoryHandle::Create (static)
-//
-// Creates a new ExecuteHandle instance, wrapping an existing file system handle
-//
-// Arguments:
-//
-//	path		- Reference to the Path that was used to locate the node
-//	node		- Reference to the underlying Directory node instance
+// RootFileSystem::DirectoryHandle Destructor
 
-std::shared_ptr<RootFileSystem::DirectoryHandle> RootFileSystem::DirectoryHandle::Create(const std::unique_ptr<FileSystem::Path>& path, 
-	const std::shared_ptr<Directory>& node)
+RootFileSystem::DirectoryHandle::~DirectoryHandle()
 {
-	return std::make_shared<DirectoryHandle>(path, node);
+	// Remove this handle instance from the file system's tracking collection
+	sync::critical_section::scoped_lock critsec{ m_fs->m_cs };
+	m_fs->m_handles.erase(this);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryHandle::getAccess
+//
+// Gets the handle access mode
+
+FileSystem::HandleAccess RootFileSystem::DirectoryHandle::getAccess(void) const
+{
+	return m_access;
 }
 
 //-----------------------------------------------------------------------------
@@ -463,11 +152,28 @@ std::shared_ptr<RootFileSystem::DirectoryHandle> RootFileSystem::DirectoryHandle
 //
 // Arguments:
 //
-//	flags		- Flags applicable to the new handle
+//	NONE
 
-std::shared_ptr<FileSystem::Handle> RootFileSystem::DirectoryHandle::Duplicate(int flags)
+std::shared_ptr<FileSystem::Handle> RootFileSystem::DirectoryHandle::Duplicate(void) const
 {
-	return m_node->Open(m_path, flags);
+	// Construct the new handle object with the same access and flags as this handle
+	auto handle = std::make_shared<DirectoryHandle>(m_fs, m_access, m_flags);
+
+	// Place a weak reference to the handle into the tracking collection before returning it
+	sync::critical_section::scoped_lock critsec{ m_fs->m_cs };
+	if(!m_fs->m_handles.emplace(handle.get(), handle).second) throw LinuxException(LINUX_ENOMEM);
+
+	return handle;
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryHandle::getFlags
+//
+// Gets the flags specified on the handle
+
+FileSystem::HandleFlags RootFileSystem::DirectoryHandle::getFlags(void) const
+{
+	return m_flags;
 }
 
 //-----------------------------------------------------------------------------
@@ -485,7 +191,7 @@ uapi::size_t RootFileSystem::DirectoryHandle::Read(void* buffer, uapi::size_t co
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EISDIR);
 }
 
 //-----------------------------------------------------------------------------
@@ -505,7 +211,7 @@ uapi::size_t RootFileSystem::DirectoryHandle::ReadAt(uapi::loff_t offset, void* 
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EISDIR);
 }
 
 //-----------------------------------------------------------------------------
@@ -523,7 +229,7 @@ uapi::loff_t RootFileSystem::DirectoryHandle::Seek(uapi::loff_t offset, int when
 	UNREFERENCED_PARAMETER(offset);
 	UNREFERENCED_PARAMETER(whence);
 
-	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EISDIR);
 }
 
 //-----------------------------------------------------------------------------
@@ -535,9 +241,8 @@ uapi::loff_t RootFileSystem::DirectoryHandle::Seek(uapi::loff_t offset, int when
 //
 //	NONE
 
-void RootFileSystem::DirectoryHandle::Sync(void)
+void RootFileSystem::DirectoryHandle::Sync(void) const
 {
-	// do nothing
 }
 
 //-----------------------------------------------------------------------------
@@ -549,9 +254,8 @@ void RootFileSystem::DirectoryHandle::Sync(void)
 //
 //	NONE
 
-void RootFileSystem::DirectoryHandle::SyncData(void)
+void RootFileSystem::DirectoryHandle::SyncData(void) const
 {
-	// do nothing
 }
 
 //-----------------------------------------------------------------------------
@@ -569,7 +273,7 @@ uapi::size_t RootFileSystem::DirectoryHandle::Write(const void* buffer, uapi::si
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 	
-	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EISDIR);
 }
 
 //-----------------------------------------------------------------------------
@@ -589,7 +293,242 @@ uapi::size_t RootFileSystem::DirectoryHandle::WriteAt(uapi::loff_t offset, const
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EISDIR, Exception(E_NOTIMPL));
+	throw LinuxException(LINUX_EISDIR);
+}
+
+//
+// ROOTFILESYSTEM::DIRECTORYNODE
+//
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode Constructor
+//
+// Arguments:
+//
+//	fs			- Reference to the parent file system instance
+//	mode		- Permission flags to assign to the directory
+//	uid			- User ID of the directory owner
+//	gid			- Group ID of the directory owner
+
+RootFileSystem::DirectoryNode::DirectoryNode(std::shared_ptr<RootFileSystem> fs, uapi::mode_t mode, uapi::uid_t uid, uapi::gid_t gid) 
+	: m_fs(std::move(fs)), m_uid(uid), m_gid(gid), m_ctime(datetime::now()), m_mtime(m_ctime), m_atime(m_ctime)
+{
+	// Force the mode flags to indicate that this is a directory object
+	m_mode = (mode & ~LINUX_S_IFMT) | LINUX_S_IFDIR;
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::CreateDirectory
+//
+// Creates a new directory node within the file system
+//
+// Arguments:
+//
+//	mount		- Mount on which this directory was reached
+//	name		- Name to assign to the new node
+//	mode		- Mode to assign to the new node
+
+std::shared_ptr<FileSystem::Alias> RootFileSystem::DirectoryNode::CreateDirectory(std::shared_ptr<FileSystem::Mount> mount, const char_t* name, uapi::mode_t mode)
+{
+	UNREFERENCED_PARAMETER(mount);
+	UNREFERENCED_PARAMETER(name);
+	UNREFERENCED_PARAMETER(mode);
+
+	if(mount->Flags & LINUX_MS_RDONLY) throw LinuxException(LINUX_EROFS);
+	else throw LinuxException(LINUX_EPERM);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::CreateFile
+//
+// Creates a new regular file node within the file system
+//
+// Arguments:
+//
+//	mount		- Mount on which this directory was reached
+//	name		- Name to assign to the new node
+//	mode		- Mode to assign to the new node
+
+std::shared_ptr<FileSystem::Alias> RootFileSystem::DirectoryNode::CreateFile(std::shared_ptr<FileSystem::Mount> mount, const char_t* name, uapi::mode_t mode)
+{
+	UNREFERENCED_PARAMETER(mount);
+	UNREFERENCED_PARAMETER(name);
+	UNREFERENCED_PARAMETER(mode);
+
+	if(mount->Flags & LINUX_MS_RDONLY) throw LinuxException(LINUX_EROFS);
+	else throw LinuxException(LINUX_EPERM);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::Lookup
+//
+// Looks up the alias associated with a child of this node
+//
+// Arguments:
+//
+//	mount		- Mount on which this directory was reached
+//	name		- Name of the child alias to look up
+
+std::shared_ptr<FileSystem::Alias> RootFileSystem::DirectoryNode::Lookup(std::shared_ptr<FileSystem::Mount> mount, const char_t* name) const
+{
+	UNREFERENCED_PARAMETER(mount);
+	UNREFERENCED_PARAMETER(name);
+
+	sync::critical_section::scoped_lock cs{ m_cs };
+	FilePermission::Demand(FilePermission::Execute, m_uid, m_gid, m_mode);
+
+	throw LinuxException(LINUX_ENOENT);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::Open
+//
+// Creates a Handle instance against this node
+//
+// Arguments:
+//
+//	mount		- Mount on which this directory was reached
+//	access		- Handle access mode
+//	flags		- Handle flags
+
+std::shared_ptr<FileSystem::Handle> RootFileSystem::DirectoryNode::Open(std::shared_ptr<FileSystem::Mount> mount, FileSystem::HandleAccess access, FileSystem::HandleFlags flags)
+{
+	_ASSERTE(std::dynamic_pointer_cast<class Mount>(mount));
+
+	// Directory node handles must always be opened in read-only mode
+	if(access != FileSystem::HandleAccess::ReadOnly) throw LinuxException(LINUX_EISDIR);
+
+	// Check for flags that are incompatible with opening a directory file system object
+	if(flags & (FileSystem::HandleFlags::Append | FileSystem::HandleFlags::Direct)) throw LinuxException(LINUX_EINVAL);
+
+	// Read access to the directory node is required to open a handle against it
+	sync::critical_section::scoped_lock cs{ m_cs };
+	FilePermission::Demand(FilePermission::Read, m_uid, m_gid, m_mode);
+
+	// Construct the DirectoryHandle instance that will be returned to the caller
+	auto handle = std::make_shared<DirectoryHandle>(m_fs, access, flags);
+
+	// Place a weak reference to the handle into the tracking collection before returning it
+	sync::critical_section::scoped_lock critsec{ m_fs->m_cs };
+	if(!m_fs->m_handles.emplace(handle.get(), handle).second) throw LinuxException(LINUX_ENOMEM);
+
+	UpdateAccessTime(mount);
+
+	return handle;
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::SetOwnership
+//
+// Changes the ownership of this node
+//
+// Arguments:
+//
+//	uid			- New ownership user identifier
+//	gid			- New ownership group identifier
+
+void RootFileSystem::DirectoryNode::SetOwnership(uapi::uid_t uid, uapi::gid_t gid)
+{
+	// todo: CAP_CHOWN - see chown(2), there is more to this
+
+	sync::critical_section::scoped_lock cs{ m_cs };
+	FilePermission::Demand(FilePermission::Write, m_uid, m_gid, m_mode);
+
+	m_uid = uid;
+	m_gid = gid;
+	m_ctime = datetime::now();
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::SetPermissions
+//
+// Changes the permission flags for this node
+//
+// Arguments:
+//
+//	permissions		- New permission flags for the node
+
+void RootFileSystem::DirectoryNode::SetPermissions(uapi::mode_t permissions)
+{
+	permissions &= ~LINUX_S_IFMT;		// Strip off non-permissions
+
+	// todo: CAP_FSETID - see chmod(2), there is more to this
+	// todo: CAP_FOWNER - see chmod(2), there is more to this
+
+	sync::critical_section::scoped_lock cs{ m_cs };
+	FilePermission::Demand(FilePermission::Write, m_uid, m_gid, m_mode);
+
+	m_mode = ((m_mode & LINUX_S_IFMT) | permissions);
+	m_ctime = datetime::now();
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::Stat
+//
+// Provides statistical information about this node
+//
+// Arguments:
+//
+//	stats		- Structure to receive the node statistics
+
+void RootFileSystem::DirectoryNode::Stat(uapi::stat* stats) const
+{
+	if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
+
+	sync::critical_section::scoped_lock cs{ m_cs };
+	
+	stats->st_dev		= (0 << 16) | 0;	// TODO: DEVICE ID; MAJOR WILL BE ZERO MINOR SHOULD AUTO-INCREMENT
+	stats->st_ino		= 2;				// Always inode index 2
+	stats->st_nlink		= 2;				// Always 2 subdirectories, "." and ".."
+	stats->st_mode		= m_mode;
+	stats->st_uid		= m_uid;
+	stats->st_gid		= m_gid;
+	stats->st_rdev		= (0 << 16) | 0;	// TODO
+	stats->st_size		= 0;
+	stats->st_blksize	= SystemInformation::PageSize;
+	stats->st_blocks	= 0;
+	stats->st_atime		= convert<uapi::timespec>(m_atime);
+	stats->st_mtime		= convert<uapi::timespec>(m_mtime);
+	stats->st_ctime		= convert<uapi::timespec>(m_ctime);
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::getType
+//
+// Gets the type of node represented by this object
+
+FileSystem::NodeType RootFileSystem::DirectoryNode::getType(void) const
+{
+	return FileSystem::NodeType::Directory;
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::DirectoryNode::UpdateAccessTime (private)
+//
+// Updates the access time of the node
+//
+// Arguments:
+//
+//	mount		- Mount on which the directory node was reached
+
+void RootFileSystem::DirectoryNode::UpdateAccessTime(std::shared_ptr<FileSystem::Mount> mount)
+{
+	// Read-only file systems should not update the access time
+	if(mount->Flags & LINUX_MS_RDONLY) return;
+
+	// If MS_STRICTATIME is set or MS_NOATIME/MS_NODIRATIME are not set, the access time gets updated
+	if((mount->Flags & LINUX_MS_STRICTATIME) || ((mount->Flags & (LINUX_MS_NOATIME | LINUX_MS_NODIRATIME)) == 0)) {
+
+		datetime now = datetime::now();
+		sync::critical_section::scoped_lock critsec{ m_cs };
+
+		// If MS_STRICTATIME is set, always update the last access time
+		if(mount->Flags & LINUX_MS_STRICTATIME) m_atime = now;
+
+		// MS_STRICTATIME is not set, only update if the previous atime is less than mtime, less than ctime,
+		// or indicates a value that is more than one day in the past
+		else if((m_atime < m_mtime) || (m_atime < m_ctime) || (m_atime < (now - timespan::days(1)))) m_atime = now;
+	}
 }
 
 //
@@ -597,32 +536,19 @@ uapi::size_t RootFileSystem::DirectoryHandle::WriteAt(uapi::loff_t offset, const
 //
 
 //-----------------------------------------------------------------------------
-// RootFileSystem::Mount Constructor (private)
+// RootFileSystem::Mount Constructor
 //
 // Arguments:
 //
 //	fs		- Reference to the RootFileSystem instance
+//	root	- Root directory node instance
 //	flags	- Per-mount flags and options to set on this mount instance
 
-RootFileSystem::Mount::Mount(const std::shared_ptr<RootFileSystem>& fs, uint32_t flags) : m_fs(fs), m_flags(flags)
+RootFileSystem::Mount::Mount(std::shared_ptr<RootFileSystem> fs, std::shared_ptr<DirectoryNode> root, uint32_t flags) 
+	: m_fs(std::move(fs)), m_root(std::move(root)), m_flags(flags)
 {
-	_ASSERTE(fs);
-}
-
-//-------------------------------------------------------------------------------
-// RootFileSystem::Mount::Create (static)
-//
-// Constructs a new Mount instance
-//
-// Arguments:
-//
-//	fs		- Reference to the RootFileSystem instance
-//	flags	- Per-mount flags and options to set on this mount instance
-
-std::shared_ptr<class RootFileSystem::Mount> RootFileSystem::Mount::Create(const std::shared_ptr<RootFileSystem>& fs, uint32_t flags)
-{
-	// Ensure that any file system specific flags are stripped from the mount flags
-	return std::make_shared<Mount>(fs, flags & LINUX_MS_PERMOUNT_MASK);
+	// The flags should only contain bits from MS_PERMOUNT_MASK
+	_ASSERTE((m_flags & ~LINUX_MS_PERMOUNT_MASK) == 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -634,10 +560,13 @@ std::shared_ptr<class RootFileSystem::Mount> RootFileSystem::Mount::Create(const
 //
 //	NONE
 
-std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount::Duplicate(void)
+std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount::Duplicate(void) const
 {
+	auto root = m_root;
+	if(!root) throw LinuxException(LINUX_ENODEV);
+
 	// Clone the underlying file system reference and flags into a new mount
-	return std::make_shared<Mount>(m_fs, m_flags);
+	return std::make_shared<Mount>(m_fs, root, m_flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -645,13 +574,12 @@ std::shared_ptr<FileSystem::Mount> RootFileSystem::Mount::Duplicate(void)
 //
 // Gets the flags set on this mount, includes file system flags
 
-uint32_t RootFileSystem::Mount::getFlags(void)
+uint32_t RootFileSystem::Mount::getFlags(void) const
 {
-	Concurrency::critical_section::scoped_lock cs(m_fs->m_statslock);
+	auto root = m_root;
+	if(!root) throw LinuxException(LINUX_ENODEV);
 
-	// The flags are a combination of the file system flags and the per-mount flags,
-	// this allows a caller to check options and permissions against the mount
-	return static_cast<uint32_t>(m_fs->m_stats.f_flags) | m_flags;
+	return m_flags | m_fs->m_flags;
 }
 
 //-----------------------------------------------------------------------------
@@ -667,7 +595,10 @@ uint32_t RootFileSystem::Mount::getFlags(void)
 
 void RootFileSystem::Mount::Remount(uint32_t flags, const void* data, size_t datalen)
 {
-	Capabilities::Demand(Capability::SystemAdmin);
+	auto root = m_root;
+	if(!root) throw LinuxException(LINUX_ENODEV);
+
+	Capability::Demand(Capability::SystemAdmin);
 
 	// MS_REMOUNT must be specified in the flags when calling this function
 	if((flags & LINUX_MS_REMOUNT) != LINUX_MS_REMOUNT) throw LinuxException(LINUX_EINVAL);
@@ -675,32 +606,28 @@ void RootFileSystem::Mount::Remount(uint32_t flags, const void* data, size_t dat
 	// Parse the provided mounting options into remount flags and key/value pairs
 	MountOptions options(flags & LINUX_MS_RMT_MASK, data, datalen);
 
-	// Prevent concurrent changes to the file system statistics
-	Concurrency::critical_section::scoped_lock cs(m_fs->m_statslock);
-
 	// Filter the flags to only those options which have changed from the current ones
-	uint32_t changedflags = static_cast<uint32_t>(m_fs->m_stats.f_flags) ^ options.Flags;
-
-	// TODO: do these flags need to be checked for validity, or are unsupported options
-	// just generally ignored?  
-
-	// NOTE: It's not possible to open a handle for write access in the root file system,
-	// therefore there is no need to check the existing handles before changing MS_RDONLY
+	uint32_t changedflags = (m_fs->m_flags & LINUX_MS_RMT_MASK) ^ options.Flags;
 
 	// MS_RDONLY
 	//
+	// Note: all handles created by RootFileSystem are read-only by nature as they all
+	// reference directories; there is no need to check them before changing MS_RDONLY
 	if(changedflags & LINUX_MS_RDONLY)
-		m_fs->m_stats.f_flags = (m_fs->m_stats.f_flags & ~LINUX_MS_RDONLY) | options[LINUX_MS_RDONLY];
+		m_fs->m_flags = (m_fs->m_flags & ~LINUX_MS_RDONLY) | options[LINUX_MS_RDONLY];
 }
 
 //-----------------------------------------------------------------------------
 // RootFileSystem::Mount::getRoot
 //
-// Gets a reference to the root node of the mount point
+// Gets a reference to the root directory of the mount point
 
-std::shared_ptr<FileSystem::Node> RootFileSystem::Mount::getRoot(void)
+std::shared_ptr<FileSystem::Directory> RootFileSystem::Mount::getRoot(void) const
 {
-	return m_fs->m_root;
+	auto root = m_root;
+	if(!root) throw LinuxException(LINUX_ENODEV);
+
+	return root;
 }
 
 //-----------------------------------------------------------------------------
@@ -708,9 +635,12 @@ std::shared_ptr<FileSystem::Node> RootFileSystem::Mount::getRoot(void)
 //
 // Gets the device/name used as the source of the file system
 
-const char_t* RootFileSystem::Mount::getSource(void)
+std::string RootFileSystem::Mount::getSource(void) const
 {
-	return m_fs->m_source.c_str();
+	auto root = m_root;
+	if(!root) throw LinuxException(LINUX_ENODEV);
+
+	return std::string(m_fs->m_source);
 }
 
 //-----------------------------------------------------------------------------
@@ -722,16 +652,45 @@ const char_t* RootFileSystem::Mount::getSource(void)
 //
 //	stats		- Structure to receieve the file system statistics
 
-void RootFileSystem::Mount::Stat(uapi::statfs* stats)
+void RootFileSystem::Mount::Stat(uapi::statfs* stats) const
 {
+	auto root = m_root;
+	if(!root) throw LinuxException(LINUX_ENODEV);
+
 	if(stats == nullptr) throw LinuxException(LINUX_EFAULT);
 
-	// Prevent concurrent changes to the file system statistics
-	Concurrency::critical_section::scoped_lock cs(m_fs->m_statslock);
-	
-	// Copy the file system statistics and apply the per-mount flags
-	memcpy(stats, &m_fs->m_stats, sizeof(uapi::statfs));
-	stats->f_flags |= m_flags;
+	stats->f_type		= LINUX_TMPFS_MAGIC;
+	stats->f_bsize		= SystemInformation::PageSize;
+	stats->f_blocks		= 0;
+	stats->f_bfree		= 0;
+	stats->f_bavail		= 0;
+	stats->f_files		= 1;
+	stats->f_ffree		= 0;
+	stats->f_fsid		= m_fs->m_fsid;
+	stats->f_namelen	= MAX_PATH;
+	stats->f_frsize		= 512;
+	stats->f_flags		= m_flags | m_fs->m_flags;
+}
+
+//-----------------------------------------------------------------------------
+// RootFileSystem::Mount::Unmount
+//
+// Unmounts the file system
+//
+// Arguments:
+//
+//	NONE
+
+void RootFileSystem::Mount::Unmount(void)
+{
+	// There can be no active handles opened against the file system
+	sync::critical_section::scoped_lock critsec{ m_fs->m_cs };
+	if(m_fs->m_handles.size() > 0) throw LinuxException(LINUX_EBUSY);
+
+	// Ensure that the root directory node is also not still shared out
+	if(m_root.use_count() > 1) throw LinuxException(LINUX_EBUSY);
+
+	m_root.reset();			// Release the root directory node
 }
 
 //-----------------------------------------------------------------------------

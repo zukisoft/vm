@@ -33,114 +33,88 @@
 //-----------------------------------------------------------------------------
 // FilePermission
 //
-// Defines a simple Unix Permission set, which consists of a user id, group id
-// and an access mode mask.  Operates similarly to .NET, invoke Demand with
-// the permissions required for the operation and it will throw an exception
-// if access is to be denied.
+// todo: words
+// TODO: This ultimately needs to know who the calling user is, from TLS or something;
+// it will be the same mechanism as Capability
 
-class FilePermission
+class FilePermission final
 {
 public:
 
-	// Constructors / Destructor
+	// Copy Constructor
 	//
-	FilePermission(uapi::mode_t mode);
-	FilePermission(uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode);
-	FilePermission(const FilePermission& rhs)=default;
+	FilePermission(const FilePermission&)=default;
+
+	// Destructor
+	//
 	~FilePermission()=default;
 
-	// Enum Access
+	// bitwise or operator
 	//
-	// Defines the specific access rights; matches Linux octal masks and
-	// can be combined the same way "Execute | Read", for example
-	enum class Access
-	{
-		Execute			= 01,
-		Write			= 02,
-		Read			= 04,
-	};
+	FilePermission operator|(const FilePermission rhs) const;
+
+	//-------------------------------------------------------------------------
+	// Fields
+
+	// Execute (static)
+	//
+	// Defines a FilePermission for execute access
+	static const FilePermission Execute;
+
+	// Read (static)
+	//
+	// Defines a FilePermission for read access
+	static const FilePermission Read;
+
+	// Write (static)
+	//
+	// Defines a FilePermission for write access
+	static const FilePermission Write;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Demand
+	// Check (static)
 	//
-	// Demands the provided access of the underlying permission
-	void Demand(const Access& access);
+	// Checks the specified access from permission components
+	static bool Check(const FilePermission& permission, uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode);
 
-	// Narrow
+	// Demand (static)
 	//
-	// Narrows the current permission set based on file access flags
-	void Narrow(int flags);
-
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// GroupOwner
-	//
-	// Gets the GID of the file group owner
-	__declspec(property(get=getGroupOwner)) uapi::gid_t GroupOwner;
-	uapi::gid_t getGroupOwner(void) const { return m_gid; }
-
-	// Mode
-	//
-	// Gets the mode flags for the file permission
-	__declspec(property(get=getMode)) uapi::mode_t Mode;
-	uapi::mode_t getMode(void) const { return m_mode; }
-
-	// Owner
-	//
-	// Gets the UID of the file owner
-	__declspec(property(get=getOwner)) uapi::uid_t Owner;
-	uapi::uid_t getOwner(void) const { return m_uid; }
+	// Demands the specified access from permission components
+	static void Demand(const FilePermission& permission, uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode);
 
 private:
 
 	FilePermission& operator=(const FilePermission&)=delete;
 
+	// Instance Constructor
+	//
+	FilePermission(uint8_t mask);
+
+	//-------------------------------------------------------------------------
+	// Constants
+
+	// EXECUTE
+	//
+	// Access mask for execute access to a file system object
+	static const uint8_t EXECUTE = 01;
+
+	// WRITE
+	//
+	// Access mask for write access to a file system object
+	static const uint8_t WRITE = 02;
+
+	// READ
+	//
+	// Access mask for read access to a file system object
+	static const uint8_t READ = 04;
+
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	uapi::uid_t					m_uid;			// Permission user id
-	uapi::gid_t					m_gid;			// Permission group id
-	uapi::mode_t				m_mode;			// Permission mode mask
+	const uint8_t			m_mask;			// Access mask
 };
-
-// ::FilePermission::Access Bitwise Operators
-inline FilePermission::Access operator~(FilePermission::Access lhs) {
-	return static_cast<FilePermission::Access>(~static_cast<uint32_t>(lhs));
-}
-
-inline FilePermission::Access operator&(FilePermission::Access lhs, FilePermission::Access rhs) {
-	return static_cast<FilePermission::Access>(static_cast<uint32_t>(lhs) & (static_cast<uint32_t>(rhs)));
-}
-
-inline FilePermission::Access operator|(FilePermission::Access lhs, FilePermission::Access rhs) {
-	return static_cast<FilePermission::Access>(static_cast<uint32_t>(lhs) | (static_cast<uint32_t>(rhs)));
-}
-
-inline FilePermission::Access operator^(FilePermission::Access lhs, FilePermission::Access rhs) {
-	return static_cast<FilePermission::Access>(static_cast<uint32_t>(lhs) ^ (static_cast<uint32_t>(rhs)));
-}
-
-// ::FilePermission::Access Compound Assignment Operators
-inline FilePermission::Access& operator&=(FilePermission::Access& lhs, FilePermission::Access rhs) 
-{
-	lhs = lhs & rhs;
-	return lhs;
-}
-
-inline FilePermission::Access& operator|=(FilePermission::Access& lhs, FilePermission::Access rhs) 
-{
-	lhs = lhs | rhs;
-	return lhs;
-}
-
-inline FilePermission::Access& operator^=(FilePermission::Access& lhs, FilePermission::Access rhs) 
-{
-	lhs = lhs ^ rhs;
-	return lhs;
-}
 
 //-----------------------------------------------------------------------------
 

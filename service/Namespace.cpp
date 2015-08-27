@@ -59,7 +59,7 @@ std::shared_ptr<Namespace> Namespace::Clone(int flags)
 	// auto ipcns = (flags & LINUX_CLONE_NEWIPC) ? 
 
 	// MOUNTNAMESPACE
-	auto mountns = (flags & LINUX_CLONE_NEWNS) ? MountNamespace::Create(m_mountns) : m_mountns;
+	auto mountns = (flags & LINUX_CLONE_NEWNS) ? m_mountns->Clone() : m_mountns;
 
 	// NETWORKNAMESPACE
 	// auto networkns = (flags & LINUX_CLONE_NEWNET) ? 
