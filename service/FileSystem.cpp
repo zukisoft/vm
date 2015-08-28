@@ -346,8 +346,8 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 	std::shared_ptr<FileSystem::Path> current, const char_t* path, int flags)
 {
 	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(*path == 0) throw LinuxException{ LINUX_ENOENT };
 
 	// Use the private version of this function that accepts the recursion depth
 	return LookupPath(ns, root, current, path, FileSystem::LookupFlags(flags), 0);
@@ -371,7 +371,7 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 	std::shared_ptr<FileSystem::Path> current, const char_t* path, FileSystem::LookupFlags flags, int depth)
 {
 	// Increment and verify the recursion depth of the current lookup
-	if(++depth >= FileSystem::MaxSymbolicLinks) throw LinuxException(LINUX_ELOOP);
+	if(++depth >= FileSystem::MaxSymbolicLinks) throw LinuxException{ LINUX_ELOOP };
 
 	// Convert the path string into a posix_path instance and iterate over it
 	auto lookuppath = posix_path(path);
@@ -395,7 +395,7 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 		if(node->Type == FileSystem::NodeType::SymbolicLink) {
 
 			auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(node);
-			if(!symlink) throw LinuxException(LINUX_ENOENT);
+			if(!symlink) throw LinuxException{ LINUX_ENOENT };
 
 			current = LookupPath(ns, root, parent, symlink->Target.c_str(), FileSystem::LookupFlags::Directory, depth);
 		}
@@ -404,7 +404,7 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 		else if(node->Type == FileSystem::NodeType::Directory) {
 
 			auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(node);
-			if(!directory) throw LinuxException(LINUX_ENOTDIR);
+			if(!directory) throw LinuxException{ LINUX_ENOTDIR };
 
 			// Retrieve the alias for the child object and check if it is a mount point
 			auto newalias = directory->Lookup(current->m_mount, iterator);
@@ -414,7 +414,7 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 			current = std::make_shared<FileSystem::Path>(current, newalias, (newmount) ? newmount : current->m_mount);
 		}
 
-		else throw LinuxException(LINUX_ENOTDIR);
+		else throw LinuxException{ LINUX_ENOTDIR };
 	}
 
 	// If the final path component is a symbolic link, the O_NOFOLLOW flag must be checked
@@ -425,14 +425,14 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 
 		// Not O_FOLLOW - read the symbolic link target and follow it (relative to parent)
 		auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->m_alias->Node);
-		if(!symlink) throw LinuxException(LINUX_ENOENT);
+		if(!symlink) throw LinuxException{ LINUX_ENOENT };
 
 		current = LookupPath(ns, root, current->m_parent, symlink->Target.c_str(), FileSystem::LookupFlags::None, depth);
 	}
 
 	// O_DIRECTORY indicates that the resolved path must indicate a directory object
 	if((flags & FileSystem::LookupFlags::Directory) && (current->m_alias->Node->Type != FileSystem::NodeType::Directory))
-		throw LinuxException(LINUX_ENOTDIR);
+		throw LinuxException{ LINUX_ENOTDIR };
 	
 	return current;
 }
@@ -449,19 +449,19 @@ std::shared_ptr<FileSystem::Path> FileSystem::LookupPath(std::shared_ptr<Namespa
 //	current		- Path to the file system node from which to begin resolution
 //	path		- Path to the object to be opened
 
-std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+std::shared_ptr<FileSystem::Handle> FileSystem::OpenExecutable(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root,
 	std::shared_ptr<FileSystem::Path> current, const char_t* path)
 {
 	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(*path == 0) throw LinuxException{ LINUX_ENOENT };
 
 	// Attempt to resolve the file system object, it must be a regular file
 	auto exepath = LookupPath(ns, root, current, path, LookupFlags::None, 0);
 	
 	// Create and return an executable handle for the file system object
 	auto file = std::dynamic_pointer_cast<FileSystem::File>(exepath->m_alias->Node);
-	if(!file) throw LinuxException(LINUX_ENOEXEC);
+	if(!file) throw LinuxException{ LINUX_ENOEXEC };
 
 	return file->OpenExec(exepath->m_mount);
 }
@@ -484,8 +484,8 @@ std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(std::shared_ptr<Namespa
 	std::shared_ptr<FileSystem::Path> current, const char_t* path, int flags, uapi::mode_t mode)
 {
 	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(*path == 0) throw LinuxException{ LINUX_ENOENT };
 
 	// Break the requested path up into branch and leaf components
 	posix_path filepath(path);
@@ -497,13 +497,13 @@ std::shared_ptr<FileSystem::Handle> FileSystem::OpenFile(std::shared_ptr<Namespa
 
 	// Cast the branch directory into a FileSystem::Directory node instance
 	auto directory = std::dynamic_pointer_cast<FileSystem::Directory>(current->m_alias->Node);
-	if(!directory) throw LinuxException(LINUX_ENOTDIR);
+	if(!directory) throw LinuxException{ LINUX_ENOTDIR };
 
 	// O_CREAT - Handle special rules regarding optional creation of a new regular file
 	if(flags & LINUX_O_CREAT) {
 
 		// If there is no leaf component, the operation is referring to a directory
-		if(!leaf) throw LinuxException(LINUX_EISDIR);
+		if(!leaf) throw LinuxException{ LINUX_EISDIR };
 
 		// todo
 		(mode);
@@ -542,19 +542,19 @@ size_t FileSystem::ReadSymbolicLink(std::shared_ptr<Namespace> ns, std::shared_p
 		std::shared_ptr<FileSystem::Path> current, const char_t* path, char_t* buffer, size_t length)
 {
 	// per path_resolution(7), empty paths are not allowed
-	if(path == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(*path == 0) throw LinuxException(LINUX_ENOENT);
+	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(*path == 0) throw LinuxException{ LINUX_ENOENT };
 
 	// Ensure that the buffer pointer is not null and is at least one byte in length
-	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
-	if(length == 0) throw LinuxException(LINUX_EINVAL);
+	if(buffer == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(length == 0) throw LinuxException{ LINUX_EINVAL };
 
 	// Attempt to resolve the file system object, do not follow a trailing symbolic link
 	current = LookupPath(ns, root, current, path, LookupFlags::NoFollow, 0);
 
 	// The provided path must have led to a symbolic link file system object
 	auto symlink = std::dynamic_pointer_cast<FileSystem::SymbolicLink>(current->m_alias->Node);
-	if(!symlink) throw LinuxException(LINUX_EINVAL);
+	if(!symlink) throw LinuxException{ LINUX_EINVAL };
 
 	// Read the target information from the symbolic link
 	return symlink->GetTarget(buffer, length);
@@ -573,7 +573,7 @@ size_t FileSystem::ReadSymbolicLink(std::shared_ptr<Namespace> ns, std::shared_p
 //	mount		- Mount object reference
 
 FileSystem::Path::Path(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount) : 
-	m_alias(std::move(alias)), m_mount(std::move(mount))
+	m_alias{ std::move(alias) }, m_mount{ std::move(mount) }
 {
 }
 
@@ -587,7 +587,7 @@ FileSystem::Path::Path(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr
 //	mount		- Mount object reference
 
 FileSystem::Path::Path(std::shared_ptr<FileSystem::Path> parent, std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount) : 
-	m_parent(std::move(parent)), m_alias(std::move(alias)), m_mount(std::move(mount))
+	m_parent{ std::move(parent) }, m_alias{ std::move(alias) }, m_mount{ std::move(mount) }
 {
 }
 
@@ -595,7 +595,7 @@ FileSystem::Path::Path(std::shared_ptr<FileSystem::Path> parent, std::shared_ptr
 // FileSystem::Path Copy Constructor
 
 FileSystem::Path::Path(const FileSystem::Path& rhs) : 
-	m_parent(rhs.m_parent), m_alias(rhs.m_alias), m_mount(rhs.m_mount)
+	m_parent{ rhs.m_parent }, m_alias{ rhs.m_alias }, m_mount{ rhs.m_mount }
 {
 }
 
@@ -603,7 +603,7 @@ FileSystem::Path::Path(const FileSystem::Path& rhs) :
 // FileSystem::Path Move Constructor
 
 FileSystem::Path::Path(FileSystem::Path&& rhs) : 
-	m_parent(std::move(rhs.m_parent)), m_alias(std::move(rhs.m_alias)), m_mount(std::move(rhs.m_mount))
+	m_parent{ std::move(rhs.m_parent) }, m_alias{ std::move(rhs.m_alias) }, m_mount{ std::move(rhs.m_mount) }
 {
 }
 
@@ -620,7 +620,7 @@ FileSystem::Path::Path(FileSystem::Path&& rhs) :
 //	access		- Handle access mode
 
 FileSystem::PathHandle::PathHandle(std::shared_ptr<Node> node, FileSystem::HandleAccess access)
-	: m_node(std::move(node)), m_access(access)
+	: m_node{ std::move(node) }, m_access{ access }
 {
 }
 
@@ -674,7 +674,7 @@ uapi::size_t FileSystem::PathHandle::Read(void* buffer, uapi::size_t count)
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -694,7 +694,7 @@ uapi::size_t FileSystem::PathHandle::ReadAt(uapi::loff_t offset, void* buffer, u
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -712,7 +712,7 @@ uapi::loff_t FileSystem::PathHandle::Seek(uapi::loff_t offset, int whence)
 	UNREFERENCED_PARAMETER(offset);
 	UNREFERENCED_PARAMETER(whence);
 
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -726,7 +726,7 @@ uapi::loff_t FileSystem::PathHandle::Seek(uapi::loff_t offset, int whence)
 
 void FileSystem::PathHandle::Sync(void) const
 {
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -740,7 +740,7 @@ void FileSystem::PathHandle::Sync(void) const
 
 void FileSystem::PathHandle::SyncData(void) const
 {
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -758,7 +758,7 @@ uapi::size_t FileSystem::PathHandle::Write(const void* buffer, uapi::size_t coun
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 	
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -778,7 +778,7 @@ uapi::size_t FileSystem::PathHandle::WriteAt(uapi::loff_t offset, const void* bu
 	UNREFERENCED_PARAMETER(buffer);
 	UNREFERENCED_PARAMETER(count);
 
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
