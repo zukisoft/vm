@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __CAPABILITIES_H_
-#define __CAPABILITIES_H_
+#ifndef __CAPABILITY_H_
+#define __CAPABILITY_H_
 #pragma once
 
 #include <stdint.h>
@@ -126,4 +126,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __CAPABILITIES_H_
+#endif	// __CAPABILITY_H_
