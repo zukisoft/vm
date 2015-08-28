@@ -377,6 +377,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="HostFileSystem.h" />
+    <ClInclude Include="ProcessFileSystem.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="MountNamespace.h" />
     <ClInclude Include="RootFileSystem.h" />

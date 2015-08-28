@@ -431,6 +431,9 @@
     <ClInclude Include="Capability.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ProcessFileSystem.h">
+      <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
