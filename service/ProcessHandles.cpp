@@ -23,6 +23,8 @@
 #include "stdafx.h"
 #include "ProcessHandles.h"
 
+#include "LinuxException.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -34,13 +36,13 @@
 //
 //	handle		- Handle instance to be added to the process
 
-int ProcessHandles::Add(const std::shared_ptr<FileSystem::Handle>& handle)
+int ProcessHandles::Add(std::shared_ptr<FileSystem::Handle> handle)
 {
 	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Allocate a new file descriptor for the handle and insert it
 	int index = m_fdpool.Allocate();
-	if(m_handles.insert(std::make_pair(index, handle)).second) return index;
+	if(m_handles.emplace(index, std::move(handle)).second) return index;
 
 	// Insertion failed, release the index back to the pool and throw
 	m_fdpool.Release(index);
@@ -57,12 +59,12 @@ int ProcessHandles::Add(const std::shared_ptr<FileSystem::Handle>& handle)
 //	fd			- Specific file descriptor index to use
 //	handle		- Handle instance to be added to the process
 
-int ProcessHandles::Add(int fd, const FileSystem::HandlePtr& handle)
+int ProcessHandles::Add(int fd, std::shared_ptr<FileSystem::Handle> handle)
 {
 	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Attempt to insert the handle using the specified index
-	if(m_handles.insert(std::make_pair(fd, handle)).second) return fd;
+	if(m_handles.emplace(fd, std::move(handle)).second) return fd;
 	throw LinuxException(LINUX_EBADF);
 }
 
@@ -90,7 +92,7 @@ std::shared_ptr<ProcessHandles> ProcessHandles::Create(void)
 //
 //	existing		- The existing collection instance to be duplicated
 
-std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(const std::shared_ptr<ProcessHandles>& existing)
+std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(std::shared_ptr<ProcessHandles> existing)
 {
 	handle_map_t		handles;						// New collection for the duplicate handles
 	IndexPool<int>		fdpool(existing->m_fdpool);		// Index pool for the new collection
@@ -100,7 +102,7 @@ std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(const std::shared_ptr<
 
 	// Iterate over the existing collection and duplicate each handle with the same flags
 	for(const auto& iterator : existing->m_handles)
-		if(!handles.insert(std::make_pair(iterator.first, iterator.second->Duplicate(iterator.second->Flags))).second) throw LinuxException(LINUX_EBADF);
+		if(!handles.emplace(iterator.first, std::move(iterator.second->Duplicate())).second) throw LinuxException(LINUX_EBADF);
 
 	// Create the ProcessHandles instance with the duplicated collection
 	return std::make_shared<ProcessHandles>(std::move(handles), std::move(fdpool));

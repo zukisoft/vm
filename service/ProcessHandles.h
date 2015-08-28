@@ -28,7 +28,6 @@
 #include <unordered_map>
 #include "FileSystem.h"
 #include "IndexPool.h"
-#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
@@ -56,8 +55,8 @@ public:
 	// Add
 	//
 	// Adds a file system handle to the collection
-	int Add(const std::shared_ptr<FileSystem::Handle>& handle);
-	int Add(int fd, const std::shared_ptr<FileSystem::Handle>& handle);
+	int Add(std::shared_ptr<FileSystem::Handle> handle);
+	int Add(int fd, std::shared_ptr<FileSystem::Handle> handle);
 
 	// Create (static)
 	//
@@ -67,7 +66,7 @@ public:
 	// Duplicate (static)
 	//
 	// Duplicates the handle collection into a new instance
-	static std::shared_ptr<ProcessHandles> Duplicate(const std::shared_ptr<ProcessHandles>& existing);
+	static std::shared_ptr<ProcessHandles> Duplicate(std::shared_ptr<ProcessHandles> existing);
 
 	// Get
 	//
