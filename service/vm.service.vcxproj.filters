@@ -78,6 +78,10 @@
     <Filter Include="Source Files\Namespace">
       <UniqueIdentifier>{820d2edf-c3ec-4589-a7da-4632207af356}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\sync">
+      <UniqueIdentifier>{4826869e-ae49-4e58-b5c7-44de59e6b168}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -419,9 +423,6 @@
     <ClInclude Include="..\common\path.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\sync.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\timespan.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -433,6 +434,9 @@
     </ClInclude>
     <ClInclude Include="ProcessFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\sync\sync.h">
+      <Filter>External Libraries\sync</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

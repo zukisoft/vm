@@ -54,15 +54,13 @@
 #include <generic_text.h>
 
 // Synchronization Primitives
-#include "sync.h"
+#include <sync.h>
 
 // Linux
 #include <linux/types.h>
 #include <linux/errno.h>
 
-//---------------------------------------------------------------------------
 // Service Template Library
-
 #include <servicelib.h>
 
 //#include <vm.service.h>
