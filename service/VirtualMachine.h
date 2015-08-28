@@ -24,17 +24,14 @@
 #define __VIRTUALMACHINE_H_
 #pragma once
 
-#include <deque>
 #include <map>
 #include <memory>
-#include <stack>
-#include <linux/fs.h>
-#include "Exception.h"
 #include "FileSystem.h"
-#include "MountOptions.h"
-#include "Namespace.h"
-#include "RpcObject.h"
-#include "Win32Exception.h"
+
+// Forward Declarations
+//
+class Namespace;
+class RpcObject;
 
 #pragma warning(push, 4)
 
@@ -149,6 +146,11 @@ private:
 	// Collection of available file systems (name, mount function)
 	using filesystem_map_t = std::map<std::string, FileSystem::MountFunction>;
 
+	// fsalias_t
+	//
+	// FileSystem::Alias shared pointer
+	using fsalias_t = std::shared_ptr<FileSystem::Alias>;
+
 	// instance_map_t
 	//
 	// Collection of virtual machine instances
@@ -191,8 +193,8 @@ private:
 
 	// File Systems
 	//
-	filesystem_map_t					m_filesystems;		// Available file systems
-	std::shared_ptr<FileSystem::Alias>	m_rootalias;		// Root file system alias (/)
+	filesystem_map_t			m_filesystems;		// Available file systems
+	fsalias_t					m_rootalias;		// Root file system alias (/)
 
 	// Service<> Parameters
 	//

@@ -23,6 +23,12 @@
 #include "stdafx.h"
 #include "VirtualMachine.h"
 
+#include "Exception.h"
+#include "MountOptions.h"
+#include "Namespace.h"
+#include "RpcObject.h"
+#include "Win32Exception.h"
+
 // System Call RPC Interfaces
 //
 #include <syscalls32.h>
@@ -171,7 +177,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// Win32Exception and Exception can be translated into ServiceExceptions
 	catch(Win32Exception& ex) { throw ServiceException(static_cast<DWORD>(ex.Code)); }
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
-	// catch(std::exception& ex) { /* PUT SOMETHING HERE */ }
+	// catch(std::exception& ex) { /* TODO: PUT SOMETHING HERE */ }
 
 	// Add this virtual machine instance to the active instance collection
 	instance_map_lock_t::scoped_lock_write writer(s_instancelock);
@@ -229,7 +235,6 @@ uapi::size_t VirtualMachine::RootAlias::GetName(char_t* buffer, size_t count) co
 	UNREFERENCED_PARAMETER(count);
 
 	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
-
 	return 0;
 }
 
