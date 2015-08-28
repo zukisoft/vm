@@ -42,7 +42,7 @@ class _VmOld;
 // the system calls.  Instances of this class must be created and destroyed
 // with the provided static Allocate() and Release() methods
 
-class Context
+class Context final
 {
 public:
 
