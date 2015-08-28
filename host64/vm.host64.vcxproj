@@ -58,7 +58,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\align;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -75,7 +75,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\align;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -86,7 +86,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\align.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\generic_text.h" />
     <ClInclude Include="..\common\SystemInformation.h" />

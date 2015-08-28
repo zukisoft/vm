@@ -26,7 +26,6 @@
 
 #include <algorithm>
 #include <stdint.h>
-#include "align.h"
 #include "Exception.h"
 #include "NtApi.h"
 

@@ -82,6 +82,10 @@
       <UniqueIdentifier>{4826869e-ae49-4e58-b5c7-44de59e6b168}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="External Libraries\align">
+      <UniqueIdentifier>{0e3a533e-5d1b-43e5-aaff-a39afa80a3cc}</UniqueIdentifier>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -258,9 +262,6 @@
     <ClInclude Include="..\common\linux\utsname.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\align.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="SystemCall.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -434,6 +435,9 @@
     </ClInclude>
     <ClInclude Include="..\..\external\sync\sync.h">
       <Filter>External Libraries\sync</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\align\align.h">
+      <Filter>External Libraries\align</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

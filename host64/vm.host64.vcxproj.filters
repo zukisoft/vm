@@ -43,9 +43,6 @@
     <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\align.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\SystemInformation.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>

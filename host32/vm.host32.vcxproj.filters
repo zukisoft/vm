@@ -52,9 +52,6 @@
     <ClInclude Include="syscalls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\align.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="emulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
