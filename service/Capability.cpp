@@ -80,7 +80,7 @@ const Capability Capability::ReadAuditLog{ 1ui64 << LINUX_CAP_AUDIT_READ };
 //
 //	mask		- Capability mask to be assigned to this instance
 
-Capability::Capability(uint64_t mask) : m_mask(mask)
+Capability::Capability(uint64_t mask) : m_mask{ mask }
 {
 }
 
@@ -89,7 +89,7 @@ Capability::Capability(uint64_t mask) : m_mask(mask)
 
 Capability Capability::operator|(const Capability rhs) const
 {
-	return Capability(m_mask | rhs.m_mask);
+	return Capability{ m_mask | rhs.m_mask };
 }
 
 //-----------------------------------------------------------------------------
@@ -120,8 +120,8 @@ bool Capability::Check(const Capability& capability)
 
 void Capability::Demand(const Capability& capability)
 {
-	// This is the same operation as Check(}; it just throws an exception
-	if(!Check(capability)) throw LinuxException(LINUX_EPERM);
+	// This is the same operation as Check(); it just throws an exception
+	if(!Check(capability)) throw LinuxException{ LINUX_EPERM };
 }
 
 //-----------------------------------------------------------------------------

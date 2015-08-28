@@ -88,7 +88,7 @@ Context* Context::Allocate(std::shared_ptr<class _VmOld> vm, std::shared_ptr<cla
 {
 	// Allocate the storage for the Context with MIDL_user_allocate
 	void* instance = MIDL_user_allocate(sizeof(Context));
-	if(!instance) throw Exception(E_OUTOFMEMORY);
+	if(!instance) throw Exception{ E_OUTOFMEMORY };
 
 	// Use placement new to construct the Context in the allocated storage
 	return new(instance) Context{ std::move(vm), std::move(process), std::move(thread) };
