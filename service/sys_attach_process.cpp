@@ -21,8 +21,11 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Context.h"
 #include "SystemCall.h"
+
+#include "Context.h"
+#include "Process.h"
+#include "_VmOld.h"
 
 #pragma warning(push, 4)
 

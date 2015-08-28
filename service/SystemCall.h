@@ -24,14 +24,16 @@
 #define __SYSTEMCALL_H_
 #pragma once
 
-#include "Context.h"
-#include "LinuxException.h"
-#include "Win32Exception.h"
+#include <linux/errno.h>
 
 #include <syscalls32.h>
 #ifdef _M_X64
 #include <syscalls64.h>
 #endif
+
+// Forward Declarations
+//
+class Context;
 
 #pragma warning(push, 4)
 

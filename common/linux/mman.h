@@ -72,8 +72,12 @@
 #define LINUX_MAP_HUGE_SHIFT		26
 #define LINUX_MAP_HUGE_MASK			0x3F
 
+#if !defined(__midl) && defined(__cplusplus)
+
 __declspec(selectany)
 const void* LINUX_MAP_FAILED		= reinterpret_cast<void*>(-1);
+
+#endif	// !defined(__midl) && defined(__cplusplus)
 
 //-----------------------------------------------------------------------------
 // include/uapi/asm-generic/mman.h

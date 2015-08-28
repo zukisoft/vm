@@ -23,6 +23,8 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
+#include "_VmOld.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------

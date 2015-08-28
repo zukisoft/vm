@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
+#include "LinuxException.h"
+#include "Win32Exception.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
