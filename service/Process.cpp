@@ -159,7 +159,7 @@ std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
 	if(iterator == m_pendingthreads.end()) throw LinuxException(LINUX_ESRCH);
 
 	// Acquire exclusive access to the active threads collection
-	thread_map_lock_t::scoped_lock writer(m_threadslock);
+	thread_map_lock_t::scoped_lock_write writer(m_threadslock);
 
 	// Allocate a thread identifier for the new Thread instance; the first thread in the process
 	// (or a replacement main thread from Execute) inherits the process PID instead
@@ -198,7 +198,7 @@ std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
 void Process::ClearThreads(void)
 {
 	// Take an exclusive lock against the threads collection
-	thread_map_lock_t::scoped_lock writer(m_threadslock);
+	thread_map_lock_t::scoped_lock_write writer(m_threadslock);
 
 	// Iterate over the collection of threads and remove all of them
 	for(const auto& iterator : m_threads) iterator.second->Terminate(LINUX_SIGTERM);
@@ -306,7 +306,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		int childtermsig = (flags & 0xFF);
 
 		// Construct and insert a new Process instance to the child collection
-		process_map_lock_t::scoped_lock writer(m_childlock);
+		process_map_lock_t::scoped_lock_write writer(m_childlock);
 		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(vm, m_architecture, pid, childparent, std::move(childhost), std::move(task),
 			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childtermsig, m_rootdir, m_workingdir));
 
@@ -603,7 +603,7 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	auto vm = m_vm.lock();
 	if(!vm) throw LinuxException(LINUX_ESRCH);
 
-	thread_map_lock_t::scoped_lock writer(m_threadslock);
+	thread_map_lock_t::scoped_lock_write writer(m_threadslock);
 
 	// Locate the Thread instance associated with this thread id
 	const auto& iterator = m_threads.find(tid);
@@ -1003,7 +1003,7 @@ void Process::NotifyParent(Waitable::State state, int32_t status)
 		
 		// todo: this needs some work, but ok for now
 		// will need to check for a 'subreaper' eventually too
-		process_map_lock_t::scoped_lock writer(parent->m_childlock);
+		process_map_lock_t::scoped_lock_write writer(parent->m_childlock);
 		//parent->m_vm->RemoveProcess(m_pid);
 
 		// this is ugly
@@ -1122,7 +1122,7 @@ void Process::RemoveHandle(int fd)
 
 void Process::RundownThread(const std::shared_ptr<::Thread>& thread)
 {
-	thread_map_lock_t::scoped_lock writer(m_threadslock);
+	thread_map_lock_t::scoped_lock_write writer(m_threadslock);
 
 	// If there are no threads associated with this process, nothing to do
 	if(m_threads.size() == 0) return;
@@ -1205,7 +1205,7 @@ void Process::SetLocalDescriptor(uapi::user_desc32* u_info)
 	// Grab the requested slot number from the user_desc structure
 	uint32_t slot = u_info->entry_number;
 
-	ldt_lock_t::scoped_lock writer(m_ldtlock);
+	ldt_lock_t::scoped_lock_write writer(m_ldtlock);
 
 	if(slot == -1) {
 
@@ -1610,7 +1610,7 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 
 		// todo: this needs some work, but ok for now
 		// will need to check for a 'subreaper' eventually too
-		process_map_lock_t::scoped_lock writer(m_childlock);
+		process_map_lock_t::scoped_lock_write writer(m_childlock);
 
 		//m_vm->RemoveProcess(l_siginfo.linux_si_pid);
 

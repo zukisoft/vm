@@ -104,7 +104,7 @@ void Session::ReleaseProcessGroup(uapi::pid_t pgid)
 {
 	auto vm = m_vm.lock();			// Parent virtual machine instance
 
-	pgroup_map_lock_t::scoped_lock writer(m_pgroupslock);
+	pgroup_map_lock_t::scoped_lock_write writer(m_pgroupslock);
 
 	// Remove the specified process group from the collection
 	if(m_pgroups.erase(pgid) == 0) throw LinuxException(LINUX_ESRCH);

@@ -66,7 +66,7 @@ ProcessGroup::~ProcessGroup()
 
 void ProcessGroup::AttachProcess(const std::shared_ptr<::Process>& process)
 {
-	process_map_lock_t::scoped_lock writer(m_processeslock);
+	process_map_lock_t::scoped_lock_write writer(m_processeslock);
 
 	// TODO: TEMPORARY; NEEDS EXCEPTION HANDLING
 	m_processes.insert(std::make_pair(process->ProcessId, process));
@@ -134,7 +134,7 @@ void ProcessGroup::ReleaseProcess(uapi::pid_t pid)
 	auto vm = m_vm.lock();				// Parent virtual machine instance
 	auto session = m_session.lock();	// Parent session instance
 
-	process_map_lock_t::scoped_lock writer(m_processeslock);
+	process_map_lock_t::scoped_lock_write writer(m_processeslock);
 
 	// Remove the specified process group from the collection
 	if(m_processes.erase(pid) == 0) throw LinuxException(LINUX_ESRCH);

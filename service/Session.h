@@ -26,7 +26,6 @@
 
 #include <map>
 #include <memory>
-#include <concrt.h>
 #include <linux/types.h>
 #include "Executable.h"
 #include "Process.h"
@@ -98,7 +97,7 @@ private:
 	// pgroup_map_lock_t
 	//
 	// Synchronization object for pgroup_map_t
-	using pgroup_map_lock_t = Concurrency::reader_writer_lock;
+	using pgroup_map_lock_t = sync::reader_writer_lock;
 
 	// Instance Constructor
 	//

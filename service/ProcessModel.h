@@ -26,7 +26,6 @@
 
 #include <map>
 #include <memory>
-#include <concrt.h>
 #include <linux/types.h>
 #include "LinuxException.h"
 #include "_VmOld.h"
@@ -127,7 +126,7 @@ public:
 	template<class... _args>
 	std::shared_ptr<_childtype> Add(uapi::pid_t pid, _args&&... args)
 	{
-		child_map_lock_t::scoped_lock writer(m_childrenlock);
+		child_map_lock_t::scoped_lock_write writer(m_childrenlock);
 
 		// Construct a new shared_ptr<> for the child object in-place
 		auto emplaced = m_children.emplace(pid, std::forward<_args>(args)...);
@@ -160,7 +159,7 @@ public:
 	// Detaches a child object from this collection
 	std::shared_ptr<_childtype> Detach(uapi::pid_t pid)
 	{
-		child_map_lock_t::scoped_lock writer(m_childrenlock);
+		child_map_lock_t::scoped_lock_write writer(m_childrenlock);
 
 		// Attempt to locate the specified child in the collection
 		const auto& iterator = m_children.find(pid);
@@ -179,7 +178,7 @@ public:
 	// Removes a child object from the collection
 	void Remove(uapi::pid_t pid)
 	{
-		child_map_lock_t::scoped_lock writer(m_childrenlock);
+		child_map_lock_t::scoped_lock_write writer(m_childrenlock);
 		if(m_children.erase(pid) == 0) throw LinuxException(LINUX_ESRCH);		// todo: inner exception
 
 		// If the child object is not the leader of this container, release the PID
@@ -196,8 +195,8 @@ public:
 		if(pid == m_pid) throw LinuxException(LINUX_EPERM);			// todo: inner exception
 
 		// Both collections need to be locked for exclusive access
-		child_map_lock_t::scoped_lock lhs_writer(m_childrenlock);
-		child_map_lock_t::scoped_lock rhs_writer(rhs->m_childrenlock);
+		child_map_lock_t::scoped_lock_write lhs_writer(m_childrenlock);
+		child_map_lock_t::scoped_lock_write rhs_writer(rhs->m_childrenlock);
 
 		// Get a reference to the left-hand child in this parent container
 		const auto& leftchild = m_children.find(pid);
@@ -254,7 +253,7 @@ private:
 	// child_map_lock_t
 	//
 	// Synchronization object for the child_map_t collection
-	using child_map_lock_t = Concurrency::reader_writer_lock;
+	using child_map_lock_t = sync::reader_writer_lock;
 
 	//-------------------------------------------------------------------------
 	// Member Variables

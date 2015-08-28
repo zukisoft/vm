@@ -26,7 +26,6 @@
 
 #include <memory>
 #include <vector>
-#include <concrt.h>
 #include <linux/mman.h>
 #include "LinuxException.h"
 #include "MemorySection.h"
@@ -123,7 +122,7 @@ private:
 	// section_lock_t
 	//
 	// Memory section collection synchronization object
-	using section_lock_t = Concurrency::reader_writer_lock;
+	using section_lock_t = sync::reader_writer_lock;
 	
 	// section_vector_t
 	//

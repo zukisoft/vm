@@ -26,7 +26,6 @@
 
 #include <map>
 #include <memory>
-#include <concrt.h>
 #include <linux/types.h>
 #include "Process.h"
 #include "ProcessModel.h"
@@ -104,7 +103,7 @@ private:
 	// process_map_lock_t
 	//
 	// Synchronization object for process_map_t
-	using process_map_lock_t = Concurrency::reader_writer_lock;
+	using process_map_lock_t = sync::reader_writer_lock;
 
 	// Instance Constructor
 	//

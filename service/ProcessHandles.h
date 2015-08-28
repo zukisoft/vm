@@ -24,7 +24,6 @@
 #define __PROCESSHANDLES_H_
 #pragma once
 
-#include <concrt.h>
 #include <memory>
 #include <unordered_map>
 #include "FileSystem.h"
@@ -101,7 +100,7 @@ private:
 	// handle_lock_t
 	//
 	// File system handle collection synchronization object
-	using handle_lock_t = Concurrency::reader_writer_lock;
+	using handle_lock_t = sync::reader_writer_lock;
 	
 	// handle_map_t
 	//

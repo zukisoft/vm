@@ -26,7 +26,6 @@
 
 #include <memory>
 #include <string>
-#include <concrt.h>
 
 #pragma warning(push, 4)				
 
@@ -85,7 +84,7 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	Concurrency::critical_section	m_lock;				// Synchronization object
+	sync::critical_section			m_lock;				// Synchronization object
 	std::string						m_hostname;			// Host name string
 	std::string						m_domainname;		// Domain name string
 };

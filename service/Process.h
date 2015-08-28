@@ -28,7 +28,6 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <concrt.h>
 #include <linux/ldt.h>
 #include <linux/resource.h>
 #include <linux/sched.h>
@@ -316,7 +315,7 @@ private:
 	// ldt_lock_t
 	//
 	// Synchronization object for the local descriptor table
-	using ldt_lock_t = Concurrency::reader_writer_lock;
+	using ldt_lock_t = sync::reader_writer_lock;
 
 	// process_map_t
 	//
@@ -326,7 +325,7 @@ private:
 	// process_map_lock_t
 	//
 	// Synchronization object for process_map_t
-	using process_map_lock_t = Concurrency::reader_writer_lock;
+	using process_map_lock_t = sync::reader_writer_lock;
 
 	// pending_thread_map_t
 	//
@@ -341,7 +340,7 @@ private:
 	// thread_map_lock_t
 	//
 	// Synchronization object for thread_map_t
-	using thread_map_lock_t = Concurrency::reader_writer_lock;
+	using thread_map_lock_t = sync::reader_writer_lock;
 
 	// Instance Constructors
 	//

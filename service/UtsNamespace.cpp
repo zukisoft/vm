@@ -75,7 +75,7 @@ std::shared_ptr<UtsNamespace> UtsNamespace::Create(const std::shared_ptr<UtsName
 
 std::string UtsNamespace::getDomainName(void)
 {
-	Concurrency::critical_section::scoped_lock critsec(m_lock);
+	sync::critical_section::scoped_lock critsec(m_lock);
 	return m_domainname;
 }
 
@@ -86,7 +86,7 @@ std::string UtsNamespace::getDomainName(void)
 
 void UtsNamespace::putDomainName(const std::string& value)
 {
-	Concurrency::critical_section::scoped_lock critsec(m_lock);
+	sync::critical_section::scoped_lock critsec(m_lock);
 	m_domainname = value;
 }
 
@@ -97,7 +97,7 @@ void UtsNamespace::putDomainName(const std::string& value)
 
 void UtsNamespace::putDomainName(const char_t* value)
 {
-	Concurrency::critical_section::scoped_lock critsec(m_lock);
+	sync::critical_section::scoped_lock critsec(m_lock);
 	m_domainname = value;
 }
 
@@ -108,7 +108,7 @@ void UtsNamespace::putDomainName(const char_t* value)
 
 std::string UtsNamespace::getHostName(void)
 {
-	Concurrency::critical_section::scoped_lock critsec(m_lock);
+	sync::critical_section::scoped_lock critsec(m_lock);
 	return m_hostname;
 }
 
@@ -119,7 +119,7 @@ std::string UtsNamespace::getHostName(void)
 
 void UtsNamespace::putHostName(const std::string& value)
 {
-	Concurrency::critical_section::scoped_lock critsec(m_lock);
+	sync::critical_section::scoped_lock critsec(m_lock);
 	m_hostname = value;
 }
 
@@ -130,7 +130,7 @@ void UtsNamespace::putHostName(const std::string& value)
 
 void UtsNamespace::putHostName(const char_t* value)
 {
-	Concurrency::critical_section::scoped_lock critsec(m_lock);
+	sync::critical_section::scoped_lock critsec(m_lock);
 	m_hostname = value;
 }
 

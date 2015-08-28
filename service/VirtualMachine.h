@@ -24,7 +24,6 @@
 #define __VIRTUALMACHINE_H_
 #pragma once
 
-#include <concrt.h>
 #include <deque>
 #include <map>
 #include <memory>
@@ -158,7 +157,7 @@ private:
 	// instance_map_lock_t
 	//
 	// Synchronization object for the instance collection
-	using instance_map_lock_t = Concurrency::reader_writer_lock;
+	using instance_map_lock_t = sync::reader_writer_lock;
 
 	// GenerateInstanceId (static)
 	//

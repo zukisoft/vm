@@ -71,7 +71,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 	if(length == 0) throw LinuxException(LINUX_EINVAL);
 
 	// Prevent changes to the process memory layout while this is operating
-	section_lock_t::scoped_lock writer(m_sectionlock);
+	section_lock_t::scoped_lock_write writer(m_sectionlock);
 
 	// No specific address was requested, let the operating system decide where it should go
 	if(address == nullptr) {
@@ -142,7 +142,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 void ProcessMemory::Clear(void)
 {
 	// Prevent changes to the process memory layout while this is operating
-	section_lock_t::scoped_lock writer(m_sectionlock);
+	section_lock_t::scoped_lock_write writer(m_sectionlock);
 
 	// Clearing the vector<> will release all of the section instances
 	m_sections.clear();
@@ -349,7 +349,7 @@ void ProcessMemory::Release(const void* address, size_t length)
 	uintptr_t end = begin + length;					// End address as uintptr_t
 
 	// Prevent changes to the process memory layout while this is operating
-	section_lock_t::scoped_lock writer(m_sectionlock);
+	section_lock_t::scoped_lock_write writer(m_sectionlock);
 
 	while(begin < end) {
 

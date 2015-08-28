@@ -174,7 +174,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// catch(std::exception& ex) { /* PUT SOMETHING HERE */ }
 
 	// Add this virtual machine instance to the active instance collection
-	instance_map_lock_t::scoped_lock writer(s_instancelock);
+	instance_map_lock_t::scoped_lock_write writer(s_instancelock);
 	s_instances.emplace(m_instanceid, shared_from_this());
 }
 
@@ -195,7 +195,7 @@ void VirtualMachine::OnStop(void)
 #endif
 
 	// Remove this virtual machine from the active instance collection
-	instance_map_lock_t::scoped_lock writer(s_instancelock);
+	instance_map_lock_t::scoped_lock_write writer(s_instancelock);
 	s_instances.erase(m_instanceid);
 }
 

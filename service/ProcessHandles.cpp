@@ -36,7 +36,7 @@
 
 int ProcessHandles::Add(const std::shared_ptr<FileSystem::Handle>& handle)
 {
-	handle_lock_t::scoped_lock writer(m_handlelock);
+	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Allocate a new file descriptor for the handle and insert it
 	int index = m_fdpool.Allocate();
@@ -59,7 +59,7 @@ int ProcessHandles::Add(const std::shared_ptr<FileSystem::Handle>& handle)
 
 int ProcessHandles::Add(int fd, const FileSystem::HandlePtr& handle)
 {
-	handle_lock_t::scoped_lock writer(m_handlelock);
+	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Attempt to insert the handle using the specified index
 	if(m_handles.insert(std::make_pair(fd, handle)).second) return fd;
@@ -134,7 +134,7 @@ std::shared_ptr<FileSystem::Handle> ProcessHandles::Get(int fd)
 
 void ProcessHandles::Remove(int fd)
 {
-	handle_lock_t::scoped_lock writer(m_handlelock);
+	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Remove the index from the collection and return it to the pool
 	if(m_handles.erase(fd) == 0) throw LinuxException(LINUX_EBADF);
@@ -152,7 +152,7 @@ void ProcessHandles::Remove(int fd)
 
 void ProcessHandles::RemoveCloseOnExecute(void)
 {
-	handle_lock_t::scoped_lock writer(m_handlelock);
+	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Iterate over all the contained file system handles to look for CLOEXEC
 	auto iterator = m_handles.begin();
