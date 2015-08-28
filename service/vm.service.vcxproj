@@ -403,7 +403,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="Thread.h" />
     <ClInclude Include="UtsNamespace.h" />
-    <ClInclude Include="VmService.h" />
     <ClInclude Include="SystemLog.h" />
     <ClInclude Include="_VmOld.h" />
     <ClInclude Include="Waitable.h" />
@@ -766,12 +765,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="UtsNamespace.cpp" />
     <ClCompile Include="_VmOld.cpp" />
-    <ClCompile Include="VmService.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="SystemLog.cpp" />
     <ClCompile Include="Waitable.cpp" />
   </ItemGroup>

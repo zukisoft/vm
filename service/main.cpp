@@ -25,7 +25,6 @@
 #include "CommandLine.h"
 #include "Console.h"
 #include "StructuredException.h"
-//#include "VmService.h"
 #include "VirtualMachine.h"
 
 #pragma warning(push, 4)
