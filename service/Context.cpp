@@ -23,6 +23,11 @@
 #include "stdafx.h"
 #include "Context.h"
 
+#include "Exception.h"
+#include "Process.h"
+#include "Thread.h"
+#include "_VmOld.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -31,41 +36,12 @@
 // Arguments:
 //
 //	vm			- _VmOld instance to associate with the context
-
-Context::Context(const std::shared_ptr<::_VmOld>& vm) : _VmOld(vm) 
-{
-	_ASSERTE(vm);
-}
-
-//-----------------------------------------------------------------------------
-// Context Constructor (private)
-//
-// Arguments:
-//
-//	vm			- _VmOld instance to associate with the context
-//	process		- Process instance to associate with the context
-
-Context::Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process) : _VmOld(vm), Process(process)
-{
-	_ASSERTE(vm);
-	_ASSERTE(process);
-}
-
-//-----------------------------------------------------------------------------
-// Context Constructor (private)
-//
-// Arguments:
-//
-//	vm			- _VmOld instance to associate with the context
 //	process		- Process instance to associate with the context
 //	thread		- Thread instance to associate with the context
 
-Context::Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
-	: _VmOld(vm), Process(process), Thread(thread) 
+Context::Context(std::shared_ptr<class _VmOld> vm, std::shared_ptr<class Process> process, std::shared_ptr<class Thread> thread)
+	: _VmOld{ std::move(vm) }, Process{ std::move(process) }, Thread{ std::move(thread) }
 {
-	_ASSERTE(vm);
-	_ASSERTE(process);
-	_ASSERTE(thread);
 }
 
 //-----------------------------------------------------------------------------
@@ -77,14 +53,9 @@ Context::Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Pr
 //
 //	vm			- _VmOld instance to associate with the context
 
-Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm)
+Context* Context::Allocate(std::shared_ptr<class _VmOld> vm)
 {
-	// Allocate the storage for the Context with MIDL_user_allocate
-	void* instance = MIDL_user_allocate(sizeof(Context));
-	if(!instance) throw Exception(E_OUTOFMEMORY);
-
-	// Use placement new to construct the Context in the allocated storage
-	return new(instance) Context(vm);
+	return Allocate(std::move(vm), nullptr, nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -97,14 +68,9 @@ Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm)
 //	vm			- _VmOld instance to associate with the context
 //	process		- Process instance to associate with the context
 
-Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process)
+Context* Context::Allocate(std::shared_ptr<class _VmOld> vm, std::shared_ptr<class Process> process)
 {
-	// Allocate the storage for the Context with MIDL_user_allocate
-	void* instance = MIDL_user_allocate(sizeof(Context));
-	if(!instance) throw Exception(E_OUTOFMEMORY);
-
-	// Use placement new to construct the Context in the allocated storage
-	return new(instance) Context(vm, process);
+	return Allocate(std::move(vm), std::move(process), nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -118,14 +84,14 @@ Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm, const std::share
 //	process		- Process instance to associate with the context
 //	thread		- Thread instance to associate with the context
 
-Context* Context::Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread)
+Context* Context::Allocate(std::shared_ptr<class _VmOld> vm, std::shared_ptr<class Process> process, std::shared_ptr<class Thread> thread)
 {
 	// Allocate the storage for the Context with MIDL_user_allocate
 	void* instance = MIDL_user_allocate(sizeof(Context));
 	if(!instance) throw Exception(E_OUTOFMEMORY);
 
 	// Use placement new to construct the Context in the allocated storage
-	return new(instance) Context(vm, process, thread);
+	return new(instance) Context{ std::move(vm), std::move(process), std::move(thread) };
 }
 
 //-----------------------------------------------------------------------------
@@ -141,7 +107,7 @@ Context* Context::Release(Context* context)
 {
 	if(!context) return nullptr;
 
-	context->~Context();		// Invoke object destructor
+	context->~Context();			// Invoke object destructor
 	MIDL_user_free(context);		// Release allocated storage
 	return nullptr;					// Convenience NULL for the caller
 }

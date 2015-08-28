@@ -24,12 +24,15 @@
 #define __CONTEXT_H_
 #pragma once
 
-#include "Process.h"
-#include "Thread.h"
-#include "_VmOld.h"
-#include "Win32Exception.h"
+#include <memory>
 
 #pragma warning(push, 4)
+
+// Forward Declarations
+//
+class Process;
+class Thread;
+class _VmOld;
 
 //-----------------------------------------------------------------------------
 // Context
@@ -49,9 +52,9 @@ public:
 	// Allocate
 	//
 	// Allocates a new Context instance
-	static Context* Allocate(const std::shared_ptr<::_VmOld>& vm);
-	static Context* Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process);
-	static Context* Allocate(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
+	static Context* Allocate(std::shared_ptr<class _VmOld> vm);
+	static Context* Allocate(std::shared_ptr<class _VmOld> vm, std::shared_ptr<class Process> process);
+	static Context* Allocate(std::shared_ptr<class _VmOld> vm, std::shared_ptr<class Process> process, std::shared_ptr<class Thread> thread);
 
 	// Release
 	//
@@ -63,18 +66,18 @@ public:
 
 	// Process
 	//
-	// Virtual machine process instance
-	const std::shared_ptr<::Process> Process;
+	//Process instance
+	const std::shared_ptr<class Process> Process;
 
 	// Thread
 	//
 	// Process thread instance
-	const std::shared_ptr<::Thread> Thread;
+	const std::shared_ptr<class Thread> Thread;
 
 	// _VmOld
 	//
 	// Virtual machine instance
-	const std::shared_ptr<::_VmOld> _VmOld;
+	const std::shared_ptr<class _VmOld> _VmOld;
 
 private:
 
@@ -82,11 +85,9 @@ private:
 	Context(const Context&)=delete;
 	Context& operator=(const Context&)=delete;
 
-	// Instance Constructors
+	// Instance Constructor
 	//
-	Context(const std::shared_ptr<::_VmOld>& vm);
-	Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process);
-	Context(const std::shared_ptr<::_VmOld>& vm, const std::shared_ptr<::Process>& process, const std::shared_ptr<::Thread>& thread);
+	Context(std::shared_ptr<class _VmOld> vm, std::shared_ptr<class Process> process, std::shared_ptr<class Thread> thread);
 };
 
 //-----------------------------------------------------------------------------
