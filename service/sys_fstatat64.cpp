@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 #include "FileSystem.h"
+#include "convert.h"
 
 #pragma warning(push, 4)
 
@@ -73,12 +74,9 @@ uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* p
 	buf->st_size		= status.st_size;
 	buf->st_blksize		= static_cast<uint32_t>(status.st_blksize);
 	buf->st_blocks		= status.st_blocks;
-	buf->st_atime		= static_cast<uint32_t>(status.st_atime);
-	buf->st_atime_nsec	= static_cast<uint32_t>(status.st_atime_nsec);
-	buf->st_mtime		= static_cast<uint32_t>(status.st_mtime);
-	buf->st_mtime_nsec	= static_cast<uint32_t>(status.st_mtime_nsec);
-	buf->st_ctime		= static_cast<uint32_t>(status.st_ctime);
-	buf->st_ctime_nsec	= static_cast<uint32_t>(status.st_ctime_nsec);
+	buf->st_atime		= convert<linux_timespec32>(status.st_atime);
+	buf->st_mtime		= convert<linux_timespec32>(status.st_mtime);
+	buf->st_ctime		= convert<linux_timespec32>(status.st_ctime);
 
 	return 0;
 }

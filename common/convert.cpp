@@ -80,6 +80,13 @@ template<> FILETIME convert<FILETIME>(const uapi::timespec& rhs)
 	return *reinterpret_cast<FILETIME*>(&filetime);
 }
 
+// linux_timespec64 --> linux_timespec32
+//
+template<> linux_timespec32 convert<linux_timespec32>(const linux_timespec64& rhs)
+{
+	return { static_cast<__int32>(rhs.tv_sec), static_cast<__int32>(rhs.tv_nsec) };
+}
+
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
