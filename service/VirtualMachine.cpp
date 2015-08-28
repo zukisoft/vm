@@ -33,7 +33,7 @@
 // File Systems
 //
 //#include "HostFileSystem.h"
-//#include "RootFileSystem.h"
+#include "RootFileSystem.h"
 //#include "TempFileSystem.h"
 
 #pragma warning(push, 4)
@@ -145,7 +145,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		// add mount to root namespace
 
 		//m_rootmount = RootFileSystem::Mount(
-		m_vfsroot = RootAlias::Create(m_rootns, nullptr);	// <-- needs a <Node> from initial mount
+		//m_rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
 
 		// INITRAMFS
 		//
@@ -199,114 +199,58 @@ void VirtualMachine::OnStop(void)
 	s_instances.erase(m_instanceid);
 }
 
+//
+// VIRTUALMACHINE::ROOTALIAS
+//
+
 //-----------------------------------------------------------------------------
-// VirtualMachine::RootAlias Constructor (private)
+// VirtualMachine::RootAlias Constructor
 //
 // Arguments:
 //
-//	ns			- Namespace of the initial node
-//	node		- Initial node to mount into the root alias
+//	node		- Node to attach to this alias
 
-VirtualMachine::RootAlias::RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
+VirtualMachine::RootAlias::RootAlias(std::shared_ptr<FileSystem::Node> node) : m_node(std::move(node))
 {
-	_ASSERTE(ns);
-	_ASSERTE(node);
-	m_mounts.emplace_front(ns, node);
 }
 
 //-----------------------------------------------------------------------------
-// VirtualMachine::RootAlias::Create (static)
+// VirtualMachine::RootAlias::GetName
 //
-// Creates a new RootAlias instance, seeding it with the specified intial
-// namespace/node pair
-//
-// Arguments:
-//
-//	ns			- Namespace of the initial node
-//	node		- Initial node to mount into the root alias
-
-std::shared_ptr<Alias> VirtualMachine::RootAlias::Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
-{
-	return std::make_shared<RootAlias>(ns, node);
-}
-
-//-----------------------------------------------------------------------------
-// VirtualMachine::RootAlias::Follow (private)
-//
-// Follows this alias to the topmost node within the specified namespace
+// Reads the name assigned to this alias
 //
 // Arguments:
 //
-//	ns			- Namespace to use to locate the appropriate node
+//	buffer			- Output buffer
+//	count			- Size of the output buffer, in bytes
 
-std::shared_ptr<FileSystem::Node> VirtualMachine::RootAlias::Follow(const std::shared_ptr<Namespace>& ns)
+uapi::size_t VirtualMachine::RootAlias::GetName(char_t* buffer, size_t count) const
 {
-	mounts_lock_t::scoped_lock_read reader(m_mountslock);
+	UNREFERENCED_PARAMETER(count);
 
-	// The root alias is special in that there is never an unmounted node available,
-	// just return the first matching node in the specified namespace to the caller
-	for(const auto& iterator : m_mounts) if(iterator.first == ns) return iterator.second;
+	if(buffer == nullptr) throw LinuxException(LINUX_EFAULT);
 
-	return nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// VirtualMachine::RootAlias::Mount
-//
-// Adds a mountpoint node to this alias
-//
-// Arguments:
-//
-//	ns			- Namespace for the mountpoint
-//	node		- The mountpoint node instance
-
-void VirtualMachine::RootAlias::Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
-{
-	mounts_lock_t::scoped_lock writer(m_mountslock);
-	m_mounts.emplace_front(ns, node);
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
 // VirtualMachine::RootAlias::getName
 //
-// Gets the name associated with this alias
+// Gets the name assigned to this alias
 
-const char_t* VirtualMachine::RootAlias::getName(void)
+std::string VirtualMachine::RootAlias::getName(void) const
 {
-	return "";
+	return std::string();
 }
 
 //-----------------------------------------------------------------------------
-// VirtualMachine::RootAlias::getParent
+// VirtualMachine::RootAlias::getNode
 //
-// Gets a reference to the parent alias
+// Gets the node to which this alias refers
 
-std::shared_ptr<Alias> VirtualMachine::RootAlias::getParent(void)
+std::shared_ptr<FileSystem::Node> VirtualMachine::RootAlias::getNode(void) const
 {
-	// The root alias is always its own parent
-	return shared_from_this();
-}
-
-//-----------------------------------------------------------------------------
-// VirtualMachine::RootAlias::Unmount
-//
-// Removes a mountpoint node from this alias
-//
-// Arguments:
-//
-//	ns			- Namespace for the mountpoint
-//	node		- The mountpoint node instance
-
-void VirtualMachine::RootAlias::Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node)
-{
-	mounts_lock_t::scoped_lock writer(m_mountslock);
-
-	// There is not expected to be more than a couple mounted nodes for any given alias,
-	// a simple linear search should be sufficient
-	auto iterator = std::find(m_mounts.begin(), m_mounts.end(), std::make_pair(ns, node));
-	if(iterator == m_mounts.end()) throw LinuxException(LINUX_EINVAL); 
-
-	m_mounts.erase(iterator);
+	return m_node;
 }
 
 //---------------------------------------------------------------------------

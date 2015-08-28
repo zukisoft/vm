@@ -78,64 +78,45 @@ private:
 	// VirtualMachine::RootAlias
 	//
 	// Implements the absolute root of the virtual file system (/)
-	class RootAlias : public Alias, public std::enable_shared_from_this<Alias>
+	class RootAlias : public FileSystem::Alias
 	{
 	public:
 
-		// Create (static)
+		// Instance Constructor
 		//
-		// Creates a new RootAlias instance
-		static std::shared_ptr<Alias> Create(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
+		RootAlias(std::shared_ptr<FileSystem::Node> node);
+
+		// Destructor
+		//
+		~RootAlias()=default;
+
+		//---------------------------------------------------------------------
+		// FileSystem::Alias Implementation
+
+		// GetName
+		//
+		// Reads the name assigned to this alias
+		virtual uapi::size_t GetName(char_t* buffer, size_t count) const;
+
+		// Name
+		//
+		// Gets the name assigned to this alias
+		virtual std::string getName(void) const;
+
+		// Node
+		//
+		// Gets the node to which this alias refers
+		virtual std::shared_ptr<FileSystem::Node> getNode(void) const;
 
 	private:
 
 		RootAlias(const RootAlias&)=delete;
 		RootAlias& operator=(const RootAlias&)=delete;
 
-		// mounts_t
-		//
-		// Collection of mounted nodes
-		using mounts_t = std::deque<std::pair<std::shared_ptr<Namespace>, std::shared_ptr<FileSystem::Node>>>;
-
-		// mounts_lock_t
-		//
-		// Synchronization object for the mounts collection
-		using mounts_lock_t = Concurrency::reader_writer_lock;
-
-		// Instance Constructor
-		//
-		RootAlias(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
-		friend class std::_Ref_count_obj<RootAlias>;
-
-		// Follow (Alias)
-		//
-		// Follows this alias to the file system node that it refers to
-		virtual std::shared_ptr<FileSystem::Node> Follow(const std::shared_ptr<Namespace>& ns);
-
-		// Mount (Alias)
-		//
-		// Adds a mountpoint node to this alias, obscuring any existing node in the same namespace
-		virtual void Mount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
-
-		// Unmount (Alias)
-		//
-		// Removes a mountpoint node from this alias
-		virtual void Unmount(const std::shared_ptr<Namespace>& ns, const std::shared_ptr<FileSystem::Node>& node);
-
-		// Name (Alias)
-		//
-		// Gets the name associated with the alias
-		virtual const char_t* getName(void);
-
-		// Parent (Alias)
-		//
-		// Gets the parent alias of this alias instance, or nullptr if none exists
-		virtual std::shared_ptr<Alias> getParent(void);
-
+		//-------------------------------------------------------------------------
 		// Member Variables
-		//
-		mounts_t						m_mounts;			// Collection of mounts
-		mounts_lock_t					m_mountslock;		// Synchronization object
+
+		const std::shared_ptr<FileSystem::Node>	m_node;		// Attached node
 	};
 
 	// Service<> Control Handler Map
@@ -211,8 +192,8 @@ private:
 
 	// File Systems
 	//
-	filesystem_map_t			m_filesystems;		// Available file systems
-	std::shared_ptr<Alias>		m_vfsroot;			// Root file system alias (/)
+	filesystem_map_t					m_filesystems;		// Available file systems
+	std::shared_ptr<FileSystem::Alias>	m_rootalias;		// Root file system alias (/)
 
 	// Service<> Parameters
 	//

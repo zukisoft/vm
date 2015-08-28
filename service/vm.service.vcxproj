@@ -377,7 +377,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="HostFileSystem.h" />
-    <ClInclude Include="RootAlias.h" />
     <ClInclude Include="TempFileSystem.h" />
     <ClInclude Include="MountNamespace.h" />
     <ClInclude Include="RootFileSystem.h" />
@@ -670,7 +669,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="RootAlias.cpp" />
     <ClCompile Include="TempFileSystem.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
