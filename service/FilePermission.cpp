@@ -46,7 +46,7 @@ const FilePermission FilePermission::Write{ FilePermission::WRITE };
 //
 //	mask		- Access mask to be assigned to this instance
 
-FilePermission::FilePermission(uint8_t mask) : m_mask(mask)
+FilePermission::FilePermission(uint8_t mask) : m_mask{ mask }
 {
 }
 
@@ -55,7 +55,7 @@ FilePermission::FilePermission(uint8_t mask) : m_mask(mask)
 
 FilePermission FilePermission::operator|(const FilePermission rhs) const
 {
-	return FilePermission(m_mask | rhs.m_mask);
+	return FilePermission{ static_cast<uint8_t>(m_mask | rhs.m_mask) };
 }
 
 //-----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ bool FilePermission::Check(const FilePermission& permission, uapi::uid_t uid, ua
 void FilePermission::Demand(const FilePermission& permission, uapi::uid_t uid, uapi::gid_t gid, uapi::mode_t mode)
 {
 	// This is the same operation as Check(), it just throws an exception
-	if(!Check(permission, uid, gid, mode)) throw LinuxException(LINUX_EACCES);
+	if(!Check(permission, uid, gid, mode)) throw LinuxException{ LINUX_EACCES };
 }
 	
 //-----------------------------------------------------------------------------

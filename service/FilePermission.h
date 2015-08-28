@@ -25,8 +25,6 @@
 #pragma once
 
 #include <linux/types.h>
-#include <linux/fcntl.h>
-#include <linux/stat.h>
 
 #pragma warning(push, 4)
 
