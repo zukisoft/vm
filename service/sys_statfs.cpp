@@ -43,7 +43,7 @@
 uapi::long_t sys_statfs(const Context* context, const uapi::char_t* path, uapi::statfs* buf)
 {
 	if(buf == nullptr) return -LINUX_EFAULT;
-		
+
 	// Resolve the path to the target alias and go through it to get to the file system information
 	auto alias = FileSystem::ResolvePath(context->Process->RootDirectory, context->Process->WorkingDirectory, path, 0);
 	*buf = alias->Node->FileSystem->Status;

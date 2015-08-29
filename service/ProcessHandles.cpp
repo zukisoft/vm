@@ -125,7 +125,7 @@ std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(std::shared_ptr<Proces
 
 	// Iterate over the existing collection and duplicate each handle with the same flags
 	for(const auto& iterator : existing->m_handles)
-		if(!handles.emplace(iterator.first, std::move(iterator.second->Duplicate())).second) throw LinuxException{ LINUX_EBADF };
+		if(!handles.emplace(iterator.first, std::move(iterator.second->Duplicate())).second) throw LinuxException(LINUX_EBADF);
 
 	// Create the ProcessHandles instance with the duplicated collection
 	return std::make_shared<ProcessHandles>(std::move(handles), std::move(fdpool));

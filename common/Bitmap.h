@@ -36,7 +36,7 @@
 // functions are not natively thread-safe, so this class must be externally 
 // protected from concurrent access
 
-class Bitmap
+class Bitmap final
 {
 public:
 
