@@ -26,16 +26,16 @@
 
 #include <memory>
 #include <vector>
+#include "bitmask.h"
 #include <linux/mman.h>
-#include "LinuxException.h"
-#include "MemorySection.h"
-#include "NativeHandle.h"
-#include "NtApi.h"
-#include "StructuredException.h"
-#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
+
+// Forward Declarations
+//
+class MemorySection;
+class NativeHandle;
 
 //-----------------------------------------------------------------------------
 // Class ProcessMemory
@@ -50,14 +50,52 @@ public:
 	//
 	~ProcessMemory()=default;
 
+	// ProcessMemory::Protection
+	//
+	// Protection flags used with memory operations
+	class Protection final : public bitmask<uint32_t, LINUX_PROT_NONE | LINUX_PROT_READ | LINUX_PROT_WRITE | LINUX_PROT_EXEC | LINUX_PROT_SEM>
+	{
+	public:
+
+		using bitmask::bitmask;
+
+		//-------------------------------------------------------------------------
+		// Fields
+
+		// Atomic (static)
+		//
+		// Indicates that the memory region can be used for atomic operations
+		static const Protection Atomic;
+
+		// Execute (static)
+		//
+		// Indicates that the memory region can be executed
+		static const Protection Execute;
+
+		// None (static)
+		//
+		// Indicates that the memory region cannot be accessed
+		static const Protection None;
+
+		// Read (static)
+		//
+		// Indicates that the memory region can be read
+		static const Protection Read;
+
+		// Write (static)
+		//
+		// Indicates that the memory region can be written to
+		static const Protection Write;
+	};
+
 	//-------------------------------------------------------------------------
 	// Member Functions
 
 	// Allocate
 	//
 	// Allocates virtual memory
-	const void* Allocate(size_t length, int prot);
-	const void* Allocate(const void* address, size_t length, int prot);
+	const void* Allocate(size_t length, Protection prot);
+	const void* Allocate(const void* address, size_t length, Protection prot);
 
 	// Clear
 	//
@@ -82,7 +120,7 @@ public:
 	// Guard
 	//
 	// Sets up guard pages within a virtual memory region
-	void Guard(const void* address, size_t length, int prot);
+	void Guard(const void* address, size_t length, Protection prot);
 
 	// Lock
 	//
@@ -92,7 +130,7 @@ public:
 	// Protect
 	//
 	// Sets the memory protection flags for a virtual memory region
-	void Protect(const void* address, size_t length, int prot);
+	void Protect(const void* address, size_t length, Protection prot);
 
 	// Read
 	//

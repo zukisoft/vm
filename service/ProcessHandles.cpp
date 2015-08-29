@@ -28,6 +28,29 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
+// ProcessHandles Constructor (private)
+//
+// Arguments:
+//
+//	NONE
+
+ProcessHandles::ProcessHandles() : m_fdpool{ MIN_FD_INDEX } 
+{
+}
+
+//-----------------------------------------------------------------------------
+// ProcessHandles Constructor (private)
+//
+// Arguments:
+//
+//	handles		- Existing collection of handles to use
+//	fdpool		- Existing pool of handle indices to use
+
+ProcessHandles::ProcessHandles(handle_map_t&& handles, IndexPool<int>&& fdpool) : m_handles{ std::move(handles) }, m_fdpool{ std::move(fdpool) } 
+{
+}
+
+//-----------------------------------------------------------------------------
 // ProcessHandles::Add
 //
 // Adds a file system handle to the collection
@@ -46,7 +69,7 @@ int ProcessHandles::Add(std::shared_ptr<FileSystem::Handle> handle)
 
 	// Insertion failed, release the index back to the pool and throw
 	m_fdpool.Release(index);
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -65,7 +88,7 @@ int ProcessHandles::Add(int fd, std::shared_ptr<FileSystem::Handle> handle)
 
 	// Attempt to insert the handle using the specified index
 	if(m_handles.emplace(fd, std::move(handle)).second) return fd;
-	throw LinuxException(LINUX_EBADF);
+	throw LinuxException{ LINUX_EBADF };
 }
 
 //-----------------------------------------------------------------------------
@@ -102,7 +125,7 @@ std::shared_ptr<ProcessHandles> ProcessHandles::Duplicate(std::shared_ptr<Proces
 
 	// Iterate over the existing collection and duplicate each handle with the same flags
 	for(const auto& iterator : existing->m_handles)
-		if(!handles.emplace(iterator.first, std::move(iterator.second->Duplicate())).second) throw LinuxException(LINUX_EBADF);
+		if(!handles.emplace(iterator.first, std::move(iterator.second->Duplicate())).second) throw LinuxException{ LINUX_EBADF };
 
 	// Create the ProcessHandles instance with the duplicated collection
 	return std::make_shared<ProcessHandles>(std::move(handles), std::move(fdpool));
@@ -122,7 +145,7 @@ std::shared_ptr<FileSystem::Handle> ProcessHandles::Get(int fd)
 	handle_lock_t::scoped_lock_read reader(m_handlelock);
 
 	try { return m_handles.at(fd); }
-	catch(...) { throw LinuxException(LINUX_EBADF); }
+	catch(...) { throw LinuxException{ LINUX_EBADF }; }
 }
 
 //-----------------------------------------------------------------------------
@@ -139,7 +162,7 @@ void ProcessHandles::Remove(int fd)
 	handle_lock_t::scoped_lock_write writer(m_handlelock);
 
 	// Remove the index from the collection and return it to the pool
-	if(m_handles.erase(fd) == 0) throw LinuxException(LINUX_EBADF);
+	if(m_handles.erase(fd) == 0) throw LinuxException{ LINUX_EBADF };
 	m_fdpool.Release(fd);
 }
 

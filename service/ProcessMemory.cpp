@@ -23,7 +23,65 @@
 #include "stdafx.h"
 #include "ProcessMemory.h"
 
+#include "convert.h"
+#include "LinuxException.h"
+#include "MemorySection.h"
+#include "NativeHandle.h"
+#include "NtApi.h"
+#include "StructuredException.h"
+#include "SystemInformation.h"
+
 #pragma warning(push, 4)
+
+//
+// PROCESSMEMORY::PROTECTION
+//
+
+// ProcessMemory::Protection::Atomic (static)
+//
+const ProcessMemory::Protection ProcessMemory::Protection::Atomic{ LINUX_PROT_SEM };
+
+// ProcessMemory::Protection::Execute (static)
+//
+const ProcessMemory::Protection ProcessMemory::Protection::Execute{ LINUX_PROT_EXEC };
+
+// ProcessMemory::Protection::None (static)
+//
+const ProcessMemory::Protection ProcessMemory::Protection::None{ LINUX_PROT_NONE };
+
+// ProcessMemory::Protection::Read (static)
+//
+const ProcessMemory::Protection ProcessMemory::Protection::Read{ LINUX_PROT_READ };
+
+// ProcessMemory::Protection::Write (static)
+//
+const ProcessMemory::Protection ProcessMemory::Protection::Write{ LINUX_PROT_WRITE };
+
+//-----------------------------------------------------------------------------
+// Conversions
+//-----------------------------------------------------------------------------
+
+// ProcessMemory::Protection --> uint32_t
+//
+// Converts Protection bitmask into the closest equivalent Win32 API bitmask
+// TODO: there should be a corresponding bitmask class for the Win32 API and MemorySection,
+// casting this to uint32 is kind of silly
+template<> uint32_t convert<uint32_t>(const ProcessMemory::Protection& rhs)
+{
+	using prot = ProcessMemory::Protection;
+
+	prot flags{ rhs & (prot::Execute | prot::Write | prot::Read) };
+
+	if(flags == prot::Execute)									return PAGE_EXECUTE;
+	else if(flags == prot::Read)								return PAGE_READONLY;
+	else if(flags == prot::Write)								return PAGE_READWRITE;
+	else if(flags == prot::Execute | prot::Read)				return PAGE_EXECUTE_READ;
+	else if(flags == prot::Execute | prot::Write)				return PAGE_EXECUTE_READWRITE;
+	else if(flags == prot::Read | prot::Write)					return PAGE_READWRITE;
+	else if(flags == prot::Execute | prot::Read | prot::Write)	return PAGE_EXECUTE_READWRITE;
+
+	return PAGE_NOACCESS;
+}
 
 //-----------------------------------------------------------------------------
 // ProcessMemory Constructor
@@ -34,7 +92,7 @@
 //	section		- Collection of MemorySections to initialize the instance
 
 ProcessMemory::ProcessMemory(const std::shared_ptr<NativeHandle>& process, section_vector_t&& sections)
-	: m_process(process), m_sections(std::move(sections)) {}
+	: m_process{ process }, m_sections{ std::move(sections) } {}
 
 //------------------------------------------------------------------------------
 // ProcessMemory::Allocate
@@ -46,7 +104,7 @@ ProcessMemory::ProcessMemory(const std::shared_ptr<NativeHandle>& process, secti
 //	length			- Required allocation length
 //	prot			- Linux memory protection flags for the new region
 
-const void* ProcessMemory::Allocate(size_t length, int prot)
+const void* ProcessMemory::Allocate(size_t length, Protection prot)
 {
 	// Let the native operating system decide where to allocate the section
 	return Allocate(nullptr, length, prot);
@@ -63,12 +121,12 @@ const void* ProcessMemory::Allocate(size_t length, int prot)
 //	length			- Required allocation length
 //	prot			- Linux memory protection flags for the new region
 
-const void* ProcessMemory::Allocate(const void* address, size_t length, int prot)
+const void* ProcessMemory::Allocate(const void* address, size_t length, Protection prot)
 {
 	MEMORY_BASIC_INFORMATION					meminfo;		// Virtual memory information
 
 	// Allocations cannot be zero-length
-	if(length == 0) throw LinuxException(LINUX_EINVAL);
+	if(length == 0) throw LinuxException{ LINUX_EINVAL };
 
 	// Prevent changes to the process memory layout while this is operating
 	section_lock_t::scoped_lock_write writer(m_sectionlock);
@@ -77,7 +135,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 	if(address == nullptr) {
 
 		std::unique_ptr<MemorySection> section = MemorySection::Create(m_process->Handle, align::up(length, SystemInformation::AllocationGranularity));
-		address = section->Allocate(section->BaseAddress, length, uapi::LinuxProtToWindowsPageFlags(prot));
+		address = section->Allocate(section->BaseAddress, length, convert<uint32_t>(prot));
 		m_sections.push_back(std::move(section));
 		return address;
 	}
@@ -91,7 +149,7 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 
 		// Query the information about the virtual memory beginning at the current address
 		if(!VirtualQueryEx(m_process->Handle, reinterpret_cast<void*>(fillbegin), &meminfo, sizeof(MEMORY_BASIC_INFORMATION))) 
-			throw LinuxException(LINUX_EACCES, Win32Exception());
+			throw LinuxException{ LINUX_EACCES, Win32Exception{} };
 
 		// If the region is free (MEM_FREE), create a new memory section in the free space
 		if(meminfo.State == MEM_FREE) {
@@ -115,14 +173,14 @@ const void* ProcessMemory::Allocate(const void* address, size_t length, int prot
 		});
 
 		// No matching section object exists, throw EINVAL/ERROR_INVALID_ADDRESS
-		if(found == m_sections.end()) throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_INVALID_ADDRESS));
+		if(found == m_sections.end()) throw LinuxException{ LINUX_EINVAL, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
 		size_t alloclen = std::min(section->Length - (allocbegin - uintptr_t(section->BaseAddress)), allocend - allocbegin);
-		section->Allocate(reinterpret_cast<void*>(allocbegin), alloclen, uapi::LinuxProtToWindowsPageFlags(prot));
+		section->Allocate(reinterpret_cast<void*>(allocbegin), alloclen, convert<uint32_t>(prot));
 
 		allocbegin += alloclen;
 	}
@@ -220,10 +278,10 @@ std::unique_ptr<ProcessMemory> ProcessMemory::Duplicate(const std::shared_ptr<Na
 //	length		- Length of the guard page region
 //	prot		- Linux memory protection flags for the region
 
-void ProcessMemory::Guard(const void* address, size_t length, int prot)
+void ProcessMemory::Guard(const void* address, size_t length, Protection prot)
 {
 	// Use the common internal version that accepts windows page flags
-	return ProtectInternal(address, length, uapi::LinuxProtToWindowsPageFlags(prot) | PAGE_GUARD);
+	return ProtectInternal(address, length, convert<uint32_t>(prot) | PAGE_GUARD);
 }
 	
 //-----------------------------------------------------------------------------
@@ -258,10 +316,10 @@ void ProcessMemory::Lock(const void* address, size_t length) const
 //	length		- Length of the region to be protected
 //	prot		- Linux memory protection flags for the region
 
-void ProcessMemory::Protect(const void* address, size_t length, int prot)
+void ProcessMemory::Protect(const void* address, size_t length, Protection prot)
 {
 	// Use the common internal version that accepts windows page flags
-	return ProtectInternal(address, length, uapi::LinuxProtToWindowsPageFlags(prot));
+	return ProtectInternal(address, length, convert<uint32_t>(prot));
 }
 
 //-----------------------------------------------------------------------------
@@ -292,7 +350,7 @@ void ProcessMemory::ProtectInternal(const void* address, size_t length, uint32_t
 		});
 
 		// No matching section object exists, throw EINVAL/ERROR_INVALID_ADDRESS
-		if(found == m_sections.end()) throw LinuxException(LINUX_EINVAL, Win32Exception(ERROR_INVALID_ADDRESS));
+		if(found == m_sections.end()) throw LinuxException{ LINUX_EINVAL, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
 		const auto& section = *found;
@@ -328,7 +386,7 @@ size_t ProcessMemory::Read(const void* address, void* buffer, size_t length)
 
 	// Attempt to read the requested data from the native process
 	NTSTATUS result = NtApi::NtReadVirtualMemory(m_process->Handle, address, buffer, length, &read);
-	if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException(result) };
 
 	return static_cast<size_t>(read);
 }
@@ -416,7 +474,7 @@ size_t ProcessMemory::Write(const void* address, const void* buffer, size_t leng
 
 	// Attempt to write the requested data into the native process
 	NTSTATUS result = NtApi::NtWriteVirtualMemory(m_process->Handle, address, buffer, length, &written);
-	if(result != NtApi::STATUS_SUCCESS) throw LinuxException(LINUX_EFAULT, StructuredException(result));
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException(result) };
 
 	return written;
 }

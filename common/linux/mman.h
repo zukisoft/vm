@@ -112,24 +112,6 @@ const void* LINUX_MAP_FAILED		= reinterpret_cast<void*>(-1);
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 
-	// Converts LINUX_PROT_XXX flags into Windows PAGE_XXX flags
-	//
-	inline uint32_t LinuxProtToWindowsPageFlags(uint32_t prot)
-	{
-		switch(prot & (LINUX_PROT_EXEC | LINUX_PROT_WRITE | LINUX_PROT_READ)) {
-
-			case LINUX_PROT_EXEC:		return PAGE_EXECUTE;
-			case LINUX_PROT_WRITE :		return PAGE_READWRITE;
-			case LINUX_PROT_READ :		return PAGE_READONLY;
-			case LINUX_PROT_EXEC | LINUX_PROT_WRITE :	return PAGE_EXECUTE_READWRITE;
-			case LINUX_PROT_EXEC | LINUX_PROT_READ :	return PAGE_EXECUTE_READ;
-			case LINUX_PROT_WRITE | LINUX_PROT_READ :	return PAGE_READWRITE;
-			case LINUX_PROT_EXEC | LINUX_PROT_WRITE | LINUX_PROT_READ :		return PAGE_EXECUTE_READWRITE;
-		}
-
-		return PAGE_NOACCESS;
-	}
-
 	// Converts Linux LINUX_PROT_XXX flags into Windows FILE_MAP_XXX flags
 	//
 	inline uint32_t LinuxProtToWindowsFileMapFlags(uint32_t prot)
