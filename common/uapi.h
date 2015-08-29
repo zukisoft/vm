@@ -26,6 +26,7 @@
 
 #include <linux/types.h>
 #include <linux/capability.h>
+#include <linux/errno.h>
 #include <linux/fcntl.h>
 #include <linux/ldt.h>
 #include <linux/magic.h>

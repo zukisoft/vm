@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\sync;$(SolutionDir)..\external\align;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -143,7 +143,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\sync;$(SolutionDir)..\external\align;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -190,7 +190,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\sync;$(SolutionDir)..\external\align;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -239,7 +239,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\sync;$(SolutionDir)..\external\align;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\servicelib;$(SolutionDir)..\external\xz-embedded\linux\include\linux;$(SolutionDir)..\external\xz-embedded\userspace;$(SolutionDir)..\external\zlib;$(SolutionDir)..\external\minilzo;$(SolutionDir)..\external\lz4;$(SolutionDir)..\external\lzma\C;$(SolutionDir)..\external\bzip2;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\$(ProjectName);$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -280,8 +280,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\external\align\align.h" />
     <ClInclude Include="..\..\external\bzip2\bzlib.h" />
+    <ClInclude Include="..\..\external\cpplib\align.h" />
+    <ClInclude Include="..\..\external\cpplib\datetime.h" />
+    <ClInclude Include="..\..\external\cpplib\sync.h" />
     <ClInclude Include="..\..\external\lz4\lz4.h" />
     <ClInclude Include="..\..\external\lzma\C\LzmaDec.h" />
     <ClInclude Include="..\..\external\lzma\C\Types.h" />
@@ -289,7 +291,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\..\external\minilzo\lzodefs.h" />
     <ClInclude Include="..\..\external\minilzo\minilzo.h" />
     <ClInclude Include="..\..\external\servicelib\servicelib.h" />
-    <ClInclude Include="..\..\external\sync\sync.h" />
     <ClInclude Include="..\..\external\xz-embedded\linux\include\linux\xz.h" />
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
@@ -302,7 +303,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\Console.h" />
     <ClInclude Include="..\common\convert.h" />
     <ClInclude Include="..\common\CpioArchive.h" />
-    <ClInclude Include="..\common\datetime.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\File.h" />
     <ClInclude Include="..\common\generic_text.h" />
@@ -478,6 +478,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS;BZ_NO_STDIO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS;BZ_NO_STDIO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\..\external\cpplib\datetime.cpp" />
     <ClCompile Include="..\..\external\lz4\lz4.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -606,7 +607,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\Console.cpp" />
     <ClCompile Include="..\common\convert.cpp" />
     <ClCompile Include="..\common\CpioArchive.cpp" />
-    <ClCompile Include="..\common\datetime.cpp" />
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\File.cpp" />
     <ClCompile Include="..\common\GZipStreamReader.cpp" />

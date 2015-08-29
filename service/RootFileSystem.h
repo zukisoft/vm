@@ -27,7 +27,6 @@
 #include <atomic>
 #include <memory>
 #include <unordered_map>
-#include "datetime.h"
 #include "FileSystem.h"
 
 #pragma warning(push, 4)

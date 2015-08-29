@@ -53,12 +53,15 @@
 // Generic Text Mappings
 #include <generic_text.h>
 
-// Synchronization Primitives
+// CPPLIB
+//
+#include <align.h>
+#include <datetime.h>
 #include <sync.h>
 
-// Linux
-#include <linux/types.h>
-#include <linux/errno.h>
+// Linux UAPI
+//
+#include "uapi.h"
 
 // Service Template Library
 #include <servicelib.h>
@@ -67,7 +70,6 @@
 #include <messages.h>
 
 // find a place to put this stuff
-#include <align.h>
 template <typename _type>
 struct zero_init : public _type
 {

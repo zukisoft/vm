@@ -78,11 +78,7 @@
     <Filter Include="Source Files\Namespace">
       <UniqueIdentifier>{820d2edf-c3ec-4589-a7da-4632207af356}</UniqueIdentifier>
     </Filter>
-    <Filter Include="External Libraries\sync">
-      <UniqueIdentifier>{4826869e-ae49-4e58-b5c7-44de59e6b168}</UniqueIdentifier>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
-    <Filter Include="External Libraries\align">
+    <Filter Include="External Libraries\cpplib">
       <UniqueIdentifier>{0e3a533e-5d1b-43e5-aaff-a39afa80a3cc}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
@@ -415,9 +411,6 @@
     <ClInclude Include="..\common\convert.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\datetime.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\path.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -433,11 +426,14 @@
     <ClInclude Include="ProcessFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\external\sync\sync.h">
-      <Filter>External Libraries\sync</Filter>
+    <ClInclude Include="..\..\external\cpplib\align.h">
+      <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\external\align\align.h">
-      <Filter>External Libraries\align</Filter>
+    <ClInclude Include="..\..\external\cpplib\datetime.h">
+      <Filter>External Libraries\cpplib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\cpplib\sync.h">
+      <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -891,9 +887,6 @@
     <ClCompile Include="..\common\convert.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\datetime.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\timespan.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -905,6 +898,9 @@
     </ClCompile>
     <ClCompile Include="Capability.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\cpplib\datetime.cpp">
+      <Filter>External Libraries\cpplib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
