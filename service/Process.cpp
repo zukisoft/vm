@@ -22,8 +22,10 @@
 
 #include "stdafx.h"
 #include "Process.h"
+
 #include "ProcessGroup.h"
 #include "Session.h"
+#include "StructuredException.h"
 
 #pragma warning(push, 4)
 

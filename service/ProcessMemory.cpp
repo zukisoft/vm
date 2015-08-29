@@ -25,7 +25,6 @@
 
 #include "convert.h"
 #include "LinuxException.h"
-#include "MemorySection.h"
 #include "NativeHandle.h"
 #include "NtApi.h"
 #include "StructuredException.h"
@@ -474,7 +473,7 @@ size_t ProcessMemory::Write(const void* address, const void* buffer, size_t leng
 
 	// Attempt to write the requested data into the native process
 	NTSTATUS result = NtApi::NtWriteVirtualMemory(m_process->Handle, address, buffer, length, &written);
-	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException(result) };
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException{ result } };
 
 	return written;
 }
