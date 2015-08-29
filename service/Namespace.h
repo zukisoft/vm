@@ -25,7 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <linux/sched.h>
 #include "MountNamespace.h"
 #include "PidNamespace.h"
 #include "UtsNamespace.h"

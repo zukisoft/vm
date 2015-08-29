@@ -26,7 +26,6 @@
 
 #include <map>
 #include <memory>
-#include <linux/types.h>
 #include "Executable.h"
 #include "Process.h"
 #include "ProcessGroup.h"

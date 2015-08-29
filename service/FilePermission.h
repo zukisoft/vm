@@ -24,8 +24,6 @@
 #define __FILEPERMISSION_H_
 #pragma once
 
-#include <linux/types.h>
-
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------

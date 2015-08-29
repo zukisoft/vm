@@ -24,8 +24,6 @@
 #define __SYSTEMCALL_H_
 #pragma once
 
-#include <linux/errno.h>
-
 #include <syscalls32.h>
 #ifdef _M_X64
 #include <syscalls64.h>

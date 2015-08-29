@@ -25,7 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <linux/stat.h>
 #include "FileSystem.h"
 
 #pragma warning(push, 4)

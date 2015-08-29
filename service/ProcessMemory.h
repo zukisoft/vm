@@ -27,7 +27,6 @@
 #include <memory>
 #include <vector>
 #include "bitmask.h"
-#include <linux/mman.h>
 #include "MemorySection.h"
 
 #pragma warning(push, 4)

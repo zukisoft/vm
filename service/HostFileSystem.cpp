@@ -24,9 +24,6 @@
 #include "HostFileSystem.h"
 
 #include <Shlwapi.h>
-#include <linux/fs.h>
-#include <linux/magic.h>
-#include <linux/time.h>
 #include "Capability.h"
 #include "MountOptions.h"
 #include "LinuxException.h"

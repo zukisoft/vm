@@ -23,9 +23,6 @@
 #include "stdafx.h"
 #include "RootFileSystem.h"
 
-#include <linux/fs.h>
-#include <linux/magic.h>
-#include <linux/time.h>
 #include "Capability.h"
 #include "FilePermission.h"
 #include "MountOptions.h"

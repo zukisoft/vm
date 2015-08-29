@@ -26,8 +26,6 @@
 
 #include <memory>
 #include <vector>
-#include <linux/elf.h>
-#include <linux/fs.h>
 #include "Architecture.h"
 #include "ElfArguments.h"
 #include "ElfImage.h"

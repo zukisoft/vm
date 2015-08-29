@@ -27,9 +27,6 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
-#include <linux/siginfo.h>
-#include <linux/signal.h>
-#include <linux/wait.h>
 #include "LinuxException.h"
 
 #pragma warning(push, 4)

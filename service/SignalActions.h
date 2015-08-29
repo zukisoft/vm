@@ -26,7 +26,6 @@
 
 #include <concurrent_unordered_map.h>
 #include <memory>
-#include <linux/signal.h>
 
 #pragma warning(push, 4)
 

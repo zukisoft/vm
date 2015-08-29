@@ -69,7 +69,7 @@
 //#include <vm.service.h>
 #include <messages.h>
 
-// find a place to put this stuff
+// find a place to put this stuff -- move them out into external\cpplib or something
 template <typename _type>
 struct zero_init : public _type
 {

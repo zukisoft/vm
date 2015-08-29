@@ -24,7 +24,6 @@
 #define __ELFIMAGE_H_
 #pragma once
 
-#include <linux/fs.h>
 #include "elf_traits.h"
 #include "Architecture.h"
 #include "Exception.h"

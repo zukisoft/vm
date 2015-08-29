@@ -26,7 +26,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <linux/magic.h>
 #include "Capabilities.h"
 #include "FileSystem.h"
 #include "IndexPool.h"

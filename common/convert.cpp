@@ -25,7 +25,6 @@
 
 #include <stdint.h>
 #include <Windows.h>
-#include <linux/time.h>
 
 #pragma warning(push, 4)
 

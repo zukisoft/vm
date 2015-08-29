@@ -25,7 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <linux/utask.h>
 #include "Architecture.h"
 #include "Exception.h"
 #include "Win32Exception.h"

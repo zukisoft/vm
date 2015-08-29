@@ -28,12 +28,6 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <linux/ldt.h>
-#include <linux/resource.h>
-#include <linux/sched.h>
-#include <linux/siginfo.h>
-#include <linux/stat.h>
-#include <linux/wait.h>
 #include "Architecture.h"
 #include "Bitmap.h"
 #include "Executable.h"

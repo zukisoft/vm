@@ -26,7 +26,6 @@
 
 #include <map>
 #include <memory>
-#include <linux/types.h>
 #include "Process.h"
 #include "ProcessModel.h"
 

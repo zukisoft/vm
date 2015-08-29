@@ -23,7 +23,6 @@
 #include "stdafx.h"
 #include "emulator.h"
 #include "syscalls.h"
-#include <linux/errno.h>
 
 // g_ldt (main.cpp)
 //
@@ -64,11 +63,11 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 {
 	// There are only 512 system call slots defined
 	_ASSERTE(syscall < 512);
-	if(syscall > 511) return -LINUX_ENOSYS;
+	if(syscall > 511) return static_cast<DWORD>(-LINUX_ENOSYS);
 
 	// Grab the function pointer for the system call
 	syscall_t func = g_syscalls[syscall];
-	if(func == nullptr) return -LINUX_ENOSYS;
+	if(func == nullptr) return static_cast<DWORD>(-LINUX_ENOSYS);
 
 	// Invoke the system call in a __try/__except to catch RPC errors like null
 	// ref pointers and whatnot and translate them to EFAULT for the application
@@ -77,7 +76,7 @@ DWORD InvokeSystemCall(int syscall, emulator::context_t* context)
 		
 		// todo: this _RPTF2() needs to be removed
 		_RPTF2(_CRT_ASSERT, "System call %d: Unhandled exception 0x%08X\r\n", 123, GetExceptionCode());
-		return -LINUX_EFAULT; 
+		return static_cast<DWORD>(-LINUX_EFAULT); 
 	}
 }
 

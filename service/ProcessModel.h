@@ -26,7 +26,6 @@
 
 #include <map>
 #include <memory>
-#include <linux/types.h>
 #include "LinuxException.h"
 #include "_VmOld.h"
 

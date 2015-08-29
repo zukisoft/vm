@@ -27,7 +27,6 @@
 #include <concrt.h>
 #include <map>
 #include <memory>
-#include <linux/types.h>
 #include "FileSystem.h"
 
 #pragma warning(push, 4)

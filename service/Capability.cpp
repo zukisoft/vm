@@ -23,7 +23,6 @@
 #include "stdafx.h"
 #include "Capability.h"
 
-#include <linux/capability.h>
 #include "LinuxException.h"
 
 #pragma warning(push, 4)

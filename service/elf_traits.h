@@ -24,9 +24,6 @@
 #define __ELF_TRAITS_H_
 #pragma once
 
-#include <linux/auxvec.h>
-#include <linux/elf.h>
-#include <linux/elf-em.h>
 #include "Architecture.h"
 
 #pragma warning(push, 4)

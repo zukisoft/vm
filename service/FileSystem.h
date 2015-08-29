@@ -25,10 +25,6 @@
 #pragma once
 
 #include <memory>
-#include <linux/fcntl.h>
-#include <linux/stat.h>
-#include <linux/statfs.h>
-#include <linux/types.h>
 #include "bitmask.h"
 
 #pragma warning(push, 4)

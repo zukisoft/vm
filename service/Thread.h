@@ -28,9 +28,6 @@
 #include <concurrent_priority_queue.h>
 #include <memory>
 #include <mutex>
-#include <linux/resource.h>
-#include <linux/signal.h>
-#include <linux/wait.h>
 #include "Architecture.h"
 #include "LinuxException.h"
 #include "NativeHandle.h"

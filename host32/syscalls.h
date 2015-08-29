@@ -24,10 +24,6 @@
 #define __SYSCALLS_H_
 #pragma once
 
-#include <linux/errno.h>
-#include <linux/ldt.h>
-#include <linux/signal.h>
-
 #pragma warning(push, 4)
 
 // syscall_t
