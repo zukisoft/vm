@@ -51,6 +51,7 @@ interface LinuxTypes
 	#include "linux/uio.h"
 	#include "linux/utask.h"
 	#include "linux/utsname.h"
+	#include "linux/wait.h"
 }
 
 //-----------------------------------------------------------------------------

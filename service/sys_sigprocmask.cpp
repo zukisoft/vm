@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include <type_traits>
 #include "SystemCall.h"
 
 #pragma warning(push, 4)

@@ -22,7 +22,9 @@
 
 #include "stdafx.h"
 #include "SystemCall.h"
-#include "SystemInformation.h"
+
+#include "Context.h"
+#include "Process.h"
 
 #pragma warning(push, 4)
 

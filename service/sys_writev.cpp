@@ -21,8 +21,12 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "HeapBuffer.h"
 #include "SystemCall.h"
+
+#include "Context.h"
+#include "FileSystem.h"
+#include "HeapBuffer.h"
+#include "Process.h"
 
 #pragma warning(push, 4)
 

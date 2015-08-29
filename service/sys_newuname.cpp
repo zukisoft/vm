@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
+#include "Context.h"
+#include "_VMOld.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------

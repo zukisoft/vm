@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
+#include "Context.h"
+#include "Thread.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------

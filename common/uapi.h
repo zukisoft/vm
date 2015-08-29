@@ -41,6 +41,7 @@
 #include <linux/uio.h>
 #include <linux/utask.h>
 #include <linux/utsname.h>
+#include <linux/wait.h>
 
 #endif		// __UAPI_H_
 

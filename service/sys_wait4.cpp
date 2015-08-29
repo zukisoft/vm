@@ -23,7 +23,8 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
-#include <linux/wait.h>
+#include "Context.h"
+#include "Process.h"
 
 #pragma warning(push, 4)
 
