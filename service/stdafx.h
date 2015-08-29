@@ -58,6 +58,7 @@
 #include <align.h>
 #include <datetime.h>
 #include <sync.h>
+#include <timespan.h>
 
 // Linux UAPI
 //

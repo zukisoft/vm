@@ -408,9 +408,6 @@
     <ClInclude Include="..\common\path.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\timespan.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
@@ -875,9 +872,6 @@
     <ClCompile Include="..\common\convert.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\timespan.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
     <ClCompile Include="HostFileSystem.cpp">
       <Filter>Source Files\File Systems</Filter>
     </ClCompile>
@@ -888,6 +882,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\cpplib\datetime.cpp">
+      <Filter>External Libraries\cpplib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external\cpplib\timespan.cpp">
       <Filter>External Libraries\cpplib</Filter>
     </ClCompile>
   </ItemGroup>
