@@ -57,6 +57,7 @@
 //
 #include <align.h>
 #include <datetime.h>
+#include <path.h>
 #include <sync.h>
 #include <timespan.h>
 

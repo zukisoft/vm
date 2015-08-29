@@ -28,7 +28,6 @@
 #include <memory>
 #include <unordered_map>
 #include "FileSystem.h"
-#include "path.h"
 
 #pragma warning(push, 4)
 

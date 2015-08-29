@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "path.h"
 #include "FileSystem.h"
 #include "LinuxException.h"
 #include "Namespace.h"

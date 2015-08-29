@@ -283,6 +283,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\..\external\bzip2\bzlib.h" />
     <ClInclude Include="..\..\external\cpplib\align.h" />
     <ClInclude Include="..\..\external\cpplib\datetime.h" />
+    <ClInclude Include="..\..\external\cpplib\path.h" />
     <ClInclude Include="..\..\external\cpplib\sync.h" />
     <ClInclude Include="..\..\external\lz4\lz4.h" />
     <ClInclude Include="..\..\external\lzma\C\LzmaDec.h" />
@@ -345,7 +346,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\MountOptions.h" />
     <ClInclude Include="..\common\NativeHandle.h" />
     <ClInclude Include="..\common\NtApi.h" />
-    <ClInclude Include="..\common\path.h" />
     <ClInclude Include="..\common\Random.h" />
     <ClInclude Include="..\common\RpcObject.h" />
     <ClInclude Include="..\common\ScalarCondition.h" />
