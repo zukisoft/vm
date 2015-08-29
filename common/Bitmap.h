@@ -24,9 +24,7 @@
 #define __BITMAP_H_
 #pragma once
 
-#include <algorithm>
 #include <stdint.h>
-#include "Exception.h"
 #include "NtApi.h"
 
 #pragma warning(push, 4)
@@ -169,7 +167,7 @@ public:
 	// NotFound
 	//
 	// Return value from Find functions when specified range could not be found
-	static const uint32_t NotFound = 0xFFFFFFFF;
+	static const uint32_t NotFound{ 0xFFFFFFFFui32 };
 
 	//-------------------------------------------------------------------------
 	// Properties

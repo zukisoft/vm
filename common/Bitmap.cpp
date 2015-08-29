@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "Bitmap.h"
 
+#include <algorithm>
+#include "Exception.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -32,12 +35,12 @@
 //
 //	bits		- Number of bits to define for a new, zero-initialized bitmap
 
-Bitmap::Bitmap(uint32_t bits) : m_bitmap({ 0, nullptr })
+Bitmap::Bitmap(uint32_t bits) : m_bitmap{ 0, nullptr }
 {
 	// Allocate a zero-initialized buffer for the bitmap off the process heap; the buffer size
 	// must be a multiple of 32 bits for compatibility with the bitmap API
 	m_bitmap.Buffer = reinterpret_cast<PULONG>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, align::up(bits, 32) >> 3));
-	if(!m_bitmap.Buffer) throw Exception(E_OUTOFMEMORY);
+	if(!m_bitmap.Buffer) throw Exception{ E_OUTOFMEMORY };
 
 	m_bitmap.SizeOfBitMap = bits;		// Bitmap was successfully allocated
 }
@@ -45,14 +48,14 @@ Bitmap::Bitmap(uint32_t bits) : m_bitmap({ 0, nullptr })
 //-----------------------------------------------------------------------------
 // Bitmap Copy Constructor
 
-Bitmap::Bitmap(const Bitmap& rhs) : m_bitmap({ 0, nullptr })
+Bitmap::Bitmap(const Bitmap& rhs) : m_bitmap{ 0, nullptr }
 {
 	// Determine the size of the referenced object's bitmap buffer, in bytes
 	size_t size = align::up(rhs.m_bitmap.SizeOfBitMap, 32) >> 3;
 
 	// Allocate a new heap buffer to contain the copy of the referenced object
 	m_bitmap.Buffer = reinterpret_cast<PULONG>(HeapAlloc(GetProcessHeap(), 0, size));
-	if(m_bitmap.Buffer == nullptr) throw Exception(E_OUTOFMEMORY);
+	if(m_bitmap.Buffer == nullptr) throw Exception{ E_OUTOFMEMORY };
 
 	// Copy the bitmap bits and size from the referenced object
 	memcpy(m_bitmap.Buffer, rhs.m_bitmap.Buffer, size);
@@ -86,7 +89,7 @@ Bitmap& Bitmap::operator=(const Bitmap& rhs)
 
 	// Reallocate the heap buffer to match the referenced object's buffer size
 	void* newbuffer = HeapReAlloc(GetProcessHeap(), 0, m_bitmap.Buffer, size);
-	if(newbuffer == nullptr) throw Exception(E_OUTOFMEMORY);
+	if(newbuffer == nullptr) throw Exception{ E_OUTOFMEMORY };
 
 	// Copy the bits from the referenced object into the reallocated buffer
 	memcpy(newbuffer, rhs.m_bitmap.Buffer, size);
@@ -467,7 +470,7 @@ void Bitmap::putSize(uint32_t bits)
 
 	// Reallocate the heap buffer to match the requested new aligned size
 	void* newbuffer = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, m_bitmap.Buffer, aligned >> 3);
-	if(newbuffer == nullptr) throw Exception(E_OUTOFMEMORY);
+	if(newbuffer == nullptr) throw Exception{ E_OUTOFMEMORY };
 
 	// Replace the original pointer and length with the aligned buffer
 	m_bitmap.Buffer = reinterpret_cast<PULONG>(newbuffer);
