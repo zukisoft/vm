@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "Process.h"
 
+#include "Namespace.h"
 //#include "ProcessGroup.h"
 //#include "Session.h"
 #include "StructuredException.h"
@@ -45,14 +46,16 @@
 //	ldtslots		- Local descriptor table allocation bitmap
 //	programbreak	- Address of initial program break
 //	termsignal		- Signal to send to parent on termination
+//	ns				- Initial process namespace instance
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-	const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
-	Process(vm, architecture, pid, parent, std::move(host), std::move(task), std::move(memory), ldt, std::move(ldtslots), programbreak, 
-	ProcessHandles::Create(), SignalActions::Create(), termsignal, rootdir, workingdir) {}
+Process::Process(std::shared_ptr<_VmOld> vm, enum class Architecture architecture, uapi::pid_t pid, std::shared_ptr<Process> parent, 
+	std::unique_ptr<NativeProcess> host, std::unique_ptr<TaskState> task, std::unique_ptr<ProcessMemory> memory, const void* ldt, Bitmap&& ldtslots, 
+	const void* programbreak, int termsignal, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+	std::shared_ptr<FileSystem::Path> workingdir) : 
+	Process(std::move(vm), architecture, pid, std::move(parent), std::move(host), std::move(task), std::move(memory), ldt, std::move(ldtslots), programbreak, 
+	ProcessHandles::Create(), SignalActions::Create(), termsignal, std::move(ns), std::move(rootdir), std::move(workingdir)) {}
 
 //-----------------------------------------------------------------------------
 // Process Constructor
@@ -72,16 +75,17 @@ Process::Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture arch
 //	handles			- Initial file system handles collection
 //	sigactions		- Initial set of signal actions
 //	termsignal		- Signal to send to parent on termination
+//	ns				- Initial process namespace instance
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
-	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, int termsignal, 
-	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : m_vm(vm), m_architecture(architecture), 
-	m_pid(pid), m_parent(parent), m_host(std::move(host)), m_memory(std::move(memory)), m_ldt(ldt), m_ldtslots(std::move(ldtslots)), 
-	m_programbreak(programbreak), m_handles(handles), m_sigactions(sigactions), m_termsignal(termsignal), m_rootdir(rootdir), m_workingdir(workingdir), 
-	m_threadproc(nullptr), m_nochildren(true) 
+Process::Process(std::shared_ptr<_VmOld> vm, enum class Architecture architecture, uapi::pid_t pid, std::shared_ptr<Process> parent, 
+	std::unique_ptr<NativeProcess> host, std::unique_ptr<TaskState> task, std::unique_ptr<ProcessMemory> memory, const void* ldt, Bitmap&& ldtslots, 
+	const void* programbreak, std::shared_ptr<ProcessHandles> handles, std::shared_ptr<SignalActions> sigactions, int termsignal, 
+	std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, std::shared_ptr<FileSystem::Path> workingdir) : 
+	m_vm(std::move(vm)), m_architecture(architecture), m_pid(pid), m_parent(std::move(parent)), m_host(std::move(host)), m_memory(std::move(memory)), 
+	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_programbreak(programbreak), m_handles(std::move(handles)), m_sigactions(std::move(sigactions)), 
+	m_termsignal(termsignal), m_ns(std::move(ns)), m_rootdir(std::move(rootdir)), m_workingdir(std::move(workingdir)), m_threadproc(nullptr), m_nochildren(true) 
 {
 	m_pendingthreads.emplace(m_host->ThreadId, std::move(task));
 }
@@ -480,10 +484,10 @@ std::shared_ptr<Thread> Process::CreateThread(int flags, const std::unique_ptr<T
 void Process::Execute(const char_t* filename, const char_t* const* argv, const char_t* const* envp)
 {
 	// Parse the filename and command line arguments into an Executable instance
-	auto executable = Executable::FromFile(filename, argv, envp, m_rootdir, m_workingdir);
+	auto executable = Executable::FromFile(m_ns, m_rootdir, m_workingdir, filename, argv, envp);
 
 	// Architecture::x86 --> 32-bit executable
-	if(executable->Architecture == Architecture::x86) Execute<Architecture::x86>(executable);
+	if(executable->Architecture == Architecture::x86) Execute<Architecture::x86>(std::move(executable));
 
 	// Architecture::x86_64 --> 64-bit executable
 #ifdef _M_X64
@@ -506,7 +510,7 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 //	envp			- Environment variables
 
 template<enum class Architecture architecture>
-void Process::Execute(const std::unique_ptr<Executable>& executable)
+void Process::Execute(std::unique_ptr<Executable> executable)
 {
 	DWORD					nativetid;			// Native thread identifier
 	unsigned long			timeoutms;			// Thread attach timeout value
@@ -1176,22 +1180,22 @@ void Process::ResumeInternal(void) const
 //-----------------------------------------------------------------------------
 // Process::getRootDirectory
 //
-// Gets the process root directory alias instance
+// Gets the process root directory path
 
-std::shared_ptr<FileSystem::Alias> Process::getRootDirectory(void) const
+std::shared_ptr<FileSystem::Path> Process::getRootDirectory(void) const
 {
 	return m_rootdir;
 }
 
-//-----------------------------------------------------------------------------
-// Process::putRootDirectory
+////-----------------------------------------------------------------------------
+//// Process::putRootDirectory
+////
+//// Sets the process root directory alias instance
 //
-// Sets the process root directory alias instance
-
-void Process::putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value)
-{
-	m_rootdir = value;
-}
+//void Process::putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value)
+//{
+//	m_rootdir = value;
+//}
 
 //-----------------------------------------------------------------------------
 // Process::SetLocalDescriptor
@@ -1640,22 +1644,22 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 //-----------------------------------------------------------------------------
 // Process::getWorkingDirectory
 //
-// Gets the process working directory alias instance
+// Gets the process working directory path
 
-std::shared_ptr<FileSystem::Alias> Process::getWorkingDirectory(void) const
+std::shared_ptr<FileSystem::Path> Process::getWorkingDirectory(void) const
 {
 	return m_workingdir;
 }
 
-//-----------------------------------------------------------------------------
-// Process::putWorkingDirectory
+////-----------------------------------------------------------------------------
+//// Process::putWorkingDirectory
+////
+//// Sets the process working directory alias instance
 //
-// Sets the process working directory alias instance
-
-void Process::putWorkingDirectory(const std::shared_ptr<FileSystem::Alias>& value)
-{
-	m_workingdir = value;
-}
+//void Process::putWorkingDirectory(const std::shared_ptr<FileSystem::Alias>& value)
+//{
+//	m_workingdir = value;
+//}
 
 //-----------------------------------------------------------------------------
 // Process::WriteMemory

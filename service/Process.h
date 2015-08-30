@@ -47,9 +47,10 @@
 
 #pragma warning(push, 4)
 
-//// Forward Declarations
-////
+// Forward Declarations
+//
 //class ProcessGroup;
+class Namespace;
 //class Session;
 
 //-----------------------------------------------------------------------------
@@ -223,6 +224,12 @@ public:
 	__declspec(property(get=getLocalDescriptorTable)) const void* LocalDescriptorTable;
 	const void* getLocalDescriptorTable(void) const;
 
+	// Namespace
+	//
+	// Gets the process namespace instance
+	__declspec(property(get=getNamespace)) std::shared_ptr<class Namespace> Namespace;
+	std::shared_ptr<class Namespace> getNamespace(void) const;
+
 	// NativeProcessId
 	//
 	// Gets the native operating system process identifier
@@ -262,10 +269,11 @@ public:
 
 	// RootDirectory
 	//
-	// Gets/sets the process root directory alias
-	__declspec(property(get=getRootDirectory, put=putRootDirectory)) std::shared_ptr<FileSystem::Alias> RootDirectory;
-	std::shared_ptr<FileSystem::Alias> getRootDirectory(void) const;
-	void putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value);
+	// Gets the process root directory path
+	// todo: add new SetWorkingDirectory() to replace put
+	__declspec(property(get=getRootDirectory)) std::shared_ptr<FileSystem::Path> RootDirectory;
+	std::shared_ptr<FileSystem::Path> getRootDirectory(void) const;
+	//void putRootDirectory(const std::shared_ptr<FileSystem::Alias>& value);
 
 	// SetLocalDescriptor
 	//
@@ -296,20 +304,31 @@ public:
 	
 	// WorkingDirectory
 	//
-	// Gets/sets the process working directory alias
-	__declspec(property(get=getWorkingDirectory, put=putWorkingDirectory)) std::shared_ptr<FileSystem::Alias> WorkingDirectory;
-	std::shared_ptr<FileSystem::Alias> getWorkingDirectory(void) const;
-	void putWorkingDirectory(const std::shared_ptr<FileSystem::Alias>& value);
+	// Gets the process working directory path
+	// todo: add new SetWorkingDirectory() to replace put
+	__declspec(property(get=getWorkingDirectory)) std::shared_ptr<FileSystem::Path> WorkingDirectory;
+	std::shared_ptr<FileSystem::Path> getWorkingDirectory(void) const;
+	//void putWorkingDirectory(const std::shared_ptr<FileSystem::Alias>& value);
 
 private:
 
 	Process(const Process&)=delete;
 	Process& operator=(const Process&)=delete;
 
+	// fspath_t
+	//
+	// FileSystem::Path shared pointer
+	using fspath_t = std::shared_ptr<FileSystem::Path>;
+
 	// ldt_lock_t
 	//
 	// Synchronization object for the local descriptor table
 	using ldt_lock_t = sync::reader_writer_lock;
+
+	// namespace_t
+	//
+	// Namespace shared pointer
+	using namespace_t = std::shared_ptr<class Namespace>;
 
 	// process_map_t
 	//
@@ -338,15 +357,15 @@ private:
 
 	// Instance Constructors
 	//
-	Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
-		Bitmap&& ldtslots, const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-		const std::shared_ptr<FileSystem::Alias>& workingdir);
+	Process(std::shared_ptr<_VmOld> vm, enum class Architecture architecture, uapi::pid_t pid, std::shared_ptr<Process> parent, 
+		std::unique_ptr<NativeProcess> host, std::unique_ptr<TaskState> task, std::unique_ptr<ProcessMemory> memory, const void* ldt, 
+		Bitmap&& ldtslots, const void* programbreak, int termsignal, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+		std::shared_ptr<FileSystem::Path> workingdir);
 
-	Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
-		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
-		Bitmap&& ldtslots, const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
-		int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 	const std::shared_ptr<FileSystem::Alias>& workingdir);
+	Process(std::shared_ptr<_VmOld> vm, enum class Architecture architecture, uapi::pid_t pid, std::shared_ptr<Process> parent, 
+		std::unique_ptr<NativeProcess> host, std::unique_ptr<TaskState> task, std::unique_ptr<ProcessMemory> memory, const void* ldt, 
+		Bitmap&& ldtslots, const void* programbreak, std::shared_ptr<ProcessHandles> handles, std::shared_ptr<SignalActions> sigactions, 
+		int termsignal, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, std::shared_ptr<FileSystem::Path> workingdir);
 
 	friend class std::_Ref_count_obj<Process>;
 
@@ -378,7 +397,7 @@ private:
 	//
 	// Replaces the process with a new executable image
 	template<enum class Architecture>
-	void Execute(const std::unique_ptr<Executable>& executable);
+	void Execute(std::unique_ptr<Executable> executable);
 
 	// FromExecutable<Architecture>
 	//
@@ -442,8 +461,9 @@ private:
 
 	// File System
 	//
-	std::shared_ptr<FileSystem::Alias>	m_rootdir;			// Current root directory
-	std::shared_ptr<FileSystem::Alias>	m_workingdir;		// Current working directory
+	namespace_t							m_ns;				// Process namespace instance
+	fspath_t							m_rootdir;			// Current root directory
+	fspath_t							m_workingdir;		// Current working directory
 	std::shared_ptr<ProcessHandles>		m_handles;			// File system handles
 	std::atomic<uapi::mode_t>			m_umask = 0022;		// Process file creation mask	TODOTODO: should this be 0002??
 
