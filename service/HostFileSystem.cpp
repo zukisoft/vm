@@ -29,7 +29,6 @@
 #include "LinuxException.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
-#include "convert.h"
 
 #pragma comment(lib, "shlwapi.lib")
 

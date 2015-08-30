@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "convert.h"
 
 #include <stdint.h>
 #include <Windows.h>

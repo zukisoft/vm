@@ -26,7 +26,6 @@
 
 #include <memory>
 #include <vector>
-#include "bitmask.h"
 #include "MemorySection.h"
 
 #pragma warning(push, 4)

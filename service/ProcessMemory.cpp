@@ -23,7 +23,6 @@
 #include "stdafx.h"
 #include "ProcessMemory.h"
 
-#include "convert.h"
 #include "LinuxException.h"
 #include "NativeHandle.h"
 #include "NtApi.h"

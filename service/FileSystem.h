@@ -25,7 +25,6 @@
 #pragma once
 
 #include <memory>
-#include "bitmask.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
