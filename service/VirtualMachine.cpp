@@ -162,7 +162,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto init = std::to_string(m_paraminit.Value);
 
 		auto initpid = m_rootns->Pids->Allocate();
-		_ASSERTE(initpid->Value[m_rootns] == 1);
+		_ASSERTE(initpid->getValue(m_rootns) == 1);
 
 		// SYSTEM CALL RPC OBJECTS
 		//

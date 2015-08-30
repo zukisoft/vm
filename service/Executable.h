@@ -25,29 +25,25 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 #include "Architecture.h"
-#include "ElfArguments.h"
-#include "ElfImage.h"
-#include "HeapBuffer.h"
 #include "FileSystem.h"
-#include "LinuxException.h"
-#include "ProcessMemory.h"
-#include "Random.h"
-#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
+
+// Forward Declarations
+//
+class Namespace;
+class ProcessMemory;
 
 //-----------------------------------------------------------------------------
 // Executable
 //
 // Represents an executable, including the command-line arguments, environment
 // variables, and initial root/working directories.  Recursively resolves any
-// interpreter scripts that represent the target executable.
-//
-// todo this needs more words, this has become a rather crazy class to offload all
-// this crap from Process
+// interpreter scripts that represent the target executable
 
 class Executable
 {
@@ -59,7 +55,7 @@ public:
 	enum class BinaryFormat
 	{
 		ELF			= 0,			// ELF binary format
-		//AOut		= 1,			// A.OUT binary format
+		//AOut		= 1,			// A.OUT binary format (todo: future)
 	};
 
 	// LoadResult
@@ -82,8 +78,8 @@ public:
 	// FromFile (static)
 	//
 	// Creates an executable instance from a file system path
-	static std::unique_ptr<Executable> FromFile(const char_t* filename, const char_t* const* arguments,
-		const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+		std::shared_ptr<FileSystem::Path> workingdir, const char_t* filename, const char_t* const* arguments, const char_t* const* environment);
 
 	// Load
 	//
@@ -96,8 +92,8 @@ public:
 	// Architecture
 	//
 	// Gets the architecture flag for the executable
-	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
-	::Architecture getArchitecture(void) const;
+	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+	enum class Architecture getArchitecture(void) const;
 
 	// Argument
 	//
@@ -141,34 +137,60 @@ public:
 	__declspec(property(get=getHandle)) std::shared_ptr<FileSystem::Handle> Handle;
 	std::shared_ptr<FileSystem::Handle> getHandle(void) const;
 
+	// Namespace
+	//
+	// Gets the Namespace from which the executable was resolved
+	__declspec(property(get=getNamespace)) std::shared_ptr<class Namespace> Namespace;
+	std::shared_ptr<class Namespace> getNamespace(void) const;
+
 	// RootDirectory
 	//
 	// Gets the root directory alias used to resolve the executable
-	__declspec(property(get=getRootDirectory)) std::shared_ptr<FileSystem::Alias> RootDirectory;
-	std::shared_ptr<FileSystem::Alias> getRootDirectory(void) const;
+	__declspec(property(get=getRootDirectory)) std::shared_ptr<FileSystem::Path> RootDirectory;
+	std::shared_ptr<FileSystem::Path> getRootDirectory(void) const;
 
 	// WorkingDirectory
 	//
 	// Gets the working directory alias used to resolve the executable
-	__declspec(property(get=getWorkingDirectory)) std::shared_ptr<FileSystem::Alias> WorkingDirectory;
-	std::shared_ptr<FileSystem::Alias> getWorkingDirectory(void) const;
+	__declspec(property(get=getWorkingDirectory)) std::shared_ptr<FileSystem::Path> WorkingDirectory;
+	std::shared_ptr<FileSystem::Path> getWorkingDirectory(void) const;
 
 private:
 
 	Executable(const Executable&)=delete;
 	Executable& operator=(const Executable&)=delete;
 
+	// fshandle_t
+	//
+	// FileSystem::Handle shared pointer
+	using fshandle_t = std::shared_ptr<FileSystem::Handle>;
+
+	// fspath_t
+	//
+	// FileSystem::Path shared pointer
+	using fspath_t = std::shared_ptr<FileSystem::Path>;
+
+	// namespace_t
+	//
+	// Namespace shared pointer
+	using namespace_t = std::shared_ptr<class Namespace>;
+
+	// string_vector_t
+	//
+	// vector<> of string instances
+	using string_vector_t = std::vector<std::string>;
+
 	// Instance Constructor
 	//
-	Executable(::Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* filename, 
-		const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir,  
-		const std::shared_ptr<FileSystem::Alias>& workingdir);
+	Executable(enum class Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle> handle, const char_t* filename, 
+		const char_t* const* arguments, const char_t* const* environment, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir,  
+		std::shared_ptr<FileSystem::Path> workingdir);
 
-	friend std::unique_ptr<Executable> std::make_unique<Executable, ::Architecture, BinaryFormat, std::shared_ptr<FileSystem::Handle>, 
-		const char_t*&, const char_t* const *&, const char_t* const*&, const std::shared_ptr<FileSystem::Alias>&, 
-		const std::shared_ptr<FileSystem::Alias>&>(::Architecture&&, BinaryFormat&& format, std::shared_ptr<FileSystem::Handle>&&, 
-		const char_t*& filename, const char_t* const *& arguments, const char_t* const*& environment, 
-		const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir);
+	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, BinaryFormat, std::shared_ptr<FileSystem::Handle>, 
+		const char_t*&, const char_t* const *&, const char_t* const*&, std::shared_ptr<class Namespace>, std::shared_ptr<FileSystem::Path>, 
+		std::shared_ptr<FileSystem::Path>>(enum class Architecture&&, BinaryFormat&& format, std::shared_ptr<FileSystem::Handle>&& handle, 
+		const char_t*& filename, const char_t* const *& arguments, const char_t* const*& environment, std::shared_ptr<class Namespace>&& ns,
+		std::shared_ptr<FileSystem::Path>&& rootdir, std::shared_ptr<FileSystem::Path>&& workingdir);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -176,9 +198,9 @@ private:
 	// FromFile (static)
 	//
 	// Creates an executable instance from a file system path
-	static std::unique_ptr<Executable> FromFile(const char_t* originalfilename, const char_t* filename, 
-		const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-		const std::shared_ptr<FileSystem::Alias>& workingdir);
+	static std::unique_ptr<Executable> FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+		std::shared_ptr<FileSystem::Path> workingdir, const char_t* originalfilename, const char_t* filename, const char_t* const* arguments, 
+		const char_t* const* environment);
 
 	// LoadELF
 	//
@@ -194,14 +216,15 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const ::Architecture				m_architecture;		// Architecture flag
-	const BinaryFormat					m_format;			// Binary file format
-	std::shared_ptr<FileSystem::Handle>	m_handle;			// File handle
-	std::string							m_filename;			// Original file name
-	std::vector<std::string>			m_arguments;		// Command-line arguments
-	std::vector<std::string>			m_environment;		// Environment variables
-	std::shared_ptr<FileSystem::Alias>	m_rootdir;			// Root directory
-	std::shared_ptr<FileSystem::Alias>	m_workingdir;		// Working directory
+	const ::Architecture		m_architecture;			// Architecture flag
+	const BinaryFormat			m_format;				// Binary file format
+	const fshandle_t			m_handle;				// File handle
+	const std::string			m_filename;				// Original file name
+	string_vector_t				m_arguments;			// Command-line arguments
+	string_vector_t				m_environment;			// Environment variables
+	const namespace_t			m_ns;					// Namespace instance
+	const fspath_t				m_rootdir;				// Root directory
+	const fspath_t				m_workingdir;			// Working directory
 };
 
 //-----------------------------------------------------------------------------

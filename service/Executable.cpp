@@ -23,6 +23,15 @@
 #include "stdafx.h"
 #include "Executable.h"
 
+#include "ElfArguments.h"
+#include "ElfImage.h"
+#include "HeapBuffer.h"
+#include "LinuxException.h"
+#include "Namespace.h"
+#include "ProcessMemory.h"
+#include "Random.h"
+#include "SystemInformation.h"
+
 #pragma warning(push, 4)
 
 // INTERPRETER_SCRIPT_MAGIC_ANSI
@@ -46,13 +55,14 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	filename		- Original file name provided for the executable
 //	arguments		- Executable command-line arguments
 //	environment		- Executable environment variables
+//	ns				- Namespace in which the executable was looked up
 //	rootdir			- Root directory used to resolve the executable
 //	workingdir		- Working directory used to resolve the executable
 
-Executable::Executable(::Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle>&& handle, const char_t* filename, 
-	const char_t* const* arguments, const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, 
-	const std::shared_ptr<FileSystem::Alias>& workingdir) : m_architecture(architecture), m_format(format), m_handle(std::move(handle)), 
-	m_filename(filename), m_rootdir(rootdir), m_workingdir(workingdir)
+Executable::Executable(::Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle> handle, const char_t* filename, 
+	const char_t* const* arguments, const char_t* const* environment, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+	std::shared_ptr<FileSystem::Path> workingdir) : m_architecture{ architecture }, m_format{ format }, m_handle{ std::move(handle) },
+	m_filename{ filename }, m_ns{ std::move(ns) }, m_rootdir{ std::move(rootdir) }, m_workingdir{ std::move(workingdir) }
 {
 	// Convert the argument and environment variable arrays into vectors of string objects
 	while((arguments) && (*arguments)) { m_arguments.push_back(*arguments); arguments++; }
@@ -78,7 +88,7 @@ const char_t* Executable::getArgument(int index) const
 {
 	// The argument collection will exist without modification as long as
 	// this class is alive, can return a direct pointer to the string
-	if(index >= static_cast<int>(m_arguments.size())) throw LinuxException(LINUX_EINVAL);
+	if(index >= static_cast<int>(m_arguments.size())) throw LinuxException{ LINUX_EINVAL };
 	return m_arguments[index].c_str();
 }
 
@@ -101,7 +111,7 @@ const char_t* Executable::getEnvironmentVariable(int index) const
 {
 	// The environment variable collection will exist without modification as long as
 	// this class is alive, can return a direct pointer to the string
-	if(index >= static_cast<int>(m_environment.size())) throw LinuxException(LINUX_EINVAL);
+	if(index >= static_cast<int>(m_environment.size())) throw LinuxException{ LINUX_EINVAL };
 	return m_environment[index].c_str();
 }
 
@@ -142,18 +152,19 @@ Executable::BinaryFormat Executable::getFormat(void) const
 //
 // Arguments:
 //
+//	ns				- Namespace in which to operate
+//	rootdir			- Root directory to assign to the process
+//	workingdir		- Working directory to assign to the process
 //	filename		- Path to the executable image
 //	arguments		- Command line arguments for the executable
 //	environment		- Environment variables to assign to the process
-//	rootdir			- Root directory to assign to the process
-//	workingdir		- Working directory to assign to the process
 
-std::unique_ptr<Executable> Executable::FromFile(const char_t* filename, const char_t* const* arguments, const char_t* const* environment, 
-	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
+std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+	std::shared_ptr<FileSystem::Path> workingdir, const char_t* filename, const char_t* const* arguments, const char_t* const* environment)
 {
 	// Invoke the private version using the provided file name as the 'original' file name.  This needs to be
 	// tracked in order to support the ELF AT_EXECFN auxiliary vector value
-	return FromFile(filename, filename, arguments, environment, rootdir, workingdir);
+	return FromFile(std::move(ns), std::move(rootdir), std::move(workingdir), filename, filename, arguments, environment);
 }
 
 //-----------------------------------------------------------------------------
@@ -163,20 +174,22 @@ std::unique_ptr<Executable> Executable::FromFile(const char_t* filename, const c
 //
 // Arguments:
 //
+//	ns					- Namespace in which to operate
+//	rootdir				- Root directory to assign to the process
+//	workingdir			- Working directory to assign to the process
 //	originalfilename	- Original file name passed into public FromFile()
 //	filename			- Path to the executable image
 //	arguments			- Command line arguments for the executable
 //	environment			- Environment variables to assign to the process
-//	rootdir				- Root directory to assign to the process
-//	workingdir			- Working directory to assign to the process
 
-std::unique_ptr<Executable> Executable::FromFile(const char_t* originalfilename, const char_t* filename, const char_t* const* arguments, 
-	const char_t* const* environment, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir)
+std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
+	std::shared_ptr<FileSystem::Path> workingdir, const char_t* originalfilename, const char_t* filename, const char_t* const* arguments, 
+	const char_t* const* environment)
 {
-	if(filename == nullptr) throw LinuxException(LINUX_EFAULT);
+	if(filename == nullptr) throw LinuxException{ LINUX_EFAULT };
 
 	// Attempt to open an executable handle to the specified file
-	std::shared_ptr<FileSystem::Handle> handle = FileSystem::OpenExecutable(rootdir, workingdir, filename);
+	fshandle_t handle = FileSystem::OpenExecutable(ns, rootdir, workingdir, filename);
 
 	// Ensure at compile-time that EI_NIDENT will be a big enough magic number buffer
 	static_assert(LINUX_EI_NIDENT >= sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI), "Executable::FromFile -- Magic number buffer too small");
@@ -197,14 +210,14 @@ std::unique_ptr<Executable> Executable::FromFile(const char_t* originalfilename,
 
 			// ELFCLASS32 --> Architecture::x86
 			case LINUX_ELFCLASS32: return std::make_unique<Executable>(Architecture::x86, BinaryFormat::ELF, std::move(handle), 
-				originalfilename, arguments, environment, rootdir, workingdir);
+				originalfilename, arguments, environment, std::move(ns), std::move(rootdir), std::move(workingdir));
 #ifdef _M_X64
 			// ELFCLASS64: --> Architecture::x86_64
 			case LINUX_ELFCLASS64:  return std::make_unique<Executable>(Architecture::x86_64, BinaryFormat::ELF, std::move(handle), 
-				originalfilename, arguments, environment, rootdir, workingdir);
+				originalfilename, arguments, environment, std::move(ns), std::move(rootdir), std::move(workingdir));
 #endif
 			// Unknown ELFCLASS --> ENOEXEC	
-			default: throw LinuxException(LINUX_ENOEXEC);
+			default: throw LinuxException{ LINUX_ENOEXEC };
 		}
 	}
 
@@ -226,7 +239,7 @@ std::unique_ptr<Executable> Executable::FromFile(const char_t* originalfilename,
 	}
 
 	// UNSUPPORTED FORMAT
-	else throw LinuxException(LINUX_ENOEXEC);
+	else throw LinuxException{ LINUX_ENOEXEC };
 
 	//
 	// This is an interpreter script, pull out the necessary strings and recursively call this function.
@@ -242,7 +255,7 @@ std::unique_ptr<Executable> Executable::FromFile(const char_t* originalfilename,
 	// Find the interperter path, if not present the script is not a valid target
 	for(begin = &buffer; (begin < eof) && (*begin) && (*begin != '\n') && (isspace(*begin)); begin++);
 	for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!isspace(*end)); end++);
-	if(begin == end) throw LinuxException(LINUX_ENOEXEC);
+	if(begin == end) throw LinuxException{ LINUX_ENOEXEC };
 	std::string interpreter(begin, end);
 
 	// Find the optional argument string that follows the interpreter path
@@ -262,7 +275,7 @@ std::unique_ptr<Executable> Executable::FromFile(const char_t* originalfilename,
 	newarguments.push_back(nullptr);
 
 	// Recursively call back into FromFile with the interpreter path and modified arguments
-	return FromFile(originalfilename, interpreter.c_str(), newarguments.data(), environment, rootdir, workingdir);
+	return FromFile(ns, std::move(rootdir), std::move(workingdir), originalfilename, interpreter.c_str(), newarguments.data(), environment);
 }
 
 //-----------------------------------------------------------------------------
@@ -295,7 +308,7 @@ Executable::LoadResult Executable::Load(const std::unique_ptr<ProcessMemory>& me
 	}
 
 	// Unsupported binary file format
-	throw LinuxException(LINUX_ENOEXEC);
+	throw LinuxException{ LINUX_ENOEXEC };
 }
 
 //-----------------------------------------------------------------------------
@@ -319,7 +332,7 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 #endif
 
 	// Unsupported architecture
-	throw LinuxException(LINUX_ENOEXEC);
+	throw LinuxException{ LINUX_ENOEXEC };
 }
 
 //-----------------------------------------------------------------------------
@@ -346,7 +359,7 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 	executable = ElfImage::Load<architecture>(m_handle, memory);
 
 	// If an interpreter is specified by the main executable, open and load that into the process
-	if(executable->Interpreter) interpreter = ElfImage::Load<architecture>(FileSystem::OpenExecutable(m_rootdir, m_workingdir, executable->Interpreter), memory);
+	if(executable->Interpreter) interpreter = ElfImage::Load<architecture>(FileSystem::OpenExecutable(m_ns, m_rootdir, m_workingdir, executable->Interpreter), memory);
 
 	// Generate the AT_RANDOM auxiliary vector data
 	Random::Generate(random, sizeof(random));
@@ -393,11 +406,21 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 }
 
 //-----------------------------------------------------------------------------
+// Executable::getNamespace
+//
+// Gets the namespace from which the executable was resolved
+
+std::shared_ptr<class Namespace> Executable::getNamespace(void) const
+{
+	return m_ns;
+}
+
+//-----------------------------------------------------------------------------
 // Executable::getRootDirectory
 //
 // Gets the root directory used to resolve the executable binary
 
-std::shared_ptr<FileSystem::Alias> Executable::getRootDirectory(void) const
+std::shared_ptr<FileSystem::Path> Executable::getRootDirectory(void) const
 {
 	return m_rootdir;
 }
@@ -407,7 +430,7 @@ std::shared_ptr<FileSystem::Alias> Executable::getRootDirectory(void) const
 //
 // Gets the working directory used to resolve the executable binary
 
-std::shared_ptr<FileSystem::Alias> Executable::getWorkingDirectory(void) const
+std::shared_ptr<FileSystem::Path> Executable::getWorkingDirectory(void) const
 {
 	return m_rootdir;
 }
