@@ -282,6 +282,8 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
   <ItemGroup>
     <ClInclude Include="..\..\external\bzip2\bzlib.h" />
     <ClInclude Include="..\..\external\cpplib\align.h" />
+    <ClInclude Include="..\..\external\cpplib\bitmask.h" />
+    <ClInclude Include="..\..\external\cpplib\convert.h" />
     <ClInclude Include="..\..\external\cpplib\datetime.h" />
     <ClInclude Include="..\..\external\cpplib\path.h" />
     <ClInclude Include="..\..\external\cpplib\sync.h" />
@@ -296,13 +298,11 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\..\external\zlib\zconf.h" />
     <ClInclude Include="..\..\external\zlib\zlib.h" />
     <ClInclude Include="..\common\Bitmap.h" />
-    <ClInclude Include="..\common\bitmask.h" />
     <ClInclude Include="..\common\BufferStreamReader.h" />
     <ClInclude Include="..\common\BZip2StreamReader.h" />
     <ClInclude Include="..\common\CommandLine.h" />
     <ClInclude Include="..\common\CompressedStreamReader.h" />
     <ClInclude Include="..\common\Console.h" />
-    <ClInclude Include="..\common\convert.h" />
     <ClInclude Include="..\common\CpioArchive.h" />
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\File.h" />

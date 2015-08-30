@@ -34,6 +34,7 @@
 #define NOMINMAX
 
 // Windows / CRT
+//
 #include <Windows.h>
 #include <Psapi.h>
 #include <rpc.h>
@@ -53,9 +54,11 @@
 // Generic Text Mappings
 #include <generic_text.h>
 
-// CPPLIB
+// cpplib
 //
 #include <align.h>
+#include <bitmask.h>
+#include <convert.h>
 #include <datetime.h>
 #include <path.h>
 #include <sync.h>
@@ -68,28 +71,30 @@
 // Service Template Library
 #include <servicelib.h>
 
-//#include <vm.service.h>
 #include <messages.h>
 
-// find a place to put this stuff -- move them out into external\cpplib or something
+// find a place to put this - it's used sporadically
 template <typename _type>
 struct zero_init : public _type
 {
 	zero_init() { memset(this, 0, sizeof(_type)); }
 };
 
-#include <functional>
-class onunwind
-{
-public:
-
-	onunwind(std::function<void(void)> onunwind) : m_onunwind(onunwind) {}
-	~onunwind() { m_onunwind(); }
-
-private:
-
-	std::function<void(void)> m_onunwind;
-};
+// this is not used anywhere right now, if needed move it into cpplib,
+// but well designed code shouldn't need this
+//
+//#include <functional>
+//class onunwind
+//{
+//public:
+//
+//	onunwind(std::function<void(void)> onunwind) : m_onunwind(onunwind) {}
+//	~onunwind() { m_onunwind(); }
+//
+//private:
+//
+//	std::function<void(void)> m_onunwind;
+//};
 
 //-----------------------------------------------------------------------------
 

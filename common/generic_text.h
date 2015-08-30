@@ -41,6 +41,9 @@ using rpc_tchar_t = std::conditional<sizeof(TCHAR) == sizeof(wchar_t), rpc_wchar
 
 //-----------------------------------------------------------------------------
 // Generic Text Extensions
+//
+// TODO: This is more than generic text now, and the conversions can take 
+// advantage of the convert<> template instead
 
 // char_t
 //

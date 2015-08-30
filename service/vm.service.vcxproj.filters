@@ -399,12 +399,6 @@
     <ClInclude Include="TempFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\bitmask.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\convert.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="HostFileSystem.h">
       <Filter>Header Files\File Systems</Filter>
     </ClInclude>
@@ -424,6 +418,12 @@
       <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
     <ClInclude Include="..\..\external\cpplib\path.h">
+      <Filter>External Libraries\cpplib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\cpplib\bitmask.h">
+      <Filter>External Libraries\cpplib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\cpplib\convert.h">
       <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
   </ItemGroup>
