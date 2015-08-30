@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "Random.h"
 
+#include "Exception.h"
+#include "Win32Exception.h"
+
 #pragma warning(push, 4)
 
 // Random::s_provider
@@ -48,11 +51,11 @@ HCRYPTPROV Random::s_provider = []() -> HCRYPTPROV {
 
 void Random::Generate(void* buffer, size_t length)
 {
-	if(!buffer) throw Exception(E_ARGUMENTNULL, "buffer");
-	if(length > MAXDWORD) throw Exception(E_ARGUMENTOUTOFRANGE, "length");
+	if(!buffer) throw Exception{ E_ARGUMENTNULL, "buffer" };
+	if(length > MAXDWORD) throw Exception{ E_ARGUMENTOUTOFRANGE, "length" };
 
 	// Load the output buffer with random data using the statically defined provider handle
-	if(!CryptGenRandom(s_provider, static_cast<DWORD>(length), reinterpret_cast<uint8_t*>(buffer))) throw Win32Exception();
+	if(!CryptGenRandom(s_provider, static_cast<DWORD>(length), reinterpret_cast<uint8_t*>(buffer))) throw Win32Exception{};
 }
 
 //-----------------------------------------------------------------------------

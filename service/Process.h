@@ -47,10 +47,10 @@
 
 #pragma warning(push, 4)
 
-// Forward Declarations
-//
-class ProcessGroup;
-class Session;
+//// Forward Declarations
+////
+//class ProcessGroup;
+//class Session;
 
 //-----------------------------------------------------------------------------
 // Process
@@ -110,7 +110,7 @@ public:
 	// FromExecutable (static)
 	//
 	// Creates a new Process from an Executable instance
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, /*const std::shared_ptr<::ProcessGroup>& pgroup, */
 		uapi::pid_t pid, const std::unique_ptr<Executable>& executable);
 
 	// GetResourceUsage
@@ -242,11 +242,11 @@ public:
 	__declspec(property(get=getParent)) std::shared_ptr<Process> Parent;
 	std::shared_ptr<Process> getParent(void) const;
 
-	// ProcessGroup
-	//
-	// Gets a reference to the containing process group instance
-	__declspec(property(get=getProcessGroup)) std::shared_ptr<::ProcessGroup> ProcessGroup;
-	std::shared_ptr<::ProcessGroup> getProcessGroup(void) const;
+	//// ProcessGroup
+	////
+	//// Gets a reference to the containing process group instance
+	//__declspec(property(get=getProcessGroup)) std::shared_ptr<::ProcessGroup> ProcessGroup;
+	//std::shared_ptr<::ProcessGroup> getProcessGroup(void) const;
 
 	// ProcessId
 	//
@@ -384,7 +384,7 @@ private:
 	//
 	// Creates a new process instance from an executable image
 	template<::Architecture architecture>
-	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid, 
+	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, /*const std::shared_ptr<::ProcessGroup>& pgroup, */uapi::pid_t pid, 
 		const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable);
 
 	// NotifyParent
@@ -415,7 +415,7 @@ private:
 
 	const ::Architecture					m_architecture;		// Process architecture
 
-	std::weak_ptr<::ProcessGroup>			m_pgroup;			// Parent ProcessGroup instance
+	//std::weak_ptr<::ProcessGroup>			m_pgroup;			// Parent ProcessGroup instance
 	std::unique_ptr<NativeProcess>			m_host;				// Native process instance
 
 	// Parent and Children

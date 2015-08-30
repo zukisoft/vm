@@ -23,8 +23,8 @@
 #include "stdafx.h"
 #include "Process.h"
 
-#include "ProcessGroup.h"
-#include "Session.h"
+//#include "ProcessGroup.h"
+//#include "Session.h"
 #include "StructuredException.h"
 
 #pragma warning(push, 4)
@@ -312,10 +312,10 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(vm, m_architecture, pid, childparent, std::move(childhost), std::move(task),
 			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childtermsig, m_rootdir, m_workingdir));
 
-		// todo: dirty hack
-		auto pgroup = m_pgroup.lock();
-		pgroup->AttachProcess(emplaced.first->second);
-		emplaced.first->second->m_pgroup = pgroup;
+		//// todo: dirty hack
+		//auto pgroup = m_pgroup.lock();
+		//pgroup->AttachProcess(emplaced.first->second);
+		//emplaced.first->second->m_pgroup = pgroup;
 
 		// Reset the condition variable indicating that there are no children as there now is one
 		m_nochildren = false;
@@ -630,11 +630,11 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 	}
 
 	// testing only - no parent init process; remove to prevent zombie for now
-	if(!parent) {
+	//if(!parent) {
 
-		auto pgroup = m_pgroup.lock();
-		if(pgroup) pgroup->ReleaseProcess(m_pid);
-	}
+	//	auto pgroup = m_pgroup.lock();
+	//	if(pgroup) pgroup->ReleaseProcess(m_pid);
+	//}
 	// TODO:
 	// process becomes a zombie unless parent is set to SA_NOCLDWAIT or ignores SIGCHLD
 }
@@ -651,15 +651,15 @@ void Process::ExitThread(uapi::pid_t tid, int exitcode)
 //	ns			- Namespace instance
 //	executable	- Executable to construct into a process
 
-std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, uapi::pid_t pid,
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, /*const std::shared_ptr<::ProcessGroup>& pgroup, */uapi::pid_t pid,
 	const std::unique_ptr<Executable>& executable)
 {
 	// Architecture::x86 --> 32-bit executable
-	if(executable->Architecture == Architecture::x86) return FromExecutable<Architecture::x86>(vm, pgroup, pid, nullptr, executable);
+	if(executable->Architecture == Architecture::x86) return FromExecutable<Architecture::x86>(vm, /*pgroup,*/ pid, nullptr, executable);
 
 #ifdef _M_X64
 	// Architecture::x86_64 --> 64-bit executable
-	else if(executable->Architecture == Architecture::x86_64) return FromExecutable<Architecture::x86_64>(vm, pgroup, pid, nullptr, executable);
+	else if(executable->Architecture == Architecture::x86_64) return FromExecutable<Architecture::x86_64>(vm, /*pgroup,*/ pid, nullptr, executable);
 #endif
 	
 	throw LinuxException(LINUX_ENOEXEC);
@@ -678,7 +678,7 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& 
 //	executable		- Executable instance
 
 template<::Architecture architecture>
-std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, const std::shared_ptr<::ProcessGroup>& pgroup, 
+std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, /*const std::shared_ptr<::ProcessGroup>& pgroup,*/ 
 	uapi::pid_t pid, const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable)
 {
 	// Create a host process for the specified architecture
@@ -709,7 +709,7 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& 
 		// Construct and return the new Process instance
 		auto result = std::make_shared<Process>(vm, architecture, pid, parent, std::move(host), TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer), 
 			std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), loaded.ProgramBreak, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
-		result->m_pgroup = pgroup;	// todo: dirty hack
+		//result->m_pgroup = pgroup;	// todo: dirty hack
 
 		return result;
 	}
@@ -1008,9 +1008,9 @@ void Process::NotifyParent(Waitable::State state, int32_t status)
 		process_map_lock_t::scoped_lock_write writer(parent->m_childlock);
 		//parent->m_vm->RemoveProcess(m_pid);
 
-		// this is ugly
-		auto pgroup = m_pgroup.lock();
-		if(pgroup) pgroup->ReleaseProcess(m_pid);
+		//// this is ugly
+		//auto pgroup = m_pgroup.lock();
+		//if(pgroup) pgroup->ReleaseProcess(m_pid);
 
 		// this is ugly
 		parent->m_children.erase(m_pid);
@@ -1036,15 +1036,15 @@ std::shared_ptr<Process> Process::getParent(void) const
 	return (parent) ? parent : vm->RootProcess;
 }
 	
-//-----------------------------------------------------------------------------
-// Process::getProcessGroup
+////-----------------------------------------------------------------------------
+//// Process::getProcessGroup
+////
+//// Gets a reference to the containing process group instance
 //
-// Gets a reference to the containing process group instance
-
-std::shared_ptr<::ProcessGroup> Process::getProcessGroup(void) const
-{
-	return m_pgroup.lock();
-}
+//std::shared_ptr<::ProcessGroup> Process::getProcessGroup(void) const
+//{
+//	return m_pgroup.lock();
+//}
 
 //-----------------------------------------------------------------------------
 // Process::getProcessId
@@ -1616,10 +1616,10 @@ uapi::pid_t Process::WaitChild(uapi::idtype_t type, uapi::pid_t id, int* status,
 
 		//m_vm->RemoveProcess(l_siginfo.linux_si_pid);
 
-		// TODO: NEED TO RELEASE FROM PROCESS GROUP
-		// this can't be the way I want to do this; this is awful
-		auto pgroup = result->ProcessGroup;
-		if(pgroup) pgroup->ReleaseProcess(l_siginfo.linux_si_pid);
+		//// TODO: NEED TO RELEASE FROM PROCESS GROUP
+		//// this can't be the way I want to do this; this is awful
+		//auto pgroup = result->ProcessGroup;
+		//if(pgroup) pgroup->ReleaseProcess(l_siginfo.linux_si_pid);
 
 		// this is ugly; need a better way
 		m_children.erase(l_siginfo.linux_si_pid);

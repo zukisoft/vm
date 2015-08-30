@@ -24,9 +24,6 @@
 #define __RANDOM_H_
 #pragma once
 
-#include "Exception.h"
-#include "Win32Exception.h"
-
 #pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------

@@ -384,14 +384,11 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="PidNamespace.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Architecture.h" />
-    <ClInclude Include="ProcessGroup.h" />
     <ClInclude Include="ProcessHandles.h" />
     <ClInclude Include="NativeProcess.h" />
     <ClInclude Include="ElfImage.h" />
     <ClInclude Include="ProcessMemory.h" />
-    <ClInclude Include="ProcessModel.h" />
     <ClInclude Include="Context.h" />
-    <ClInclude Include="Session.h" />
     <ClInclude Include="SignalActions.h" />
     <ClInclude Include="TaskState.h" />
     <ClInclude Include="SystemCall.h" />
@@ -678,12 +675,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="Pid.cpp" />
     <ClCompile Include="PidNamespace.cpp" />
     <ClCompile Include="Process.cpp" />
-    <ClCompile Include="ProcessGroup.cpp" />
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="NativeProcess.cpp" />
     <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="ProcessMemory.cpp" />
-    <ClCompile Include="Session.cpp" />
     <ClCompile Include="SignalActions.cpp" />
     <ClCompile Include="sys_attach_process.cpp" />
     <ClCompile Include="SystemCall.cpp" />
