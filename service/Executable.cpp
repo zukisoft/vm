@@ -59,7 +59,7 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	rootdir			- Root directory used to resolve the executable
 //	workingdir		- Working directory used to resolve the executable
 
-Executable::Executable(::Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle> handle, const char_t* filename, 
+Executable::Executable(enum class Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle> handle, const char_t* filename, 
 	const char_t* const* arguments, const char_t* const* environment, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
 	std::shared_ptr<FileSystem::Path> workingdir) : m_architecture{ architecture }, m_format{ format }, m_handle{ std::move(handle) },
 	m_filename{ filename }, m_ns{ std::move(ns) }, m_rootdir{ std::move(rootdir) }, m_workingdir{ std::move(workingdir) }
@@ -74,7 +74,7 @@ Executable::Executable(::Architecture architecture, BinaryFormat format, std::sh
 //
 // Gets the architecture flag for the referenced executable
 
-::Architecture Executable::getArchitecture(void) const
+enum class Architecture Executable::getArchitecture(void) const
 {
 	return m_architecture;
 }
@@ -345,7 +345,7 @@ Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>&
 //	memory			- ProcessMemory instance for the target process
 //	stackpointer	- Pointer to the stack to be initialized
 
-template <::Architecture architecture>
+template <enum class Architecture architecture>
 Executable::LoadResult Executable::LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const
 {
 	using elf = elf_traits<architecture>;

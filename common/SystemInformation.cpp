@@ -103,7 +103,7 @@ size_t const SystemInformation::PageSize = []() -> size_t {
 
 // SystemInformation::ProcessorArchitecture
 //
-SystemInformation::Architecture const SystemInformation::ProcessorArchitecture = []() -> SystemInformation::Architecture {
+SystemInformationenum class Architecture const SystemInformation::ProcessorArchitecture = []() -> SystemInformationenum class Architecture {
 
 	InitOnceExecuteOnce(&g_initonce, InitOnceSystemInformation, nullptr, nullptr);
 	return static_cast<SystemInformation::Architecture>(g_sysinfo.wProcessorArchitecture);

@@ -146,8 +146,8 @@ public:
 	// Architecture
 	//
 	// Gets the architecture flag for the thread instance
-	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
-	::Architecture getArchitecture(void) const;
+	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+	enum class Architecture getArchitecture(void) const;
 
 	// ClearThreadIdOnExit
 	//
@@ -240,7 +240,7 @@ private:
 
 	// Instance Constructor
 	//
-	Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, const std::shared_ptr<::NativeHandle>& thread, 
+	Thread(uapi::pid_t tid, enum class Architecture architecture, const std::shared_ptr<::Process>& process, const std::shared_ptr<::NativeHandle>& thread, 
 		DWORD threadid, std::unique_ptr<TaskState>&& initialtask);
 	friend class std::_Ref_count_obj<Thread>;
 
@@ -271,7 +271,7 @@ private:
 	// Member Variables
 
 	const uapi::pid_t					m_tid;				// Thread identifier
-	const ::Architecture				m_architecture;		// Thread architecture
+	const enum class Architecture		m_architecture;		// Thread architecture
 	std::shared_ptr<::Process>			m_process;			// Parent process
 	std::shared_ptr<::NativeHandle>		m_thread;			// Native thread handle
 	const DWORD							m_threadid;			// Native thread id

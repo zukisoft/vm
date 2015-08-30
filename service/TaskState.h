@@ -47,12 +47,12 @@ public:
 	// Capture (static)
 	//
 	// Captures a TaskState from a suspended native thread
-	static std::unique_ptr<TaskState> Capture(::Architecture architecture, HANDLE nativethread);
+	static std::unique_ptr<TaskState> Capture(enum class Architecture architecture, HANDLE nativethread);
 
 	// Create (static)
 	//
 	// Creates a new TaskState for the specified architecture
-	template<::Architecture architecture>
+	template<enum class Architecture architecture>
 	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
 
 	// Duplicate (static)
@@ -63,13 +63,13 @@ public:
 	// FromExisting (static)
 	//
 	// Creates a TaskState from an existing task state
-	template <::Architecture architecture>
+	template <enum class Architecture architecture>
 	static std::unique_ptr<TaskState> FromExisting(const void* existing, size_t length);
 
 	// Restore
 	//
 	// Restores this task state to a suspended native thread
-	void Restore(::Architecture architecture, HANDLE nativehandle) const;
+	void Restore(enum class Architecture architecture, HANDLE nativehandle) const;
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -77,8 +77,8 @@ public:
 	// Architecture
 	//
 	// Gets the architecture associated with the task state
-	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
-	::Architecture getArchitecture(void) const;
+	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+	enum class Architecture getArchitecture(void) const;
 
 	// Data
 	//
@@ -140,14 +140,14 @@ private:
 
 	// Instance Constructor
 	//
-	TaskState(::Architecture architecture, context_t&& context) : m_architecture(std::move(architecture)), m_context(std::move(context)) {}
-	friend std::unique_ptr<TaskState> std::make_unique<TaskState, ::Architecture, context_t>(::Architecture&&, context_t&&);
+	TaskState(enum class Architecture architecture, context_t&& context) : m_architecture(std::move(architecture)), m_context(std::move(context)) {}
+	friend std::unique_ptr<TaskState> std::make_unique<TaskState, enum class Architecture, context_t>(enum class Architecture&&, context_t&&);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 	
-	::Architecture			m_architecture;			// Selected architecture
-	context_t				m_context;				// Contained context data
+	enum class Architecture		m_architecture;			// Selected architecture
+	context_t					m_context;				// Contained context data
 
 	// Windows API
 	//

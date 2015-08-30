@@ -210,21 +210,21 @@ private:
 	// LoadELF<Architecture>
 	//
 	// Loads an ELF binary into a process virtual address space
-	template<::Architecture architecture>
+	template<enum class Architecture architecture>
 	LoadResult LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const ::Architecture		m_architecture;			// Architecture flag
-	const BinaryFormat			m_format;				// Binary file format
-	const fshandle_t			m_handle;				// File handle
-	const std::string			m_filename;				// Original file name
-	string_vector_t				m_arguments;			// Command-line arguments
-	string_vector_t				m_environment;			// Environment variables
-	const namespace_t			m_ns;					// Namespace instance
-	const fspath_t				m_rootdir;				// Root directory
-	const fspath_t				m_workingdir;			// Working directory
+	const enum class Architecture	m_architecture;			// Architecture flag
+	const BinaryFormat				m_format;				// Binary file format
+	const fshandle_t				m_handle;				// File handle
+	const std::string				m_filename;				// Original file name
+	string_vector_t					m_arguments;			// Command-line arguments
+	string_vector_t					m_environment;			// Environment variables
+	const namespace_t				m_ns;					// Namespace instance
+	const fspath_t					m_rootdir;				// Root directory
+	const fspath_t					m_workingdir;			// Working directory
 };
 
 //-----------------------------------------------------------------------------

@@ -201,8 +201,8 @@ public:
 	// Architecture
 	//
 	// Gets the process architecture code
-	__declspec(property(get=getArchitecture)) ::Architecture Architecture;
-	::Architecture getArchitecture(void) const;
+	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+	enum class Architecture getArchitecture(void) const;
 
 	// FileCreationModeMask
 	//
@@ -338,12 +338,12 @@ private:
 
 	// Instance Constructors
 	//
-	Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
 		Bitmap&& ldtslots, const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 
 		const std::shared_ptr<FileSystem::Alias>& workingdir);
 
-	Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+	Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 		std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, 
 		Bitmap&& ldtslots, const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, 
 		int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, 	const std::shared_ptr<FileSystem::Alias>& workingdir);
@@ -361,7 +361,7 @@ private:
 	// Clone<Architecture>
 	//
 	// Clones this process into a new child process
-	template<::Architecture architecture>
+	template<enum class Architecture architecture>
 	std::shared_ptr<Process> Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task);
 
 	// CollectWaitables
@@ -377,13 +377,13 @@ private:
 	// Execute<Architecture>
 	//
 	// Replaces the process with a new executable image
-	template<::Architecture>
+	template<enum class Architecture>
 	void Execute(const std::unique_ptr<Executable>& executable);
 
 	// FromExecutable<Architecture>
 	//
 	// Creates a new process instance from an executable image
-	template<::Architecture architecture>
+	template<enum class Architecture architecture>
 	static std::shared_ptr<Process> FromExecutable(const std::shared_ptr<_VmOld>& vm, /*const std::shared_ptr<::ProcessGroup>& pgroup, */uapi::pid_t pid, 
 		const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable);
 
@@ -413,7 +413,7 @@ private:
 	// a 64-bit process.  The process properties should not change, but the host and architecture
 	// will
 
-	const ::Architecture					m_architecture;		// Process architecture
+	const enum class Architecture			m_architecture;		// Process architecture
 
 	//std::weak_ptr<::ProcessGroup>			m_pgroup;			// Parent ProcessGroup instance
 	std::unique_ptr<NativeProcess>			m_host;				// Native process instance

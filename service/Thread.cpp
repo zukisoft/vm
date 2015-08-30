@@ -52,7 +52,7 @@
 //	threadid		- Native thread identifier
 //	initialtask		- Initial thread task information
 
-Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_ptr<::Process>& process, 
+Thread::Thread(uapi::pid_t tid, enum class Architecture architecture, const std::shared_ptr<::Process>& process, 
 	const std::shared_ptr<::NativeHandle>& thread, DWORD threadid, std::unique_ptr<TaskState>&& initialtask) : m_tid(tid), m_architecture(architecture), 
 	m_process(process), m_thread(thread), m_threadid(threadid), m_initialtask(std::move(initialtask))
 {
@@ -65,7 +65,7 @@ Thread::Thread(uapi::pid_t tid, ::Architecture architecture, const std::shared_p
 //
 // Gets the process architecture type
 
-::Architecture Thread::getArchitecture(void) const
+enum class Architecture Thread::getArchitecture(void) const
 {
 	return m_architecture;
 }

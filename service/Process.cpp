@@ -48,7 +48,7 @@
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+Process::Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, int termsignal, const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : 
 	Process(vm, architecture, pid, parent, std::move(host), std::move(task), std::move(memory), ldt, std::move(ldtslots), programbreak, 
@@ -75,7 +75,7 @@ Process::Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture,
 //	rootdir			- Initial process root directory
 //	workingdir		- Initial process working directory
 
-Process::Process(const std::shared_ptr<_VmOld>& vm, ::Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
+Process::Process(const std::shared_ptr<_VmOld>& vm, enum class Architecture architecture, uapi::pid_t pid, const std::shared_ptr<Process>& parent, 
 	std::unique_ptr<NativeProcess>&& host, std::unique_ptr<TaskState>&& task, std::unique_ptr<ProcessMemory>&& memory, const void* ldt, Bitmap&& ldtslots, 
 	const void* programbreak, const std::shared_ptr<ProcessHandles>& handles, const std::shared_ptr<SignalActions>& sigactions, int termsignal, 
 	const std::shared_ptr<FileSystem::Alias>& rootdir, const std::shared_ptr<FileSystem::Alias>& workingdir) : m_vm(vm), m_architecture(architecture), 
@@ -183,7 +183,7 @@ std::shared_ptr<::Thread> Process::AttachThread(DWORD nativetid)
 //
 // Gets the process architecture type
 
-::Architecture Process::getArchitecture(void) const
+enum class Architecture Process::getArchitecture(void) const
 {
 	return m_architecture;
 }
@@ -255,7 +255,7 @@ std::shared_ptr<Process> Process::Clone(int flags, std::unique_ptr<TaskState>&& 
 //	flags		- Flags indicating the desired operations
 //	task		- Task state for the new process
 
-template<::Architecture architecture>
+template<enum class Architecture architecture>
 std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_ptr<TaskState>&& task)
 {
 	auto vm = m_vm.lock();
@@ -483,11 +483,11 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 	auto executable = Executable::FromFile(filename, argv, envp, m_rootdir, m_workingdir);
 
 	// Architecture::x86 --> 32-bit executable
-	if(executable->Architecture == ::Architecture::x86) Execute<Architecture::x86>(executable);
+	if(executable->Architecture == Architecture::x86) Execute<Architecture::x86>(executable);
 
 	// Architecture::x86_64 --> 64-bit executable
 #ifdef _M_X64
-	else if(executable->Architecture == ::Architecture::x86_64) Execute<Architecture::x86_64>(executable);
+	else if(executable->Architecture == Architecture::x86_64) Execute<Architecture::x86_64>(executable);
 #endif
 	
 	// Unsupported architecture
@@ -505,7 +505,7 @@ void Process::Execute(const char_t* filename, const char_t* const* argv, const c
 //	argv			- Command-line arguments
 //	envp			- Environment variables
 
-template<::Architecture architecture>
+template<enum class Architecture architecture>
 void Process::Execute(const std::unique_ptr<Executable>& executable)
 {
 	DWORD					nativetid;			// Native thread identifier
@@ -677,7 +677,7 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& 
 //	parent			- Optional parent process to assign to the process
 //	executable		- Executable instance
 
-template<::Architecture architecture>
+template<enum class Architecture architecture>
 std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& vm, /*const std::shared_ptr<::ProcessGroup>& pgroup,*/ 
 	uapi::pid_t pid, const std::shared_ptr<Process>& parent, const std::unique_ptr<Executable>& executable)
 {

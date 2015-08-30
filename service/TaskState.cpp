@@ -70,7 +70,7 @@ const TaskState::SetThreadContext64Func TaskState::SetThreadContext64 = GetFunct
 //
 // Gets the architecture code for the contained task state
 
-::Architecture TaskState::getArchitecture(void) const
+enum class Architecture TaskState::getArchitecture(void) const
 {
 	return m_architecture;
 }
@@ -85,18 +85,18 @@ const TaskState::SetThreadContext64Func TaskState::SetThreadContext64 = GetFunct
 //	architecture	- Thread architecture
 //	nativethread	- Native thread handle; should be suspended
 
-std::unique_ptr<TaskState> TaskState::Capture(::Architecture architecture, HANDLE nativethread)
+std::unique_ptr<TaskState> TaskState::Capture(enum class Architecture architecture, HANDLE nativethread)
 {
 	context_t					context;		// Context acquired from the thread
 
-	if(architecture == ::Architecture::x86) {
+	if(architecture == Architecture::x86) {
 
 		context.x86.flags = UTASK32_FLAGS_FULL;
 		if(!GetThreadContext32(nativethread, &context.x86)) throw Win32Exception();
 	}
 
 #ifdef _M_X64
-	else if(architecture == ::Architecture::x86_64) {
+	else if(architecture == Architecture::x86_64) {
 
 		context.x86_64.flags = UTASK64_FLAGS_FULL;
 		if(!GetThreadContext64(nativethread, &context.x86_64)) throw Win32Exception();
@@ -121,7 +121,7 @@ std::unique_ptr<TaskState> TaskState::Capture(::Architecture architecture, HANDL
 //	stackpointer	- Initial stack pointer value
 
 template<>
-std::unique_ptr<TaskState> TaskState::Create<::Architecture::x86>(const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* entrypoint, const void* stackpointer)
 {
 	context_t				context;			// New context information
 
@@ -159,7 +159,7 @@ std::unique_ptr<TaskState> TaskState::Create<::Architecture::x86>(const void* en
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<TaskState> TaskState::Create<::Architecture::x86_64>(const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* entrypoint, const void* stackpointer)
 {
 	context_t				context;			// New context information
 
@@ -233,7 +233,7 @@ std::unique_ptr<TaskState> TaskState::Duplicate(const std::unique_ptr<TaskState>
 //	length			- Length of the existing task information
 
 template<>
-std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86>(const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86>(const void* existing, size_t length)
 {
 	context_t				context;			// Context information
 
@@ -244,7 +244,7 @@ std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86>(const vo
 	memcpy(&context.x86, existing, length);
 
 	// Construct the TaskState from the copied context information
-	return std::make_unique<TaskState>(::Architecture::x86, std::move(context));
+	return std::make_unique<TaskState>(Architecture::x86, std::move(context));
 }
 
 //-----------------------------------------------------------------------------
@@ -259,7 +259,7 @@ std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86>(const vo
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86_64>(const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86_64>(const void* existing, size_t length)
 {
 	context_t				context;			// Context information
 
@@ -270,7 +270,7 @@ std::unique_ptr<TaskState> TaskState::FromExisting<::Architecture::x86_64>(const
 	memcpy(&context.x86_64, existing, length);
 
 	// Construct the TaskState from the copied context information
-	return std::make_unique<TaskState>(::Architecture::x86_64, std::move(context));
+	return std::make_unique<TaskState>(Architecture::x86_64, std::move(context));
 }
 #endif
 
@@ -345,7 +345,7 @@ size_t TaskState::getLength(void) const
 //	architecture	- Architecture of the target thread for verification
 //	nativethread	- Native thread handle; should be suspended
 
-void TaskState::Restore(::Architecture architecture, HANDLE nativethread) const
+void TaskState::Restore(enum class Architecture architecture, HANDLE nativethread) const
 {
 	// Perform a sanity check to ensure that the target thread architecture
 	// is the same as when this task state was captured or created
