@@ -432,7 +432,7 @@ std::shared_ptr<FileSystem::Path> Executable::getRootDirectory(void) const
 
 std::shared_ptr<FileSystem::Path> Executable::getWorkingDirectory(void) const
 {
-	return m_rootdir;
+	return m_workingdir;
 }
 
 //-----------------------------------------------------------------------------

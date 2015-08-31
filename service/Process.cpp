@@ -564,6 +564,8 @@ void Process::Execute(std::unique_ptr<Executable> executable)
 		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
 		// Load the executable image into the process address space with a new stack allocation
+		// todo: pass in namespace, rootdir, workingdir, it's stupid for Executable to store them
+		// (why not have Executable get the interpreter handle during FromFile?)
 		Executable::LoadResult loaded = executable->Load(m_memory, CreateStack(vm, m_memory));
 
 		// Reset the program break address based on the loaded executable 
@@ -704,6 +706,8 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& 
 		catch(Exception& ex) { throw LinuxException(LINUX_ENOMEM, ex); }
 
 		// Load the executable image into the process address space and set up the thread stack
+		// todo: pass in namespace, rootdir, workingdir, it's stupid for Executable to hold them
+		// (why not have Executable get the interpreter handle during FromFile?)
 		Executable::LoadResult loaded = executable->Load(memory, stackpointer);
 
 		// Create a Thread instance for the main thread of the new process, using a new TaskState
