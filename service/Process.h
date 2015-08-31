@@ -396,7 +396,7 @@ private:
 	// Execute<Architecture>
 	//
 	// Replaces the process with a new executable image
-	template<enum class Architecture>
+	template<enum class Architecture architecture>
 	void Execute(std::unique_ptr<Executable> executable);
 
 	// FromExecutable<Architecture>

@@ -314,7 +314,7 @@ std::shared_ptr<Process> Process::Clone(uapi::pid_t pid, int flags, std::unique_
 		// Construct and insert a new Process instance to the child collection
 		process_map_lock_t::scoped_lock_write writer(m_childlock);
 		auto emplaced = m_children.emplace(pid, std::make_shared<Process>(vm, m_architecture, pid, childparent, std::move(childhost), std::move(task),
-			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childtermsig, m_rootdir, m_workingdir));
+			std::move(childmemory), m_ldt, Bitmap(m_ldtslots), m_programbreak, childhandles, childsigactions, childtermsig, m_ns, m_rootdir, m_workingdir));
 
 		//// todo: dirty hack
 		//auto pgroup = m_pgroup.lock();
@@ -712,7 +712,7 @@ std::shared_ptr<Process> Process::FromExecutable(const std::shared_ptr<_VmOld>& 
 
 		// Construct and return the new Process instance
 		auto result = std::make_shared<Process>(vm, architecture, pid, parent, std::move(host), TaskState::Create<architecture>(loaded.EntryPoint, loaded.StackPointer), 
-			std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), loaded.ProgramBreak, LINUX_SIGCHLD, executable->RootDirectory, executable->WorkingDirectory);
+			std::move(memory), ldt, Bitmap(LINUX_LDT_ENTRIES), loaded.ProgramBreak, LINUX_SIGCHLD, executable->Namespace, executable->RootDirectory, executable->WorkingDirectory);
 		//result->m_pgroup = pgroup;	// todo: dirty hack
 
 		return result;
