@@ -185,8 +185,9 @@ void ProcessHandles::RemoveCloseOnExecute(void)
 
 		// If the file handle is set to be closed on execute, remove it
 		// from the member collection
-		if(iterator->second->CloseOnExec) iterator = m_handles.erase(iterator);
-		else ++iterator;
+		// TODO TODO TODO PUT ME BACK
+		//if(iterator->second->CloseOnExec) iterator = m_handles.erase(iterator);
+		/*else*/ ++iterator;
 	}
 }
 

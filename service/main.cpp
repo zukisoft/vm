@@ -47,7 +47,7 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 
 	int nDbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);	// Get current flags
 	nDbgFlags |= _CRTDBG_LEAK_CHECK_DF;						// Enable leak-check
-	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags/
+	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
 
