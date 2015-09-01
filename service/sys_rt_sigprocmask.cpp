@@ -42,30 +42,32 @@
 
 uapi::long_t sys_rt_sigprocmask(const Context* context, int how, const uapi::sigset_t* newmask, uapi::sigset_t* oldmask)
 {
-	// Get the current signal mask for the thread in order to manipulate it
-	uapi::sigset_t mask = context->Thread->SignalMask;
+	return -LINUX_ENOSYS;
 
-	// Apply the new mask bits to the existing signal mask if requested
-	if(newmask) {
+	//// Get the current signal mask for the thread in order to manipulate it
+	//uapi::sigset_t mask = context->Thread->SignalMask;
 
-		switch(how) {
+	//// Apply the new mask bits to the existing signal mask if requested
+	//if(newmask) {
 
-			// SIG_BLOCK: Add the new mask bits to the existing mask
-			case LINUX_SIG_BLOCK: mask |= *newmask; break;
+	//	switch(how) {
 
-			// SIG_UNBLOCK: Remove the mask bits from the existing mask
-			case LINUX_SIG_UNBLOCK: mask &= ~(*newmask); break;
+	//		// SIG_BLOCK: Add the new mask bits to the existing mask
+	//		case LINUX_SIG_BLOCK: mask |= *newmask; break;
 
-			// SIG_SETMASK: Replace the existing mask with the new mask
-			case LINUX_SIG_SETMASK: mask = *newmask; break;
+	//		// SIG_UNBLOCK: Remove the mask bits from the existing mask
+	//		case LINUX_SIG_UNBLOCK: mask &= ~(*newmask); break;
 
-			default: return -LINUX_EINVAL;
-		}
-	}
+	//		// SIG_SETMASK: Replace the existing mask with the new mask
+	//		case LINUX_SIG_SETMASK: mask = *newmask; break;
 
-	// Set the updated signal mask for the thread and optionally return the old one
-	context->Thread->SetSignalMask((newmask) ? &mask : nullptr, oldmask);
-	return 0;
+	//		default: return -LINUX_EINVAL;
+	//	}
+	//}
+
+	//// Set the updated signal mask for the thread and optionally return the old one
+	//context->Thread->SetSignalMask((newmask) ? &mask : nullptr, oldmask);
+	//return 0;
 }
 
 // sys32_rt_sigprocmask

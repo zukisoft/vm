@@ -44,30 +44,32 @@
 
 uapi::long_t sys_writev(const Context* context, int fd, uapi::iovec* iov, int iovcnt)
 {
-	if(iov == nullptr) return -LINUX_EFAULT;
-	if(iovcnt <= 0) return -LINUX_EINVAL;
+	return -LINUX_ENOSYS;
 
-	// Get the handle represented by the file descriptor
-	auto handle = context->Process->Handle[fd];
+	//if(iov == nullptr) return -LINUX_EFAULT;
+	//if(iovcnt <= 0) return -LINUX_EINVAL;
 
-	// Calcluate the maximum required intermediate data buffer for the operation
-	size_t max = 0;
-	for(int index = 0; index < iovcnt; index++) { if(iov[index].iov_len > max) max = iov[index].iov_len; }
-	if(max == 0) return -LINUX_EINVAL;
+	//// Get the handle represented by the file descriptor
+	//auto handle = context->Process->Handle[fd];
 
-	// Allocate the intermediate buffer
-	HeapBuffer<uint8_t> buffer(max);
+	//// Calcluate the maximum required intermediate data buffer for the operation
+	//size_t max = 0;
+	//for(int index = 0; index < iovcnt; index++) { if(iov[index].iov_len > max) max = iov[index].iov_len; }
+	//if(max == 0) return -LINUX_EINVAL;
 
-	// Repeatedly read the data from the child process address space and write it through the handle
-	size_t written = 0;
-	for(int index = 0; index < iovcnt; index++) {
+	//// Allocate the intermediate buffer
+	//HeapBuffer<uint8_t> buffer(max);
 
-		size_t read = context->Process->ReadMemory(iov[index].iov_base, buffer, iov[index].iov_len);
-		if(read) written += handle->Write(buffer, read);
-	}
+	//// Repeatedly read the data from the child process address space and write it through the handle
+	//size_t written = 0;
+	//for(int index = 0; index < iovcnt; index++) {
 
-	// Return the total number of bytes written; should be checking for an overflow here (EINVAL)
-	return static_cast<uapi::long_t>(written);
+	//	size_t read = context->Process->ReadMemory(iov[index].iov_base, buffer, iov[index].iov_len);
+	//	if(read) written += handle->Write(buffer, read);
+	//}
+
+	//// Return the total number of bytes written; should be checking for an overflow here (EINVAL)
+	//return static_cast<uapi::long_t>(written);
 }
 
 #ifndef _M_X64

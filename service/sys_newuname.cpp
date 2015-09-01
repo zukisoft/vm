@@ -40,18 +40,20 @@
 
 uapi::long_t sys_newuname(const Context* context, uapi::new_utsname* buf)
 {
-	if(buf == nullptr) return -LINUX_EFAULT;
+	return -LINUX_ENOSYS;
 
-	auto vm = context->_VmOld;
+	//if(buf == nullptr) return -LINUX_EFAULT;
 
-	vm->GetProperty(_VmOld::Properties::OperatingSystemType,	buf->sysname,		LINUX__NEW_UTS_LEN + 1);
-	vm->GetProperty(_VmOld::Properties::HostName,				buf->nodename,		LINUX__NEW_UTS_LEN + 1);
-	vm->GetProperty(_VmOld::Properties::OperatingSystemRelease, buf->release,		LINUX__NEW_UTS_LEN + 1);
-	vm->GetProperty(_VmOld::Properties::OperatingSystemVersion, buf->version,		LINUX__NEW_UTS_LEN + 1);
-	vm->GetProperty(_VmOld::Properties::HardwareIdentifier,		buf->machine,		LINUX__NEW_UTS_LEN + 1);
-	vm->GetProperty(_VmOld::Properties::DomainName,				buf->domainname,	LINUX__NEW_UTS_LEN + 1);
+	//auto vm = context->_VmOld;
 
-	return 0;
+	//vm->GetProperty(_VmOld::Properties::OperatingSystemType,	buf->sysname,		LINUX__NEW_UTS_LEN + 1);
+	//vm->GetProperty(_VmOld::Properties::HostName,				buf->nodename,		LINUX__NEW_UTS_LEN + 1);
+	//vm->GetProperty(_VmOld::Properties::OperatingSystemRelease, buf->release,		LINUX__NEW_UTS_LEN + 1);
+	//vm->GetProperty(_VmOld::Properties::OperatingSystemVersion, buf->version,		LINUX__NEW_UTS_LEN + 1);
+	//vm->GetProperty(_VmOld::Properties::HardwareIdentifier,		buf->machine,		LINUX__NEW_UTS_LEN + 1);
+	//vm->GetProperty(_VmOld::Properties::DomainName,				buf->domainname,	LINUX__NEW_UTS_LEN + 1);
+
+	//return 0;
 }
 
 // sys32_newuname

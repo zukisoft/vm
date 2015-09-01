@@ -44,43 +44,45 @@
 
 uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* pathname, linux_stat3264* buf, int flags)
 {
-	if(buf == nullptr) return -LINUX_EFAULT;
+	return -LINUX_ENOSYS;
 
-	// Verify the flags are valid for this operation
-	if((flags & ~(LINUX_AT_SYMLINK_NOFOLLOW | LINUX_AT_NO_AUTOMOUNT | LINUX_AT_EMPTY_PATH)) != 0) return -LINUX_EINVAL;
+	//if(buf == nullptr) return -LINUX_EFAULT;
 
-	// Determine if an absolute or relative pathname has been provided
-	bool absolute = ((pathname) && (pathname[0] == '/'));
+	//// Verify the flags are valid for this operation
+	//if((flags & ~(LINUX_AT_SYMLINK_NOFOLLOW | LINUX_AT_NO_AUTOMOUNT | LINUX_AT_EMPTY_PATH)) != 0) return -LINUX_EINVAL;
 
-	// Determine the base alias from which to resolve the path
-	FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
-		((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[fd]->Alias);
+	//// Determine if an absolute or relative pathname has been provided
+	//bool absolute = ((pathname) && (pathname[0] == '/'));
 
-	// Base for path resolution must be a directory if LINUX_AT_EMPTY_PATH is not specified
-	if(((flags & LINUX_AT_EMPTY_PATH) != LINUX_AT_EMPTY_PATH) && (base->Node->Type != FileSystem::NodeType::Directory))
-		throw LinuxException(LINUX_ENOTDIR);
+	//// Determine the base alias from which to resolve the path
+	//FileSystem::AliasPtr base = absolute ? context->Process->RootDirectory : 
+	//	((fd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[fd]->Alias);
 
-	// Attempt to resolve the target node
-	auto node = FileSystem::ResolvePath(context->Process->RootDirectory, base, pathname, 
-		(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node;
+	//// Base for path resolution must be a directory if LINUX_AT_EMPTY_PATH is not specified
+	//if(((flags & LINUX_AT_EMPTY_PATH) != LINUX_AT_EMPTY_PATH) && (base->Node->Type != FileSystem::NodeType::Directory))
+	//	throw LinuxException(LINUX_ENOTDIR);
 
-	// Retrieve and convert the status information for the node
-	uapi::stat status = node->Status;
-	buf->st_dev			= status.st_dev;
-	buf->st_ino			= status.st_ino;
-	buf->st_nlink		= static_cast<uint32_t>(status.st_nlink);
-	buf->st_mode		= status.st_mode;
-	buf->st_uid			= status.st_uid;
-	buf->st_gid			= status.st_gid;
-	buf->st_rdev		= status.st_rdev;
-	buf->st_size		= status.st_size;
-	buf->st_blksize		= static_cast<uint32_t>(status.st_blksize);
-	buf->st_blocks		= status.st_blocks;
-	buf->st_atime		= convert<linux_timespec32>(status.st_atime);
-	buf->st_mtime		= convert<linux_timespec32>(status.st_mtime);
-	buf->st_ctime		= convert<linux_timespec32>(status.st_ctime);
+	//// Attempt to resolve the target node
+	//auto node = FileSystem::ResolvePath(context->Process->RootDirectory, base, pathname, 
+	//	(flags & LINUX_AT_SYMLINK_NOFOLLOW) ? LINUX_O_NOFOLLOW : 0)->Node;
 
-	return 0;
+	//// Retrieve and convert the status information for the node
+	//uapi::stat status = node->Status;
+	//buf->st_dev			= status.st_dev;
+	//buf->st_ino			= status.st_ino;
+	//buf->st_nlink		= static_cast<uint32_t>(status.st_nlink);
+	//buf->st_mode		= status.st_mode;
+	//buf->st_uid			= status.st_uid;
+	//buf->st_gid			= status.st_gid;
+	//buf->st_rdev		= status.st_rdev;
+	//buf->st_size		= status.st_size;
+	//buf->st_blksize		= static_cast<uint32_t>(status.st_blksize);
+	//buf->st_blocks		= status.st_blocks;
+	//buf->st_atime		= convert<linux_timespec32>(status.st_atime);
+	//buf->st_mtime		= convert<linux_timespec32>(status.st_mtime);
+	//buf->st_ctime		= convert<linux_timespec32>(status.st_ctime);
+
+	//return 0;
 }
 
 // sys32_fstatat64

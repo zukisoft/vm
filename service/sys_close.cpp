@@ -40,8 +40,10 @@
 
 uapi::long_t sys_close(const Context* context, int fd)
 {
-	context->Process->RemoveHandle(fd);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//context->Process->RemoveHandle(fd);
+	//return 0;
 }
 
 // sys32_close

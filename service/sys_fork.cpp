@@ -42,8 +42,10 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 
 uapi::long_t sys_fork(const Context* context, void* taskstate, size_t taskstatelen)
 {
-	// sys_fork is equivalent to sys_clone(SIGCHLD)
-	return sys_clone(context, taskstate, taskstatelen, LINUX_SIGCHLD, nullptr, nullptr, nullptr);
+	return -LINUX_ENOSYS;
+
+	//// sys_fork is equivalent to sys_clone(SIGCHLD)
+	//return sys_clone(context, taskstate, taskstatelen, LINUX_SIGCHLD, nullptr, nullptr, nullptr);
 }
 
 // sys32_fork

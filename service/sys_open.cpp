@@ -43,8 +43,10 @@ uapi::long_t sys_openat(const Context* context, int fd, const uapi::char_t* path
 
 uapi::long_t sys_open(const Context* context, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
-	// sys_open() is equivalent to sys_openat(AT_FDCWD)
-	return sys_openat(context, LINUX_AT_FDCWD, pathname, flags, mode);
+	return -LINUX_ENOSYS;
+
+	//// sys_open() is equivalent to sys_openat(AT_FDCWD)
+	//return sys_openat(context, LINUX_AT_FDCWD, pathname, flags, mode);
 }
 
 // sys32_open

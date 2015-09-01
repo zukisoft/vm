@@ -43,7 +43,9 @@
 
 uapi::long_t sys_write(const Context* context, int fd, const void* buf, size_t count)
 {
-	return context->Process->Handle[fd]->Write(buf, count); 
+	return -LINUX_ENOSYS;
+
+	//return context->Process->Handle[fd]->Write(buf, count); 
 }
 
 // sys32_write

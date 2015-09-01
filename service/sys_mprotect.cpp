@@ -42,8 +42,10 @@
 
 uapi::long_t sys_mprotect(const Context* context, void* address, uapi::size_t length, int prot)
 {
-	context->Process->ProtectMemory(address, length, prot);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//context->Process->ProtectMemory(address, length, prot);
+	//return 0;
 }
 
 // sys32_mprotect

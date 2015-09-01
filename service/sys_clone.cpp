@@ -45,49 +45,51 @@
 
 uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstatelen, uint32_t flags, uapi::pid_t* ptid, uapi::pid_t* ctid, uapi::user_desc32* tls_val)
 {
-	// NOTE: GLIBC sends in CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD for flags when fork(3) is called
-	// (0x01200011)
+	return -LINUX_ENOSYS;
 
-	auto parent = context->Process;
-	auto child = context->_VmOld->CloneProcess(parent, flags, taskstate, taskstatelen);
+	//// NOTE: GLIBC sends in CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD for flags when fork(3) is called
+	//// (0x01200011)
 
-	//
-	// TODO: CHILD IS RUNNING; EVERYTHING BELOW IS A RACE CONDITION
-	//
+	//auto parent = context->Process;
+	//auto child = context->_VmOld->CloneProcess(parent, flags, taskstate, taskstatelen);
 
-	// Acquire the process identifier from the newly created process object instance
-	uapi::pid_t newpid = child->ProcessId;
+	////
+	//// TODO: CHILD IS RUNNING; EVERYTHING BELOW IS A RACE CONDITION
+	////
 
-	// CLONE_PARENT_SETTID
-	//
-	// Write the new process/thread identifier to the specified location in both the parent and child
-	if((flags & LINUX_CLONE_PARENT_SETTID) && ptid) {
+	//// Acquire the process identifier from the newly created process object instance
+	//uapi::pid_t newpid = child->ProcessId;
 
-		parent->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
-		child->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
-	}
+	//// CLONE_PARENT_SETTID
+	////
+	//// Write the new process/thread identifier to the specified location in both the parent and child
+	//if((flags & LINUX_CLONE_PARENT_SETTID) && ptid) {
 
-	// CLONE_CHILD_SETTID
-	//
-	// Write the new process/thread identifier to the specified location in the child's address space
-	if((flags & LINUX_CLONE_CHILD_SETTID) && ctid) child->WriteMemory(ctid, &newpid, sizeof(uapi::pid_t));
+	//	parent->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
+	//	child->WriteMemory(ptid, &newpid, sizeof(uapi::pid_t));
+	//}
 
-	// CLONE_CHILD_CLEARTID
-	//
-	// Sets a pointer to the thread id in the child process.  See set_tid_address(2) for more details.
-	auto thread = child->Thread[newpid];
-	if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) thread->ClearThreadIdOnExit = reinterpret_cast<void*>(ctid);
+	//// CLONE_CHILD_SETTID
+	////
+	//// Write the new process/thread identifier to the specified location in the child's address space
+	//if((flags & LINUX_CLONE_CHILD_SETTID) && ctid) child->WriteMemory(ctid, &newpid, sizeof(uapi::pid_t));
 
-	// CLONE_SETTLS
-	//
-	// Indicates that a new thread-local storage descriptor should be set for the child process/thread
-	if((flags & LINUX_CLONE_SETTLS) && tls_val) child->SetLocalDescriptor(tls_val);
+	//// CLONE_CHILD_CLEARTID
+	////
+	//// Sets a pointer to the thread id in the child process.  See set_tid_address(2) for more details.
+	//auto thread = child->Thread[newpid];
+	//if((flags & LINUX_CLONE_CHILD_CLEARTID) && ctid) thread->ClearThreadIdOnExit = reinterpret_cast<void*>(ctid);
 
-	// Start the child process -- NOTE thread does not exist yet if done here, CLEARTID above will crash
-	//child->Start();
+	//// CLONE_SETTLS
+	////
+	//// Indicates that a new thread-local storage descriptor should be set for the child process/thread
+	//if((flags & LINUX_CLONE_SETTLS) && tls_val) child->SetLocalDescriptor(tls_val);
 
-	// The calling process gets the new PID as the result
-	return static_cast<uapi::long_t>(newpid);
+	//// Start the child process -- NOTE thread does not exist yet if done here, CLEARTID above will crash
+	////child->Start();
+
+	//// The calling process gets the new PID as the result
+	//return static_cast<uapi::long_t>(newpid);
 }
 
 // sys32_clone

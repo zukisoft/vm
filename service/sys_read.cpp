@@ -43,7 +43,9 @@
 
 uapi::long_t sys_read(const Context* context, int fd, void* buf, size_t count)
 {
-	return context->Process->Handle[fd]->Read(buf, count); 
+	return -LINUX_ENOSYS;
+
+	//return context->Process->Handle[fd]->Read(buf, count); 
 }
 
 // sys32_read

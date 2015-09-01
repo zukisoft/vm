@@ -41,8 +41,10 @@
 
 uapi::long_t sys_sigaltstack(const Context* context, const uapi::stack_t* newstack, uapi::stack_t* oldstack)
 {
-	context->Thread->SetSignalAlternateStack(newstack, oldstack);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//context->Thread->SetSignalAlternateStack(newstack, oldstack);
+	//return 0;
 }
 
 // sys32_sigaltstack

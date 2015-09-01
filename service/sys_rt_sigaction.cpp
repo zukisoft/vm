@@ -43,17 +43,19 @@
 
 uapi::long_t sys_rt_sigaction(const Context* context, int signal, const uapi::sigaction* action, uapi::sigaction* oldaction, size_t sigsetsize)
 {
-	// The RPC marshaler would not have been able to deal with a mask longer than defined in the structure
-	if(sigsetsize != sizeof(uapi::sigset_t)) return -LINUX_EINVAL;
+	return -LINUX_ENOSYS;
 
-	// SIGKILL and SIGSTOP cannot be changed, can also never exceed __NSIG
-	if((signal == LINUX_SIGKILL) || (signal == LINUX_SIGSTOP) || (signal > LINUX__NSIG)) return -LINUX_EINVAL;
+	//// The RPC marshaler would not have been able to deal with a mask longer than defined in the structure
+	//if(sigsetsize != sizeof(uapi::sigset_t)) return -LINUX_EINVAL;
 
-	// SA_SIGINFO is not currently supported (may never need to be on x86/x86-64)
-	if(action && (action->sa_flags & LINUX_SA_SIGINFO)) return -LINUX_EINVAL;
+	//// SIGKILL and SIGSTOP cannot be changed, can also never exceed __NSIG
+	//if((signal == LINUX_SIGKILL) || (signal == LINUX_SIGSTOP) || (signal > LINUX__NSIG)) return -LINUX_EINVAL;
 
-	context->Process->SetSignalAction(signal, action, oldaction);
-	return 0;
+	//// SA_SIGINFO is not currently supported (may never need to be on x86/x86-64)
+	//if(action && (action->sa_flags & LINUX_SA_SIGINFO)) return -LINUX_EINVAL;
+
+	//context->Process->SetSignalAction(signal, action, oldaction);
+	//return 0;
 }
 
 // sys32_rt_sigaction

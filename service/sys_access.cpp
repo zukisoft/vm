@@ -42,8 +42,9 @@ uapi::long_t sys_faccessat(const Context* context, int dirfd, const uapi::char_t
 
 uapi::long_t sys_access(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
-	// sys_access() is equivalent to sys_faccessat(AT_FDCWD)
-	return sys_faccessat(context, LINUX_AT_FDCWD, pathname, mode, 0);
+	return -LINUX_ENOSYS;
+	//// sys_access() is equivalent to sys_faccessat(AT_FDCWD)
+	//return sys_faccessat(context, LINUX_AT_FDCWD, pathname, mode, 0);
 }
 
 // sys32_access

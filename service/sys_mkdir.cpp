@@ -42,8 +42,10 @@ uapi::long_t sys_mkdirat(const Context* context, int fd, const uapi::char_t* pat
 
 uapi::long_t sys_mkdir(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
-	// sys_mkdir() is equivalent to sys_mkdirat(AT_FDCWD)
-	return sys_mkdirat(context, LINUX_AT_FDCWD, pathname, mode);
+	return -LINUX_ENOSYS;
+
+	//// sys_mkdir() is equivalent to sys_mkdirat(AT_FDCWD)
+	//return sys_mkdirat(context, LINUX_AT_FDCWD, pathname, mode);
 }
 
 // sys32_mkdir

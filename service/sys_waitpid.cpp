@@ -43,8 +43,10 @@ uapi::long_t sys_wait4(const Context* context, uapi::pid_t pid, int* status, int
 
 uapi::long_t sys_waitpid(const Context* context, uapi::pid_t pid, int* status, int options)
 {
-	// sys_waitpid is equivalent to sys_wait4(pid, status, options, nullptr)
-	return sys_wait4(context, pid, status, options, nullptr);
+	return -LINUX_ENOSYS;
+
+	//// sys_waitpid is equivalent to sys_wait4(pid, status, options, nullptr)
+	//return sys_wait4(context, pid, status, options, nullptr);
 }
 
 // sys32_waitpid

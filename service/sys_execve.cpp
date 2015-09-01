@@ -42,9 +42,11 @@
 
 uapi::long_t sys_execve(const Context* context, const uapi::char_t* filename, const uapi::char_t** argv, const uapi::char_t** envp)
 {
-	// Replace the process with the specified image
-	context->Process->Execute(filename, argv, envp);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//// Replace the process with the specified image
+	//context->Process->Execute(filename, argv, envp);
+	//return 0;
 }
 
 // sys32_execve

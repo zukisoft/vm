@@ -41,8 +41,10 @@
 
 uapi::long_t sys_munmap(const Context* context, void* address, uapi::size_t length)
 {
-	context->Process->UnmapMemory(address, length);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//context->Process->UnmapMemory(address, length);
+	//return 0;
 }
 
 // sys32_munmap

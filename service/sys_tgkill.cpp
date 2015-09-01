@@ -39,12 +39,14 @@
 
 uapi::long_t sys_tgkill(const Context* context, uapi::pid_t tgid, uapi::pid_t pid, int sig)
 {
-	(context);
-	(tgid);
-	(pid);
-	(sig);
+	return -LINUX_ENOSYS;
 
-	return 0;
+	//(context);
+	//(tgid);
+	//(pid);
+	//(sig);
+
+	//return 0;
 }
 
 // sys32_tgkill

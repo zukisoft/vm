@@ -48,11 +48,13 @@ uapi::long_t sys_mmap(const Context* context, void* address, size_t length, int 
 
 uapi::long_t sys_old_mmap(const Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t offset)
 {
-	// Compatibility function; the offset must be a multiple of the system page size
-	if(offset & (SystemInformation::PageSize - 1)) return -LINUX_EINVAL;
+	return -LINUX_ENOSYS;
 
-	// sys_old_mmap() is equivalent to sys_mmap() with the offset in pages rather than bytes
-	return sys_mmap(context, address, length, protection, flags, fd, offset / SystemInformation::PageSize);
+	//// Compatibility function; the offset must be a multiple of the system page size
+	//if(offset & (SystemInformation::PageSize - 1)) return -LINUX_EINVAL;
+
+	//// sys_old_mmap() is equivalent to sys_mmap() with the offset in pages rather than bytes
+	//return sys_mmap(context, address, length, protection, flags, fd, offset / SystemInformation::PageSize);
 }
 
 // sys32_old_mmap

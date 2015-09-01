@@ -40,9 +40,11 @@ uapi::long_t sys_rt_sigreturn(const Context* context);
 
 uapi::long_t sys_sigreturn(const Context* context)
 {
-	// Currently this system call is directly equivalent to sys_rt_sigreturn
-	// TODO: find out if this is indeed the case!
-	return sys_rt_sigreturn(context);
+	return -LINUX_ENOSYS;
+
+	//// Currently this system call is directly equivalent to sys_rt_sigreturn
+	//// TODO: find out if this is indeed the case!
+	//return sys_rt_sigreturn(context);
 }
 
 // sys32_sigreturn

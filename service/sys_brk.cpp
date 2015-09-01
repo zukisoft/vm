@@ -40,8 +40,9 @@
 
 uapi::long_t sys_brk(const Context* context, void* brk)
 {
-	// Set the process program break and return the updated address
-	return reinterpret_cast<uapi::long_t>(context->Process->SetProgramBreak(brk));
+	return -LINUX_ENOSYS;
+	//// Set the process program break and return the updated address
+	//return reinterpret_cast<uapi::long_t>(context->Process->SetProgramBreak(brk));
 }
 
 // sys32_brk

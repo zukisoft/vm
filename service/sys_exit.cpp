@@ -40,9 +40,11 @@
 
 uapi::long_t sys_exit(const Context* context, int exitcode)
 {
-	// Thread is terminating normally, inform the Process instance
-	context->Process->ExitThread(context->Thread->ThreadId, exitcode);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//// Thread is terminating normally, inform the Process instance
+	//context->Process->ExitThread(context->Thread->ThreadId, exitcode);
+	//return 0;
 }
 
 // sys32_exit

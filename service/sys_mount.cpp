@@ -45,22 +45,24 @@
 
 uapi::long_t sys_mount(const Context* context, const uapi::char_t* source, const uapi::char_t* target, const uapi::char_t* filesystem, uint32_t flags, const void* data)
 {
-	// Custom mounting data that needs to be copied from the client process
-	if(data != nullptr) {
+	return -LINUX_ENOSYS;
 
-		// The way the data argument appears to work in the Linux kernel without a known buffer size is that
-		// it will try to copy out up to PAGE_SIZE bytes of data and just stop if it encounters an issue
-		HeapBuffer<uint8_t> datapage(SystemInformation::PageSize);
-		size_t datalen = context->Process->ReadMemory(data, &datapage, datapage.Size);
+	//// Custom mounting data that needs to be copied from the client process
+	//if(data != nullptr) {
 
-		// Invoke the _VmOld with the custom mounting data read from the process
-		context->_VmOld->MountFileSystem(source, target, filesystem, flags, &datapage, datalen);
-	}
+	//	// The way the data argument appears to work in the Linux kernel without a known buffer size is that
+	//	// it will try to copy out up to PAGE_SIZE bytes of data and just stop if it encounters an issue
+	//	HeapBuffer<uint8_t> datapage(SystemInformation::PageSize);
+	//	size_t datalen = context->Process->ReadMemory(data, &datapage, datapage.Size);
 
-	// No custom mounting data, just invoke the _VmOld without it
-	else context->_VmOld->MountFileSystem(source, target, filesystem, flags, nullptr, 0);
+	//	// Invoke the _VmOld with the custom mounting data read from the process
+	//	context->_VmOld->MountFileSystem(source, target, filesystem, flags, &datapage, datalen);
+	//}
 
-	return 0;
+	//// No custom mounting data, just invoke the _VmOld without it
+	//else context->_VmOld->MountFileSystem(source, target, filesystem, flags, nullptr, 0);
+
+	//return 0;
 }
 
 // sys32_mount

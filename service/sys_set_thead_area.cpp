@@ -40,9 +40,11 @@
 
 uapi::long_t sys_set_thread_area(const Context* context, uapi::user_desc32* u_info)
 {
-	// Thread-local storage is implemented through an emulated local descriptor table
-	context->Process->SetLocalDescriptor(u_info);
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//// Thread-local storage is implemented through an emulated local descriptor table
+	//context->Process->SetLocalDescriptor(u_info);
+	//return 0;
 }
 
 // sys32_set_thread_area

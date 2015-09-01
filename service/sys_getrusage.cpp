@@ -41,24 +41,26 @@
 
 uapi::long_t sys_getrusage(const Context* context, int who, uapi::rusage* rusage)
 {
-	switch(who) {
+	return -LINUX_ENOSYS;
 
-		// RUSAGE_SELF, RUSAGE_CHILDREN --> Process
-		case LINUX_RUSAGE_SELF:
-		case LINUX_RUSAGE_CHILDREN:
-			context->Process->GetResourceUsage(who, rusage);
-			break;
+	//switch(who) {
 
-		// RUSAGE_THREAD --> Thread
-		case LINUX_RUSAGE_THREAD:
-			context->Thread->GetResourceUsage(who, rusage);
-			break;
+	//	// RUSAGE_SELF, RUSAGE_CHILDREN --> Process
+	//	case LINUX_RUSAGE_SELF:
+	//	case LINUX_RUSAGE_CHILDREN:
+	//		context->Process->GetResourceUsage(who, rusage);
+	//		break;
 
-		// Anything else --> EINVAL
-		default: throw LinuxException(LINUX_EINVAL);
-	}
+	//	// RUSAGE_THREAD --> Thread
+	//	case LINUX_RUSAGE_THREAD:
+	//		context->Thread->GetResourceUsage(who, rusage);
+	//		break;
 
-	return 0;
+	//	// Anything else --> EINVAL
+	//	default: throw LinuxException(LINUX_EINVAL);
+	//}
+
+	//return 0;
 }
 
 // sys32_getrusage

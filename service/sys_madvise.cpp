@@ -39,14 +39,15 @@
 
 uapi::long_t sys_madvise(const Context* context, void* address, size_t length, int advice)
 {
-
 	UNREFERENCED_PARAMETER(context);
 	UNREFERENCED_PARAMETER(address);
 	UNREFERENCED_PARAMETER(length);
 	UNREFERENCED_PARAMETER(advice);
 	
-	// This system call is currently a no-op
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//// This system call is currently a no-op
+	//return 0;
 }
 
 // sys32_madvise

@@ -40,8 +40,10 @@
 
 uapi::long_t sys_set_tid_address(const Context* context, void* tidptr)
 {
-	context->Thread->ClearThreadIdOnExit = tidptr;
-	return context->Thread->ThreadId;
+	return -LINUX_ENOSYS;
+
+	//context->Thread->ClearThreadIdOnExit = tidptr;
+	//return context->Thread->ThreadId;
 }
 
 // sys32_set_tid_address

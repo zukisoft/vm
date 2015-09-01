@@ -39,7 +39,9 @@
 
 uapi::long_t sys_getppid(const Context* context)
 {
-	return context->Process->Parent->ProcessId;
+	return -LINUX_ENOSYS;
+
+	//return context->Process->Parent->ProcessId;
 }
 
 // sys32_getppid

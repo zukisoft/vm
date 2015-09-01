@@ -42,12 +42,14 @@
 
 uapi::long_t sys_getcwd(const Context* context, uapi::char_t* buf, size_t size)
 {
-	if(buf == nullptr) return -LINUX_EFAULT;
+	return -LINUX_ENOSYS;
 
-	// Ask the virtual machine instance to resolve the absolute path to the working directory
-	FileSystem::GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
+	//if(buf == nullptr) return -LINUX_EFAULT;
 
-	return 0;
+	//// Ask the virtual machine instance to resolve the absolute path to the working directory
+	//FileSystem::GetAbsolutePath(context->Process->RootDirectory, context->Process->WorkingDirectory, buf, size);
+
+	//return 0;
 }
 
 // sys32_readlink

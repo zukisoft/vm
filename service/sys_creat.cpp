@@ -42,8 +42,10 @@ uapi::long_t sys_openat(const Context* context, int fd, const uapi::char_t* path
 
 uapi::long_t sys_creat(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode)
 {
-	// sys_creat() is equivalent to sys_openat(AT_FDCWD) with a fixed set of flags
-	return sys_openat(context, LINUX_AT_FDCWD, pathname, LINUX_O_CREAT | LINUX_O_WRONLY | LINUX_O_TRUNC, mode);
+	return -LINUX_ENOSYS;
+
+	//// sys_creat() is equivalent to sys_openat(AT_FDCWD) with a fixed set of flags
+	//return sys_openat(context, LINUX_AT_FDCWD, pathname, LINUX_O_CREAT | LINUX_O_WRONLY | LINUX_O_TRUNC, mode);
 }
 
 // sys32_creat

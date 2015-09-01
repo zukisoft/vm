@@ -40,12 +40,14 @@
 
 uapi::long_t sys_umask(const Context* context, uapi::mode_t mask)
 {
-	// Get the previously set UMASK and apply the new one
-	uapi::mode_t previous = context->Process->FileCreationModeMask;
-	context->Process->FileCreationModeMask = mask;
+	return -LINUX_ENOSYS;
 
-	// Return the previous UMASK bitmask as the result from this system call
-	return static_cast<uapi::long_t>(previous);
+	//// Get the previously set UMASK and apply the new one
+	//uapi::mode_t previous = context->Process->FileCreationModeMask;
+	//context->Process->FileCreationModeMask = mask;
+
+	//// Return the previous UMASK bitmask as the result from this system call
+	//return static_cast<uapi::long_t>(previous);
 }
 
 // sys32_umask

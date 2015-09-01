@@ -43,8 +43,10 @@ uapi::long_t sys_mknodat(const Context* context, int fd, const uapi::char_t* pat
 
 uapi::long_t sys_mknod(const Context* context, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
 {
-	// sys_mknod() is equivalent to sys_mknodat(AT_FDCWD)
-	return sys_mknodat(context, LINUX_AT_FDCWD, pathname, mode, device);
+	return -LINUX_ENOSYS;
+
+	//// sys_mknod() is equivalent to sys_mknodat(AT_FDCWD)
+	//return sys_mknodat(context, LINUX_AT_FDCWD, pathname, mode, device);
 }
 
 // sys32_mknod

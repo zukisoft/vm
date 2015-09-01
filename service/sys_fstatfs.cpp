@@ -42,10 +42,12 @@
 
 uapi::long_t sys_fstatfs(const Context* context, int fd, uapi::statfs* buf)
 {
-	if(buf == nullptr) return -LINUX_EFAULT;
-	*buf = context->Process->Handle[fd]->Node->FileSystem->Status;
+	return -LINUX_ENOSYS;
 
-	return 0;
+	//if(buf == nullptr) return -LINUX_EFAULT;
+	//*buf = context->Process->Handle[fd]->Node->FileSystem->Status;
+
+	//return 0;
 }
 
 // sys32_fstatfs

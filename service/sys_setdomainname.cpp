@@ -41,12 +41,14 @@
 
 uapi::long_t sys_setdomainname(const Context* context, const uapi::char_t* name, size_t len)
 {
-	if(name == nullptr) return -LINUX_EFAULT;
-	if(len == 0) return -LINUX_EINVAL;
+	return -LINUX_ENOSYS;
 
-	context->_VmOld->SetProperty(_VmOld::Properties::DomainName, name, len); 
+	//if(name == nullptr) return -LINUX_EFAULT;
+	//if(len == 0) return -LINUX_EINVAL;
 
-	return 0;
+	//context->_VmOld->SetProperty(_VmOld::Properties::DomainName, name, len); 
+
+	//return 0;
 }
 
 // sys32_setdomainname

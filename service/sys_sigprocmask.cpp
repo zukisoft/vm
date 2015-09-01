@@ -43,19 +43,21 @@ uapi::long_t sys_rt_sigprocmask(const Context* context, int how, const uapi::sig
 
 uapi::long_t sys_sigprocmask(const Context* context, int how, const uapi::old_sigset_t* newmask, uapi::old_sigset_t* oldmask)
 {
-	// Watch out for sign-extension here, shouldn't happen as long as sigset_t and old_sigset_t are unsigned
-	static_assert(std::is_unsigned<uapi::sigset_t>::value && std::is_unsigned<uapi::old_sigset_t>::value, "signal mask data types must be unsigned to prevent sign-extension during conversion");
+	return -LINUX_ENOSYS;
 
-	uapi::sigset_t convertnew, convertold;			// Compatible signal mask values
-	if(newmask) convertnew = *newmask;				// Convert the input mask value
+	//// Watch out for sign-extension here, shouldn't happen as long as sigset_t and old_sigset_t are unsigned
+	//static_assert(std::is_unsigned<uapi::sigset_t>::value && std::is_unsigned<uapi::old_sigset_t>::value, "signal mask data types must be unsigned to prevent sign-extension during conversion");
 
-	// Invoke sys_rt_sigprocmask to execute the operation
-	uapi::long_t result = sys_rt_sigprocmask(context, how, (newmask) ? &convertnew : nullptr, &convertold);
+	//uapi::sigset_t convertnew, convertold;			// Compatible signal mask values
+	//if(newmask) convertnew = *newmask;				// Convert the input mask value
 
-	// If the operation succeeded and the caller wants the old mask, trim it down and return it
-	if((result == 0) && (oldmask)) *oldmask = (convertold & 0xFFFFFFFF);
+	//// Invoke sys_rt_sigprocmask to execute the operation
+	//uapi::long_t result = sys_rt_sigprocmask(context, how, (newmask) ? &convertnew : nullptr, &convertold);
 
-	return result;
+	//// If the operation succeeded and the caller wants the old mask, trim it down and return it
+	//if((result == 0) && (oldmask)) *oldmask = (convertold & 0xFFFFFFFF);
+
+	//return result;
 }
 
 // sys32_sigprocmask

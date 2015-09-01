@@ -36,9 +36,11 @@
 
 uapi::long_t sys_getuid(const Context* context)
 {
-	(context);
-	// TODO: hard-code to root for now
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//(context);
+	//// TODO: hard-code to root for now
+	//return 0;
 }
 
 // sys32_getuid

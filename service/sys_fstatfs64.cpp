@@ -32,36 +32,38 @@ uapi::long_t sys_fstatfs(const Context* context, int fd, uapi::statfs* buf);
 //
 sys32_long_t sys32_fstatfs64(sys32_context_t context, sys32_int_t fd, sys32_size_t length, linux_statfs3264* buf)
 {
-	uapi::statfs		stats;				// Generic statfs structure (64-bit fields)
+	return -LINUX_ENOSYS;
 
-	// Only the statfs3264 structure is supported by this system call
-	if(buf == nullptr) return -LINUX_EFAULT;
-	if(length != sizeof(uapi::statfs3264)) return -LINUX_EFAULT;
+	//uapi::statfs		stats;				// Generic statfs structure (64-bit fields)
 
-	// Invoke the generic version of the system call using the local structure
-	sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_fstatfs, context, fd, &stats));
+	//// Only the statfs3264 structure is supported by this system call
+	//if(buf == nullptr) return -LINUX_EFAULT;
+	//if(length != sizeof(uapi::statfs3264)) return -LINUX_EFAULT;
 
-	// If sys_fstatfs() was successful, convert the data from the generic structure into the compatible one
-	if(result >= 0) {
+	//// Invoke the generic version of the system call using the local structure
+	//sys32_long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_fstatfs, context, fd, &stats));
 
-		buf->f_type		= static_cast<int32_t>(stats.f_type);
-		buf->f_bsize	= static_cast<int32_t>(stats.f_bsize);
-		buf->f_blocks	= stats.f_blocks;
-		buf->f_bfree	= stats.f_bfree;
-		buf->f_bavail	= stats.f_bavail;
-		buf->f_files	= stats.f_files;
-		buf->f_ffree	= stats.f_ffree;
-		buf->f_fsid		= stats.f_fsid;
-		buf->f_namelen	= static_cast<int32_t>(stats.f_namelen);
-		buf->f_frsize	= static_cast<int32_t>(stats.f_frsize);
-		buf->f_flags	= static_cast<int32_t>(stats.f_flags);
-		buf->f_spare[0] = static_cast<int32_t>(stats.f_spare[0]);
-		buf->f_spare[1] = static_cast<int32_t>(stats.f_spare[1]);
-		buf->f_spare[2] = static_cast<int32_t>(stats.f_spare[2]);
-		buf->f_spare[3] = static_cast<int32_t>(stats.f_spare[3]);
-	}
+	//// If sys_fstatfs() was successful, convert the data from the generic structure into the compatible one
+	//if(result >= 0) {
 
-	return result;
+	//	buf->f_type		= static_cast<int32_t>(stats.f_type);
+	//	buf->f_bsize	= static_cast<int32_t>(stats.f_bsize);
+	//	buf->f_blocks	= stats.f_blocks;
+	//	buf->f_bfree	= stats.f_bfree;
+	//	buf->f_bavail	= stats.f_bavail;
+	//	buf->f_files	= stats.f_files;
+	//	buf->f_ffree	= stats.f_ffree;
+	//	buf->f_fsid		= stats.f_fsid;
+	//	buf->f_namelen	= static_cast<int32_t>(stats.f_namelen);
+	//	buf->f_frsize	= static_cast<int32_t>(stats.f_frsize);
+	//	buf->f_flags	= static_cast<int32_t>(stats.f_flags);
+	//	buf->f_spare[0] = static_cast<int32_t>(stats.f_spare[0]);
+	//	buf->f_spare[1] = static_cast<int32_t>(stats.f_spare[1]);
+	//	buf->f_spare[2] = static_cast<int32_t>(stats.f_spare[2]);
+	//	buf->f_spare[3] = static_cast<int32_t>(stats.f_spare[3]);
+	//}
+
+	//return result;
 }
 
 //---------------------------------------------------------------------------

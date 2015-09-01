@@ -42,8 +42,10 @@ uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* p
 
 uapi::long_t sys_lstat64(const Context* context, const uapi::char_t* pathname, linux_stat3264* buf)
 {
-	// sys_lstat64 is equivalent to sys_fstatat64(LINUX_AT_FDCWD, LINUX_AT_SYMLINK_NOFOLLOW)
-	return sys_fstatat64(context, LINUX_AT_FDCWD, pathname, buf, LINUX_AT_SYMLINK_NOFOLLOW);
+	return -LINUX_ENOSYS;
+
+	//// sys_lstat64 is equivalent to sys_fstatat64(LINUX_AT_FDCWD, LINUX_AT_SYMLINK_NOFOLLOW)
+	//return sys_fstatat64(context, LINUX_AT_FDCWD, pathname, buf, LINUX_AT_SYMLINK_NOFOLLOW);
 }
 
 // sys32_lstat64

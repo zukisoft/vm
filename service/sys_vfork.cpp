@@ -42,8 +42,10 @@ uapi::long_t sys_clone(const Context* context, void* taskstate, size_t taskstate
 
 uapi::long_t sys_vfork(const Context* context, void* taskstate, size_t taskstatelen)
 {
-	// sys_vfork is equivalent to sys_clone(CLONE_VFORK | CLONE_VM | SIGCHLD)
-	return sys_clone(context, taskstate, taskstatelen, LINUX_CLONE_VFORK | LINUX_CLONE_VM | LINUX_SIGCHLD, nullptr, nullptr, nullptr);
+	return -LINUX_ENOSYS;
+
+	//// sys_vfork is equivalent to sys_clone(CLONE_VFORK | CLONE_VM | SIGCHLD)
+	//return sys_clone(context, taskstate, taskstatelen, LINUX_CLONE_VFORK | LINUX_CLONE_VM | LINUX_SIGCHLD, nullptr, nullptr, nullptr);
 }
 
 // sys32_vfork

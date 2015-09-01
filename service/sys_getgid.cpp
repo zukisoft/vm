@@ -36,10 +36,12 @@
 
 uapi::long_t sys_getgid(const Context* context)
 {
-	(context);
+	return -LINUX_ENOSYS;
 
-	// TODO: hard-code to root for now
-	return 0;
+	//(context);
+
+	//// TODO: hard-code to root for now
+	//return 0;
 }
 
 // sys32_getgid

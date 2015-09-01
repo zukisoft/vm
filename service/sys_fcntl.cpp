@@ -42,102 +42,104 @@
 
 uapi::long_t sys_fcntl(const Context* context, int fd, int cmd, void* arg)
 {
-	(arg);
+	return -LINUX_ENOSYS;
 
-	auto handle = context->Process->Handle[fd];
+	//(arg);
 
-	// Commands are listed in the order described in the man page, not numerically
-	switch(cmd) {
+	//auto handle = context->Process->Handle[fd];
 
-		//
-		// FILE DESCRIPTOR DUPLICATION
-		//
+	//// Commands are listed in the order described in the man page, not numerically
+	//switch(cmd) {
 
-		// F_DUPFD - Duplicate the handle using the original flags
-		case LINUX_F_DUPFD:	
-			return context->Process->AddHandle(handle->Duplicate(handle->Flags));
+	//	//
+	//	// FILE DESCRIPTOR DUPLICATION
+	//	//
 
-		// F_DUPFD_CLOEXEC - Duplicate the handle with O_CLOEXEC specified as well
-		case LINUX_F_DUPFD_CLOEXEC:
-			return context->Process->AddHandle(handle->Duplicate(handle->Flags | LINUX_O_CLOEXEC));
+	//	// F_DUPFD - Duplicate the handle using the original flags
+	//	case LINUX_F_DUPFD:	
+	//		return context->Process->AddHandle(handle->Duplicate(handle->Flags));
 
-		//
-		// FILE DESCRIPTOR FLAGS
-		//
+	//	// F_DUPFD_CLOEXEC - Duplicate the handle with O_CLOEXEC specified as well
+	//	case LINUX_F_DUPFD_CLOEXEC:
+	//		return context->Process->AddHandle(handle->Duplicate(handle->Flags | LINUX_O_CLOEXEC));
 
-		// F_GETFD - Get the file descriptor flags (only close-on-exec is supported)
-		case LINUX_F_GETFD:
-			return handle->CloseOnExec ? LINUX_FD_CLOEXEC : 0;
+	//	//
+	//	// FILE DESCRIPTOR FLAGS
+	//	//
 
-		// F_SETFD - Set the file descriptor flags (only close-on-exec is supported)
-		case LINUX_F_SETFD:
-			handle->CloseOnExec = (reinterpret_cast<uapi::long_t>(arg) == LINUX_FD_CLOEXEC);
-			return 0;
+	//	// F_GETFD - Get the file descriptor flags (only close-on-exec is supported)
+	//	case LINUX_F_GETFD:
+	//		return handle->CloseOnExec ? LINUX_FD_CLOEXEC : 0;
 
-		//
-		// FILE STATUS FLAGS
-		//
+	//	// F_SETFD - Set the file descriptor flags (only close-on-exec is supported)
+	//	case LINUX_F_SETFD:
+	//		handle->CloseOnExec = (reinterpret_cast<uapi::long_t>(arg) == LINUX_FD_CLOEXEC);
+	//		return 0;
 
-		// F_GETFL
-		// F_SETFL
+	//	//
+	//	// FILE STATUS FLAGS
+	//	//
 
-		//
-		// ADVISORY RECORD LOCKING
-		//
+	//	// F_GETFL
+	//	// F_SETFL
 
-		// F_SETLK
-		// F_SETLKW
-		// F_GETLK
+	//	//
+	//	// ADVISORY RECORD LOCKING
+	//	//
 
-		//
-		// OPEN FILE DESCRIPTOR LOCKS
-		//
+	//	// F_SETLK
+	//	// F_SETLKW
+	//	// F_GETLK
 
-		// F_OFD_SETLK
-		// F_OFD_SETLKW
-		// F_OFD_GETLK
+	//	//
+	//	// OPEN FILE DESCRIPTOR LOCKS
+	//	//
 
-		//
-		// MANDATORY LOCKING
-		// (Do not support?)
+	//	// F_OFD_SETLK
+	//	// F_OFD_SETLKW
+	//	// F_OFD_GETLK
 
-		//
-		// MANAGING SIGNALS
-		//
+	//	//
+	//	// MANDATORY LOCKING
+	//	// (Do not support?)
 
-		// F_GETOWN
-		// F_SETOWN
-		// F_GETOWN_EX
-		// F_SETOWN_EX
-		// F_GETSIG
-		// F_SETSIG
+	//	//
+	//	// MANAGING SIGNALS
+	//	//
 
-		//
-		// LEASES
-		//
+	//	// F_GETOWN
+	//	// F_SETOWN
+	//	// F_GETOWN_EX
+	//	// F_SETOWN_EX
+	//	// F_GETSIG
+	//	// F_SETSIG
 
-		// F_SETLEASE
-		// F_GETLEASE
+	//	//
+	//	// LEASES
+	//	//
 
-		//
-		// FILE AND DIRECTORY CHANGE NOTIFICATION
-		//
+	//	// F_SETLEASE
+	//	// F_GETLEASE
 
-		// F_NOTIFY
+	//	//
+	//	// FILE AND DIRECTORY CHANGE NOTIFICATION
+	//	//
 
-		//
-		// CHANGING THE CAPACITY OF A PIPE
-		//
+	//	// F_NOTIFY
 
-		// F_SETPIPE_SZ
-		// F_GETPIPE_SZ
+	//	//
+	//	// CHANGING THE CAPACITY OF A PIPE
+	//	//
 
-		default:
-			_RPTF1(_CRT_ASSERT, "sys_fcntl: Unknown command %d", cmd);
-			throw LinuxException(LINUX_EINVAL);
-	}
+	//	// F_SETPIPE_SZ
+	//	// F_GETPIPE_SZ
 
-	return -LINUX_EINVAL;
+	//	default:
+	//		_RPTF1(_CRT_ASSERT, "sys_fcntl: Unknown command %d", cmd);
+	//		throw LinuxException(LINUX_EINVAL);
+	//}
+
+	//return -LINUX_EINVAL;
 }
 
 // sys32_fcntl64

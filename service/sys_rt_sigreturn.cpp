@@ -39,8 +39,10 @@
 
 uapi::long_t sys_rt_sigreturn(const Context* context)
 {
-	context->Thread->EndSignal();
-	return 0;
+	return -LINUX_ENOSYS;
+
+	//context->Thread->EndSignal();
+	//return 0;
 }
 
 // sys32_rt_sigreturn

@@ -44,50 +44,52 @@
 
 uapi::long_t sys_mknodat(const Context* context, int dirfd, const uapi::char_t* pathname, uapi::mode_t mode, uapi::dev_t device)
 {
-	// Determine if an absolute or relative pathname has been provided
-	bool absolute = ((pathname) && (pathname[0] == '/'));
+	return -LINUX_ENOSYS;
 
-	// Determine the base alias from which to resolve the path
-	std::shared_ptr<FileSystem::Alias> base = absolute ? context->Process->RootDirectory : 
-		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
+	//// Determine if an absolute or relative pathname has been provided
+	//bool absolute = ((pathname) && (pathname[0] == '/'));
 
-	// Apply the process' current umask to the provided creation mode flags
-	mode &= ~context->Process->FileCreationModeMask;
+	//// Determine the base alias from which to resolve the path
+	//std::shared_ptr<FileSystem::Alias> base = absolute ? context->Process->RootDirectory : 
+	//	((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
 
-	// Invoke the proper method on the virtual machine based on the node type requested
-	switch(mode & LINUX_S_IFMT) {
+	//// Apply the process' current umask to the provided creation mode flags
+	//mode &= ~context->Process->FileCreationModeMask;
 
-		// S_IFREG (or zero): Create a new regular file node
-		case 0:
-		case LINUX_S_IFREG:
-			_RPTF0(_CRT_ASSERT, "mknodat: S_IFREG not implemented yet");
-			break;
+	//// Invoke the proper method on the virtual machine based on the node type requested
+	//switch(mode & LINUX_S_IFMT) {
 
-		// S_IFCHR: Create a new character device node
-		case LINUX_S_IFCHR:
-			FileSystem::CreateCharacterDevice(context->Process->RootDirectory, base, pathname, mode, device);
-			break;
+	//	// S_IFREG (or zero): Create a new regular file node
+	//	case 0:
+	//	case LINUX_S_IFREG:
+	//		_RPTF0(_CRT_ASSERT, "mknodat: S_IFREG not implemented yet");
+	//		break;
 
-		// S_IFBLK: Create a new block device node
-		case LINUX_S_IFBLK:
-			_RPTF0(_CRT_ASSERT, "mknodat: S_IFBLK not implemented yet");
-			break;
+	//	// S_IFCHR: Create a new character device node
+	//	case LINUX_S_IFCHR:
+	//		FileSystem::CreateCharacterDevice(context->Process->RootDirectory, base, pathname, mode, device);
+	//		break;
 
-		// S_IFIFO: Create a new pipe node
-		case LINUX_S_IFIFO:
-			_RPTF0(_CRT_ASSERT, "mknodat: S_IFIFO not implemented yet");
-			break;
+	//	// S_IFBLK: Create a new block device node
+	//	case LINUX_S_IFBLK:
+	//		_RPTF0(_CRT_ASSERT, "mknodat: S_IFBLK not implemented yet");
+	//		break;
 
-		// S_IFSOCK: Create a new socket node
-		case LINUX_S_IFSOCK:
-			_RPTF0(_CRT_ASSERT, "mknodat: S_IFSOCK not implemented yet");
-			break;
+	//	// S_IFIFO: Create a new pipe node
+	//	case LINUX_S_IFIFO:
+	//		_RPTF0(_CRT_ASSERT, "mknodat: S_IFIFO not implemented yet");
+	//		break;
 
-		// Other node types cannot be created by this system call
-		default: throw LinuxException(LINUX_EINVAL);
-	}
+	//	// S_IFSOCK: Create a new socket node
+	//	case LINUX_S_IFSOCK:
+	//		_RPTF0(_CRT_ASSERT, "mknodat: S_IFSOCK not implemented yet");
+	//		break;
 
-	return 0;
+	//	// Other node types cannot be created by this system call
+	//	default: throw LinuxException(LINUX_EINVAL);
+	//}
+
+	//return 0;
 }
 
 // sys32_mknodat

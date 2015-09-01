@@ -44,18 +44,20 @@
 
 uapi::long_t sys_openat(const Context* context, int dirfd, const uapi::char_t* pathname, int flags, uapi::mode_t mode)
 {
-	// Determine if an absolute or relative pathname has been provided
-	bool absolute = ((pathname) && (pathname[0] == '/'));
+	return -LINUX_ENOSYS;
 
-	// Determine the base alias from which to resolve the path
-	std::shared_ptr<FileSystem::Alias> base = absolute ? context->Process->RootDirectory : 
-		((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
+	//// Determine if an absolute or relative pathname has been provided
+	//bool absolute = ((pathname) && (pathname[0] == '/'));
 
-	// Apply the process' current umask to the provided creation mode flags
-	mode &= ~context->Process->FileCreationModeMask;
+	//// Determine the base alias from which to resolve the path
+	//std::shared_ptr<FileSystem::Alias> base = absolute ? context->Process->RootDirectory : 
+	//	((dirfd == LINUX_AT_FDCWD) ? context->Process->WorkingDirectory : context->Process->Handle[dirfd]->Alias);
 
-	// Attempt to open the file system object relative from the base alias
-	return context->Process->AddHandle(FileSystem::OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
+	//// Apply the process' current umask to the provided creation mode flags
+	//mode &= ~context->Process->FileCreationModeMask;
+
+	//// Attempt to open the file system object relative from the base alias
+	//return context->Process->AddHandle(FileSystem::OpenFile(context->Process->RootDirectory, base, pathname, flags, mode));
 }
 
 // sys32_openat

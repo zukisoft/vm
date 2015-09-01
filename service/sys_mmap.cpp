@@ -46,21 +46,23 @@
 
 uapi::long_t sys_mmap(const Context* context, void* address, size_t length, int protection, int flags, int fd, uapi::off_t pgoffset)
 {
-	// MAP_PRIVATE and MAP_SHARED dictate how this system call will work
-	switch(flags & (LINUX_MAP_PRIVATE | LINUX_MAP_SHARED)) {
+	return -LINUX_ENOSYS;
 
-		// MAP_PRIVATE - Create a private memory mapping directly in the hosted process
-		//
-		case LINUX_MAP_PRIVATE:			
-			return reinterpret_cast<uapi::long_t>(context->Process->MapMemory(address, length, protection, flags, fd, pgoffset * SystemInformation::PageSize));
+	//// MAP_PRIVATE and MAP_SHARED dictate how this system call will work
+	//switch(flags & (LINUX_MAP_PRIVATE | LINUX_MAP_SHARED)) {
 
-		// MAP_SHARED - A virtual machine level shared memory region must be created or accessed
-		//
-		case LINUX_MAP_SHARED:
-			throw LinuxException(LINUX_EINVAL);		// <--- TODO: LINUX_MAP_SHARED implementation
+	//	// MAP_PRIVATE - Create a private memory mapping directly in the hosted process
+	//	//
+	//	case LINUX_MAP_PRIVATE:			
+	//		return reinterpret_cast<uapi::long_t>(context->Process->MapMemory(address, length, protection, flags, fd, pgoffset * SystemInformation::PageSize));
 
-		default: throw LinuxException(LINUX_EINVAL);
-	}
+	//	// MAP_SHARED - A virtual machine level shared memory region must be created or accessed
+	//	//
+	//	case LINUX_MAP_SHARED:
+	//		throw LinuxException(LINUX_EINVAL);		// <--- TODO: LINUX_MAP_SHARED implementation
+
+	//	default: throw LinuxException(LINUX_EINVAL);
+	//}
 }
 
 // sys32_mmap

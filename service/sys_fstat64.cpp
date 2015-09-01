@@ -42,8 +42,10 @@ uapi::long_t sys_fstatat64(const Context* context, int fd, const uapi::char_t* p
 
 uapi::long_t sys_fstat64(const Context* context, int fd, linux_stat3264* buf)
 {
-	// sys_fstat64 is equivalent to sys_fstatat64(fd, LINUX_AT_EMPTY_PATH)
-	return sys_fstatat64(context, fd, "", buf, LINUX_AT_EMPTY_PATH);
+	return -LINUX_ENOSYS;
+
+	//// sys_fstat64 is equivalent to sys_fstatat64(fd, LINUX_AT_EMPTY_PATH)
+	//return sys_fstatat64(context, fd, "", buf, LINUX_AT_EMPTY_PATH);
 }
 
 // sys32_fstat64
