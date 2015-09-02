@@ -80,7 +80,7 @@ private:
 
 		// Instance Constructor
 		//
-		RootAlias(std::shared_ptr<FileSystem::Node> node);
+		RootAlias(std::shared_ptr<FileSystem::Directory> dir);
 
 		// Destructor
 		//
@@ -112,7 +112,7 @@ private:
 		//-------------------------------------------------------------------------
 		// Member Variables
 
-		const std::shared_ptr<FileSystem::Node>	m_node;		// Attached node
+		const std::shared_ptr<FileSystem::Directory>	m_dir;	// Attached directory
 	};
 
 	// Service<> Control Handler Map
@@ -150,6 +150,11 @@ private:
 	//
 	// FileSystem::Alias shared pointer
 	using fsalias_t = std::shared_ptr<FileSystem::Alias>;
+
+	// fsmount_t
+	//
+	// FileSystem::Mount shared pointer
+	using fsmount_t = std::shared_ptr<FileSystem::Mount>;
 
 	// instance_map_t
 	//
@@ -194,6 +199,7 @@ private:
 	// File Systems
 	//
 	filesystem_map_t			m_filesystems;		// Available file systems
+	fsmount_t					m_rootmount;		// Root file system mount
 	fsalias_t					m_rootalias;		// Root file system alias (/)
 
 	// Service<> Parameters

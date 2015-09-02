@@ -75,11 +75,11 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		// todo: make sure -initramfs: switch and value exists
 		//ServiceHarness<VmService> harness;
 		ServiceHarness<VirtualMachine> harness;
-//#ifdef _M_X64
-//		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
-//#else
-		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x86.cpio.gz"));
-//#endif
+////#ifdef _M_X64
+////		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x64.cpio.gz")); //commandline.Switches.GetValue(L"initramfs"));
+////#else
+//		harness.SetParameter(_T("vm.initramfs"), _T("D:\\rootfs_x86.cpio.gz"));
+////#endif
 
 		// test parameters
 		harness.SetParameter(_T("systemlog.length"), 1 MiB);
@@ -92,16 +92,15 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 #endif
 		harness.SetParameter(_T("process.host.timeout"), 10000);
 		//harness.SetParameter(_T("vm.initpath"), _T("/sbin/init"));
-		harness.SetParameter(_T("vm.initpath"), _T("/init"));
+		//harness.SetParameter(_T("vm.initpath"), _T("/init"));
 
 
 		// new parameters
 		harness.SetParameter(_T("init"), _T("/init"));
-		harness.SetParameter(_T("initrd"), _T("D:\\rootfs_x86.cpio.gz"));
-		//harness.SetParameter(_T("rootflags"), _T("\"  ro\",noatime,notnolazytime, nosuid ,\"mycustomargument=me,me,me  \",lazytime"));
-		harness.SetParameter(_T("rootfstype"), _T("tmpfs"));
-		harness.SetParameter(_T("root"), _T(""));
-		harness.SetParameter(_T("rootflags"), _T(""));
+		//harness.SetParameter(_T("initrd"), _T("D:\\rootfs_x86.cpio.gz"));
+		harness.SetParameter(_T("rootfstype"), _T("hostfs"));
+		harness.SetParameter(_T("root"), _T("D:\\Linux Stuff\\android-5.0.2_r1-x86\\root"));
+		harness.SetParameter(_T("rootflags"), _T("ro,sandbox"));
 
 		harness.Start(IDS_VMSERVICE_NAME);
 		//harness.WaitForStatus(ServiceStatus::Running);  <--- done automatically by Start()

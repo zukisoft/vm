@@ -136,31 +136,37 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		// FILE SYSTEMS
 		//
 		m_filesystems.emplace("hostfs",	HostFileSystem::Mount);
+		//m_filesystems.emplace("procfs", ProcFileSystem::Mount);
 		m_filesystems.emplace("rootfs",	RootFileSystem::Mount);
-		//m_filesystems.emplace("tmpfs",	TempFileSystem::Mount);
+		//m_filesystems.emplace("sysfs", SysFileSystem::Mount);
+		//m_filesystems.emplace("tmpfs", TempFileSystem::Mount);
 
 		// ROOT FILE SYSTEM
 		//
 		auto root = std::to_string(m_paramroot.Value);
-		auto rootflags = std::to_string(m_paramrootflags.Value);
 		auto rootfstype = std::to_string(m_paramrootfstype.Value);
+		auto rootflags = std::to_string(m_paramrootflags.Value);
 
-		//try { m_rootfs = m_filesystems.at(rootfstype.c_str())(root.c_str(), MountOptions::Create(LINUX_MS_KERNMOUNT, rootflags.c_str())); }
-		//catch(...) { throw; } // <--- todo
+		// Attempt to mount the root file system using the provided parameters
+		try { m_rootmount = m_filesystems.at(rootfstype.c_str())(root.c_str(), LINUX_MS_KERNMOUNT, rootflags.data(), rootflags.length()); }
+		catch(...) { throw; } // <--- todo - service should not start if root mount fails - panic
+
+		// Construct the file system root alias (/)
+		m_rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
 
 		// add mount to root namespace
-
 		//m_rootmount = RootFileSystem::Mount(
-		//m_rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
 
 		// INITRAMFS
 		//
 		auto initrd = std::to_string(m_paraminitrd.Value);
+		// extract ramdisk here if there is one
 
 		// INIT PROCESS
 		//
 		auto init = std::to_string(m_paraminit.Value);
 
+		// Allocate the init process pid
 		auto initpid = m_rootns->Pids->Allocate();
 		_ASSERTE(initpid->getValue(m_rootns) == 1);
 
@@ -214,9 +220,9 @@ void VirtualMachine::OnStop(void)
 //
 // Arguments:
 //
-//	node		- Node to attach to this alias
+//	dir			- Directory node to attach to this alias
 
-VirtualMachine::RootAlias::RootAlias(std::shared_ptr<FileSystem::Node> node) : m_node(std::move(node))
+VirtualMachine::RootAlias::RootAlias(std::shared_ptr<FileSystem::Directory> dir) : m_dir(std::move(dir))
 {
 }
 
@@ -255,7 +261,7 @@ std::string VirtualMachine::RootAlias::getName(void) const
 
 std::shared_ptr<FileSystem::Node> VirtualMachine::RootAlias::getNode(void) const
 {
-	return m_node;
+	return m_dir;
 }
 
 //---------------------------------------------------------------------------
