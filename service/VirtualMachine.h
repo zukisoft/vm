@@ -24,7 +24,6 @@
 #define __VIRTUALMACHINE_H_
 #pragma once
 
-#include <map>
 #include <memory>
 #include <unordered_map>
 #include "FileSystem.h"
@@ -152,19 +151,10 @@ private:
 		PARAMETER_ENTRY(_T("rw"),				m_paramrw)					// DWord
 	END_PARAMETER_MAP()
 
-	// uuid_key_comp_t
-	//
-	// Comparison type for uuid_t when used as a collection key
-	struct uuid_key_comp_t 
-	{ 
-		bool operator() (const uuid_t& lhs, const uuid_t& rhs) const { return (memcmp(&lhs, &rhs, sizeof(uuid_t)) < 0); }
-	};
-
 	// filesystem_map_t
 	//
 	// Collection of available file systems (name, mount function)
-	// todo: unordered_map?
-	using filesystem_map_t = std::map<std::string, FileSystem::MountFunction>;
+	using filesystem_map_t = std::unordered_map<std::string, FileSystem::MountFunction>;
 
 	// fsalias_t
 	//
@@ -179,13 +169,7 @@ private:
 	// instance_map_t
 	//
 	// Collection of virtual machine instances
-	// todo: unordered_map?
-	using instance_map_t = std::map<uuid_t, std::shared_ptr<VirtualMachine>, uuid_key_comp_t>;
-
-	// instance_map_lock_t
-	//
-	// Synchronization object for the instance collection
-	using instance_map_lock_t = sync::reader_writer_lock;
+	using instance_map_t = std::unordered_map<uuid_t, std::shared_ptr<VirtualMachine>>;
 
 	// session_map_t
 	//
@@ -211,7 +195,7 @@ private:
 	// Member Variables
 
 	static instance_map_t			s_instances;		// Collection of all instances
-	static instance_map_lock_t		s_instancelock;		// Synchronization object
+	static sync::reader_writer_lock	s_instancelock;		// Synchronization object
 
 	const uuid_t					m_instanceid;		// Instance identifier
 	std::unique_ptr<RpcObject>		m_syscalls32;		// 32-bit system calls object

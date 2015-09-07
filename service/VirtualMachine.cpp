@@ -55,7 +55,7 @@ VirtualMachine::instance_map_t VirtualMachine::s_instances;
 // VirtualMachine::s_lock
 //
 // Synchronization object for active virtual machine collection
-VirtualMachine::instance_map_lock_t VirtualMachine::s_instancelock;
+sync::reader_writer_lock VirtualMachine::s_instancelock;
 
 //-----------------------------------------------------------------------------
 // AddVirtualMachineSession
@@ -113,7 +113,7 @@ VirtualMachine::VirtualMachine() : m_instanceid(GenerateInstanceId())
 
 std::shared_ptr<VirtualMachine> VirtualMachine::Find(const uuid_t& instanceid)
 {
-	instance_map_lock_t::scoped_lock_read reader(s_instancelock);
+	sync::reader_writer_lock::scoped_lock_read reader(s_instancelock);
 
 	// Attempt to locate the instanceid in the collection
 	auto iterator = s_instances.find(instanceid);
@@ -228,7 +228,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// catch(std::exception& ex) { /* TODO: PUT SOMETHING HERE */ }
 
 	// Add this virtual machine instance to the active instance collection
-	instance_map_lock_t::scoped_lock_write writer(s_instancelock);
+	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);
 	s_instances.emplace(m_instanceid, shared_from_this());
 }
 
@@ -249,7 +249,7 @@ void VirtualMachine::OnStop(void)
 #endif
 
 	// Remove this virtual machine from the active instance collection
-	instance_map_lock_t::scoped_lock_write writer(s_instancelock);
+	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);
 	s_instances.erase(m_instanceid);
 }
 

@@ -82,11 +82,11 @@
       <UniqueIdentifier>{0e3a533e-5d1b-43e5-aaff-a39afa80a3cc}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="Header Files\Process">
-      <UniqueIdentifier>{7fb0cdfe-2053-4a92-b002-1656d84ece90}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Process">
+    <Filter Include="Source Files\Process Model">
       <UniqueIdentifier>{110a49c5-1d07-4590-8368-d0ff93b497a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Process Model">
+      <UniqueIdentifier>{7fb0cdfe-2053-4a92-b002-1656d84ece90}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -336,9 +336,6 @@
     <ClInclude Include="NativeProcess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Process.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ElfImage.h">
       <Filter>Header Files\Elf</Filter>
     </ClInclude>
@@ -424,10 +421,16 @@
       <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
     <ClInclude Include="Session.h">
-      <Filter>Header Files\Process</Filter>
+      <Filter>Header Files\Process Model</Filter>
     </ClInclude>
     <ClInclude Include="ProcessGroup.h">
-      <Filter>Header Files\Process</Filter>
+      <Filter>Header Files\Process Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\cpplib\uuidkey.h">
+      <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -885,10 +888,10 @@
       <Filter>External Libraries\cpplib</Filter>
     </ClCompile>
     <ClCompile Include="Session.cpp">
-      <Filter>Source Files\Process</Filter>
+      <Filter>Source Files\Process Model</Filter>
     </ClCompile>
     <ClCompile Include="ProcessGroup.cpp">
-      <Filter>Source Files\Process</Filter>
+      <Filter>Source Files\Process Model</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

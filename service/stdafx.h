@@ -63,6 +63,7 @@
 #include <path.h>
 #include <sync.h>
 #include <timespan.h>
+#include <uuidkey.h>
 
 // Linux UAPI
 //
