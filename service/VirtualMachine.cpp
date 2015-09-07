@@ -27,6 +27,7 @@
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
+#include "ProcessGroup.h"
 #include "RpcObject.h"
 #include "Session.h"
 #include "Win32Exception.h"
@@ -200,24 +201,25 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto initrd = std::to_string(m_paraminitrd.Value);
 		// extract ramdisk here if there is one
 
-		// INIT PROCESS
-		//
-		auto init = std::to_string(m_paraminit.Value);
-		// note: init is the only process that is ever directly spawned, everything
-		// else that comes after this will be fork-exec
-
-		// Allocate the init process pid
-		auto initpid = m_rootns->Pids->Allocate();
-		_ASSERTE(initpid->getValue(m_rootns) == 1);
-
-		// SYSTEM CALL RPC OBJECTS
+		// SYSTEM CALL LISTENERS
 		//
 		m_syscalls32 = RpcObject::Create(SystemCalls32_v1_0_s_ifspec, m_instanceid, RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 #ifdef _M_X64
 		m_syscalls64 = RpcObject::Create(SystemCalls64_v1_0_s_ifspec, m_instanceid, RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 #endif
 
-		// NOTE: DON'T START INIT PROCESS UNTIL AFTER THE RPC OBJECTS HAVE BEEN CONSTRUCTED
+		// INIT PROCESS
+		//
+		auto initpath = std::to_string(m_paraminit.Value);
+		// initpath must exist
+
+		auto initpid = m_rootns->Pids->Allocate();
+		_ASSERTE(initpid->getValue(m_rootns) == 1);
+
+		auto initsession = Session::Create(initpid, shared_from_this());
+		auto initpgroup = ProcessGroup::Create(initpid, initsession);
+
+		// initprocess must be watched, termination causes a panic (service stop)
 	}
 
 	// Win32Exception and Exception can be translated into ServiceExceptions
