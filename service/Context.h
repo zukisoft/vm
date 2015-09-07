@@ -66,7 +66,7 @@ public:
 
 	// Process
 	//
-	//Process instance
+	// Process instance
 	const std::shared_ptr<class Process> Process;
 
 	// Thread

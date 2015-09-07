@@ -26,12 +26,15 @@
 
 #include <map>
 #include <memory>
+#include <unordered_map>
 #include "FileSystem.h"
 
 // Forward Declarations
 //
 class Namespace;
+class Pid;
 class RpcObject;
+class Session;
 
 #pragma warning(push, 4)
 
@@ -44,10 +47,26 @@ class VirtualMachine : public Service<VirtualMachine>, public std::enable_shared
 {
 public:
 
-	// Constructor / Destructor
+	// Instance Constructor
 	//
 	VirtualMachine();
+
+	// Destructor
+	//
 	~VirtualMachine()=default;
+
+	//-------------------------------------------------------------------------
+	// Friend Functions
+
+	// AddVirtualMachineSession
+	//
+	// Adds a session to the collection
+	friend std::shared_ptr<VirtualMachine> AddVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, std::shared_ptr<Session> session);
+
+	// RemoveVirtualMachineSession
+	//
+	// Removes a session from the collection
+	friend void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, const Session* session);
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -144,6 +163,7 @@ private:
 	// filesystem_map_t
 	//
 	// Collection of available file systems (name, mount function)
+	// todo: unordered_map?
 	using filesystem_map_t = std::map<std::string, FileSystem::MountFunction>;
 
 	// fsalias_t
@@ -159,12 +179,18 @@ private:
 	// instance_map_t
 	//
 	// Collection of virtual machine instances
+	// todo: unordered_map?
 	using instance_map_t = std::map<uuid_t, std::shared_ptr<VirtualMachine>, uuid_key_comp_t>;
 
 	// instance_map_lock_t
 	//
 	// Synchronization object for the instance collection
 	using instance_map_lock_t = sync::reader_writer_lock;
+
+	// session_map_t
+	//
+	// Collection of session instances
+	using session_map_t = std::unordered_map<const Session*, std::weak_ptr<Session>>;
 
 	// GenerateInstanceId (static)
 	//
@@ -184,33 +210,38 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	static instance_map_t		s_instances;		// Collection of all instances
-	static instance_map_lock_t	s_instancelock;		// Synchronization object
+	static instance_map_t			s_instances;		// Collection of all instances
+	static instance_map_lock_t		s_instancelock;		// Synchronization object
 
-	const uuid_t				m_instanceid;		// Instance identifier
-	std::unique_ptr<RpcObject>	m_syscalls32;		// 32-bit system calls object
+	const uuid_t					m_instanceid;		// Instance identifier
+	std::unique_ptr<RpcObject>		m_syscalls32;		// 32-bit system calls object
 
 #ifdef _M_X64
-	std::unique_ptr<RpcObject>	m_syscalls64;		// 64-bit system calls object
+	std::unique_ptr<RpcObject>		m_syscalls64;		// 64-bit system calls object
 #endif
 
-	std::shared_ptr<Namespace>	m_rootns;			// Root namespace instance
+	std::shared_ptr<Namespace>		m_rootns;			// Root namespace instance
+
+	// Sessions
+	//
+	session_map_t					m_sessions;			// Collection of Sessions
+	mutable sync::critical_section	m_sessionslock;		// Synchronization object
 
 	// File Systems
 	//
-	filesystem_map_t			m_filesystems;		// Available file systems
-	fsmount_t					m_rootmount;		// Root file system mount
-	fsalias_t					m_rootalias;		// Root file system alias (/)
+	filesystem_map_t				m_filesystems;		// Available file systems
+	fsmount_t						m_rootmount;		// Root file system mount
+	fsalias_t						m_rootalias;		// Root file system alias (/)
 
 	// Service<> Parameters
 	//
-	StringParameter				m_paraminit			{ _T("/sbin/init") };
-	StringParameter				m_paraminitrd;
-	DWordParameter				m_paramro			{ 1 };
-	StringParameter				m_paramroot;
-	StringParameter				m_paramrootfstype	{ _T("rootfs") };
-	StringParameter				m_paramrootflags;
-	DWordParameter				m_paramrw			{ 0 };
+	StringParameter					m_paraminit			{ _T("/sbin/init") };
+	StringParameter					m_paraminitrd;
+	DWordParameter					m_paramro			{ 1 };
+	StringParameter					m_paramroot;
+	StringParameter					m_paramrootfstype	{ _T("rootfs") };
+	StringParameter					m_paramrootflags;
+	DWordParameter					m_paramrw			{ 0 };
 };
 
 //-----------------------------------------------------------------------------

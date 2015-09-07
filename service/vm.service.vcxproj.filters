@@ -82,6 +82,12 @@
       <UniqueIdentifier>{0e3a533e-5d1b-43e5-aaff-a39afa80a3cc}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Header Files\Process">
+      <UniqueIdentifier>{7fb0cdfe-2053-4a92-b002-1656d84ece90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Process">
+      <UniqueIdentifier>{110a49c5-1d07-4590-8368-d0ff93b497a4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -416,6 +422,12 @@
     </ClInclude>
     <ClInclude Include="..\..\external\cpplib\convert.h">
       <Filter>External Libraries\cpplib</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Header Files\Process</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessGroup.h">
+      <Filter>Header Files\Process</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -871,6 +883,12 @@
     </ClCompile>
     <ClCompile Include="..\..\external\cpplib\timespan.cpp">
       <Filter>External Libraries\cpplib</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>Source Files\Process</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessGroup.cpp">
+      <Filter>Source Files\Process</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

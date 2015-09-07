@@ -24,9 +24,11 @@
 #include "VirtualMachine.h"
 
 #include "Exception.h"
+#include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
 #include "RpcObject.h"
+#include "Session.h"
 #include "Win32Exception.h"
 
 // System Call RPC Interfaces
@@ -53,6 +55,40 @@ VirtualMachine::instance_map_t VirtualMachine::s_instances;
 //
 // Synchronization object for active virtual machine collection
 VirtualMachine::instance_map_lock_t VirtualMachine::s_instancelock;
+
+//-----------------------------------------------------------------------------
+// AddVirtualMachineSession
+//
+// Adds a session into a virtual machine
+//
+// Arguments:
+//
+//	vm			- VirtualMachine instance to operate against
+//	session		- Session instance to be added
+
+std::shared_ptr<VirtualMachine> AddVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, std::shared_ptr<Session> session)
+{
+	sync::critical_section::scoped_lock cs{ vm->m_sessionslock };
+	if(!vm->m_sessions.emplace(session.get(), session).second) throw LinuxException{ LINUX_ENOMEM };
+
+	return vm;
+}
+
+//-----------------------------------------------------------------------------
+// RemoveVirtualMachineSession
+//
+// Removes a session from a VirtualMachine instance
+//
+// Arguments:
+//
+//	vm			- VirtualMachine instance to operate against
+//	session		- Session instance to be removed
+
+void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, const Session* session)
+{
+	sync::critical_section::scoped_lock cs{ vm->m_sessionslock };
+	vm->m_sessions.erase(session);
+}
 
 //---------------------------------------------------------------------------
 // VirtualMachine Constructor
@@ -117,7 +153,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 {
 	// The command line arguments should be used to override defaults
 	// set in the service parameters.  This functionality should be
-	// provided by servicelib directly -- look into that
+	// provided by servicelib directly -- look into that (todo)
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
@@ -147,6 +183,8 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto rootfstype = std::to_string(m_paramrootfstype.Value);
 		auto rootflags = std::to_string(m_paramrootflags.Value);
 
+		// todo: ro, rw, etc. -- these are kernel parameters
+
 		// Attempt to mount the root file system using the provided parameters
 		try { m_rootmount = m_filesystems.at(rootfstype.c_str())(root.c_str(), LINUX_MS_KERNMOUNT, rootflags.data(), rootflags.length()); }
 		catch(...) { throw; } // <--- todo - service should not start if root mount fails - panic
@@ -165,6 +203,8 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		// INIT PROCESS
 		//
 		auto init = std::to_string(m_paraminit.Value);
+		// note: init is the only process that is ever directly spawned, everything
+		// else that comes after this will be fork-exec
 
 		// Allocate the init process pid
 		auto initpid = m_rootns->Pids->Allocate();
