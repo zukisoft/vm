@@ -206,6 +206,10 @@ private:
 
 	std::shared_ptr<Namespace>		m_rootns;			// Root namespace instance
 
+	// Job
+	//
+	HANDLE							m_job;				// Job object for all processes
+
 	// Sessions
 	//
 	session_map_t					m_sessions;			// Collection of Sessions

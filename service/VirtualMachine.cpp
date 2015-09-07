@@ -160,6 +160,11 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 	try {
 
+		// JOB OBJECT FOR PROCESS CONTROL
+		//
+		m_job = CreateJobObject(nullptr, nullptr);
+		if(m_job == nullptr) { throw std::exception("todo: job object creation failed"); /* todo: exception and panic */ }
+
 		// ROOT NAMESPACE
 		//
 		m_rootns = Namespace::Create();
@@ -219,6 +224,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto initsession = Session::Create(initpid, shared_from_this());
 		auto initpgroup = ProcessGroup::Create(initpid, initsession);
 
+		// the job object needs to be associated with all processes, any time CreateProcess is called
 		// initprocess must be watched, termination causes a panic (service stop)
 	}
 
@@ -243,6 +249,13 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 void VirtualMachine::OnStop(void)
 {
+	// todo: try to kill everything politely first, the sessions collection
+	// will probably be the best way to deal with this
+
+	// Forcibly terminate any remaining processes created by this instance
+	TerminateJobObject(m_job, ERROR_PROCESS_ABORTED);
+	CloseHandle(m_job);
+
 	m_syscalls32.reset();			// Revoke the 32-bit system calls object
 #ifdef _M_X64
 	m_syscalls64.reset();			// Revoke the 64-bit system calls object
