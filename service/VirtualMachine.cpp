@@ -24,6 +24,7 @@
 #include "VirtualMachine.h"
 
 #include "Exception.h"
+#include "Executable.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
@@ -189,7 +190,9 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto rootfstype = std::to_string(m_paramrootfstype.Value);
 		auto rootflags = std::to_string(m_paramrootflags.Value);
 
-		// todo: ro, rw, etc. -- these are kernel parameters
+		// todo: ro, rw, etc. -- these are kernel parameters, also need environment
+		// variables and parameters for init.  ServiceParameters is not looking like
+		// the best choice here
 
 		// Attempt to mount the root file system using the provided parameters
 		try { m_rootmount = m_filesystems.at(rootfstype.c_str())(root.c_str(), LINUX_MS_KERNMOUNT, rootflags.data(), rootflags.length()); }
@@ -216,7 +219,10 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		// INIT PROCESS
 		//
 		auto initpath = std::to_string(m_paraminit.Value);
-		// initpath must exist
+		// todo: need to parse options, environment variables, init parameters, etc.  see bootparam(7)
+
+		// create initexecutable --> Executable::FromFile(...), this will ensure it exists
+		//auto initexecutable = Executable::FromFile(m_rootns, blah, blah, blah ....
 
 		auto initpid = m_rootns->Pids->Allocate();
 		_ASSERTE(initpid->getValue(m_rootns) == 1);
