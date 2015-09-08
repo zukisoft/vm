@@ -459,20 +459,29 @@ public:
 
 		// Copy Constructor
 		//
-		Path(const Path& rhs);
+		//Path(const Path& rhs);
 
 		// Move Constructor
 		//
-		Path(Path&& rhs);
+		//Path(Path&& rhs);
 
 		// Destructor
 		//
 		~Path()=default;
 
+		//---------------------------------------------------------------------
+		// Member Functions
+
+		// Create (static)
+		//
+		// Creates a new Path instance from component parts
+		static std::shared_ptr<Path> Create(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount);
+
 	private:
 
+		Path(const Path&)=delete;
 		Path& operator=(const Path&)=delete;
-		Path& operator=(Path&&)=delete;
+		//Path& operator=(Path&&)=delete;
 
 		// Instance Constructors
 		//

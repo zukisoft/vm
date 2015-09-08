@@ -312,9 +312,6 @@
     <ClInclude Include="SignalActions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Thread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -426,11 +423,20 @@
     <ClInclude Include="ProcessGroup.h">
       <Filter>Header Files\Process Model</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\external\cpplib\uuidkey.h">
+      <Filter>External Libraries\cpplib</Filter>
+    </ClInclude>
+    <ClInclude Include="__Process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="__Thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\external\cpplib\uuidkey.h">
-      <Filter>External Libraries\cpplib</Filter>
+    <ClInclude Include="Thread.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -767,9 +773,6 @@
     <ClCompile Include="SignalActions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Thread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SystemCall.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -811,9 +814,6 @@
     </ClCompile>
     <ClCompile Include="ElfImage.cpp">
       <Filter>Source Files\Elf</Filter>
-    </ClCompile>
-    <ClCompile Include="Process.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sys_geteuid.cpp">
       <Filter>Source Files\System Calls</Filter>
@@ -892,6 +892,18 @@
     </ClCompile>
     <ClCompile Include="ProcessGroup.cpp">
       <Filter>Source Files\Process Model</Filter>
+    </ClCompile>
+    <ClCompile Include="__Process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="__Thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Thread.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

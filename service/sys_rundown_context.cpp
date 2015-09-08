@@ -41,13 +41,13 @@
 
 void sys_rundown_context(Context* context)
 {
-	if(context == nullptr) return;
+	//if(context == nullptr) return;
 
-	// The hosted thread has died, perhaps unexpectedly or perhaps as a result
-	// of a forced termination by something like sys_execve.  It's not possible
-	// to know the reason, but the Process object won't know that it's also dead
-	// until all the Thread instances have been removed from its collection
-	context->Process->RundownThread(context->Thread);
+	//// The hosted thread has died, perhaps unexpectedly or perhaps as a result
+	//// of a forced termination by something like sys_execve.  It's not possible
+	//// to know the reason, but the Process object won't know that it's also dead
+	//// until all the Thread instances have been removed from its collection
+	//context->Process->RundownThread(context->Thread);
 
 	Context::Release(context);			// Release the context object
 }

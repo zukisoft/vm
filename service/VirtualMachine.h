@@ -32,6 +32,7 @@
 //
 class Namespace;
 class Pid;
+class Process;
 class RpcObject;
 class Session;
 
@@ -159,12 +160,22 @@ private:
 	// fsalias_t
 	//
 	// FileSystem::Alias shared pointer
-	using fsalias_t = std::shared_ptr<FileSystem::Alias>;
+	//using fsalias_t = std::shared_ptr<FileSystem::Alias>;
 
 	// fsmount_t
 	//
 	// FileSystem::Mount shared pointer
 	using fsmount_t = std::shared_ptr<FileSystem::Mount>;
+
+	// fspath_t
+	//
+	// FileSystem::Path shared pointer
+	using fspath_t = std::shared_ptr<FileSystem::Path>;
+
+	// fsprocess_t
+	//
+	// Process shared pointer
+	using fsprocess_t = std::shared_ptr<Process>;
 
 	// instance_map_t
 	//
@@ -219,7 +230,9 @@ private:
 	//
 	filesystem_map_t				m_filesystems;		// Available file systems
 	fsmount_t						m_rootmount;		// Root file system mount
-	fsalias_t						m_rootalias;		// Root file system alias (/)
+
+	// Init Process
+	fsprocess_t						m_initprocess;		// Initial process
 
 	// Service<> Parameters
 	//

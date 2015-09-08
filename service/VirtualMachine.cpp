@@ -24,10 +24,10 @@
 #include "VirtualMachine.h"
 
 #include "Exception.h"
-#include "Executable.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
+#include "Process.h"
 #include "ProcessGroup.h"
 #include "RpcObject.h"
 #include "Session.h"
@@ -198,11 +198,12 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		try { m_rootmount = m_filesystems.at(rootfstype.c_str())(root.c_str(), LINUX_MS_KERNMOUNT, rootflags.data(), rootflags.length()); }
 		catch(...) { throw; } // <--- todo - service should not start if root mount fails - panic
 
-		// Construct the file system root alias (/)
-		m_rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
+		// Construct the file system root alias (/) and attach it to the mounted root directory
+		//m_rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
+		auto rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
+		auto rootpath = FileSystem::Path::Create(rootalias, m_rootmount);
 
-		// add mount to root namespace
-		//m_rootmount = RootFileSystem::Mount(
+		// todo: add mount to root namespace
 
 		// INITRAMFS
 		//
@@ -218,17 +219,12 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 		// INIT PROCESS
 		//
-		auto initpath = std::to_string(m_paraminit.Value);
-		// todo: need to parse options, environment variables, init parameters, etc.  see bootparam(7)
-
-		// create initexecutable --> Executable::FromFile(...), this will ensure it exists
-		//auto initexecutable = Executable::FromFile(m_rootns, blah, blah, blah ....
-
 		auto initpid = m_rootns->Pids->Allocate();
-		_ASSERTE(initpid->getValue(m_rootns) == 1);
-
 		auto initsession = Session::Create(initpid, shared_from_this());
 		auto initpgroup = ProcessGroup::Create(initpid, initsession);
+
+		// todo: need arguments and environment from command line
+		m_initprocess = Process::Create(initpid, initsession, initpgroup, m_rootns, rootpath, rootpath, std::to_string(m_paraminit.Value).c_str(), nullptr, nullptr);
 
 		// the job object needs to be associated with all processes, any time CreateProcess is called
 		// initprocess must be watched, termination causes a panic (service stop)
@@ -257,6 +253,9 @@ void VirtualMachine::OnStop(void)
 {
 	// todo: try to kill everything politely first, the sessions collection
 	// will probably be the best way to deal with this
+
+	// Release the reference held against the init process
+	m_initprocess.reset();
 
 	// Forcibly terminate any remaining processes created by this instance
 	TerminateJobObject(m_job, ERROR_PROCESS_ABORTED);

@@ -43,50 +43,51 @@
 
 HRESULT sys32_attach_thread(handle_t rpchandle, sys32_uint_t tid, sys32_thread_t* thread, sys32_context_exclusive_t* context)
 {
-	uuid_t						objectid;			// RPC object identifier
-	Context*					handle = nullptr;	// System call context handle
-	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
-	RPC_STATUS					rpcresult;			// Result from RPC function call
+	//uuid_t						objectid;			// RPC object identifier
+	//Context*					handle = nullptr;	// System call context handle
+	//RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
+	//RPC_STATUS					rpcresult;			// Result from RPC function call
 
-	// Acquire the object id for the interface connected to by the client
-	rpcresult = RpcBindingInqObject(rpchandle, &objectid);
-	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
+	//// Acquire the object id for the interface connected to by the client
+	//rpcresult = RpcBindingInqObject(rpchandle, &objectid);
+	//if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
 
-	// Acquire the attributes of the calling process
-	memset(&attributes, 0, sizeof(RPC_CALL_ATTRIBUTES));
-	attributes.Version = RPC_CALL_ATTRIBUTES_VERSION;
-	attributes.Flags = RPC_QUERY_CLIENT_PID;
+	//// Acquire the attributes of the calling process
+	//memset(&attributes, 0, sizeof(RPC_CALL_ATTRIBUTES));
+	//attributes.Version = RPC_CALL_ATTRIBUTES_VERSION;
+	//attributes.Flags = RPC_QUERY_CLIENT_PID;
 
-	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
-	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult); 
+	//rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
+	//if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult); 
 
-	try {
+	//try {
 
-		// Use the RPC object id to locate the virtual machine instance
-		auto vm = _VmOld::Find_VmOld(objectid);
-		if(vm == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+	//	// Use the RPC object id to locate the virtual machine instance
+	//	auto vm = _VmOld::Find_VmOld(objectid);
+	//	if(vm == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
-		// Use the client's native process identifier to find the process
-		auto proc = vm->FindNativeProcess(reinterpret_cast<DWORD>(attributes.ClientPID));
-		if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
-		
-		// Use the native thread identifier to locate the thread within the process
-		//auto thd = proc->NativeThread[tid];
-		auto thd = proc->AttachThread(tid);
-		if(thd == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+	//	// Use the client's native process identifier to find the process
+	//	auto proc = vm->FindNativeProcess(reinterpret_cast<DWORD>(attributes.ClientPID));
+	//	if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+	//	
+	//	// Use the native thread identifier to locate the thread within the process
+	//	//auto thd = proc->NativeThread[tid];
+	//	auto thd = proc->AttachThread(tid);
+	//	if(thd == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
-		// Acquire the initial task information for the thread
-		thd->PopInitialTask(&thread->task, sizeof(sys32_task_t));
-		
-		// Allocate the context handle by referencing the acquired objects
-		handle = Context::Allocate(vm, proc, thd);
-	}
+	//	// Acquire the initial task information for the thread
+	//	thd->PopInitialTask(&thread->task, sizeof(sys32_task_t));
+	//	
+	//	// Allocate the context handle by referencing the acquired objects
+	//	handle = Context::Allocate(vm, proc, thd);
+	//}
 
-	catch(const Exception& ex) { Context::Release(handle); return ex.HResult; }
-	catch(...) { Context::Release(handle); return E_FAIL; }
+	//catch(const Exception& ex) { Context::Release(handle); return ex.HResult; }
+	//catch(...) { Context::Release(handle); return E_FAIL; }
 
-	*context = reinterpret_cast<sys32_context_exclusive_t>(handle);
-	return S_OK;
+	//*context = reinterpret_cast<sys32_context_exclusive_t>(handle);
+	//return S_OK;
+	return E_FAIL;
 }
 
 //---------------------------------------------------------------------------

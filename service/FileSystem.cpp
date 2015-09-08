@@ -590,20 +590,25 @@ FileSystem::Path::Path(std::shared_ptr<FileSystem::Path> parent, std::shared_ptr
 {
 }
 
-//-----------------------------------------------------------------------------
-// FileSystem::Path Copy Constructor
+////-----------------------------------------------------------------------------
+//// FileSystem::Path Copy Constructor
+//
+//FileSystem::Path::Path(const FileSystem::Path& rhs) : 
+//	m_parent{ rhs.m_parent }, m_alias{ rhs.m_alias }, m_mount{ rhs.m_mount }
+//{
+//}
+//
+////-----------------------------------------------------------------------------
+//// FileSystem::Path Move Constructor
+//
+//FileSystem::Path::Path(FileSystem::Path&& rhs) : 
+//	m_parent{ std::move(rhs.m_parent) }, m_alias{ std::move(rhs.m_alias) }, m_mount{ std::move(rhs.m_mount) }
+//{
+//}
 
-FileSystem::Path::Path(const FileSystem::Path& rhs) : 
-	m_parent{ rhs.m_parent }, m_alias{ rhs.m_alias }, m_mount{ rhs.m_mount }
+std::shared_ptr<FileSystem::Path> FileSystem::Path::Create(std::shared_ptr<FileSystem::Alias> alias, std::shared_ptr<FileSystem::Mount> mount)
 {
-}
-
-//-----------------------------------------------------------------------------
-// FileSystem::Path Move Constructor
-
-FileSystem::Path::Path(FileSystem::Path&& rhs) : 
-	m_parent{ std::move(rhs.m_parent) }, m_alias{ std::move(rhs.m_alias) }, m_mount{ std::move(rhs.m_mount) }
-{
+	return std::make_shared<Path>(std::move(alias), std::move(mount));
 }
 
 //
