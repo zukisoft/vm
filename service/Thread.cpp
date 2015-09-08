@@ -61,7 +61,7 @@ Thread::~Thread()
 std::shared_ptr<Thread> Thread::Create(std::shared_ptr<Pid> tid, std::shared_ptr<class Process> process)
 {
 	// Create the Thread instance
-	auto thread = std::make_shared<Thread>(tid, process);
+	auto thread = std::make_shared<Thread>(std::move(tid), process);
 
 	// The parent container link has to be established after the shared_ptr has been constructed
 	AddProcessThread(process, thread);

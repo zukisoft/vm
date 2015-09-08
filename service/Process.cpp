@@ -117,7 +117,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	(environment);
 
 	// Create the Process instance
-	auto process = std::make_shared<Process>(pid, session, pgroup, ns, root, working);
+	auto process = std::make_shared<Process>(std::move(pid), session, pgroup, std::move(ns), std::move(root), std::move(working));
 
 	// The parent container links have to be established after the shared_ptr has been constructed
 	AddProcessGroupProcess(pgroup, process);

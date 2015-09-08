@@ -160,7 +160,7 @@ Session::~Session()
 std::shared_ptr<Session> Session::Create(std::shared_ptr<Pid> sid, std::shared_ptr<class VirtualMachine> vm)
 {
 	// Create the Session instance
-	auto session = std::make_shared<Session>(sid, vm);
+	auto session = std::make_shared<Session>(std::move(sid), vm);
 
 	// The parent container link has to be established after the shared_ptr has been constructed
 	AddVirtualMachineSession(vm, session);

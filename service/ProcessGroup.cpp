@@ -125,7 +125,7 @@ ProcessGroup::~ProcessGroup()
 std::shared_ptr<ProcessGroup> ProcessGroup::Create(std::shared_ptr<Pid> pgid, std::shared_ptr<class Session> session)
 {
 	// Create the ProcessGroup instance
-	auto pgroup = std::make_shared<ProcessGroup>(pgid, session);
+	auto pgroup = std::make_shared<ProcessGroup>(std::move(pgid), session);
 
 	// The parent container link has to be established after the shared_ptr has been constructed
 	AddSessionProcessGroup(session, pgroup);
