@@ -369,6 +369,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="BinaryFormat.h" />
     <ClInclude Include="Capability.h" />
     <ClInclude Include="ElfArguments.h" />
     <ClInclude Include="elf_traits.h" />
@@ -387,7 +388,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Namespace.h" />
     <ClInclude Include="Pid.h" />
     <ClInclude Include="PidNamespace.h" />
-    <ClInclude Include="__Process.h" />
     <ClInclude Include="Architecture.h" />
     <ClInclude Include="ProcessHandles.h" />
     <ClInclude Include="NativeProcess.h" />
@@ -400,7 +400,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="FilePermission.h" />
-    <ClInclude Include="__Thread.h" />
     <ClInclude Include="UtsNamespace.h" />
     <ClInclude Include="SystemLog.h" />
     <ClInclude Include="_VmOld.h" />
@@ -683,12 +682,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="Namespace.cpp" />
     <ClCompile Include="Pid.cpp" />
     <ClCompile Include="PidNamespace.cpp" />
-    <ClCompile Include="__Process.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="NativeProcess.cpp" />
     <ClCompile Include="ElfImage.cpp" />
@@ -765,12 +758,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="__Thread.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="UtsNamespace.cpp" />
     <ClCompile Include="_VmOld.cpp" />

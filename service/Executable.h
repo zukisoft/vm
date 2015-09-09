@@ -25,9 +25,9 @@
 #pragma once
 
 #include <memory>
-#include <string>
 #include <vector>
 #include "Architecture.h"
+#include "BinaryFormat.h"
 #include "FileSystem.h"
 
 #pragma warning(push, 4)
@@ -36,37 +36,15 @@
 // Forward Declarations
 //
 class Namespace;
-class ProcessMemory;
 
 //-----------------------------------------------------------------------------
 // Executable
 //
-// Represents an executable, including the command-line arguments, environment
-// variables, and initial root/working directories.  Recursively resolves any
-// interpreter scripts that represent the target executable
+// todo words 
 
 class Executable
 {
 public:
-
-	// BinaryFormat
-	//
-	// Defines the binary format of the executable
-	enum class BinaryFormat
-	{
-		ELF			= 0,			// ELF binary format
-		//AOut		= 1,			// A.OUT binary format (todo: future)
-	};
-
-	// LoadResult
-	//
-	// Information about a loaded executable image
-	struct LoadResult
-	{
-		const void*	EntryPoint;		// Executable entry point
-		const void*	ProgramBreak;	// Program break address (heap)
-		const void*	StackPointer;	// Adjusted stack pointer
-	};
 
 	// Destructor
 	//
@@ -77,14 +55,15 @@ public:
 
 	// FromFile (static)
 	//
-	// Creates an executable instance from a file system path
-	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
-		std::shared_ptr<FileSystem::Path> workingdir, const char_t* filename, const char_t* const* arguments, const char_t* const* environment);
+	// Creates a new Executable instance from an existing file
+	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+		std::shared_ptr<FileSystem::Path> current, const char_t* path);
 
-	// Load
+	// FromFile (static)
 	//
-	// Loads the executable into a process virtual address space and initializes a stack
-	LoadResult Load(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
+	// Creates a new Executable instance from an existing file
+	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
+		std::shared_ptr<FileSystem::Path> current, const char_t* path, const char_t* const* arguments, const char_t* const* environment);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -95,65 +74,31 @@ public:
 	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
 	enum class Architecture getArchitecture(void) const;
 
-	// Argument
+	// Arguments
 	//
-	// Accesses a single argument in the contained argument collection
-	__declspec(property(get=getArgument)) const char_t* Argument[];
-	const char_t* getArgument(int index) const;
+	// 
 
-	// ArgumentCount
+	// Environment
 	//
-	// Gets the number of command-line argument strings
-	__declspec(property(get=getArgumentCount)) size_t ArgumentCount;
-	size_t getArgumentCount(void) const;
-
-	// EnvironmentVariable
-	//
-	// Accesses a single EnvironmentVariable in the contained EnvironmentVariable collection
-	__declspec(property(get=getEnvironmentVariable)) const char_t* EnvironmentVariable[];
-	const char_t* getEnvironmentVariable(int index) const;
-
-	// EnvironmentVariableCount
-	//
-	// Gets the number of command-line EnvironmentVariable strings
-	__declspec(property(get=getEnvironmentVariableCount)) size_t EnvironmentVariableCount;
-	size_t getEnvironmentVariableCount(void) const;
-
-	// FileName
-	//
-	// Gets the original filename provided for the executable
-	__declspec(property(get=getFileName)) const char_t* FileName;
-	const char_t* getFileName(void) const;
+	// 
 
 	// Format
 	//
-	// Gets the binary format of the exectable
-	__declspec(property(get=getFormat)) BinaryFormat Format;
-	BinaryFormat getFormat(void) const;
+	// Gets the binary format flag for the executable
+	__declspec(property(get=getFormat)) enum class BinaryFormat Format;
+	enum class BinaryFormat getFormat(void) const;
 
 	// Handle
 	//
-	// Gets a reference to the executable file handle
+	// Gets the FileSystem handle to the binary
 	__declspec(property(get=getHandle)) std::shared_ptr<FileSystem::Handle> Handle;
 	std::shared_ptr<FileSystem::Handle> getHandle(void) const;
 
-	// Namespace
+	// OriginalPath
 	//
-	// Gets the Namespace from which the executable was resolved
-	__declspec(property(get=getNamespace)) std::shared_ptr<class Namespace> Namespace;
-	std::shared_ptr<class Namespace> getNamespace(void) const;
-
-	// RootDirectory
-	//
-	// Gets the root directory alias used to resolve the executable
-	__declspec(property(get=getRootDirectory)) std::shared_ptr<FileSystem::Path> RootDirectory;
-	std::shared_ptr<FileSystem::Path> getRootDirectory(void) const;
-
-	// WorkingDirectory
-	//
-	// Gets the working directory alias used to resolve the executable
-	__declspec(property(get=getWorkingDirectory)) std::shared_ptr<FileSystem::Path> WorkingDirectory;
-	std::shared_ptr<FileSystem::Path> getWorkingDirectory(void) const;
+	// Gets the originally specified path of the executable
+	__declspec(property(get=getOriginalPath)) const char_t* OriginalPath;
+	const char_t* getOriginalPath(void) const;
 
 private:
 
@@ -173,58 +118,50 @@ private:
 	// namespace_t
 	//
 	// Namespace shared pointer
-	using namespace_t = std::shared_ptr<class Namespace>;
-
+	using namespace_t = std::shared_ptr<Namespace>;
+	
 	// string_vector_t
 	//
-	// vector<> of string instances
+	// vector<> of std::string objects
 	using string_vector_t = std::vector<std::string>;
 
 	// Instance Constructor
 	//
-	Executable(enum class Architecture architecture, BinaryFormat format, std::shared_ptr<FileSystem::Handle> handle, const char_t* filename, 
-		const char_t* const* arguments, const char_t* const* environment, std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir,  
-		std::shared_ptr<FileSystem::Path> workingdir);
-
-	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, BinaryFormat, std::shared_ptr<FileSystem::Handle>, 
-		const char_t*&, const char_t* const *&, const char_t* const*&, std::shared_ptr<class Namespace>, std::shared_ptr<FileSystem::Path>, 
-		std::shared_ptr<FileSystem::Path>>(enum class Architecture&&, BinaryFormat&& format, std::shared_ptr<FileSystem::Handle>&& handle, 
-		const char_t*& filename, const char_t* const *& arguments, const char_t* const*& environment, std::shared_ptr<class Namespace>&& ns,
-		std::shared_ptr<FileSystem::Path>&& rootdir, std::shared_ptr<FileSystem::Path>&& workingdir);
+	Executable(enum class Architecture architecture, enum class BinaryFormat format, const char_t* originalpath, fshandle_t handle,
+		string_vector_t&& arguments, string_vector_t&& environment);
+	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class BinaryFormat, const char_t*&, 
+		fshandle_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, const char_t*&, fshandle_t&&,
+		string_vector_t&&, string_vector_t&&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
 	// FromFile (static)
 	//
-	// Creates an executable instance from a file system path
-	static std::unique_ptr<Executable> FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> rootdir, 
-		std::shared_ptr<FileSystem::Path> workingdir, const char_t* originalfilename, const char_t* filename, const char_t* const* arguments, 
-		const char_t* const* environment);
+	// Internal version of FromFile that accepts an intermediate set of arguments
+	static std::unique_ptr<Executable> FromFile(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath, 
+		const char_t* path, string_vector_t&& arguments, string_vector_t&& environment);
 
-	// LoadELF
+	// FromScript (static)
 	//
-	// Loads an ELF binary into a process virtual address space
-	LoadResult LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
+	// Internal version of FromFile that resolves via an interpreter script
+	static std::unique_ptr<Executable> FromScript(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath,
+		fshandle_t scripthandle, size_t dataoffset, string_vector_t&& arguments, string_vector_t&& environment);
 
-	// LoadELF<Architecture>
+	// StringArrayToVector (static)
 	//
-	// Loads an ELF binary into a process virtual address space
-	template<enum class Architecture architecture>
-	LoadResult LoadELF(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer) const;
+	// Converts a null-terminated array of C-style strings into a vector<string>
+	static string_vector_t StringArrayToVector(const char_t* const* strings);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const enum class Architecture	m_architecture;			// Architecture flag
-	const BinaryFormat				m_format;				// Binary file format
-	const fshandle_t				m_handle;				// File handle
-	const std::string				m_filename;				// Original file name
-	string_vector_t					m_arguments;			// Command-line arguments
-	string_vector_t					m_environment;			// Environment variables
-	const namespace_t				m_ns;					// Namespace instance
-	const fspath_t					m_rootdir;				// Root directory
-	const fspath_t					m_workingdir;			// Working directory
+	const enum class Architecture	m_architecture;		// Architecture flag
+	const enum class BinaryFormat	m_format;			// Binary file format
+	const std::string				m_originalpath;		// Originally specified path
+	const fshandle_t				m_handle;			// Binary file handle
+	const string_vector_t			m_arguments;		// Command line arguments
+	const string_vector_t			m_environment;		// Environment variables
 };
 
 //-----------------------------------------------------------------------------

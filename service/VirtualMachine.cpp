@@ -198,8 +198,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		try { m_rootmount = m_filesystems.at(rootfstype.c_str())(root.c_str(), LINUX_MS_KERNMOUNT, rootflags.data(), rootflags.length()); }
 		catch(...) { throw; } // <--- todo - service should not start if root mount fails - panic
 
-		// Construct the file system root alias (/) and attach it to the mounted root directory
-		//m_rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
+		// Construct the file system root alias (/) and path
 		auto rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
 		auto rootpath = FileSystem::Path::Create(rootalias, m_rootmount);
 
@@ -223,7 +222,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 		auto initsession = Session::Create(initpid, shared_from_this());
 		auto initpgroup = ProcessGroup::Create(initpid, initsession);
 
-		// todo: need arguments and environment from command line
+		// todo: need arguments and environment from vm command line
 		m_initprocess = Process::Create(initpid, initsession, initpgroup, m_rootns, rootpath, rootpath, std::to_string(m_paraminit.Value).c_str(), nullptr, nullptr);
 
 		// the job object needs to be associated with all processes, any time CreateProcess is called
@@ -236,6 +235,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// catch(std::exception& ex) { /* TODO: PUT SOMETHING HERE */ }
 
 	// Add this virtual machine instance to the active instance collection
+	// todo: this has to happen before init is created!!
 	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);
 	s_instances.emplace(m_instanceid, shared_from_this());
 }

@@ -23,6 +23,8 @@
 #include "stdafx.h"
 #include "Process.h"
 
+#include "Capability.h"
+#include "Executable.h"
 #include "LinuxException.h"
 #include "Pid.h"
 #include "ProcessGroup.h"
@@ -112,9 +114,11 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, const char_t* path,
 		const char_t* const* arguments, const char_t* const* environment)
 {
-	(path);
-	(arguments);
-	(environment);
+	// Spawning a new process requires root level access
+	Capability::Demand(Capability::SystemAdmin);
+
+	// Create an Executable instance for the provided path
+	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
 
 	// Create the Process instance
 	auto process = std::make_shared<Process>(std::move(pid), session, pgroup, std::move(ns), std::move(root), std::move(working));
