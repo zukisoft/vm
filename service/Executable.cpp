@@ -216,6 +216,7 @@ std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root
 	fshandle_t scripthandle, size_t dataoffset, string_vector_t&& arguments, string_vector_t&& environment)
 {
 	char_t					buffer[MAX_PATH];			// Script data buffer
+	string_vector_t			newarguments;				// New executable arguments
 
 	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT };
 
@@ -235,33 +236,19 @@ std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root
 	for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!std::isspace(*end)); end++);
 	std::string argument(begin, end);
 
-	// todo: recheck the old version, this doesn't look quite right, why am I replacing argv[0]
-	// with the "filename" when it should already be set to that??
-	(arguments);
-	(environment);
-	throw LinuxException{ LINUX_ENOEXEC };
+	// Create a new arguments vector for the target interpreter binary
+	newarguments.push_back(interpreter);
+	if(argument.length()) newarguments.push_back(std::move(argument));
+	newarguments.emplace_back(originalpath);
 
-	// [0] - INTERPRETER PATH
-	// [1] - INTERPRETER ARGUMENTS	<--- document why this is in this slot if it's right
-	// [2] - PATH_TO_SCRIPT			<--- shouldn't original argv[0] already have this?
+	if(!arguments.empty()) {
+	
+		// Append the original argv[1] .. argv[n] arguments to the new vector (argv[0] is discarded if present)
+		for(auto iterator = arguments.begin() + 1; iterator != arguments.end(); iterator++) newarguments.push_back(*iterator);
+	}
 
-	// [3] - ORIGINAL ARGV[1] ... [N]
-
-	// OLD CODE HERE
-
-	//// Create a new argument array to pass back in, using the parsed interpreter and argument
-	//std::vector<const char_t*> newarguments;
-	//newarguments.push_back(interpreter.c_str());
-	//if(argument.length()) newarguments.push_back(argument.c_str());
-	//newarguments.push_back(filename);
-
-	//// Append the original argv[1] .. argv[n] pointers to the new argument array
-	//if(arguments && (*arguments)) arguments++;
-	//while((arguments) && (*arguments)) { newarguments.push_back(*arguments); arguments++; }
-	//newarguments.push_back(nullptr);
-
-	// Call back into FromFile with the interpreter path and modified arguments
-	//return FromFile(ns, std::move(rootdir), std::move(workingdir), originalfilename, interpreter.c_str(), newarguments.data(), environment);
+	// Call back into FromFile with the interpreter binary as the target and new arguments
+	return FromFile(ns, std::move(root), std::move(current), originalpath, interpreter.c_str(), std::move(newarguments), std::move(environment));
 }
 
 //-----------------------------------------------------------------------------
