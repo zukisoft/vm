@@ -67,6 +67,26 @@ enum class Architecture Executable::getArchitecture(void) const
 }
 
 //-----------------------------------------------------------------------------
+// Executable::getArguments
+//
+// Gets a reference to the contained arguments vector
+
+const std::vector<std::string>& Executable::getArguments(void) const
+{
+	return m_arguments;
+}
+
+//-----------------------------------------------------------------------------
+// Executable::getEnvironmentVariables
+//
+// Gets a reference to the contained environment variables vector
+
+const std::vector<std::string>& Executable::getEnvironmentVariables(void) const
+{
+	return m_environment;
+}
+
+//-----------------------------------------------------------------------------
 // Executable::getFormat
 //
 // Gets the binary format of the executable

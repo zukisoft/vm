@@ -40,7 +40,9 @@ class Namespace;
 //-----------------------------------------------------------------------------
 // Executable
 //
-// todo words 
+// Resolves an executable file and provides information about the architecture
+// and binary format of the target.  Interpreter scripts are parsed and resolved
+// to the target binary, modifying the command line argument array appropriately.
 
 class Executable
 {
@@ -76,11 +78,15 @@ public:
 
 	// Arguments
 	//
-	// 
+	// Gets a reference to the contained arguments vector
+	__declspec(property(get=getArguments)) const std::vector<std::string>& Arguments;
+	const std::vector<std::string>& getArguments(void) const;
 
-	// Environment
+	// EnvironmentVariables
 	//
-	// 
+	// Gets a reference to the contained environment variables vector
+	__declspec(property(get=getEnvironmentVariables)) const std::vector<std::string>& EnvironmentVariables;
+	const std::vector<std::string>& getEnvironmentVariables(void) const;
 
 	// Format
 	//
