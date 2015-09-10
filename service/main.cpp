@@ -84,8 +84,8 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 		// test parameters
 		harness.SetParameter(_T("systemlog.length"), 1 MiB);
 #ifdef _DEBUG
-		harness.SetParameter(_T("process.host.32bit"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
-		harness.SetParameter(_T("process.host.64bit"), _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
+		harness.SetParameter(_T("vm.host32"), _T("D:\\GitHub\\vm\\out\\Win32\\Debug\\zuki.vm.host32.exe"));
+		harness.SetParameter(_T("vm.host64"), _T("D:\\GitHub\\vm\\out\\x64\\Debug\\zuki.vm.host64.exe"));
 #else
 		harness.SetParameter(_T("process.host.32bit"), _T("D:\\GitHub\\vm\\out\\Win32\\Release\\zuki.vm.host32.exe"));
 		harness.SetParameter(_T("process.host.64bit"), _T("D:\\GitHub\\vm\\out\\x64\\Release\\zuki.vm.host64.exe"));

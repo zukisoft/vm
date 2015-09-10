@@ -32,6 +32,7 @@
 
 // Forward Declarations
 //
+class Host;
 class Namespace;
 class Pid;
 class ProcessGroup;
@@ -41,7 +42,7 @@ class Thread;
 //-----------------------------------------------------------------------------
 // Process
 //
-// Implements a virtual machine process/thread group
+// Implements a virtual machine process/thread group instance
 
 class Process
 {
@@ -132,6 +133,11 @@ private:
 	//
 	// FileSystem::Path shared pointer
 	using fspath_t = std::shared_ptr<FileSystem::Path>;
+
+	// host_t
+	//
+	// Host unique pointer
+	using host_t = std::unique_ptr<Host>;
 	
 	// namespace_t
 	//
@@ -160,12 +166,13 @@ private:
 
 	// Instance Constructor
 	//
-	Process(pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, fspath_t root, fspath_t working);
+	Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, fspath_t root, fspath_t working);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
+	const host_t					m_host;			// Host instance
 	const pid_t						m_pid;			// Process identifier
 	pgroup_t						m_pgroup;		// Parent ProcessGroup
 	session_t						m_session;		// Parent Session

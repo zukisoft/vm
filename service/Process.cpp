@@ -25,11 +25,13 @@
 
 #include "Capability.h"
 #include "Executable.h"
+#include "Host.h"
 #include "LinuxException.h"
 #include "Pid.h"
 #include "ProcessGroup.h"
 #include "Session.h"
 #include "Thread.h"
+#include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 
@@ -72,6 +74,7 @@ void RemoveProcessThread(std::shared_ptr<Process> process, const Thread* thread)
 //
 // Arguments:
 //
+//	host		- Host instance to take ownership of
 //	pid			- Process identifier to assign to the process
 //	session		- Session in which the process will be a member
 //	pgroup		- ProcessGroup in which the process will be a member
@@ -79,8 +82,9 @@ void RemoveProcessThread(std::shared_ptr<Process> process, const Thread* thread)
 //	root		- Initial root path for this process
 //	working		- Initial working path for this process
 
-Process::Process(pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, fspath_t root, fspath_t working)
-	: m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), m_root(std::move(root)), m_working(std::move(working))
+Process::Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, fspath_t root, fspath_t working) : 
+	m_host(std::move(host)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
+	m_root(std::move(root)), m_working(std::move(working))
 {
 }
 
@@ -114,16 +118,26 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, const char_t* path,
 		const char_t* const* arguments, const char_t* const* environment)
 {
+	std::shared_ptr<Process>			process;			// The constructed Process instance
+
 	// Spawning a new process requires root level access
 	Capability::Demand(Capability::SystemAdmin);
 
 	// Create an Executable instance for the provided path
 	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
 
-	// Create the Process instance
-	auto process = std::make_shared<Process>(std::move(pid), session, pgroup, std::move(ns), std::move(root), std::move(working));
+	// Create a Host instance to implement the underlying native process
+	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
 
-	// The parent container links have to be established after the shared_ptr has been constructed
+	try {
+
+		// Create the Process instance
+		process = std::make_shared<Process>(std::move(host), std::move(pid), session, pgroup, std::move(ns), std::move(root), std::move(working));
+	}
+
+	catch(...) { /* TODO: Terminate the host on any exceptions in here */ throw; }
+
+	// Establish links to the parent process group and session containers
 	AddProcessGroupProcess(pgroup, process);
 	AddSessionProcess(session, process);
 

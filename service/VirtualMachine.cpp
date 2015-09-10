@@ -24,9 +24,12 @@
 #include "VirtualMachine.h"
 
 #include "Exception.h"
+#include "Host.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
+#include "NativeHandle.h"
+#include "NativeProcess.h"
 #include "Process.h"
 #include "ProcessGroup.h"
 #include "RpcObject.h"
@@ -101,6 +104,44 @@ void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, const Sessi
 
 VirtualMachine::VirtualMachine() : m_instanceid(GenerateInstanceId())
 {
+}
+
+//---------------------------------------------------------------------------
+// VirtualMachine::CreateHost
+//
+// Creates a Host instance for the specified architecture
+//
+// Arguments:
+//
+//	architecture	- Architecture of the native process
+
+std::unique_ptr<Host> VirtualMachine::CreateHost(enum class Architecture architecture)
+{
+	std::unique_ptr<NativeProcess>		nativeproc;		// The constructed NativeProcess instance
+
+	// Construct a NativeProcess instance for the specified architecture
+	if(architecture == Architecture::x86) 
+		nativeproc = NativeProcess::Create(m_paramhost32.Value.c_str(), m_syscalls32->BindingString);
+#ifdef _M_X64
+	else if(architecture == Architecture::x86_64) 
+		nativeproc = NativeProcess::Create(m_paramhost64.Value.c_str(), m_syscalls64->BindingString);
+#endif
+	else throw LinuxException{ LINUX_ENOEXEC };
+
+	try {
+
+		// Verify that the architecture of the created process matches the request
+		if(nativeproc->Architecture != architecture) throw LinuxException{ LINUX_ENOEXEC };
+
+		// Associate the native process with the instance job object before returning
+		if(!AssignProcessToJobObject(m_job, nativeproc->ProcessHandle->Handle)) throw LinuxException{ LINUX_ENOEXEC, Win32Exception{} };
+	}
+
+	// Terminate the native process on exception before throwing
+	catch(...) { nativeproc->Terminate(0); throw; }
+
+	// Construct and return a new Host instance from the native process
+	return Host::FromNativeProcess(std::move(nativeproc));
 }
 
 //---------------------------------------------------------------------------
@@ -200,7 +241,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 		// Construct the file system root alias (/) and path
 		auto rootalias = std::make_shared<RootAlias>(m_rootmount->Root);
-		auto rootpath = FileSystem::Path::Create(rootalias, m_rootmount);
+		m_rootpath = FileSystem::Path::Create(rootalias, m_rootmount);
 
 		// todo: add mount to root namespace
 
@@ -215,18 +256,6 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 #ifdef _M_X64
 		m_syscalls64 = RpcObject::Create(SystemCalls64_v1_0_s_ifspec, m_instanceid, RPC_IF_AUTOLISTEN | RPC_IF_ALLOW_SECURE_ONLY);
 #endif
-
-		// INIT PROCESS
-		//
-		auto initpid = m_rootns->Pids->Allocate();
-		auto initsession = Session::Create(initpid, shared_from_this());
-		auto initpgroup = ProcessGroup::Create(initpid, initsession);
-
-		// todo: need arguments and environment from vm command line
-		m_initprocess = Process::Create(initpid, initsession, initpgroup, m_rootns, rootpath, rootpath, std::to_string(m_paraminit.Value).c_str(), nullptr, nullptr);
-
-		// the job object needs to be associated with all processes, any time CreateProcess is called
-		// initprocess must be watched, termination causes a panic (service stop)
 	}
 
 	// Win32Exception and Exception can be translated into ServiceExceptions
@@ -235,9 +264,25 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// catch(std::exception& ex) { /* TODO: PUT SOMETHING HERE */ }
 
 	// Add this virtual machine instance to the active instance collection
-	// todo: this has to happen before init is created!!
+	// todo: should this be in the initialization try/catch above?
 	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);
 	s_instances.emplace(m_instanceid, shared_from_this());
+
+	// todo: this needs to be wrapped in its own exception handler, prefer moving it
+	// out into it's own function since it will need to wait for the process to terminate
+	// in order to panic if that happens prior to service stop
+
+	// INIT PROCESS
+	//
+	auto initpid = m_rootns->Pids->Allocate();
+	auto initsession = Session::Create(initpid, shared_from_this());
+	auto initpgroup = ProcessGroup::Create(initpid, initsession);
+
+	// todo: need arguments and environment from vm command line
+	m_initprocess = Process::Create(initpid, initsession, initpgroup, m_rootns, m_rootpath, m_rootpath, std::to_string(m_paraminit.Value).c_str(), nullptr, nullptr);
+
+	// the job object needs to be associated with all processes, any time CreateProcess is called
+	// initprocess must be watched, termination causes a panic (service stop)
 }
 
 //---------------------------------------------------------------------------
@@ -262,9 +307,7 @@ void VirtualMachine::OnStop(void)
 	CloseHandle(m_job);
 
 	m_syscalls32.reset();			// Revoke the 32-bit system calls object
-#ifdef _M_X64
 	m_syscalls64.reset();			// Revoke the 64-bit system calls object
-#endif
 
 	// Remove this virtual machine from the active instance collection
 	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);

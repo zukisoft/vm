@@ -26,10 +26,12 @@
 
 #include <memory>
 #include <unordered_map>
+#include "Architecture.h"
 #include "FileSystem.h"
 
 // Forward Declarations
 //
+class Host;
 class Namespace;
 class Pid;
 class Process;
@@ -70,6 +72,11 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Member Functions
+
+	// CreateHost
+	//
+	// Creates a new Host instance for the specified architecture
+	std::unique_ptr<Host> CreateHost(enum class Architecture architecture);
 
 	// Find (static)
 	//
@@ -150,6 +157,12 @@ private:
 		PARAMETER_ENTRY(_T("rootfstype"),		m_paramrootfstype)			// String
 		PARAMETER_ENTRY(_T("rootflags"),		m_paramrootflags)			// String
 		PARAMETER_ENTRY(_T("rw"),				m_paramrw)					// DWord
+
+		// todo: dots in the argument name implies that it's a module parameter, which
+		// is a good thing, but decide on the proper name for it -- "vm" is a tad generic
+		PARAMETER_ENTRY(_T("vm.host32"),		m_paramhost32)				// String
+		PARAMETER_ENTRY(_T("vm.host64"),		m_paramhost64)				// String
+
 	END_PARAMETER_MAP()
 
 	// filesystem_map_t
@@ -210,10 +223,7 @@ private:
 
 	const uuid_t					m_instanceid;		// Instance identifier
 	std::unique_ptr<RpcObject>		m_syscalls32;		// 32-bit system calls object
-
-#ifdef _M_X64
 	std::unique_ptr<RpcObject>		m_syscalls64;		// 64-bit system calls object
-#endif
 
 	std::shared_ptr<Namespace>		m_rootns;			// Root namespace instance
 
@@ -230,6 +240,7 @@ private:
 	//
 	filesystem_map_t				m_filesystems;		// Available file systems
 	fsmount_t						m_rootmount;		// Root file system mount
+	fspath_t						m_rootpath;			// Path to the root node
 
 	// Init Process
 	fsprocess_t						m_initprocess;		// Initial process
@@ -243,6 +254,8 @@ private:
 	StringParameter					m_paramrootfstype	{ _T("rootfs") };
 	StringParameter					m_paramrootflags;
 	DWordParameter					m_paramrw			{ 0 };
+	StringParameter					m_paramhost32;
+	StringParameter					m_paramhost64;
 };
 
 //-----------------------------------------------------------------------------
