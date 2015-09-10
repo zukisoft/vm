@@ -35,9 +35,7 @@
 enum class Architecture
 {
 	x86			= 0,				// 32-bit I386 process
-#ifdef _M_X64
 	x86_64		= 1,				// 64-bit AMD64 process
-#endif
 };
 
 //-----------------------------------------------------------------------------
