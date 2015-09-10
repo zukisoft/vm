@@ -30,9 +30,12 @@
 #include "Architecture.h"
 #include "Exception.h"
 #include "HeapBuffer.h"
-#include "ProcessMemory.h"
 
-#pragma warning(push, 4)				
+#pragma warning(push, 4)
+
+// Forward Declarations
+//
+class Host;
 
 //-----------------------------------------------------------------------------
 // ElfArguments
@@ -90,7 +93,7 @@ public:
 	// WriteStack
 	//
 	// Writes the collected ELF arguments to a process stack
-	template <Architecture architecture> const void* WriteStack(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer);
+	template <Architecture architecture> const void* WriteStack(const std::unique_ptr<Host>& host, const void* stackpointer);
 
 private:
 

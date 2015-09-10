@@ -23,13 +23,15 @@
 #include "stdafx.h"
 #include "ElfArguments.h"
 
+#include "Host.h"
+
 #pragma warning(push, 4)
 
 // Explicit Instantiations
 //
-template const void* ElfArguments::WriteStack<Architecture::x86>(const std::unique_ptr<ProcessMemory>&, const void*);
+template const void* ElfArguments::WriteStack<Architecture::x86>(const std::unique_ptr<Host>&, const void*);
 #ifdef _M_X64
-template const void* ElfArguments::WriteStack<Architecture::x86_64>(const std::unique_ptr<ProcessMemory>&, const void*);
+template const void* ElfArguments::WriteStack<Architecture::x86_64>(const std::unique_ptr<Host>&, const void*);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -227,7 +229,7 @@ uint32_t ElfArguments::AppendInfo(const void* buffer, size_t length)
 //	stackpointer	- Current stack pointer within the ProcessMemory
 
 template <Architecture architecture>
-const void* ElfArguments::WriteStack(const std::unique_ptr<ProcessMemory>& memory, const void* stackpointer)
+const void* ElfArguments::WriteStack(const std::unique_ptr<Host>& host, const void* stackpointer)
 {
 	using elf = elf_traits<architecture>;
 
@@ -286,7 +288,7 @@ const void* ElfArguments::WriteStack(const std::unique_ptr<ProcessMemory>& memor
 	//
 
 	// Write the stack image into the process memory at the calcuated address
-	size_t written = memory->Write(stackpointer, stackimage, stackimage.Size);
+	size_t written = host->WriteMemory(stackpointer, stackimage, stackimage.Size);
 	if(written != stackimage.Size) throw Exception(E_ELFWRITEARGUMENTS);
 
 	return stackpointer;				// Return the new stack pointer

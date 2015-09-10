@@ -28,7 +28,6 @@
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
-#include "NativeHandle.h"
 #include "NativeProcess.h"
 #include "Process.h"
 #include "ProcessGroup.h"
@@ -134,7 +133,7 @@ std::unique_ptr<Host> VirtualMachine::CreateHost(enum class Architecture archite
 		if(nativeproc->Architecture != architecture) throw LinuxException{ LINUX_ENOEXEC };
 
 		// Associate the native process with the instance job object before returning
-		if(!AssignProcessToJobObject(m_job, nativeproc->ProcessHandle->Handle)) throw LinuxException{ LINUX_ENOEXEC, Win32Exception{} };
+		if(!AssignProcessToJobObject(m_job, nativeproc->ProcessHandle)) throw LinuxException{ LINUX_ENOEXEC, Win32Exception{} };
 	}
 
 	// Terminate the native process on exception before throwing

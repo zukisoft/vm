@@ -23,13 +23,15 @@
 #include "stdafx.h"
 #include "ElfImage.h"
 
+#include "Host.h"
+
 #pragma warning(push, 4)
 
 // Explicit Template Instantiations
 //
-template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
+template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host);
 #ifdef _M_X64
-template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86_64>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
+template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86_64>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -41,15 +43,15 @@ template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86_64>(const st
 //
 //	flags		- ELF memory protection flags to convert
 
-inline int ElfProtectionToLinuxProtection(uint32_t flags)
+inline Host::MemoryProtection ElfProtectionToLinuxProtection(uint32_t flags)
 {
-	int result = LINUX_PROT_NONE;		// Default to PROT_NONE (0x00)
+	auto result = Host::MemoryProtection::None;		// Default to PROT_NONE (0x00)
 
 	// The ELF flags are the same as the Linux flags, but the bitmask values
 	// are different.  Accumulate flags in the result based on source
-	if(flags & LINUX_PF_R) result |= LINUX_PROT_READ;
-	if(flags & LINUX_PF_W) result |= LINUX_PROT_WRITE;
-	if(flags & LINUX_PF_X) result |= LINUX_PROT_EXEC;
+	if(flags & LINUX_PF_R) result |= Host::MemoryProtection::Read;
+	if(flags & LINUX_PF_W) result |= Host::MemoryProtection::Write;
+	if(flags & LINUX_PF_X) result |= Host::MemoryProtection::Execute;
 
 	return result;
 }
@@ -57,7 +59,7 @@ inline int ElfProtectionToLinuxProtection(uint32_t flags)
 // todo: I really want this to go away, but this operation does need to exist somewhere.  Allowing
 // direct access to the data buffer for TempFileSystem would work, but only for TempFileSystem
 // rename to ReadIntoProcess?
-inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory, size_t offset, void* destination, size_t count)
+inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host, size_t offset, void* destination, size_t count)
 {
 	uintptr_t			dest = uintptr_t(destination);		// Easier pointer math as uintptr_t
 	size_t				total = 0;							// Total bytes written
@@ -75,7 +77,7 @@ inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle
 		if(read == 0) break;
 
 		// Write the data into the target native operating system process
-		total += memory->Write(reinterpret_cast<void*>(dest + total), buffer, read);
+		total += host->WriteMemory(reinterpret_cast<void*>(dest + total), buffer, read);
 
 		count -= read;					// Decrement bytes left to be read
 	};
@@ -124,7 +126,7 @@ const uapi::char_t* ElfImage::getInterpreter(void) const
 //	memory		- Target process' virtual address space manager
 
 template <Architecture architecture>
-std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory)
+std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host)
 {
 	using elf = elf_traits<architecture>;
 
@@ -171,8 +173,8 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so
 		// reserve them at the highest available virtual address to allow for as much heap space as possible.
 		// Note that the section length is aligned to the allocation granularity of the system to prevent holes
-		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = memory->Allocate(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, LINUX_PROT_NONE);
-		else metadata.BaseAddress = memory->Allocate(maxvaddr - minvaddr, LINUX_PROT_NONE);
+		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = host->AllocateMemory(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, Host::MemoryProtection::None);
+		else metadata.BaseAddress = host->AllocateMemory(maxvaddr - minvaddr, Host::MemoryProtection::None);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
@@ -198,21 +200,21 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 			// Get the base address of the loadable segment and set it as PAGE_READWRITE to load it
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { memory->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, LINUX_PROT_READ | LINUX_PROT_WRITE); }
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, Host::MemoryProtection::Read | Host::MemoryProtection::Write); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(progheader.p_filesz) {
 
 				// Read the data from the input stream into the target process address space at segbase
-				try { read = OutOfProcessRead(handle, memory, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
+				try { read = OutOfProcessRead(handle, host, progheader.p_offset, reinterpret_cast<void*>(segbase), progheader.p_filesz); }
 				catch(Exception& ex) { throw Exception(E_ELFWRITESEGMENT, ex); }
 
 				if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 			}
 
 			// Attempt to apply the proper virtual memory protection flags to the segment now that it's been written
-			try { memory->Protect(reinterpret_cast<void*>(segbase), progheader.p_memsz, ElfProtectionToLinuxProtection(progheader.p_flags)); }
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, ElfProtectionToLinuxProtection(progheader.p_flags)); }
 			catch(Exception& ex) { throw Exception(E_ELFPROTECTSEGMENT, ex); }
 		}
 

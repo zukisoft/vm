@@ -23,7 +23,6 @@
 #include "stdafx.h"
 #include "NativeProcess.h"
 
-#include "NativeHandle.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
 
@@ -35,14 +34,20 @@
 // Arguments:
 //
 //	architecture	- Native process architecture flag
-//	process			- Process handle instance
-//	processid		- Native process identifier
-//	thread			- Thread handle instance
-//	threadid		- Native thread identifier
+//	procinfo		- Process information structure
 
-NativeProcess::NativeProcess(enum class Architecture architecture, nativehandle_t process, DWORD processid, nativehandle_t thread, DWORD threadid) :
-	m_architecture(architecture), m_process(std::move(process)), m_processid(processid), m_thread(std::move(thread)), m_threadid(threadid) 
+NativeProcess::NativeProcess(enum class Architecture architecture, PROCESS_INFORMATION& procinfo) :
+	m_architecture(architecture), m_process(procinfo.hProcess), m_processid(procinfo.dwProcessId), m_thread(procinfo.hThread), m_threadid(procinfo.dwThreadId) 
 {
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess Destructor
+
+NativeProcess::~NativeProcess()
+{
+	CloseHandle(m_thread);
+	CloseHandle(m_process);
 }
 
 //-----------------------------------------------------------------------------
@@ -125,9 +130,17 @@ std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const 
 
 	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
 
-	// Process was successfully created and initialized, construct the NativeProcess instance to own the handles
-	return std::make_unique<NativeProcess>(GetProcessArchitecture(procinfo.hProcess), NativeHandle::FromHandle(procinfo.hProcess), 
-		procinfo.dwProcessId, NativeHandle::FromHandle(procinfo.hThread), procinfo.dwThreadId);
+	// Process was successfully created and initialized, construct the NativeProcess instance
+	try { return std::make_unique<NativeProcess>(GetProcessArchitecture(procinfo.hProcess), procinfo); }
+
+	catch(...) {
+
+		// It's unlikely that the creation of NativeProcess would fail, but if it does clean up
+		TerminateProcess(procinfo.hProcess, ERROR_PROCESS_ABORTED);
+		CloseHandle(procinfo.hThread);
+		CloseHandle(procinfo.hProcess);
+		throw;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -139,7 +152,7 @@ DWORD NativeProcess::getExitCode(void) const
 {
 	DWORD				result;				// Result from GetExitCodeProcess
 
-	if(!GetExitCodeProcess(m_process->Handle, &result)) throw Win32Exception{};
+	if(!GetExitCodeProcess(m_process, &result)) throw Win32Exception{};
 
 	return result;
 }
@@ -171,7 +184,7 @@ enum class Architecture NativeProcess::GetProcessArchitecture(HANDLE process)
 //
 // Gets the host process handle
 
-std::shared_ptr<NativeHandle> NativeProcess::getProcessHandle(void) const
+HANDLE NativeProcess::getProcessHandle(void) const
 {
 	return m_process;
 }
@@ -212,8 +225,8 @@ void NativeProcess::Terminate(uint16_t exitcode) const
 
 void NativeProcess::Terminate(uint16_t exitcode, bool wait) const
 {
-	TerminateProcess(m_process->Handle, static_cast<UINT>(exitcode));
-	if(wait) WaitForSingleObject(m_process->Handle, INFINITE);
+	TerminateProcess(m_process, static_cast<UINT>(exitcode));
+	if(wait) WaitForSingleObject(m_process, INFINITE);
 }
 
 //-----------------------------------------------------------------------------
@@ -221,7 +234,7 @@ void NativeProcess::Terminate(uint16_t exitcode, bool wait) const
 //
 // Gets the host main thread handle
 
-std::shared_ptr<NativeHandle> NativeProcess::getThreadHandle(void) const
+HANDLE NativeProcess::getThreadHandle(void) const
 {
 	return m_thread;
 }

@@ -29,12 +29,15 @@
 #include "Exception.h"
 #include "FileSystem.h"
 #include "HeapBuffer.h"
-#include "ProcessMemory.h"
 #include "SystemInformation.h"
 #include "Win32Exception.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
+
+// Forward Declarations
+//
+class Host;
 
 //-----------------------------------------------------------------------------
 // ElfImage
@@ -56,7 +59,7 @@ public:
 	//
 	// Loads an ELF image into a process' virtual address space
 	template<Architecture architecture>
-	static std::unique_ptr<ElfImage> Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<ProcessMemory>& memory);
+	static std::unique_ptr<ElfImage> Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host);
 
 	//-------------------------------------------------------------------------
 	// Properties

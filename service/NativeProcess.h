@@ -30,10 +30,6 @@
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
-// Forward Declarations
-//
-class NativeHandle;
-
 //-----------------------------------------------------------------------------
 // Class NativeProcess
 //
@@ -45,7 +41,7 @@ public:
 
 	// Destructor
 	//
-	~NativeProcess()=default;
+	~NativeProcess();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -80,8 +76,8 @@ public:
 	// ProcessHandle
 	//
 	// Gets the host process handle
-	__declspec(property(get=getProcessHandle)) std::shared_ptr<NativeHandle> ProcessHandle;
-	std::shared_ptr<NativeHandle> getProcessHandle(void) const;
+	__declspec(property(get=getProcessHandle)) HANDLE ProcessHandle;
+	HANDLE getProcessHandle(void) const;
 
 	// ProcessId
 	//
@@ -92,8 +88,8 @@ public:
 	// ThreadHandle
 	//
 	// Gets the host main thread handle
-	__declspec(property(get=getThreadHandle)) std::shared_ptr<NativeHandle> ThreadHandle;
-	std::shared_ptr<NativeHandle> getThreadHandle(void) const;
+	__declspec(property(get=getThreadHandle)) HANDLE ThreadHandle;
+	HANDLE getThreadHandle(void) const;
 
 	// ThreadId
 	//
@@ -106,16 +102,10 @@ private:
 	NativeProcess(const NativeProcess&)=delete;
 	NativeProcess& operator=(const NativeProcess&)=delete;
 
-	// nativehandle_t
-	//
-	// NativeHandle shared pointer
-	using nativehandle_t = std::shared_ptr<NativeHandle>;
-
 	// Instance Constructor
 	//
-	NativeProcess(enum class Architecture architecture, nativehandle_t process, DWORD processid, nativehandle_t thread, DWORD threadid);
-	friend std::unique_ptr<NativeProcess> std::make_unique<NativeProcess, enum class Architecture, nativehandle_t, DWORD&, nativehandle_t, DWORD&>
-		 (enum class Architecture&&, nativehandle_t&&, DWORD&, nativehandle_t&&, DWORD&);
+	NativeProcess(enum class Architecture architecture, PROCESS_INFORMATION& procinfo);
+	friend std::unique_ptr<NativeProcess> std::make_unique<NativeProcess, enum class Architecture, PROCESS_INFORMATION&>(enum class Architecture&&, PROCESS_INFORMATION&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -129,9 +119,9 @@ private:
 	// Member Variables
 
 	const enum class Architecture	m_architecture;		// Native process architecture
-	const nativehandle_t			m_process;			// Native process handle
+	const HANDLE					m_process;			// Native process handle
 	DWORD							m_processid;		// Native process identifier
-	const nativehandle_t			m_thread;			// Native thread handle
+	const HANDLE					m_thread;			// Native thread handle
 	DWORD							m_threadid;			// Native thread identifier
 };
 

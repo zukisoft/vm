@@ -345,7 +345,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="..\common\MemoryRegion.h" />
     <ClInclude Include="..\common\MemorySection.h" />
     <ClInclude Include="..\common\MountOptions.h" />
-    <ClInclude Include="..\common\NativeHandle.h" />
     <ClInclude Include="..\common\NtApi.h" />
     <ClInclude Include="..\common\Random.h" />
     <ClInclude Include="..\common\RpcObject.h" />
@@ -393,7 +392,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="ProcessHandles.h" />
     <ClInclude Include="NativeProcess.h" />
     <ClInclude Include="ElfImage.h" />
-    <ClInclude Include="ProcessMemory.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="SignalActions.h" />
     <ClInclude Include="TaskState.h" />
@@ -619,7 +617,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="..\common\MemoryRegion.cpp" />
     <ClCompile Include="..\common\MemorySection.cpp" />
     <ClCompile Include="..\common\MountOptions.cpp" />
-    <ClCompile Include="..\common\NativeHandle.cpp" />
     <ClCompile Include="..\common\NtApi.cpp" />
     <ClCompile Include="..\common\Random.cpp" />
     <ClCompile Include="..\common\rpcmem.cpp" />
@@ -687,7 +684,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="NativeProcess.cpp" />
     <ClCompile Include="ElfImage.cpp" />
-    <ClCompile Include="ProcessMemory.cpp" />
     <ClCompile Include="SignalActions.cpp" />
     <ClCompile Include="sys_attach_process.cpp" />
     <ClCompile Include="SystemCall.cpp" />
