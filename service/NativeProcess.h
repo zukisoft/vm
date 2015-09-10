@@ -26,19 +26,18 @@
 
 #include <memory>
 #include "Architecture.h"
-#include "HeapBuffer.h"
-#include "NativeHandle.h"
-#include "SystemInformation.h"
-#include "_VmOld.h"
-#include "Win32Exception.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
+// Forward Declarations
+//
+class NativeHandle;
+
 //-----------------------------------------------------------------------------
 // Class NativeProcess
 //
-// Creates a new native operating system host process
+// Creates a native operating system process instance
 
 class NativeProcess
 {
@@ -51,25 +50,38 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Create<Architecture> (static)
+	// Create (static)
 	//
-	// Creates a new NativeProcess instance for the specified architecture
-	template<Architecture architecture>
-	static std::unique_ptr<NativeProcess> Create(const std::shared_ptr<_VmOld>& vm);
+	// Creates a new NativeProcess instance
+	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments);
+	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
 
 	// Terminate
 	//
 	// Terminates the native process
 	void Terminate(uint16_t exitcode) const;
+	void Terminate(uint16_t exitcode, bool wait) const;
 	
 	//-------------------------------------------------------------------------
 	// Properties
 
-	// Process
+	// Architecture
+	//
+	// Gets the (actual) architecture of the native process
+	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+	enum class Architecture getArchitecture(void) const;
+
+	// ExitCode
+	//
+	// Gets the exit code from the native process
+	__declspec(property(get=getExitCode)) DWORD ExitCode;
+	DWORD getExitCode(void) const;
+
+	// ProcessHandle
 	//
 	// Gets the host process handle
-	__declspec(property(get=getProcess)) std::shared_ptr<NativeHandle> Process;
-	std::shared_ptr<NativeHandle> getProcess(void) const;
+	__declspec(property(get=getProcessHandle)) std::shared_ptr<NativeHandle> ProcessHandle;
+	std::shared_ptr<NativeHandle> getProcessHandle(void) const;
 
 	// ProcessId
 	//
@@ -77,11 +89,11 @@ public:
 	__declspec(property(get=getProcessId)) DWORD ProcessId;
 	DWORD getProcessId(void) const;
 
-	// Thread
+	// ThreadHandle
 	//
 	// Gets the host main thread handle
-	__declspec(property(get=getThread)) std::shared_ptr<NativeHandle> Thread;
-	std::shared_ptr<NativeHandle> getThread(void) const;
+	__declspec(property(get=getThreadHandle)) std::shared_ptr<NativeHandle> ThreadHandle;
+	std::shared_ptr<NativeHandle> getThreadHandle(void) const;
 
 	// ThreadId
 	//
@@ -94,33 +106,33 @@ private:
 	NativeProcess(const NativeProcess&)=delete;
 	NativeProcess& operator=(const NativeProcess&)=delete;
 
+	// nativehandle_t
+	//
+	// NativeHandle shared pointer
+	using nativehandle_t = std::shared_ptr<NativeHandle>;
+
 	// Instance Constructor
 	//
-	NativeProcess(std::shared_ptr<NativeHandle>&& process, DWORD processid, std::shared_ptr<NativeHandle>&& thread, DWORD threadid);
-	friend std::unique_ptr<NativeProcess> std::make_unique<NativeProcess, std::shared_ptr<NativeHandle>, DWORD&, std::shared_ptr<NativeHandle>, DWORD&>
-		 (std::shared_ptr<NativeHandle>&&, DWORD&, std::shared_ptr<NativeHandle>&&, DWORD&);
+	NativeProcess(enum class Architecture architecture, nativehandle_t process, DWORD processid, nativehandle_t thread, DWORD threadid);
+	friend std::unique_ptr<NativeProcess> std::make_unique<NativeProcess, enum class Architecture, nativehandle_t, DWORD&, nativehandle_t, DWORD&>
+		 (enum class Architecture&&, nativehandle_t&&, DWORD&, nativehandle_t&&, DWORD&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// CheckArchitecture (static)
+	// GetProcessArchitecture (static)
 	//
-	// Checks the architecture of a constructed host process instance
-	template<Architecture architecture>
-	static void CheckArchitecture(const std::unique_ptr<NativeProcess>& instance);
-
-	// Create (static)
-	//
-	// Creates a new NativeProcess instance
-	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
+	// Determines the Architecture of a native process
+	static enum class Architecture GetProcessArchitecture(HANDLE process);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	std::shared_ptr<NativeHandle>	m_process;		// Native process handle
-	DWORD							m_processid;	// Native process identifier
-	std::shared_ptr<NativeHandle>	m_thread;		// Native thread handle
-	DWORD							m_threadid;		// Native thread identifier
+	const enum class Architecture	m_architecture;		// Native process architecture
+	const nativehandle_t			m_process;			// Native process handle
+	DWORD							m_processid;		// Native process identifier
+	const nativehandle_t			m_thread;			// Native thread handle
+	DWORD							m_threadid;			// Native thread identifier
 };
 
 //-----------------------------------------------------------------------------

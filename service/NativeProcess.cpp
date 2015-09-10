@@ -23,6 +23,10 @@
 #include "stdafx.h"
 #include "NativeProcess.h"
 
+#include "NativeHandle.h"
+#include "SystemInformation.h"
+#include "Win32Exception.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -30,114 +34,51 @@
 //
 // Arguments:
 //
+//	architecture	- Native process architecture flag
 //	process			- Process handle instance
 //	processid		- Native process identifier
 //	thread			- Thread handle instance
 //	threadid		- Native thread identifier
 
-NativeProcess::NativeProcess(std::shared_ptr<NativeHandle>&& process, DWORD processid, std::shared_ptr<NativeHandle>&& thread, DWORD threadid) :
-	m_process(std::move(process)), m_processid(processid), m_thread(std::move(thread)), m_threadid(threadid) {}
-
-//-----------------------------------------------------------------------------
-// NativeProcess::CheckArchitecture<x86> (private, static)
-//
-// Checks that the created host process is 32-bit
-//
-// Arguments:
-//
-//	instance		- NativeProcess instance to be validated
-
-template<> 
-void NativeProcess::CheckArchitecture<Architecture::x86>(const std::unique_ptr<NativeProcess>& instance)
+NativeProcess::NativeProcess(enum class Architecture architecture, nativehandle_t process, DWORD processid, nativehandle_t thread, DWORD threadid) :
+	m_architecture(architecture), m_process(std::move(process)), m_processid(processid), m_thread(std::move(thread)), m_threadid(threadid) 
 {
-	BOOL			result;				// Result from IsWow64Process
-
-	// 32-bit systems can only create 32-bit processes; nothing to worry about
-	if(SystemInformation::ProcessorArchitecture == SystemInformation::Architecture::Intel) return;
-
-	// 64-bit system; verify that the process is running under WOW64
-	if(!IsWow64Process(instance->Process->Handle, &result)) throw Win32Exception();
-	if(!result) throw Exception(E_PROCESSINVALIDX86HOST);		// todo: rename exception
 }
 
 //-----------------------------------------------------------------------------
-// Process::CheckArchitecture<x86_64> (static, private)
+// NativeProcess::getArchitecture
 //
-// Checks that the created host process is 64-bit
-//
-// Arguments:
-//
-//	instance		- NativeProcess instance to be validated
+// Gets the architecture of the native process
 
-#ifdef _M_X64
-template<>
-void NativeProcess::CheckArchitecture<Architecture::x86_64>(const std::unique_ptr<NativeProcess>& instance)
+enum class Architecture NativeProcess::getArchitecture(void) const
 {
-	BOOL				result;				// Result from IsWow64Process
-
-	// 64-bit system; verify that the process is not running under WOW64
-	if(!IsWow64Process(instance->Process->Handle, &result)) throw Win32Exception();
-	if(result) throw Exception(E_PROCESSINVALIDX64HOST);		// todo: rename exception
+	return m_architecture;
 }
-#endif
-
+	
 //-----------------------------------------------------------------------------
-// NativeProcess::Create<Architecture::x86>
-//
-// Arguments:
-//
-//	vm			- Parent virtual machine instance
-
-template<>
-std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<_VmOld>& vm)
-{
-	// Get the architecture-specific filename and arguments from the virtual machine instance
-	std::tstring filename = vm->GetProperty(_VmOld::Properties::HostProcessBinary32);
-	std::tstring arguments = vm->GetProperty(_VmOld::Properties::HostProcessArguments);
-
-	// Construct the specified process and validate that it's Architecture::x86
-	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
-	CheckArchitecture<Architecture::x86>(host);
-
-	// TODO: THIS NEEDS TO KILL THE PROCESS IF CHECKARCHITECTURE FAILS
-
-	return host;
-}
-
-//-----------------------------------------------------------------------------
-// NativeProcess::Create<Architecture::x86_64>
-//
-// Arguments:
-//
-//	vm			- Parent virtual machine instance
-
-#ifdef _M_X64
-template<>
-std::unique_ptr<NativeProcess> NativeProcess::Create<Architecture::x86>(const std::shared_ptr<_VmOld>& vm)
-{
-	// Get the architecture-specific filename and arguments from the virtual machine instance
-	std::tstring filename = vm->GetProperty(_VmOld::Properties::HostProcessBinary64);
-	std::tstring arguments = vm->GetProperty(_VmOld::Properties::HostProcessArguments);
-
-	// Construct the specified process and validate that it's Architecture::x86
-	std::unique_ptr<NativeProcess> host = Create(filename.c_str(), arguments.c_str(), nullptr, 0);
-	CheckArchitecture<Architecture::x86_64>(host);
-
-	// TODO: THIS NEEDS TO KILL THE PROCESS IF CHECKARCHITECTURE FAILS
-
-	return host;
-}
-#endif
-
-//-----------------------------------------------------------------------------
-// NativeProcess::Create (private, static)
+// NativeProcess::Create
 //
 // Creates a new native operating system process instance
 //
 // Arguments:
 //
-//	path			- Path to the host binary
-//	arguments		- Arguments to pass to the host binary
+//	path			- Path to the native process executable
+//	arguments		- Arguments to pass to the executable
+
+std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const tchar_t* arguments)
+{
+	return Create(path, arguments, nullptr, 0);
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::Create
+//
+// Creates a new native operating system process instance
+//
+// Arguments:
+//
+//	path			- Path to the native process executable
+//	arguments		- Arguments to pass to the executable
 //	handles			- Optional array of inheritable handle objects
 //	numhandles		- Number of elements in the handles array
 
@@ -158,8 +99,8 @@ std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const 
 	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw Win32Exception();
 
 	// Allocate a buffer large enough to hold the attribute data and initialize it
-	HeapBuffer<uint8_t> buffer(required);
-	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&buffer);
+	auto buffer = std::make_unique<uint8_t[]>(required);
+	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&buffer[0]);
 	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) throw Win32Exception();
 
 	try {
@@ -184,23 +125,59 @@ std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const 
 
 	catch(...) { DeleteProcThreadAttributeList(attributes); throw; }
 
-	// Process was successfully created and initialized, construct the NativeProcess instance
-	return std::make_unique<NativeProcess>(NativeHandle::FromHandle(procinfo.hProcess), procinfo.dwProcessId,
-		NativeHandle::FromHandle(procinfo.hThread), procinfo.dwThreadId);
+	// Process was successfully created and initialized, construct the NativeProcess instance to own the handles
+	return std::make_unique<NativeProcess>(GetProcessArchitecture(procinfo.hProcess), NativeHandle::FromHandle(procinfo.hProcess), 
+		procinfo.dwProcessId, NativeHandle::FromHandle(procinfo.hThread), procinfo.dwThreadId);
 }
 
 //-----------------------------------------------------------------------------
-// NativeProcess::Process
+// NativeProcess::getExitCode
+//
+// Gets the exit code of the process, or STILL_ACTIVE if it's still running
+
+DWORD NativeProcess::getExitCode(void) const
+{
+	DWORD				result;				// Result from GetExitCodeProcess
+
+	if(!GetExitCodeProcess(m_process->Handle, &result)) throw Win32Exception{};
+
+	return result;
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::GetProcessArchitecture (private, static)
+//
+// Determines the Architecture of a native process
+//
+// Arguments:
+//
+//	process		- Native process handle
+
+enum class Architecture NativeProcess::GetProcessArchitecture(HANDLE process)
+{
+	BOOL				result;				// Result from IsWow64Process
+
+	// If the operating system is 32-bit, the architecture must be x86
+	if(SystemInformation::ProcessorArchitecture == SystemInformation::Architecture::Intel) return Architecture::x86;
+
+	// 64-bit operating system, check the WOW64 status of the process to determine architecture
+	if(!IsWow64Process(process, &result)) throw Win32Exception{};
+
+	return (result) ? Architecture::x86 : Architecture::x86_64;
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::getProcessHandle
 //
 // Gets the host process handle
 
-std::shared_ptr<NativeHandle> NativeProcess::getProcess(void) const
+std::shared_ptr<NativeHandle> NativeProcess::getProcessHandle(void) const
 {
 	return m_process;
 }
 
 //-----------------------------------------------------------------------------
-// NativeProcess::ProcessId
+// NativeProcess::getProcessId
 //
 // Gets the host process identifier
 
@@ -212,7 +189,7 @@ DWORD NativeProcess::getProcessId(void) const
 //-----------------------------------------------------------------------------
 // NativeProcess::Terminate
 //
-// Terminates the native process
+// Terminates the native process;
 //
 // Arguments:
 //
@@ -220,21 +197,37 @@ DWORD NativeProcess::getProcessId(void) const
 
 void NativeProcess::Terminate(uint16_t exitcode) const
 {
-	TerminateProcess(m_process->Handle, static_cast<UINT>(exitcode));
+	Terminate(exitcode, true);		// Wait for the process to terminate
 }
 
 //-----------------------------------------------------------------------------
-// NativeProcess::Thread
+// NativeProcess::Terminate
+//
+// Terminates the native process
+//
+// Arguments:
+//
+//	exitcode		- Exit code for the process
+//	wait			- Flag to wait for the process to exit
+
+void NativeProcess::Terminate(uint16_t exitcode, bool wait) const
+{
+	TerminateProcess(m_process->Handle, static_cast<UINT>(exitcode));
+	if(wait) WaitForSingleObject(m_process->Handle, INFINITE);
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::getThreadHandle
 //
 // Gets the host main thread handle
 
-std::shared_ptr<NativeHandle> NativeProcess::getThread(void) const
+std::shared_ptr<NativeHandle> NativeProcess::getThreadHandle(void) const
 {
 	return m_thread;
 }
 
 //-----------------------------------------------------------------------------
-// NativeProcess::ThreadId
+// NativeProcess::getThreadId
 //
 // Gets the host main thread identifier
 
