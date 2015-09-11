@@ -26,6 +26,8 @@
 
 #include <memory>
 #include <unordered_map>
+#include "Architecture.h"
+#include "Bitmap.h"
 #include "FileSystem.h"
 
 #pragma warning(push, 4)
@@ -87,6 +89,18 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Properties
+
+	// Architecture
+	//
+	// Gets the architecture flag for this process
+	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+	enum class Architecture getArchitecture(void) const;
+
+	// LocalDescriptorTable
+	//
+	// Gets the address of the local descriptor table for this process
+	__declspec(property(get=getLocalDescriptorTable)) const void* const LocalDescriptorTable;
+	const void* const getLocalDescriptorTable(void) const;
 
 	// Namespace
 	//
@@ -166,22 +180,34 @@ private:
 
 	// Instance Constructor
 	//
-	Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, fspath_t root, fspath_t working);
+	Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, const void* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const host_t					m_host;			// Host instance
-	const pid_t						m_pid;			// Process identifier
-	pgroup_t						m_pgroup;		// Parent ProcessGroup
-	session_t						m_session;		// Parent Session
-	const namespace_t				m_ns;			// Process namespace
-	fspath_t						m_root;			// Process root path
-	fspath_t						m_working;		// Process working path
+	const host_t						m_host;			// Host instance
+	const pid_t							m_pid;			// Process identifier
+	pgroup_t							m_pgroup;		// Parent ProcessGroup
+	session_t							m_session;		// Parent Session
+	const namespace_t					m_ns;			// Process namespace
 
-	thread_map_t					m_threads;		// Collection of threads
-	mutable sync::critical_section	m_cs;			// Synchronization object
+	// Local Descriptor Table
+	//
+	const void*	const					m_ldt;			// Address of local descriptor table
+	Bitmap								m_ldtslots;		// LDT allocation map
+	mutable sync::reader_writer_lock	m_ldtlock;		// Synchronization object
+
+	// File System
+	//
+	fspath_t							m_root;			// Process root path
+	fspath_t							m_working;		// Process working path
+
+	// Threads
+	//
+	thread_map_t						m_threads;		// Collection of threads
+
+	mutable sync::critical_section		m_cs;			// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

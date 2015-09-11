@@ -79,12 +79,14 @@ void RemoveProcessThread(std::shared_ptr<Process> process, const Thread* thread)
 //	session		- Session in which the process will be a member
 //	pgroup		- ProcessGroup in which the process will be a member
 //	namespace	- Namespace to associate with this process
+//	ldt			- Address of process local descriptor table
+//	ldtslots	- Local descriptor table allocation bitmap
 //	root		- Initial root path for this process
 //	working		- Initial working path for this process
 
-Process::Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, fspath_t root, fspath_t working) : 
+Process::Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, const void* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working) : 
 	m_host(std::move(host)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
-	m_root(std::move(root)), m_working(std::move(working))
+	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_root(std::move(root)), m_working(std::move(working))
 {
 }
 
@@ -95,6 +97,16 @@ Process::~Process()
 {
 	RemoveProcessGroupProcess(m_pgroup, this);
 	RemoveSessionProcess(m_session, this);
+}
+
+//-----------------------------------------------------------------------------
+// Process::getArchitecture
+//
+// Gets the architecture flag for this process
+
+enum class Architecture Process::getArchitecture(void) const
+{
+	return m_host->Architecture;
 }
 
 //-----------------------------------------------------------------------------
@@ -118,30 +130,49 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, const char_t* path,
 		const char_t* const* arguments, const char_t* const* environment)
 {
+	const void*							ldt = nullptr;		// Local descriptor table
 	std::shared_ptr<Process>			process;			// The constructed Process instance
 
 	// Spawning a new process requires root level access
 	Capability::Demand(Capability::SystemAdmin);
 
-	// Create an Executable instance for the provided path
+	// Create an Executable instance for the provided path, this will deal with interpreter scripts
 	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
 
-	// Create a Host instance to implement the underlying native process
+	// Create a new Host instance of the appropriate architecture
 	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
+	_ASSERTE(host->Architecture == executable->Architecture);
 
 	try {
 
-		// Create the Process instance
-		process = std::make_shared<Process>(std::move(host), std::move(pid), session, pgroup, std::move(ns), std::move(root), std::move(working));
+		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
+		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));
+		try { ldt = host->AllocateMemory(ldtsize, LINUX_PROT_READ | LINUX_PROT_WRITE); }
+		catch(...) { throw LinuxException{ LINUX_ENOMEM }; }
+
+		// Create the Process instance, providing a blank local descriptor table allocation bitmap
+		process = std::make_shared<Process>(std::move(host), std::move(pid), session, pgroup, std::move(ns), ldt, Bitmap(LINUX_LDT_ENTRIES), 
+			std::move(root), std::move(working));
 	}
 
-	catch(...) { /* TODO: Terminate the host on any exceptions in here */ throw; }
+	// Terminate the host process if any exceptions occurred during process creation
+	catch(...) { if(host) host->Terminate(ERROR_PROCESS_ABORTED, true); throw; }
 
 	// Establish links to the parent process group and session containers
 	AddProcessGroupProcess(pgroup, process);
 	AddSessionProcess(session, process);
 
 	return process;
+}
+
+//-----------------------------------------------------------------------------
+// Process::getLocalDescriptorTable
+//
+// Gets the address of the local descriptor table for this process
+
+const void* const Process::getLocalDescriptorTable(void) const
+{
+	return m_ldt;
 }
 
 //-----------------------------------------------------------------------------
