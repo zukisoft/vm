@@ -59,7 +59,6 @@ public:
 	public:
 
 		using bitmask::bitmask;
-		//using bitmask::operator|;
 
 		//-------------------------------------------------------------------------
 		// Fields
@@ -104,10 +103,10 @@ public:
 	// Removes all virtual memory allocations 
 	void ClearMemory(void);
 
-	// FromNativeProcess (static)
+	// Create (static)
 	//
 	// Constructs a new Host instance from an existing NativeProcess instance
-	static std::unique_ptr<Host> FromNativeProcess(std::unique_ptr<NativeProcess> nativeproc);
+	static std::unique_ptr<Host> Create(std::unique_ptr<NativeProcess> nativeproc);
 
 	// GuardMemory
 	//

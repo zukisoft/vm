@@ -140,7 +140,7 @@ std::unique_ptr<Host> VirtualMachine::CreateHost(enum class Architecture archite
 	catch(...) { nativeproc->Terminate(0); throw; }
 
 	// Construct and return a new Host instance from the native process
-	return Host::FromNativeProcess(std::move(nativeproc));
+	return Host::Create(std::move(nativeproc));
 }
 
 //---------------------------------------------------------------------------

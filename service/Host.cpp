@@ -222,7 +222,7 @@ void Host::ClearMemory(void)
 }
 
 //-----------------------------------------------------------------------------
-// Host::FromNativeProcess (static)
+// Host::Create (static)
 //
 // Creates a new Host instance from an existing NativeProcess instance
 //
@@ -230,7 +230,7 @@ void Host::ClearMemory(void)
 //
 //	nativeproc		- NativeProcess instance to take ownership of
 
-std::unique_ptr<Host> Host::FromNativeProcess(std::unique_ptr<NativeProcess> nativeproc)
+std::unique_ptr<Host> Host::Create(std::unique_ptr<NativeProcess> nativeproc)
 {
 	// Create the host with an initially empty memory sections collection
 	return std::make_unique<Host>(std::move(nativeproc), section_vector_t());
