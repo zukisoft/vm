@@ -45,15 +45,15 @@ template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86_64>(const st
 
 inline Host::MemoryProtection ElfProtectionToLinuxProtection(uint32_t flags)
 {
-	auto result = Host::MemoryProtection::None;		// Default to PROT_NONE (0x00)
+	int result = LINUX_PROT_NONE;		// Default to PROT_NONE (0x00)
 
 	// The ELF flags are the same as the Linux flags, but the bitmask values
 	// are different.  Accumulate flags in the result based on source
-	if(flags & LINUX_PF_R) result |= Host::MemoryProtection::Read;
-	if(flags & LINUX_PF_W) result |= Host::MemoryProtection::Write;
-	if(flags & LINUX_PF_X) result |= Host::MemoryProtection::Execute;
+	if(flags & LINUX_PF_R) result |= LINUX_PROT_READ;
+	if(flags & LINUX_PF_W) result |= LINUX_PROT_WRITE;
+	if(flags & LINUX_PF_X) result |= LINUX_PROT_EXEC;
 
-	return result;
+	return Host::MemoryProtection(result);
 }
 
 // todo: I really want this to go away, but this operation does need to exist somewhere.  Allowing
@@ -200,7 +200,7 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 			// Get the base address of the loadable segment and set it as PAGE_READWRITE to load it
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, Host::MemoryProtection::Read | Host::MemoryProtection::Write); }
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, LINUX_PROT_READ | LINUX_PROT_WRITE); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
