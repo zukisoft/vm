@@ -60,10 +60,15 @@ const Host::MemoryProtection Host::MemoryProtection::Write{ LINUX_PROT_WRITE };
 // Conversions
 //-----------------------------------------------------------------------------
 
-// Host::MemoryProtection --> DWORD
+// Win32MemoryProtection
+//
+// Typedef to clarify conversions from linux to windows protection flags
+using Win32MemoryProtection = DWORD;
+
+// Host::MemoryProtection --> Win32MemoryProtection
 //
 // Converts MemoryProtection bitmask into the closest equivalent Win32 API bitmask
-template<> DWORD convert<DWORD>(const Host::MemoryProtection& rhs)
+template<> Win32MemoryProtection convert<Win32MemoryProtection>(const Host::MemoryProtection& rhs)
 {
 	using prot = Host::MemoryProtection;
 
@@ -140,7 +145,7 @@ const void* Host::AllocateMemory(const void* address, size_t length, MemoryProte
 	if(address == nullptr) {
 
 		auto section = MemorySection::Create(m_nativeproc->ProcessHandle, align::up(length, SystemInformation::AllocationGranularity));
-		address = section->Allocate(section->BaseAddress, length, convert<DWORD>(prot));
+		address = section->Allocate(section->BaseAddress, length, convert<Win32MemoryProtection>(prot));
 		m_sections.push_back(std::move(section));
 		return address;
 	}
@@ -185,7 +190,7 @@ const void* Host::AllocateMemory(const void* address, size_t length, MemoryProte
 
 		// Determine the length of the allocation to request from this section and request it
 		size_t alloclen = std::min(section->Length - (allocbegin - uintptr_t(section->BaseAddress)), allocend - allocbegin);
-		section->Allocate(reinterpret_cast<void*>(allocbegin), alloclen, convert<DWORD>(prot));
+		section->Allocate(reinterpret_cast<void*>(allocbegin), alloclen, convert<Win32MemoryProtection>(prot));
 
 		allocbegin += alloclen;
 	}
@@ -250,7 +255,7 @@ std::unique_ptr<Host> Host::Create(std::unique_ptr<NativeProcess> nativeproc)
 void Host::GuardMemory(const void* address, size_t length, MemoryProtection prot) const
 {
 	// Use the common internal version that accepts windows page flags
-	return ProtectMemoryInternal(address, length, convert<DWORD>(prot) | PAGE_GUARD);
+	return ProtectMemoryInternal(address, length, convert<Win32MemoryProtection>(prot) | PAGE_GUARD);
 }
 	
 //-----------------------------------------------------------------------------
@@ -285,7 +290,7 @@ void Host::LockMemory(const void* address, size_t length) const
 void Host::ProtectMemory(const void* address, size_t length, MemoryProtection prot) const
 {
 	// Use the common internal version that accepts windows page flags
-	return ProtectMemoryInternal(address, length, convert<DWORD>(prot));
+	return ProtectMemoryInternal(address, length, convert<Win32MemoryProtection>(prot));
 }
 
 //-----------------------------------------------------------------------------
