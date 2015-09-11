@@ -133,6 +133,12 @@ public:
 	// Releases virtual memory
 	void ReleaseMemory(const void* address, size_t length);
 
+	// Terminate
+	//
+	// Terminates the host process
+	void Terminate(uint16_t exitcode) const;
+	void Terminate(uint16_t exitcode, bool wait) const;
+
 	// UnlockMemory
 	//
 	// Attempts to unlock a region from the process working set

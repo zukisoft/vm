@@ -400,6 +400,35 @@ void Host::ReleaseMemory(const void* address, size_t length)
 }
 
 //-----------------------------------------------------------------------------
+// Host::Terminate
+//
+// Terminates the host process
+//
+// Arguments:
+//
+//	exitcode		- Exit code for the process
+
+void Host::Terminate(uint16_t exitcode) const
+{
+	m_nativeproc->Terminate(exitcode);
+}
+
+//-----------------------------------------------------------------------------
+// Host::Terminate
+//
+// Terminates the host process
+//
+// Arguments:
+//
+//	exitcode		- Exit code for the process
+//	wait			- Flag to wait for the process to exit
+
+void Host::Terminate(uint16_t exitcode, bool wait) const
+{
+	m_nativeproc->Terminate(exitcode, wait);
+}
+
+//-----------------------------------------------------------------------------
 // Host::UnlockMemory
 //
 // Attempts to unlock a region of data from the process working set, does not 

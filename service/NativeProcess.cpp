@@ -202,7 +202,7 @@ DWORD NativeProcess::getProcessId(void) const
 //-----------------------------------------------------------------------------
 // NativeProcess::Terminate
 //
-// Terminates the native process;
+// Terminates the native process
 //
 // Arguments:
 //
