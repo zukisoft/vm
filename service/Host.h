@@ -102,6 +102,11 @@ public:
 	//
 	// Removes all virtual memory allocations 
 	void ClearMemory(void);
+	
+	// Clone
+	//
+	// Clones this host instance into another NativeProcess instance
+	std::unique_ptr<Host> Clone(std::unique_ptr<NativeProcess> nativeproc);
 
 	// Create (static)
 	//

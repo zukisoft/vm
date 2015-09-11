@@ -227,6 +227,33 @@ void Host::ClearMemory(void)
 }
 
 //-----------------------------------------------------------------------------
+// Host::Clone
+//
+// Clones this host instance into another NativeProcess instance
+//
+// Arguments:
+//
+//	nativeproc		- NativeProcess instance to take ownership of
+
+std::unique_ptr<Host> Host::Clone(std::unique_ptr<NativeProcess> nativeproc)
+{
+	section_vector_t		sections;			// Cloned memory sections
+
+	// I'm not really sure how this is going to work across architectures, disallow it
+	_ASSERTE(nativeproc->Architecture == m_nativeproc->Architecture);
+	if(nativeproc->Architecture != m_nativeproc->Architecture) throw LinuxException{ LINUX_ENOEXEC };
+
+	// Prevent changes to the existing process memory layout
+	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
+
+	// Iterate over the existing memory sections and clone them into the target process
+	for(const auto& iterator : m_sections) sections.emplace_back(iterator->Clone(nativeproc->ProcessHandle));
+
+	// Create the new Host instance with the cloned memory sections
+	return std::make_unique<Host>(std::move(nativeproc), std::move(sections));
+}
+
+//-----------------------------------------------------------------------------
 // Host::Create (static)
 //
 // Creates a new Host instance from an existing NativeProcess instance
