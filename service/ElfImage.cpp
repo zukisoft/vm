@@ -90,7 +90,7 @@ inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle
 //
 // Gets the virtual memory base address of the loaded image
 
-const void* ElfImage::getBaseAddress(void) const 
+void const* ElfImage::getBaseAddress(void) const 
 { 
 	return m_metadata.BaseAddress;
 }
@@ -100,7 +100,7 @@ const void* ElfImage::getBaseAddress(void) const
 //
 // Gets the entry point for the image
 
-const void* ElfImage::getEntryPoint(void) const 
+void const* ElfImage::getEntryPoint(void) const 
 { 
 	return m_metadata.EntryPoint;
 }

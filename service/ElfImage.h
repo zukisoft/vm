@@ -24,6 +24,8 @@
 #define __ELFIMAGE_H_
 #pragma once
 
+#include "Image.h"
+
 #include "elf_traits.h"
 #include "Architecture.h"
 #include "Exception.h"
@@ -44,7 +46,7 @@ class Host;
 //
 // Loads an ELF binary image into a native operating system host process
 
-class ElfImage
+class ElfImage : public Image
 {
 public:
 
@@ -62,19 +64,20 @@ public:
 	static std::unique_ptr<ElfImage> Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host);
 
 	//-------------------------------------------------------------------------
-	// Properties
+	// Image Implementation
 
 	// BaseAddress
 	//
 	// Gets the virtual memory base address of the loaded image
-	__declspec(property(get=getBaseAddress)) const void* BaseAddress;
-	const void* getBaseAddress(void) const;
+	virtual void const* getBaseAddress(void) const;
 
 	// EntryPoint
 	//
 	// Gets the entry point for the image
-	__declspec(property(get=getEntryPoint)) const void* EntryPoint;
-	const void* getEntryPoint(void) const;
+	virtual void const* getEntryPoint(void) const;
+
+	//-------------------------------------------------------------------------
+	// Properties
 
 	// Interpreter
 	//
