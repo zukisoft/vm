@@ -65,7 +65,7 @@ public:
 	// RemoveProcessThread
 	//
 	// Removes a thread from the collection
-	friend void RemoveProcessThread(std::shared_ptr<Process> process, const Thread* thread);
+	friend void RemoveProcessThread(std::shared_ptr<Process> process, Thread const* thread);
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -74,8 +74,8 @@ public:
 	//
 	// Creates a new Process instance
 	static std::shared_ptr<Process> Create(std::shared_ptr<Pid> pid, std::shared_ptr<class Session> session, std::shared_ptr<class ProcessGroup> pgroup,
-		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, const char_t* path,
-		const char_t* const* arguments, const char_t* const* environment);
+		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, char_t const* path,
+		char_t const* const* arguments, char_t const* const* environment);
 
 	// SetProcessGroup
 	//
@@ -99,8 +99,8 @@ public:
 	// LocalDescriptorTable
 	//
 	// Gets the address of the local descriptor table for this process
-	__declspec(property(get=getLocalDescriptorTable)) const void* const LocalDescriptorTable;
-	const void* const getLocalDescriptorTable(void) const;
+	__declspec(property(get=getLocalDescriptorTable)) void const* LocalDescriptorTable;
+	void const* getLocalDescriptorTable(void) const;
 
 	// Namespace
 	//
@@ -140,8 +140,8 @@ public:
 
 private:
 
-	Process(const Process&)=delete;
-	Process& operator=(const Process&)=delete;
+	Process(Process const&)=delete;
+	Process& operator=(Process const&)=delete;
 
 	// fspath_t
 	//
@@ -176,25 +176,25 @@ private:
 	// thread_map_t
 	//
 	// Collection of thread instances
-	using thread_map_t = std::unordered_map<const Thread*, std::weak_ptr<Thread>>;
+	using thread_map_t = std::unordered_map<Thread const*, std::weak_ptr<Thread>>;
 
 	// Instance Constructor
 	//
-	Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, const void* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working);
+	Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, void const* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const host_t						m_host;			// Host instance
-	const pid_t							m_pid;			// Process identifier
+	host_t const						m_host;			// Host instance
+	pid_t const							m_pid;			// Process identifier
 	pgroup_t							m_pgroup;		// Parent ProcessGroup
 	session_t							m_session;		// Parent Session
-	const namespace_t					m_ns;			// Process namespace
+	namespace_t const					m_ns;			// Process namespace
 
 	// Local Descriptor Table
 	//
-	const void*	const					m_ldt;			// Address of local descriptor table
+	void const*	const					m_ldt;			// Address of local descriptor table
 	Bitmap								m_ldtslots;		// LDT allocation map
 	mutable sync::reader_writer_lock	m_ldtlock;		// Synchronization object
 

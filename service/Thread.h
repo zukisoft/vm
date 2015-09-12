@@ -71,8 +71,8 @@ public:
 
 private:
 
-	Thread(const Thread&)=delete;
-	Thread& operator=(const Thread&)=delete;
+	Thread(Thread const&)=delete;
+	Thread& operator=(Thread const&)=delete;
 
 	// pid_t
 	//
@@ -92,8 +92,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const pid_t					m_tid;			// Thread identifier
-	const process_t 			m_process;		// Parent process instance
+	pid_t const					m_tid;			// Thread identifier
+	process_t const 			m_process;		// Parent process instance
 };
 
 //-----------------------------------------------------------------------------

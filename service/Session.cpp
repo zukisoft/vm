@@ -77,7 +77,7 @@ std::shared_ptr<Session> AddSessionProcessGroup(std::shared_ptr<Session> session
 //	session		- Session instance to operate against
 //	process		- Process instance to be removed
 
-void RemoveSessionProcess(std::shared_ptr<Session> session, const Process* process)
+void RemoveSessionProcess(std::shared_ptr<Session> session, Process const* process)
 {
 	sync::critical_section::scoped_lock cs{ session->m_cs };
 	session->m_processes.erase(process);
@@ -93,7 +93,7 @@ void RemoveSessionProcess(std::shared_ptr<Session> session, const Process* proce
 //	session		- Session instance to operate against
 //	pgroup		- ProcessGroup instance to be removed
 
-void RemoveSessionProcessGroup(std::shared_ptr<Session> session, const ProcessGroup* pgroup)
+void RemoveSessionProcessGroup(std::shared_ptr<Session> session, ProcessGroup const* pgroup)
 {
 	sync::critical_section::scoped_lock cs{ session->m_cs };
 	session->m_pgroups.erase(pgroup);
@@ -110,7 +110,7 @@ void RemoveSessionProcessGroup(std::shared_ptr<Session> session, const ProcessGr
 //	dest		- Destination session
 //	process		- Process instance to be swapped
 
-std::shared_ptr<Session> SwapSessionProcess(std::shared_ptr<Session> source, std::shared_ptr<Session> dest, const Process* process)
+std::shared_ptr<Session> SwapSessionProcess(std::shared_ptr<Session> source, std::shared_ptr<Session> dest, Process const* process)
 {
 	sync::critical_section::scoped_lock csfrom{ source->m_cs };
 	sync::critical_section::scoped_lock csto{ dest->m_cs };

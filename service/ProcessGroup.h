@@ -60,12 +60,12 @@ public:
 	// RemoveProcessGroupProcess
 	//
 	// Removes a process from the collection
-	friend void RemoveProcessGroupProcess(std::shared_ptr<ProcessGroup> pgroup, const Process* process);
+	friend void RemoveProcessGroupProcess(std::shared_ptr<ProcessGroup> pgroup, Process const* process);
 
 	// SwapProcessGroupProcess
 	//
 	// Swaps a process instance from one process group to another
-	friend std::shared_ptr<ProcessGroup> SwapProcessGroupProcess(std::shared_ptr<ProcessGroup> source, std::shared_ptr<ProcessGroup> dest, const Process* process);
+	friend std::shared_ptr<ProcessGroup> SwapProcessGroupProcess(std::shared_ptr<ProcessGroup> source, std::shared_ptr<ProcessGroup> dest, Process const* process);
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -92,8 +92,8 @@ public:
 
 private:
 
-	ProcessGroup(const ProcessGroup&)=delete;
-	ProcessGroup& operator=(const ProcessGroup&)=delete;
+	ProcessGroup(ProcessGroup const&)=delete;
+	ProcessGroup& operator=(ProcessGroup const&)=delete;
 
 	// pid_t
 	//
@@ -103,7 +103,7 @@ private:
 	// process_map_t
 	//
 	// Collection of process instances
-	using process_map_t = std::unordered_map<const Process*, std::weak_ptr<Process>>;
+	using process_map_t = std::unordered_map<Process const*, std::weak_ptr<Process>>;
 
 	// session_t
 	//
@@ -118,8 +118,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const pid_t						m_pgid;			// Process group identifier
-	const session_t					m_session;		// Parent session instance
+	pid_t const						m_pgid;			// Process group identifier
+	session_t const					m_session;		// Parent session instance
 	process_map_t					m_processes;	// Collection of processes
 	mutable sync::critical_section	m_cs;			// Synchronization object
 };

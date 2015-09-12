@@ -63,7 +63,7 @@ std::shared_ptr<Process> AddProcessThread(std::shared_ptr<Process> process, std:
 //	process		- Process instance to operate against
 //	thread		- Thread instance to be removed
 
-void RemoveProcessThread(std::shared_ptr<Process> process, const Thread* thread)
+void RemoveProcessThread(std::shared_ptr<Process> process, Thread const* thread)
 {
 	sync::critical_section::scoped_lock cs{ process->m_cs };
 	process->m_threads.erase(thread);
@@ -84,7 +84,7 @@ void RemoveProcessThread(std::shared_ptr<Process> process, const Thread* thread)
 //	root		- Initial root path for this process
 //	working		- Initial working path for this process
 
-Process::Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, const void* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working) : 
+Process::Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, void const* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working) : 
 	m_host(std::move(host)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
 	m_ldt(ldt), m_ldtslots(std::move(ldtslots)), m_root(std::move(root)), m_working(std::move(working))
 {
@@ -127,10 +127,10 @@ enum class Architecture Process::getArchitecture(void) const
 //	environment		- Array of process environment variables
 
 std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_ptr<class Session> session, std::shared_ptr<class ProcessGroup> pgroup,
-		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, const char_t* path,
-		const char_t* const* arguments, const char_t* const* environment)
+		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, char_t const* path,
+		char_t const* const* arguments, char_t const* const* environment)
 {
-	const void*									ldt = nullptr;		// Local descriptor table
+	void const*									ldt = nullptr;		// Local descriptor table
 	std::vector<std::unique_ptr<Executable>>	references;			// Reference modules to be loaded
 	std::shared_ptr<Process>					process;			// The constructed Process instance
 
@@ -141,7 +141,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
 
 	// Create Executable instances for all modules directly referenced by the main executable
-	for(const auto& iterator : executable->References)
+	for(auto const& iterator : executable->References)
 		references.emplace_back(Executable::FromFile(ns, root, working, iterator.c_str()));
 
 	// Create a new Host instance of the appropriate architecture
@@ -178,7 +178,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 //
 // Gets the address of the local descriptor table for this process
 
-const void* const Process::getLocalDescriptorTable(void) const
+void const* Process::getLocalDescriptorTable(void) const
 {
 	return m_ldt;
 }

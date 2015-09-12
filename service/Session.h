@@ -66,17 +66,17 @@ public:
 	// RemoveSessionProcess
 	//
 	// Removes a process from a session
-	friend void RemoveSessionProcess(std::shared_ptr<Session> session, const Process* process);
+	friend void RemoveSessionProcess(std::shared_ptr<Session> session, Process const* process);
 
 	// RemoveSessionProcessGroup
 	//
 	// Removes a process group from the collection
-	friend void RemoveSessionProcessGroup(std::shared_ptr<Session> session, const ProcessGroup* pgroup);
+	friend void RemoveSessionProcessGroup(std::shared_ptr<Session> session, ProcessGroup const* pgroup);
 
 	// SwapSessionProcess
 	//
 	// Swaps a process instance from one session to another
-	friend std::shared_ptr<Session> SwapSessionProcess(std::shared_ptr<Session> source, std::shared_ptr<Session> dest, const Process* process);
+	friend std::shared_ptr<Session> SwapSessionProcess(std::shared_ptr<Session> source, std::shared_ptr<Session> dest, Process const* process);
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -103,13 +103,13 @@ public:
 
 private:
 
-	Session(const Session&)=delete;
-	Session& operator=(const Session&)=delete;
+	Session(Session const&)=delete;
+	Session& operator=(Session const&)=delete;
 
 	// pgroup_map_t
 	//
 	// Collection of process group instances
-	using pgroup_map_t = std::unordered_map<const ProcessGroup*, std::weak_ptr<ProcessGroup>>;
+	using pgroup_map_t = std::unordered_map<ProcessGroup const*, std::weak_ptr<ProcessGroup>>;
 
 	// pid_t
 	//
@@ -119,7 +119,7 @@ private:
 	// process_map_t
 	//
 	// Collection of process instances
-	using process_map_t = std::unordered_map<const Process*, std::weak_ptr<Process>>;
+	using process_map_t = std::unordered_map<Process const*, std::weak_ptr<Process>>;
 
 	// vm_t
 	//
@@ -134,8 +134,8 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const pid_t 					m_sid;			// Session identifier
-	const vm_t						m_vm;			// VirtualMachine instance
+	pid_t const						m_sid;			// Session identifier
+	vm_t const						m_vm;			// VirtualMachine instance
 	pgroup_map_t					m_pgroups;		// Collection of process groups
 	process_map_t					m_processes;	// Collection of processes
 	mutable sync::critical_section	m_cs;			// Synchronization object

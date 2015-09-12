@@ -88,7 +88,7 @@ std::shared_ptr<VirtualMachine> AddVirtualMachineSession(std::shared_ptr<Virtual
 //	vm			- VirtualMachine instance to operate against
 //	session		- Session instance to be removed
 
-void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, const Session* session)
+void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, Session const* session)
 {
 	sync::critical_section::scoped_lock cs{ vm->m_sessionslock };
 	vm->m_sessions.erase(session);
@@ -152,7 +152,7 @@ std::unique_ptr<Host> VirtualMachine::CreateHost(enum class Architecture archite
 //
 //	instanceid	- Virtual machine instance identifier
 
-std::shared_ptr<VirtualMachine> VirtualMachine::Find(const uuid_t& instanceid)
+std::shared_ptr<VirtualMachine> VirtualMachine::Find(uuid_t const& instanceid)
 {
 	sync::reader_writer_lock::scoped_lock_read reader(s_instancelock);
 

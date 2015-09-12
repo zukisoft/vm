@@ -68,7 +68,7 @@ public:
 	// RemoveVirtualMachineSession
 	//
 	// Removes a session from the collection
-	friend void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, const Session* session);
+	friend void RemoveVirtualMachineSession(std::shared_ptr<VirtualMachine> vm, Session const* session);
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -81,7 +81,7 @@ public:
 	// Find (static)
 	//
 	// Locates a virtual machine instance based on its uuid
-	static std::shared_ptr<VirtualMachine> Find(const uuid_t& instanceid);
+	static std::shared_ptr<VirtualMachine> Find(uuid_t const& instanceid);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -94,8 +94,8 @@ public:
 
 private:
 
-	VirtualMachine(const VirtualMachine&)=delete;
-	VirtualMachine& operator=(const VirtualMachine&)=delete;
+	VirtualMachine(VirtualMachine const&)=delete;
+	VirtualMachine& operator=(VirtualMachine const&)=delete;
 
 	// VirtualMachine::RootAlias
 	//
@@ -132,13 +132,13 @@ private:
 
 	private:
 
-		RootAlias(const RootAlias&)=delete;
-		RootAlias& operator=(const RootAlias&)=delete;
+		RootAlias(RootAlias const&)=delete;
+		RootAlias& operator=(RootAlias const&)=delete;
 
 		//-------------------------------------------------------------------------
 		// Member Variables
 
-		const std::shared_ptr<FileSystem::Directory>	m_dir;	// Attached directory
+		std::shared_ptr<FileSystem::Directory> const	m_dir;	// Attached directory
 	};
 
 	// Service<> Control Handler Map
@@ -198,7 +198,7 @@ private:
 	// session_map_t
 	//
 	// Collection of session instances
-	using session_map_t = std::unordered_map<const Session*, std::weak_ptr<Session>>;
+	using session_map_t = std::unordered_map<Session const*, std::weak_ptr<Session>>;
 
 	// GenerateInstanceId (static)
 	//
@@ -221,7 +221,7 @@ private:
 	static instance_map_t			s_instances;		// Collection of all instances
 	static sync::reader_writer_lock	s_instancelock;		// Synchronization object
 
-	const uuid_t					m_instanceid;		// Instance identifier
+	uuid_t const					m_instanceid;		// Instance identifier
 	std::unique_ptr<RpcObject>		m_syscalls32;		// 32-bit system calls object
 	std::unique_ptr<RpcObject>		m_syscalls64;		// 64-bit system calls object
 

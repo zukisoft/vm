@@ -58,7 +58,7 @@ std::shared_ptr<ProcessGroup> AddProcessGroupProcess(std::shared_ptr<ProcessGrou
 //	pgroup		- ProcessGroup instance to operate against
 //	process		- Process instance to be removed
 
-void RemoveProcessGroupProcess(std::shared_ptr<ProcessGroup> pgroup, const Process* process)
+void RemoveProcessGroupProcess(std::shared_ptr<ProcessGroup> pgroup, Process const* process)
 {
 	sync::critical_section::scoped_lock cs{ pgroup->m_cs };
 	pgroup->m_processes.erase(process);
@@ -75,7 +75,7 @@ void RemoveProcessGroupProcess(std::shared_ptr<ProcessGroup> pgroup, const Proce
 //	dest		- Destination process group
 //	process		- Process instance to be swapped
 
-std::shared_ptr<ProcessGroup> SwapProcessGroupProcess(std::shared_ptr<ProcessGroup> source, std::shared_ptr<ProcessGroup> dest, const Process* process)
+std::shared_ptr<ProcessGroup> SwapProcessGroupProcess(std::shared_ptr<ProcessGroup> source, std::shared_ptr<ProcessGroup> dest, Process const* process)
 {
 	sync::critical_section::scoped_lock csfrom{ source->m_cs };
 	sync::critical_section::scoped_lock csto{ dest->m_cs };
