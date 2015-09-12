@@ -426,9 +426,6 @@
     <ClInclude Include="Executable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BinaryFormat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Host.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -50,7 +50,7 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	arguments		- Processed command line arguments
 //	environment		- Processed environment variables
 
-Executable::Executable(enum class Architecture arch, enum class BinaryFormat format, const char_t* originalpath, std::shared_ptr<FileSystem::Handle> handle,
+Executable::Executable(enum class Architecture arch, enum class Format format, const char_t* originalpath, std::shared_ptr<FileSystem::Handle> handle,
 	string_vector_t&& arguments, string_vector_t&& environment) : m_architecture(arch), m_format(format), m_originalpath(originalpath),
 	m_handle(std::move(handle)), m_arguments(std::move(arguments)), m_environment(std::move(environment))
 {
@@ -91,7 +91,7 @@ const std::vector<std::string>& Executable::getEnvironmentVariables(void) const
 //
 // Gets the binary format of the executable
 
-enum class BinaryFormat Executable::getFormat(void) const
+enum class Executable::Format Executable::getFormat(void) const
 {
 	return m_format;
 }
@@ -180,11 +180,11 @@ std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, 
 
 			// ELFCLASS32 --> Architecture::x86
 			case LINUX_ELFCLASS32: 
-				return std::make_unique<Executable>(Architecture::x86, BinaryFormat::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
+				return std::make_unique<Executable>(Architecture::x86, Format::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
 #ifdef _M_X64
 			// ELFCLASS64: --> Architecture::x86_64
 			case LINUX_ELFCLASS64: 
-				return std::make_unique<Executable>(Architecture::x86_64, BinaryFormat::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
+				return std::make_unique<Executable>(Architecture::x86_64, Format::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
 #endif
 			// Unknown ELFCLASS --> ENOEXEC	
 			default: throw LinuxException{ LINUX_ENOEXEC };
