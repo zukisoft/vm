@@ -66,27 +66,27 @@ public:
 		// Atomic (static)
 		//
 		// Indicates that the memory region can be used for atomic operations
-		static const MemoryProtection Atomic;
+		static MemoryProtection const Atomic;
 
 		// Execute (static)
 		//
 		// Indicates that the memory region can be executed
-		static const MemoryProtection Execute;
+		static MemoryProtection const Execute;
 
 		// None (static)
 		//
 		// Indicates that the memory region cannot be accessed
-		static const MemoryProtection None;
+		static MemoryProtection const None;
 
 		// Read (static)
 		//
 		// Indicates that the memory region can be read
-		static const MemoryProtection Read;
+		static MemoryProtection const Read;
 
 		// Write (static)
 		//
 		// Indicates that the memory region can be written to
-		static const MemoryProtection Write;
+		static MemoryProtection const Write;
 	};
 
 	//-------------------------------------------------------------------------
@@ -95,8 +95,8 @@ public:
 	// AllocateMemory
 	//
 	// Allocates virtual memory
-	const void* AllocateMemory(size_t length, MemoryProtection prot);
-	const void* AllocateMemory(const void* address, size_t length, MemoryProtection prot);
+	void const* AllocateMemory(size_t length, MemoryProtection prot);
+	void const* AllocateMemory(void const* address, size_t length, MemoryProtection prot);
 
 	// ClearMemory
 	//
@@ -116,27 +116,27 @@ public:
 	// GuardMemory
 	//
 	// Sets up guard pages within a virtual memory region
-	void GuardMemory(const void* address, size_t length, MemoryProtection prot) const;
+	void GuardMemory(void const* address, size_t length, MemoryProtection prot) const;
 
 	// LockMemory
 	//
 	// Attempts to lock a region into the process working set
-	void LockMemory(const void* address, size_t length) const;
+	void LockMemory(void const* address, size_t length) const;
 
 	// ProtectMemory
 	//
 	// Sets the memory protection flags for a virtual memory region
-	void ProtectMemory(const void* address, size_t length, MemoryProtection prot) const;
+	void ProtectMemory(void const* address, size_t length, MemoryProtection prot) const;
 
 	// ReadMemory
 	//
 	// Reads data from the process address space
-	size_t ReadMemory(const void* address, void* buffer, size_t length) const;
+	size_t ReadMemory(void const* address, void* buffer, size_t length) const;
 
 	// ReleaseMemory
 	//
 	// Releases virtual memory
-	void ReleaseMemory(const void* address, size_t length);
+	void ReleaseMemory(void const* address, size_t length);
 
 	// Terminate
 	//
@@ -147,12 +147,12 @@ public:
 	// UnlockMemory
 	//
 	// Attempts to unlock a region from the process working set
-	void UnlockMemory(const void* address, size_t length) const;
+	void UnlockMemory(void const* address, size_t length) const;
 
 	// WriteMemory
 	//
 	// Writes data into the process address space
-	size_t WriteMemory(const void* address, const void* buffer, size_t length) const;
+	size_t WriteMemory(void const* address, void const* buffer, size_t length) const;
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -165,8 +165,8 @@ public:
 
 private:
 
-	Host(const Host&)=delete;
-	Host& operator=(const Host&)=delete;
+	Host(Host const&)=delete;
+	Host& operator=(Host const&)=delete;
 
 	// nativeproc_t
 	//
@@ -189,12 +189,12 @@ private:
 	// ProtectMemoryInternal
 	//
 	// Backing function for ProtectMemory() and GuardMemory() methods
-	void ProtectMemoryInternal(const void* address, size_t length, DWORD winprot) const;
+	void ProtectMemoryInternal(void const* address, size_t length, DWORD winprot) const;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const nativeproc_t					m_nativeproc;		// Native process instance
+	nativeproc_t const					m_nativeproc;		// Native process instance
 	section_vector_t					m_sections;			// Process memory sections
 	mutable sync::reader_writer_lock	m_sectionslock;		// Synchronization object
 };

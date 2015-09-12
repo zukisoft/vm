@@ -38,23 +38,23 @@
 
 // Host::MemoryProtection::Atomic (static)
 //
-const Host::MemoryProtection Host::MemoryProtection::Atomic{ LINUX_PROT_SEM };
+Host::MemoryProtection const Host::MemoryProtection::Atomic{ LINUX_PROT_SEM };
 
 // Host::MemoryProtection::Execute (static)
 //
-const Host::MemoryProtection Host::MemoryProtection::Execute{ LINUX_PROT_EXEC };
+Host::MemoryProtection const Host::MemoryProtection::Execute{ LINUX_PROT_EXEC };
 
 // Host::MemoryProtection::None (static)
 //
-const Host::MemoryProtection Host::MemoryProtection::None{ LINUX_PROT_NONE };
+Host::MemoryProtection const Host::MemoryProtection::None{ LINUX_PROT_NONE };
 
 // Host::MemoryProtection::Read (static)
 //
-const Host::MemoryProtection Host::MemoryProtection::Read{ LINUX_PROT_READ };
+Host::MemoryProtection const Host::MemoryProtection::Read{ LINUX_PROT_READ };
 
 // Host::MemoryProtection::Write (static)
 //
-const Host::MemoryProtection Host::MemoryProtection::Write{ LINUX_PROT_WRITE };
+Host::MemoryProtection const Host::MemoryProtection::Write{ LINUX_PROT_WRITE };
 
 //-----------------------------------------------------------------------------
 // Conversions
@@ -68,7 +68,7 @@ using Win32MemoryProtection = DWORD;
 // Host::MemoryProtection --> Win32MemoryProtection
 //
 // Converts MemoryProtection bitmask into the closest equivalent Win32 API bitmask
-template<> Win32MemoryProtection convert<Win32MemoryProtection>(const Host::MemoryProtection& rhs)
+template<> Win32MemoryProtection convert<Win32MemoryProtection>(Host::MemoryProtection const& rhs)
 {
 	using prot = Host::MemoryProtection;
 
@@ -114,7 +114,7 @@ Host::~Host()
 //	length			- Required allocation length
 //	prot			- Memory protection flags for the new region
 
-const void* Host::AllocateMemory(size_t length, MemoryProtection prot)
+void const* Host::AllocateMemory(size_t length, MemoryProtection prot)
 {
 	// Let the native operating system decide where to allocate the section
 	return AllocateMemory(nullptr, length, prot);
@@ -131,7 +131,7 @@ const void* Host::AllocateMemory(size_t length, MemoryProtection prot)
 //	length			- Required allocation length
 //	prot			- Memory protection flags for the new region
 
-const void* Host::AllocateMemory(const void* address, size_t length, MemoryProtection prot)
+void const* Host::AllocateMemory(void const* address, size_t length, MemoryProtection prot)
 {
 	MEMORY_BASIC_INFORMATION					meminfo;		// Virtual memory information
 
@@ -178,7 +178,7 @@ const void* Host::AllocateMemory(const void* address, size_t length, MemoryProte
 	while(allocbegin < allocend) {
 
 		// Locate the section object that matches the current allocation base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
+		auto const& found = std::find_if(m_sections.begin(), m_sections.end(), [&](std::unique_ptr<MemorySection> const& section) -> bool {
 			return ((allocbegin >= uintptr_t(section->BaseAddress)) && (allocbegin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
@@ -186,7 +186,7 @@ const void* Host::AllocateMemory(const void* address, size_t length, MemoryProte
 		if(found == m_sections.end()) throw LinuxException{ LINUX_EINVAL, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
-		const auto& section = *found;
+		auto const& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
 		size_t alloclen = std::min(section->Length - (allocbegin - uintptr_t(section->BaseAddress)), allocend - allocbegin);
@@ -247,7 +247,7 @@ std::unique_ptr<Host> Host::Clone(std::unique_ptr<NativeProcess> nativeproc)
 	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
 
 	// Iterate over the existing memory sections and clone them into the target process
-	for(const auto& iterator : m_sections) sections.emplace_back(iterator->Clone(nativeproc->ProcessHandle));
+	for(auto const& iterator : m_sections) sections.emplace_back(iterator->Clone(nativeproc->ProcessHandle));
 
 	// Create the new Host instance with the cloned memory sections
 	return std::make_unique<Host>(std::move(nativeproc), std::move(sections));
@@ -279,12 +279,12 @@ std::unique_ptr<Host> Host::Create(std::unique_ptr<NativeProcess> nativeproc)
 //	length		- Length of the guard page region
 //	prot		- Memory protection flags for the region
 
-void Host::GuardMemory(const void* address, size_t length, MemoryProtection prot) const
+void Host::GuardMemory(void const* address, size_t length, MemoryProtection prot) const
 {
 	// Use the common internal version that accepts windows page flags
 	return ProtectMemoryInternal(address, length, convert<Win32MemoryProtection>(prot) | PAGE_GUARD);
 }
-	
+
 //-----------------------------------------------------------------------------
 // Host::LockMemory
 //
@@ -296,7 +296,7 @@ void Host::GuardMemory(const void* address, size_t length, MemoryProtection prot
 //	address		- Base address of the region to be locked
 //	length		- Length of the region to be locked
 
-void Host::LockMemory(const void* address, size_t length) const
+void Host::LockMemory(void const* address, size_t length) const
 {
 	// Attempt to lock the requested region into the process working set
 	LPVOID addr = const_cast<void*>(address);
@@ -314,7 +314,7 @@ void Host::LockMemory(const void* address, size_t length) const
 //	length		- Length of the region to be protected
 //	prot		- Memory protection flags for the region
 
-void Host::ProtectMemory(const void* address, size_t length, MemoryProtection prot) const
+void Host::ProtectMemory(void const* address, size_t length, MemoryProtection prot) const
 {
 	// Use the common internal version that accepts windows page flags
 	return ProtectMemoryInternal(address, length, convert<Win32MemoryProtection>(prot));
@@ -331,7 +331,7 @@ void Host::ProtectMemory(const void* address, size_t length, MemoryProtection pr
 //	length		- Length of the region to be protected
 //	winprot		- Windows memory protection flags for the region
 
-void Host::ProtectMemoryInternal(const void* address, size_t length, DWORD winprot) const
+void Host::ProtectMemoryInternal(void const* address, size_t length, DWORD winprot) const
 {
 	// Determine the starting and ending points for the operation
 	uintptr_t begin = uintptr_t(address);
@@ -343,7 +343,7 @@ void Host::ProtectMemoryInternal(const void* address, size_t length, DWORD winpr
 	while(begin < end) {
 
 		// Locate the section object that matches the current base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
+		auto const& found = std::find_if(m_sections.begin(), m_sections.end(), [&](std::unique_ptr<MemorySection> const& section) -> bool {
 			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
@@ -351,7 +351,7 @@ void Host::ProtectMemoryInternal(const void* address, size_t length, DWORD winpr
 		if(found == m_sections.end()) throw LinuxException{ LINUX_EINVAL, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
-		const auto& section = *found;
+		auto const& section = *found;
 
 		// Determine the length of the allocation to request from this section and request it
 		size_t protectlen = std::min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
@@ -372,7 +372,7 @@ void Host::ProtectMemoryInternal(const void* address, size_t length, DWORD winpr
 //	buffer		- Output data buffer
 //	length		- Size of the output data buffer
 
-size_t Host::ReadMemory(const void* address, void* buffer, size_t length) const
+size_t Host::ReadMemory(void const* address, void* buffer, size_t length) const
 {
 	SIZE_T						read;			// Number of bytes read
 
@@ -399,7 +399,7 @@ size_t Host::ReadMemory(const void* address, void* buffer, size_t length) const
 //	address		- Base address of the memory region to be released
 //	length		- Number of bytes to be released
 
-void Host::ReleaseMemory(const void* address, size_t length)
+void Host::ReleaseMemory(void const* address, size_t length)
 {
 	uintptr_t begin = uintptr_t(address);			// Start address as uintptr_t
 	uintptr_t end = begin + length;					// End address as uintptr_t
@@ -410,7 +410,7 @@ void Host::ReleaseMemory(const void* address, size_t length)
 	while(begin < end) {
 
 		// Locate the section object that matches the specified base address
-		const auto& found = std::find_if(m_sections.begin(), m_sections.end(), [&](const std::unique_ptr<MemorySection>& section) -> bool {
+		auto const& found = std::find_if(m_sections.begin(), m_sections.end(), [&](std::unique_ptr<MemorySection> const& section) -> bool {
 			return ((begin >= uintptr_t(section->BaseAddress)) && (begin < (uintptr_t(section->BaseAddress) + section->Length)));
 		});
 
@@ -418,7 +418,7 @@ void Host::ReleaseMemory(const void* address, size_t length)
 		if(found == m_sections.end()) return;
 
 		// Cast out the std::unique_ptr<MemorySection>& for clarity below
-		const auto& section = *found;
+		auto const& section = *found;
 
 		// Determine how much to release from this section and release it
 		size_t freelength = std::min(section->Length - (begin - uintptr_t(section->BaseAddress)), end - begin);
@@ -471,7 +471,7 @@ void Host::Terminate(uint16_t exitcode, bool wait) const
 //	address		- Base address of the region to be unlocked
 //	length		- Length of the region to be unlocked
 
-void Host::UnlockMemory(const void* address, size_t length) const
+void Host::UnlockMemory(void const* address, size_t length) const
 {
 	// Attempt to unlock the requested region from the process working set
 	LPVOID addr = const_cast<void*>(address);
@@ -489,7 +489,7 @@ void Host::UnlockMemory(const void* address, size_t length) const
 //	buffer		- Output data buffer
 //	length		- Size of the output data buffer
 
-size_t Host::WriteMemory(const void* address, const void* buffer, size_t length) const
+size_t Host::WriteMemory(void const* address, void const* buffer, size_t length) const
 {
 	SIZE_T					written;			// Number of bytes written
 
