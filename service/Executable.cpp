@@ -47,12 +47,13 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	format			- Executable binary format flag
 //	originalpath	- Originally specified executable path
 //	handle			- Handle instance open against the target file
+//	references		- Required executable references (libraries)
 //	arguments		- Processed command line arguments
 //	environment		- Processed environment variables
 
 Executable::Executable(enum class Architecture arch, enum class Format format, const char_t* originalpath, std::shared_ptr<FileSystem::Handle> handle,
-	string_vector_t&& arguments, string_vector_t&& environment) : m_architecture(arch), m_format(format), m_originalpath(originalpath),
-	m_handle(std::move(handle)), m_arguments(std::move(arguments)), m_environment(std::move(environment))
+	string_vector_t&& references, string_vector_t&& arguments, string_vector_t&& environment) : m_architecture(arch), m_format(format), m_originalpath(originalpath),
+	m_handle(std::move(handle)), m_references(std::move(references)), m_arguments(std::move(arguments)), m_environment(std::move(environment))
 {
 }
 
@@ -158,6 +159,8 @@ std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace
 std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath,
 	const char_t* path, string_vector_t&& arguments, string_vector_t&& environment)
 {
+	string_vector_t				references;				// Required additional libraries/modules
+
 	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT };
 	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
 	
@@ -172,21 +175,21 @@ std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, 
 	//
 	if((read >= LINUX_EI_NIDENT) && (memcmp(magic, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
 
-		// Move the file pointer back to the beginning of the file
-		handle->Seek(0, LINUX_SEEK_SET);
-
 		// This is a binary file, determine the architecture and complete the operation
 		switch(magic[LINUX_EI_CLASS]) {
 
+			// TODO: Get the interpreter and add it to references collection; see if that makes
+			// more sense as a method on ElfImage or in here as a private member
+
 			// ELFCLASS32 --> Architecture::x86
 			case LINUX_ELFCLASS32: 
-				return std::make_unique<Executable>(Architecture::x86, Format::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
+				return std::make_unique<Executable>(Architecture::x86, Format::ELF, originalpath, std::move(handle), std::move(references), std::move(arguments), std::move(environment));
 #ifdef _M_X64
 			// ELFCLASS64: --> Architecture::x86_64
 			case LINUX_ELFCLASS64: 
-				return std::make_unique<Executable>(Architecture::x86_64, Format::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
+				return std::make_unique<Executable>(Architecture::x86_64, Format::ELF, originalpath, std::move(handle), std::move(references), std::move(arguments), std::move(environment));
 #endif
-			// Unknown ELFCLASS --> ENOEXEC	
+			// Unknown or unsupported ELFCLASS --> ENOEXEC	
 			default: throw LinuxException{ LINUX_ENOEXEC };
 		}
 	}
@@ -289,6 +292,16 @@ std::shared_ptr<FileSystem::Handle> Executable::getHandle(void) const
 const char_t* Executable::getOriginalPath(void) const
 {
 	return m_originalpath.c_str();
+}
+
+//-----------------------------------------------------------------------------
+// Executable::getReferences
+//
+// Gets a reference to the contained references vector
+
+const std::vector<std::string>& Executable::getReferences(void) const
+{
+	return m_references;
 }
 
 //-----------------------------------------------------------------------------

@@ -130,8 +130,9 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, const char_t* path,
 		const char_t* const* arguments, const char_t* const* environment)
 {
-	const void*							ldt = nullptr;		// Local descriptor table
-	std::shared_ptr<Process>			process;			// The constructed Process instance
+	const void*									ldt = nullptr;		// Local descriptor table
+	std::vector<std::unique_ptr<Executable>>	references;			// Reference modules to be loaded
+	std::shared_ptr<Process>					process;			// The constructed Process instance
 
 	// Spawning a new process requires root level access
 	Capability::Demand(Capability::SystemAdmin);
@@ -139,11 +140,18 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	// Create an Executable instance for the provided path, this will deal with interpreter scripts
 	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
 
+	// Create Executable instances for all modules directly referenced by the main executable
+	for(const auto& iterator : executable->References)
+		references.emplace_back(Executable::FromFile(ns, root, working, iterator.c_str()));
+
 	// Create a new Host instance of the appropriate architecture
 	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
 	_ASSERTE(host->Architecture == executable->Architecture);
 
 	try {
+
+		// load main executable -- will need some type of load result like before with which to set up stack and entry point
+		// load reference modules
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));

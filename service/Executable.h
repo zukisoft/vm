@@ -116,6 +116,12 @@ public:
 	__declspec(property(get=getOriginalPath)) const char_t* OriginalPath;
 	const char_t* getOriginalPath(void) const;
 
+	// References
+	//
+	// Gets a reference to the contained executable references vector
+	__declspec(property(get=getReferences)) const std::vector<std::string>& References;
+	const std::vector<std::string>& getReferences(void) const;
+
 private:
 
 	Executable(const Executable&)=delete;
@@ -144,10 +150,10 @@ private:
 	// Instance Constructor
 	//
 	Executable(enum class Architecture architecture, enum class Format format, const char_t* originalpath, fshandle_t handle,
-		string_vector_t&& arguments, string_vector_t&& environment);
+		string_vector_t&& references, string_vector_t&& arguments, string_vector_t&& environment);
 	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class Format, const char_t*&, 
-		fshandle_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class Format&&, const char_t*&, fshandle_t&&,
-		string_vector_t&&, string_vector_t&&);
+		fshandle_t, string_vector_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class Format&&, const char_t*&, fshandle_t&&,
+		string_vector_t&&, string_vector_t&&, string_vector_t&&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -176,6 +182,7 @@ private:
 	const enum class Format			m_format;			// Executable file format
 	const std::string				m_originalpath;		// Originally specified path
 	const fshandle_t				m_handle;			// Binary file handle
+	const string_vector_t			m_references;		// Executable references
 	const string_vector_t			m_arguments;		// Command line arguments
 	const string_vector_t			m_environment;		// Environment variables
 };
