@@ -57,11 +57,35 @@ struct __declspec(novtable) Binary
 	__declspec(property(get=getBaseAddress)) void const* BaseAddress;
 	virtual void const* getBaseAddress(void) const = 0;
 
+	// BreakAddress
+	//
+	// Pointer to the program break address
+	__declspec(property(get=getBreakAddress)) void const* BreakAddress;
+	virtual void const* getBreakAddress(void) const = 0;
+
 	// EntryPoint
 	//
 	// Gets the entry point of the loaded image
 	__declspec(property(get=getEntryPoint)) void const* EntryPoint;
 	virtual void const* getEntryPoint(void) const = 0;
+
+	// Interpreter
+	//
+	// Indicates the path to the program interpreter binary, if one is present
+	__declspec(property(get=getInterpreter)) char_t const* Interpreter;
+	virtual char_t const* getInterpreter(void) const = 0;
+
+	// ProgramHeadersAddress
+	//
+	// Pointer to program headers that were defined as part of the loaded image
+	__declspec(property(get=getProgramHeadersAddress)) void const* ProgramHeadersAddress;
+	virtual void const* getProgramHeadersAddress(void) const = 0;
+
+	// ProgramHeaderCount
+	//
+	// Number of program headers defines as part of the loaded image
+	__declspec(property(get=getProgramHeaderCount)) size_t ProgramHeaderCount;
+	virtual size_t getProgramHeaderCount(void) const = 0;
 };
 
 //-----------------------------------------------------------------------------

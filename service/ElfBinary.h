@@ -76,42 +76,35 @@ public:
 	//-------------------------------------------------------------------------
 	// Binary Implementation
 
-	// BaseAddress
+	// getBaseAddress
 	//
 	// Gets the virtual memory base address of the loaded image
 	virtual void const* getBaseAddress(void) const;
+
+	// getBreakAddress
+	//
+	// Get a pointer to the program break address
+	virtual void const* getBreakAddress(void) const;
 
 	// EntryPoint
 	//
 	// Gets the entry point for the image
 	virtual void const* getEntryPoint(void) const;
 
-	//-------------------------------------------------------------------------
-	// Properties
+	// getInterpreter
+	//
+	// Indicates the path to the program interpreter binary, if one is present
+	virtual char_t const* getInterpreter(void) const;
 
-	//// Interpreter
-	////
-	//// Indicates the path to the program interpreter, if one is present
-	//__declspec(property(get=getInterpreter)) const char_t* Interpreter;
-	//const char_t* getInterpreter(void) const;
+	// getProgramHeadersAddress
+	//
+	// Pointer to program headers that were defined as part of the loaded image
+	virtual void const* getProgramHeadersAddress(void) const;
 
-	//// ProgramBreak
-	////
-	//// Pointer to the initial program break address
-	//__declspec(property(get=getProgramBreak)) const void* ProgramBreak;
-	//const void* getProgramBreak(void) const;
-
-	//// NumProgramHeaders
-	////
-	//// Number of program headers defines as part of the loaded image
-	//__declspec(property(get=getNumProgramHeaders)) size_t NumProgramHeaders;
-	//size_t getNumProgramHeaders(void) const;
-
-	//// ProgramHeaders
-	////
-	//// Pointer to program headers that were defined as part of the loaded image
-	//__declspec(property(get=getProgramHeaders)) const void* ProgramHeaders;
-	//const void* getProgramHeaders(void) const;
+	// getProgramHeaderCount
+	//
+	// Number of program headers defines as part of the loaded image
+	virtual size_t getProgramHeaderCount(void) const;
 
 private:
 
