@@ -92,7 +92,7 @@ public:
 	// FileSystem::HandleAccess
 	//
 	// Access modes used with handle operations
-	class HandleAccess final : public bitmask<uint32_t, LINUX_O_RDONLY | LINUX_O_WRONLY | LINUX_O_RDWR>
+	class HandleAccess final : public bitmask<HandleAccess, uint32_t, LINUX_O_RDONLY | LINUX_O_WRONLY | LINUX_O_RDWR>
 	{
 	public:
 
@@ -120,7 +120,7 @@ public:
 	// FileSystem::HandleFlags
 	//
 	// Flags used with handle operations
-	class HandleFlags final : public bitmask<uint32_t, LINUX_O_APPEND | LINUX_O_DIRECT | LINUX_O_DSYNC | LINUX_O_NOATIME | LINUX_O_SYNC | LINUX_O_TRUNC>
+	class HandleFlags final : public bitmask<HandleFlags, uint32_t, LINUX_O_APPEND | LINUX_O_DIRECT | LINUX_O_DSYNC | LINUX_O_NOATIME | LINUX_O_SYNC | LINUX_O_TRUNC>
 	{
 	public:
 
@@ -168,7 +168,7 @@ public:
 	// FileSystem::LookupFlags
 	//
 	// Flags used with lookup operations
-	class LookupFlags final : public bitmask<uint32_t, LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW>
+	class LookupFlags final : public bitmask<LookupFlags, uint32_t, LINUX_O_DIRECTORY | LINUX_O_NOFOLLOW>
 	{
 	public:
 
