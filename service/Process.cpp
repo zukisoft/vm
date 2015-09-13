@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "Process.h"
 
+#include "Binary.h"
 #include "Capability.h"
 #include "Executable.h"
 #include "Host.h"
@@ -151,7 +152,10 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	try {
 
 		// load main executable -- will need some type of load result like before with which to set up stack and entry point
-		// load reference modules
+		// test
+		auto execbinary = Binary::Load(host.get(), executable.get());
+
+		// load interpreter -- get rid of "reference modules", that was silly
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));

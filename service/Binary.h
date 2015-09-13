@@ -43,11 +43,6 @@ class Host;
 
 struct __declspec(novtable) Binary
 {
-	// Binary::LoadFunction
-	//
-	// Function signature for a binary Load() implementation, which must be a public static method
-	using LoadFunction = std::function<std::unique_ptr<Binary>(Host const* host, Executable const* executable)>;
-
 	//-------------------------------------------------------------------------
 	// Properties
 
@@ -86,6 +81,14 @@ struct __declspec(novtable) Binary
 	// Number of program headers defines as part of the loaded image
 	__declspec(property(get=getProgramHeaderCount)) size_t ProgramHeaderCount;
 	virtual size_t getProgramHeaderCount(void) const = 0;
+
+	//-------------------------------------------------------------------------
+	// Member Functions
+	
+	// Load (static)
+	//
+	// Loads an executable binary image into a host instance
+	static std::unique_ptr<Binary> Load(Host* host, Executable const* executable);
 };
 
 //-----------------------------------------------------------------------------
