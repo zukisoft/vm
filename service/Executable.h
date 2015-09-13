@@ -59,13 +59,13 @@ public:
 	//
 	// Creates a new Executable instance from an existing file
 	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-		std::shared_ptr<FileSystem::Path> current, const char_t* path);
+		std::shared_ptr<FileSystem::Path> current, char_t const* path);
 
 	// FromFile (static)
 	//
 	// Creates a new Executable instance from an existing file
 	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-		std::shared_ptr<FileSystem::Path> current, const char_t* path, const char_t* const* arguments, const char_t* const* environment);
+		std::shared_ptr<FileSystem::Path> current, char_t const* path, char_t const* const* arguments, char_t const* const* environment);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -79,14 +79,14 @@ public:
 	// Arguments
 	//
 	// Gets a reference to the contained arguments vector
-	__declspec(property(get=getArguments)) const std::vector<std::string>& Arguments;
-	const std::vector<std::string>& getArguments(void) const;
+	__declspec(property(get=getArguments)) std::vector<std::string> const& Arguments;
+	std::vector<std::string> const& getArguments(void) const;
 
 	// EnvironmentVariables
 	//
 	// Gets a reference to the contained environment variables vector
-	__declspec(property(get=getEnvironmentVariables)) const std::vector<std::string>& EnvironmentVariables;
-	const std::vector<std::string>& getEnvironmentVariables(void) const;
+	__declspec(property(get=getEnvironmentVariables)) std::vector<std::string> const& EnvironmentVariables;
+	std::vector<std::string> const& getEnvironmentVariables(void) const;
 
 	// Format
 	//
@@ -103,19 +103,19 @@ public:
 	// OriginalPath
 	//
 	// Gets the originally specified path of the executable
-	__declspec(property(get=getOriginalPath)) const char_t* OriginalPath;
-	const char_t* getOriginalPath(void) const;
+	__declspec(property(get=getOriginalPath)) char_t const* OriginalPath;
+	char_t const* getOriginalPath(void) const;
 
 	// References
 	//
 	// Gets a reference to the contained executable references vector
-	__declspec(property(get=getReferences)) const std::vector<std::string>& References;
-	const std::vector<std::string>& getReferences(void) const;
+	__declspec(property(get=getReferences)) std::vector<std::string> const& References;
+	std::vector<std::string> const& getReferences(void) const;
 
 private:
 
-	Executable(const Executable&)=delete;
-	Executable& operator=(const Executable&)=delete;
+	Executable(Executable const &)=delete;
+	Executable& operator=(Executable const&)=delete;
 
 	// fshandle_t
 	//
@@ -139,10 +139,10 @@ private:
 
 	// Instance Constructor
 	//
-	Executable(enum class Architecture architecture, enum class BinaryFormat format, const char_t* originalpath, fshandle_t handle,
+	Executable(enum class Architecture architecture, enum class BinaryFormat format, char_t const* originalpath, fshandle_t handle,
 		string_vector_t&& references, string_vector_t&& arguments, string_vector_t&& environment);
-	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class BinaryFormat, const char_t*&, 
-		fshandle_t, string_vector_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, const char_t*&, fshandle_t&&,
+	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class BinaryFormat, char_t const*&, 
+		fshandle_t, string_vector_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, char_t const*&, fshandle_t&&,
 		string_vector_t&&, string_vector_t&&, string_vector_t&&);
 
 	//-------------------------------------------------------------------------
@@ -151,30 +151,30 @@ private:
 	// FromFile (static)
 	//
 	// Internal version of FromFile that accepts an intermediate set of arguments
-	static std::unique_ptr<Executable> FromFile(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath, 
-		const char_t* path, string_vector_t&& arguments, string_vector_t&& environment);
+	static std::unique_ptr<Executable> FromFile(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath, 
+		char_t const* path, string_vector_t&& arguments, string_vector_t&& environment);
 
 	// FromScript (static)
 	//
 	// Internal version of FromFile that resolves via an interpreter script
-	static std::unique_ptr<Executable> FromScript(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath,
+	static std::unique_ptr<Executable> FromScript(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath,
 		fshandle_t scripthandle, size_t dataoffset, string_vector_t&& arguments, string_vector_t&& environment);
 
 	// StringArrayToVector (static)
 	//
 	// Converts a null-terminated array of C-style strings into a vector<string>
-	static string_vector_t StringArrayToVector(const char_t* const* strings);
+	static string_vector_t StringArrayToVector(char_t const* const* strings);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	const enum class Architecture	m_architecture;		// Architecture flag
-	const enum class BinaryFormat	m_format;			// Binary file format
-	const std::string				m_originalpath;		// Originally specified path
-	const fshandle_t				m_handle;			// Binary file handle
-	const string_vector_t			m_references;		// Executable references
-	const string_vector_t			m_arguments;		// Command line arguments
-	const string_vector_t			m_environment;		// Environment variables
+	enum class Architecture const	m_architecture;		// Architecture flag
+	enum class BinaryFormat const	m_format;			// Binary file format
+	std::string const				m_originalpath;		// Originally specified path
+	fshandle_t const				m_handle;			// Binary file handle
+	string_vector_t const			m_references;		// Executable references
+	string_vector_t const			m_arguments;		// Command line arguments
+	string_vector_t const			m_environment;		// Environment variables
 };
 
 //-----------------------------------------------------------------------------

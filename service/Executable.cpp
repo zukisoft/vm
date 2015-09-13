@@ -51,7 +51,7 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //	arguments		- Processed command line arguments
 //	environment		- Processed environment variables
 
-Executable::Executable(enum class Architecture arch, enum class BinaryFormat format, const char_t* originalpath, std::shared_ptr<FileSystem::Handle> handle,
+Executable::Executable(enum class Architecture arch, enum class BinaryFormat format, char_t const* originalpath, std::shared_ptr<FileSystem::Handle> handle,
 	string_vector_t&& references, string_vector_t&& arguments, string_vector_t&& environment) : m_architecture(arch), m_format(format), m_originalpath(originalpath),
 	m_handle(std::move(handle)), m_references(std::move(references)), m_arguments(std::move(arguments)), m_environment(std::move(environment))
 {
@@ -72,7 +72,7 @@ enum class Architecture Executable::getArchitecture(void) const
 //
 // Gets a reference to the contained arguments vector
 
-const std::vector<std::string>& Executable::getArguments(void) const
+std::vector<std::string> const& Executable::getArguments(void) const
 {
 	return m_arguments;
 }
@@ -82,7 +82,7 @@ const std::vector<std::string>& Executable::getArguments(void) const
 //
 // Gets a reference to the contained environment variables vector
 
-const std::vector<std::string>& Executable::getEnvironmentVariables(void) const
+std::vector<std::string> const& Executable::getEnvironmentVariables(void) const
 {
 	return m_environment;
 }
@@ -110,7 +110,7 @@ enum class BinaryFormat Executable::getFormat(void) const
 //	path			- Path to the executable image
 
 std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-	std::shared_ptr<FileSystem::Path> current, const char_t* path)
+	std::shared_ptr<FileSystem::Path> current, char_t const* path)
 {
 	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
 	
@@ -133,7 +133,7 @@ std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace
 //	environment		- Array of environment variables
 
 std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-	std::shared_ptr<FileSystem::Path> current, const char_t* path, const char_t* const* arguments, const char_t* const* environment)
+	std::shared_ptr<FileSystem::Path> current, char_t const* path, char_t const* const* arguments, char_t const* const* environment)
 {
 	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
 	
@@ -156,8 +156,8 @@ std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace
 //	arguments		- Vector of command-line arguments
 //	environment		- Vector of environment variables
 
-std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath,
-	const char_t* path, string_vector_t&& arguments, string_vector_t&& environment)
+std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath,
+	char_t const* path, string_vector_t&& arguments, string_vector_t&& environment)
 {
 	string_vector_t				references;				// Required additional libraries/modules
 
@@ -235,7 +235,7 @@ std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, 
 //	arguments		- Vector of command-line arguments
 //	environment		- Vector of environment variables
 
-std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root, fspath_t current, const char_t* originalpath,
+std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath,
 	fshandle_t scripthandle, size_t dataoffset, string_vector_t&& arguments, string_vector_t&& environment)
 {
 	char_t					buffer[MAX_PATH];			// Script data buffer
@@ -289,7 +289,7 @@ std::shared_ptr<FileSystem::Handle> Executable::getHandle(void) const
 //
 // Gets the originally specified path of the executable
 
-const char_t* Executable::getOriginalPath(void) const
+char_t const* Executable::getOriginalPath(void) const
 {
 	return m_originalpath.c_str();
 }
@@ -299,7 +299,7 @@ const char_t* Executable::getOriginalPath(void) const
 //
 // Gets a reference to the contained references vector
 
-const std::vector<std::string>& Executable::getReferences(void) const
+std::vector<std::string> const& Executable::getReferences(void) const
 {
 	return m_references;
 }
@@ -313,7 +313,7 @@ const std::vector<std::string>& Executable::getReferences(void) const
 //
 //	strings		- Null-terminated array of C-style strings
 
-Executable::string_vector_t Executable::StringArrayToVector(const char_t* const* strings)
+Executable::string_vector_t Executable::StringArrayToVector(char_t const* const* strings)
 {
 	string_vector_t vec;
 	while((strings) && (*strings)) { vec.push_back(*strings); strings++; }
