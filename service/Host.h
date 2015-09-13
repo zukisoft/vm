@@ -55,7 +55,7 @@ public:
 	// Host::MemoryProtection
 	//
 	// Protection flags used with memory operations
-	class MemoryProtection final : public bitmask<uint32_t, LINUX_PROT_NONE | LINUX_PROT_READ | LINUX_PROT_WRITE | LINUX_PROT_EXEC | LINUX_PROT_SEM>
+	class MemoryProtection final : public bitmask<MemoryProtection, uint32_t, LINUX_PROT_NONE | LINUX_PROT_READ | LINUX_PROT_WRITE | LINUX_PROT_EXEC | LINUX_PROT_SEM>
 	{
 	public:
 

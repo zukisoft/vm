@@ -72,15 +72,17 @@ template<> Win32MemoryProtection convert<Win32MemoryProtection>(Host::MemoryProt
 {
 	using prot = Host::MemoryProtection;
 
+	// THIS DOES NOT WORK - Operator & is calling bool(), which results in 0x0001 (page::Read)
+	// FIX IT
 	prot flags{ rhs & (prot::Execute | prot::Write | prot::Read) };
 
-	if(flags == prot::Execute)									return PAGE_EXECUTE;
-	else if(flags == prot::Read)								return PAGE_READONLY;
-	else if(flags == prot::Write)								return PAGE_READWRITE;
-	else if(flags == prot::Execute | prot::Read)				return PAGE_EXECUTE_READ;
-	else if(flags == prot::Execute | prot::Write)				return PAGE_EXECUTE_READWRITE;
-	else if(flags == prot::Read | prot::Write)					return PAGE_READWRITE;
-	else if(flags == prot::Execute | prot::Read | prot::Write)	return PAGE_EXECUTE_READWRITE;
+	if(flags == prot::Execute)										return PAGE_EXECUTE;
+	else if(flags == prot::Read)									return PAGE_READONLY;
+	else if(flags == prot::Write)									return PAGE_READWRITE;
+	else if(flags == (prot::Execute | prot::Read))					return PAGE_EXECUTE_READ;
+	else if(flags == (prot::Execute | prot::Write))					return PAGE_EXECUTE_READWRITE;
+	else if(flags == (prot::Read | prot::Write))					return PAGE_READWRITE;
+	else if(flags == (prot::Execute | prot::Read | prot::Write))	return PAGE_EXECUTE_READWRITE;
 
 	return PAGE_NOACCESS;
 }
@@ -404,6 +406,10 @@ size_t Host::ReadMemory(void const* address, void* buffer, size_t length) const
 size_t Host::ReadMemoryInto(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const
 {
 	// todo
+	_ASSERTE(false);
+
+	// See comments in WriteMemoryFrom() as well
+
 	(handle);
 	(offset);
 	(address);
@@ -543,13 +549,39 @@ size_t Host::WriteMemory(void const* address, void const* buffer, size_t length)
 
 size_t Host::WriteMemoryFrom(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const
 {
-	// todo
-	(handle);
-	(offset);
-	(address);
-	(length);
+	uintptr_t			dest = uintptr_t(address);			// Easier pointer math as uintptr_t
+	SIZE_T				written;							// Number of bytes written into process
+	size_t				total = 0;							// Total bytes written
 	
-	return 0;
+	// Prevent changes to the process memory layout while this is operating
+	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
+
+	//
+	// TODO: This would perform better if the memory was mapped directly, which is something
+	// that certain file systems (tmpfs, hostfs) would be able to do at some point.  Perhaps
+	// a flag on Handle, like if(handle->CanAddress) pointer = handle->GetAddress(offset) or
+	// something like [void* Handle::MapRegion(offset, length)]?  Would need to be performance
+	// tested to see if it's really any better than just reading into an intermediate buffer
+	//
+
+	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
+	auto buffer = std::make_unique <uint8_t[]>(SystemInformation::AllocationGranularity);
+
+	while(length) {
+
+		// Read the next chunk of memory into the heap buffer, break early if there is no more
+		size_t read = handle->ReadAt(offset + total, &buffer[0], std::min(length, SystemInformation::AllocationGranularity));
+		if(read == 0) break;
+
+		// Attempt to write the requested data into the native process
+		NTSTATUS result = NtApi::NtWriteVirtualMemory(m_nativeproc->ProcessHandle, reinterpret_cast<void*>(dest + total), &buffer[0], read, &written);
+		if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException{ result } };
+		
+		length -= written;		// Subtract number of bytes written from remaining
+		total += written;		// Add to the total number of bytes written
+	};
+
+	return total;				// Return total bytes written into the process
 }
 
 //-----------------------------------------------------------------------------
