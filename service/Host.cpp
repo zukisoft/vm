@@ -72,8 +72,6 @@ template<> Win32MemoryProtection convert<Win32MemoryProtection>(Host::MemoryProt
 {
 	using prot = Host::MemoryProtection;
 
-	// THIS DOES NOT WORK - Operator & is calling bool(), which results in 0x0001 (page::Read)
-	// FIX IT
 	prot flags{ rhs & (prot::Execute | prot::Write | prot::Read) };
 
 	if(flags == prot::Execute)										return PAGE_EXECUTE;
