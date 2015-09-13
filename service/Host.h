@@ -27,6 +27,7 @@
 #include <memory>
 #include <vector>
 #include "Architecture.h"
+#include "FileSystem.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -133,6 +134,11 @@ public:
 	// Reads data from the process address space
 	size_t ReadMemory(void const* address, void* buffer, size_t length) const;
 
+	// ReadMemoryInto
+	//
+	// Reads data from the process address space into a handle instance
+	size_t ReadMemoryInto(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const;
+
 	// ReleaseMemory
 	//
 	// Releases virtual memory
@@ -153,6 +159,11 @@ public:
 	//
 	// Writes data into the process address space
 	size_t WriteMemory(void const* address, void const* buffer, size_t length) const;
+
+	// WriteMemoryFrom
+	//
+	// Writes data into the process addres space from a handle instance
+	size_t WriteMemoryFrom(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const;
 
 	//-------------------------------------------------------------------------
 	// Properties

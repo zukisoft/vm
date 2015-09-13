@@ -368,14 +368,14 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Binary.h" />
+    <ClInclude Include="BinaryFormat.h" />
     <ClInclude Include="Capability.h" />
-    <ClInclude Include="ElfArguments.h" />
-    <ClInclude Include="elf_traits.h" />
+    <ClInclude Include="ElfBinary.h" />
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Host.h" />
     <ClInclude Include="HostFileSystem.h" />
-    <ClInclude Include="Image.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessFileSystem.h" />
     <ClInclude Include="ProcessGroup.h" />
@@ -391,7 +391,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="Architecture.h" />
     <ClInclude Include="ProcessHandles.h" />
     <ClInclude Include="NativeProcess.h" />
-    <ClInclude Include="ElfImage.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="SignalActions.h" />
     <ClInclude Include="TaskState.h" />
@@ -652,13 +651,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClCompile>
     <ClCompile Include="Capability.cpp" />
     <ClCompile Include="Context.cpp" />
-    <ClCompile Include="ElfArguments.cpp" />
     <ClCompile Include="Executable.cpp" />
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Host.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
-    <ClCompile Include="Image.cpp" />
+    <ClCompile Include="ElfBinary.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessFileSystem.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -684,7 +682,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="PidNamespace.cpp" />
     <ClCompile Include="ProcessHandles.cpp" />
     <ClCompile Include="NativeProcess.cpp" />
-    <ClCompile Include="ElfImage.cpp" />
     <ClCompile Include="SignalActions.cpp" />
     <ClCompile Include="sys_attach_process.cpp" />
     <ClCompile Include="SystemCall.cpp" />

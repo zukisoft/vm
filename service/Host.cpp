@@ -390,6 +390,29 @@ size_t Host::ReadMemory(void const* address, void* buffer, size_t length) const
 }
 
 //-----------------------------------------------------------------------------
+// Host::ReadMemoryInto
+//
+// Reads data from the process address space into a file system handle
+//
+// Arguments:
+//
+//	handle		- File system object handle
+//	offset		- Offset within the file to write the data
+//	address		- Adress in the client process to read from
+//	length		- Number of bytes to from the client process
+
+size_t Host::ReadMemoryInto(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const
+{
+	// todo
+	(handle);
+	(offset);
+	(address);
+	(length);
+	
+	return 0;
+}
+
+//-----------------------------------------------------------------------------
 // Host::ReleaseMemory
 //
 // Releases memory from the process address space
@@ -485,7 +508,7 @@ void Host::UnlockMemory(void const* address, size_t length) const
 //
 // Arguments:
 //
-//	address		- Address in the client process from which to read
+//	address		- Address in the client process to begin writing data
 //	buffer		- Output data buffer
 //	length		- Size of the output data buffer
 
@@ -504,6 +527,29 @@ size_t Host::WriteMemory(void const* address, void const* buffer, size_t length)
 	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException{ result } };
 
 	return written;
+}
+
+//-----------------------------------------------------------------------------
+// Host::WriteMemoryFrom
+//
+// Writes data into the process from a file system object handle
+//
+// Arguments:
+//
+//	handle		- File system object handle
+//	offset		- Offset within the file to read the data
+//	address		- Adress in the client process to begin writing data
+//	length		- Number of bytes to write into the client process
+
+size_t Host::WriteMemoryFrom(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const
+{
+	// todo
+	(handle);
+	(offset);
+	(address);
+	(length);
+	
+	return 0;
 }
 
 //-----------------------------------------------------------------------------

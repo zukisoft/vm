@@ -20,12 +20,26 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "stdafx.h"
-#include "Image.h"
+#ifndef __BINARYFORMAT_H_
+#define __BINARYFORMAT_H_
+#pragma once
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
+// BinaryFormat Enumeration
+//
+// Defines the file format of a binary image
+
+enum class BinaryFormat
+{
+	ELF			= 0,			// ELF executable format
+	//AOut		= 1,			// A.OUT executable format (todo: future - see include/uapi/linux/a.out.h)
+	// note: there are multiple A.OUT formats - OMAGIC, NMAGIC, ZMAGIC, QMAGIC, SMAGIC and so on
+};
+
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
+
+#endif	// __BINARYFORMAT_H_

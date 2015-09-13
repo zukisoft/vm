@@ -20,19 +20,34 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __IMAGE_H_
-#define __IMAGE_H_
+#ifndef __BINARY_H_
+#define __BINARY_H_
 #pragma once
+
+#include <functional>
+#include <memory>
 
 #pragma warning(push, 4)
 
-//-----------------------------------------------------------------------------
-// Class Image
+// Forward Declarations
 //
-// Image provides information about a loaded executable module
+class Executable;
+class Host;
 
-struct __declspec(novtable) Image
+//-----------------------------------------------------------------------------
+// Class Binary
+//
+// Interface that must be implemented by a binary image loader class, exposes
+// metadata about the image after its loaded so that a Process instance can be
+// constructed and initialized around it
+
+struct __declspec(novtable) Binary
 {
+	// Binary::LoadFunction
+	//
+	// Function signature for a binary Load() implementation, which must be a public static method
+	using LoadFunction = std::function<std::unique_ptr<Binary>(Host const* host, Executable const* executable)>;
+
 	//-------------------------------------------------------------------------
 	// Properties
 
@@ -53,4 +68,4 @@ struct __declspec(novtable) Image
 
 #pragma warning(pop)
 
-#endif	// __IMAGE_H_
+#endif	// __BINARY_H_

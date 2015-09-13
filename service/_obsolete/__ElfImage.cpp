@@ -23,43 +23,42 @@
 #include "stdafx.h"
 #include "ElfImage.h"
 
-#include "Host.h"
-
 #pragma warning(push, 4)
 
-// Explicit Template Instantiations
-//
-template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host);
-#ifdef _M_X64
-template std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86_64>(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host);
-#endif
-
 //-----------------------------------------------------------------------------
-// ElfProtectionToLinuxProtection (local)
+// ::InProcessRead
 //
-// Converts ELF memory protection flags into standard Linux protection flags
+// Reads data from a Handle instance directly into a memory buffer
 //
 // Arguments:
 //
-//	flags		- ELF memory protection flags to convert
+//	handle		- FileSystem object handle instance
+//	offset		- Offset from the beginning of the stream to read from
+//	destination	- Destination buffer
+//	count		- Number of bytes to be read
 
-inline Host::MemoryProtection ElfProtectionToLinuxProtection(uint32_t flags)
+inline size_t InProcessRead(const FileSystem::HandlePtr& handle, size_t offset, void* destination, size_t count)
 {
-	int result = LINUX_PROT_NONE;		// Default to PROT_NONE (0x00)
-
-	// The ELF flags are the same as the Linux flags, but the bitmask values
-	// are different.  Accumulate flags in the result based on source
-	if(flags & LINUX_PF_R) result |= LINUX_PROT_READ;
-	if(flags & LINUX_PF_W) result |= LINUX_PROT_WRITE;
-	if(flags & LINUX_PF_X) result |= LINUX_PROT_EXEC;
-
-	return Host::MemoryProtection(result);
+	// Set the file pointer to the specified position and read the data; assume truncation on error reading
+	if(static_cast<size_t>(handle->Seek(offset, LINUX_SEEK_SET)) != offset) throw Exception(E_ELFIMAGETRUNCATED);
+	return handle->Read(destination, count);
 }
 
-// todo: I really want this to go away, but this operation does need to exist somewhere.  Allowing
-// direct access to the data buffer for TempFileSystem would work, but only for TempFileSystem
-// rename to ReadIntoProcess?
-inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host, size_t offset, void* destination, size_t count)
+//-----------------------------------------------------------------------------
+// ::OutOfProcessRead
+//
+// Reads data from a StreamReader instance into another process using an
+// intermediate heap buffer
+//
+// Arguments:
+//
+//	handle		- FileSystem object handle instance
+//	process		- Destination process handle, or INVALID_HANDLE_VALUE
+//	offset		- Offset from the beginning of the stream to read from
+//	destination	- Destination buffer
+//	count		- Number of bytes to be read
+
+inline size_t OutOfProcessRead(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host, size_t offset, void* destination, size_t count)
 {
 	uintptr_t			dest = uintptr_t(destination);		// Easier pointer math as uintptr_t
 	size_t				total = 0;							// Total bytes written
@@ -73,7 +72,7 @@ inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle
 	while(count) {
 
 		// Read the next chunk of memory into the heap buffer, break early if there is no more
-		size_t read = handle->Read(buffer, std::min(count, buffer.Size));
+		size_t read = handle->Read(buffer, min(count, buffer.Size));
 		if(read == 0) break;
 
 		// Write the data into the target native operating system process
@@ -86,61 +85,90 @@ inline size_t OutOfProcessRead(const std::shared_ptr<FileSystem::Handle>& handle
 }
 
 //-----------------------------------------------------------------------------
-// ElfImage::getBaseAddress
+// ElfImage::FlagsToProtection (static, private)
 //
-// Gets the virtual memory base address of the loaded image
+// Converts an ELF program header p_flags into VirtualAlloc[Ex] protection flags
+//
+// Arguments:
+//
+//	flags		- ELF program header p_flags value
 
-void const* ElfImage::getBaseAddress(void) const 
-{ 
-	return m_metadata.BaseAddress;
+DWORD ElfImage::FlagsToProtection(uint32_t flags)
+{
+	switch(flags) {
+
+		case LINUX_PF_X : return PAGE_EXECUTE;
+		case LINUX_PF_W : return PAGE_READWRITE;
+		case LINUX_PF_R : return PAGE_READONLY;
+		case LINUX_PF_X | LINUX_PF_W : return PAGE_EXECUTE_READWRITE;
+		case LINUX_PF_X | LINUX_PF_R : return PAGE_EXECUTE_READ;
+		case LINUX_PF_W | LINUX_PF_R : return PAGE_READWRITE;
+		case LINUX_PF_X | LINUX_PF_W | LINUX_PF_R :	return PAGE_EXECUTE_READWRITE;
+	}
+
+	return PAGE_NOACCESS;
 }
 
 //-----------------------------------------------------------------------------
-// ElfImage::getEntryPoint
+// ElfImage::Load (Architecture::x86)
 //
-// Gets the entry point for the image
-
-void const* ElfImage::getEntryPoint(void) const 
-{ 
-	return m_metadata.EntryPoint;
-}
-
-//-----------------------------------------------------------------------------
-// ElfImage::getInterpreter
-//
-// Gets the path to the program interpreter, if one is present
-
-const uapi::char_t* ElfImage::getInterpreter(void) const 
-{ 
-	return (m_metadata.Interpreter.size() == 0) ? nullptr : m_metadata.Interpreter.c_str();
-}
-
-//-----------------------------------------------------------------------------
-// ElfImage::Load(static)
-//
-// Loads an ELF binary image into a process' virtual address space
+// Loads a 32-bit ELF image into virtual memory
 //
 // Arguments:
 //
 //	handle		- FileSystem object handle instance for the binary image
-//	memory		- Target process' virtual address space manager
+//	host		- Native operating system process to load the ELF image into
+
+template <> std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86>(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host)
+{
+	// Invoke the 32-bit version of LoadBinary() to parse out and load the ELF image
+	return LoadBinary<Architecture::x86>(handle, host);
+}
+
+//-----------------------------------------------------------------------------
+// ElfImage::Load (Architecture::x86_64)
+//
+// Loads a 64-bit ELF image into virtual memory
+//
+// Arguments:
+//
+//	handle		- FileSystem object handle instance for the binary image
+//	host		- Native operating system process to load the ELF image into
+
+#ifdef _M_X64
+template <> std::unique_ptr<ElfImage> ElfImage::Load<Architecture::x86_64>(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host)
+{
+	// Invoke the 64-bit version of LoadBinary() to parse out and load the ELF image
+	return LoadBinary<Architecture::x86_64>(handle, host);
+}
+#endif
+
+//-----------------------------------------------------------------------------
+// ElfImage::LoadBinary (static, private)
+//
+// Loads an ELF binary image into virtual memory
+//
+// Arguments:
+//
+//	handle		- FileSystem object handle instance for the binary image
+//	host		- Native operating system process to load the ELF image into
 
 template <Architecture architecture>
-std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handle>& handle, const std::unique_ptr<Host>& host)
+std::unique_ptr<ElfImage> ElfImage::LoadBinary(const FileSystem::HandlePtr& handle, const std::unique_ptr<Host>& host)
 {
 	using elf = elf_traits<architecture>;
 
-	metadata_t						metadata;		// Metadata to return about the loaded image
+	Metadata						metadata;		// Metadata to return about the loaded image
 	typename elf::elfheader_t		elfheader;		// ELF binary image header structure
 
 	// Acquire a copy of the ELF header from the binary file and validate it
-	size_t read = handle->ReadAt(0, &elfheader, sizeof(typename elf::elfheader_t));
+	size_t read = InProcessRead(handle, 0, &elfheader, sizeof(typename elf::elfheader_t));
 	if(read != sizeof(typename elf::elfheader_t)) throw Exception(E_ELFTRUNCATEDHEADER);
 	ValidateHeader<architecture>(&elfheader);
 
 	// Read all of the program headers from the binary image file into a heap buffer
 	HeapBuffer<typename elf::progheader_t> progheaders(elfheader.e_phnum);
-	read = handle->ReadAt(elfheader.e_phoff, &progheaders, progheaders.Size);
+	read = InProcessRead(handle, elfheader.e_phoff, &progheaders, progheaders.Size);
 	if(read != progheaders.Size) throw Exception(E_ELFIMAGETRUNCATED);
 
 	// PROGRAM HEADERS PASS ONE - GET MEMORY FOOTPRINT AND CHECK INVARIANTS
@@ -155,8 +183,8 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 			// Calculate the minimum and maximum physical addresses of the segment
 			// and adjust the overall minimum and maximums accordingly
-			minvaddr = std::min(uintptr_t(progheader.p_vaddr), minvaddr);
-			maxvaddr = std::max(uintptr_t(progheader.p_vaddr + progheader.p_memsz), maxvaddr);
+			minvaddr = min(uintptr_t(progheader.p_vaddr), minvaddr);
+			maxvaddr = max(uintptr_t(progheader.p_vaddr + progheader.p_memsz), maxvaddr);
 		}
 
 		// PT_GNU_STACK - GNU executable stack segment
@@ -173,8 +201,8 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so
 		// reserve them at the highest available virtual address to allow for as much heap space as possible.
 		// Note that the section length is aligned to the allocation granularity of the system to prevent holes
-		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = host->AllocateMemory(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, Host::MemoryProtection::None);
-		else metadata.BaseAddress = host->AllocateMemory(maxvaddr - minvaddr, Host::MemoryProtection::None);
+		if(elfheader.e_type == LINUX_ET_EXEC) metadata.BaseAddress = host->AllocateMemory(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, PAGE_NOACCESS);
+		else metadata.BaseAddress = host->AllocateMemory(maxvaddr - minvaddr, PAGE_NOACCESS);
 
 	} catch(Exception& ex) { throw Exception(E_ELFRESERVEREGION, ex); }
 
@@ -200,7 +228,7 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 			// Get the base address of the loadable segment and set it as PAGE_READWRITE to load it
 			uintptr_t segbase = progheader.p_vaddr + vaddrdelta;
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, LINUX_PROT_READ | LINUX_PROT_WRITE); }
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, PAGE_READWRITE); }
 			catch(Exception& ex) { throw Exception(E_ELFCOMMITSEGMENT, ex); }
 
 			// Not all segments contain data that needs to be copied from the source image
@@ -214,7 +242,7 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 			}
 
 			// Attempt to apply the proper virtual memory protection flags to the segment now that it's been written
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, ElfProtectionToLinuxProtection(progheader.p_flags)); }
+			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheader.p_memsz, FlagsToProtection(progheader.p_flags)); }
 			catch(Exception& ex) { throw Exception(E_ELFPROTECTSEGMENT, ex); }
 		}
 
@@ -225,7 +253,7 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 			// Allocate a heap buffer to temporarily store the interpreter string
 			HeapBuffer<char_t> interpreter(progheader.p_filesz);
-			read = handle->ReadAt(progheader.p_offset, &interpreter, interpreter.Size);
+			read = InProcessRead(handle, progheader.p_offset, &interpreter, interpreter.Size);
 			if(read != progheader.p_filesz) throw Exception(E_ELFIMAGETRUNCATED);
 
 			// Ensure that the string is NULL terminated and convert it into an std::tstring
@@ -242,36 +270,6 @@ std::unique_ptr<ElfImage> ElfImage::Load(const std::shared_ptr<FileSystem::Handl
 
 	// Construct and return a new ElfImage instance from the section and metadata
 	return std::make_unique<ElfImage>(std::move(metadata));
-}
-
-//-----------------------------------------------------------------------------
-// ElfImage::getProgramBreak
-//
-// Gets the pointer to the initial program break address
-
-const void* ElfImage::getProgramBreak(void) const 
-{ 
-	return m_metadata.ProgramBreak;
-}
-
-//-----------------------------------------------------------------------------
-// ElfImage::getNumProgramHeaders
-//
-// Gets the number of program headers defined as part of the loaded image
-
-size_t ElfImage::getNumProgramHeaders(void) const 
-{ 
-	return m_metadata.NumProgramHeaders;
-}
-
-//-----------------------------------------------------------------------------
-// ElfImage::getProgramHeaders
-//
-// Gets the pointer to program headers that were defined as part of the loaded image
-
-const void* ElfImage::getProgramHeaders(void) const 
-{ 
-	return m_metadata.ProgramHeaders;
 }
 
 //-----------------------------------------------------------------------------

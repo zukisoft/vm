@@ -27,6 +27,7 @@
 #include <memory>
 #include <vector>
 #include "Architecture.h"
+#include "BinaryFormat.h"
 #include "FileSystem.h"
 
 #pragma warning(push, 4)
@@ -50,17 +51,6 @@ public:
 	// Destructor
 	//
 	~Executable()=default;
-
-	// Format Enumeration
-	//
-	// Defines the file format of an executable
-
-	enum class Format
-	{
-		ELF			= 0,			// ELF executable format
-		//AOut		= 1,			// A.OUT executable format (todo: future - see include/uapi/linux/a.out.h)
-		// note: there are multiple A.OUT formats - OMAGIC, NMAGIC, ZMAGIC, QMAGIC, SMAGIC and so on
-	};
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -101,8 +91,8 @@ public:
 	// Format
 	//
 	// Gets the binary format flag for the executable
-	__declspec(property(get=getFormat)) enum class Format Format;
-	enum class Format getFormat(void) const;
+	__declspec(property(get=getFormat)) enum class BinaryFormat Format;
+	enum class BinaryFormat getFormat(void) const;
 
 	// Handle
 	//
@@ -149,10 +139,10 @@ private:
 
 	// Instance Constructor
 	//
-	Executable(enum class Architecture architecture, enum class Format format, const char_t* originalpath, fshandle_t handle,
+	Executable(enum class Architecture architecture, enum class BinaryFormat format, const char_t* originalpath, fshandle_t handle,
 		string_vector_t&& references, string_vector_t&& arguments, string_vector_t&& environment);
-	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class Format, const char_t*&, 
-		fshandle_t, string_vector_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class Format&&, const char_t*&, fshandle_t&&,
+	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class BinaryFormat, const char_t*&, 
+		fshandle_t, string_vector_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, const char_t*&, fshandle_t&&,
 		string_vector_t&&, string_vector_t&&, string_vector_t&&);
 
 	//-------------------------------------------------------------------------
@@ -179,7 +169,7 @@ private:
 	// Member Variables
 
 	const enum class Architecture	m_architecture;		// Architecture flag
-	const enum class Format			m_format;			// Executable file format
+	const enum class BinaryFormat	m_format;			// Binary file format
 	const std::string				m_originalpath;		// Originally specified path
 	const fshandle_t				m_handle;			// Binary file handle
 	const string_vector_t			m_references;		// Executable references

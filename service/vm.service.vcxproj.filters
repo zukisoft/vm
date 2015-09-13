@@ -66,12 +66,6 @@
     <Filter Include="Header Files\File Systems">
       <UniqueIdentifier>{904732a2-c9b8-4969-b93a-83d5ebb5163d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Elf">
-      <UniqueIdentifier>{c4bb8625-8a77-45af-94c5-fc57c0663cf9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Elf">
-      <UniqueIdentifier>{b644b66c-6e6a-424b-a08e-5755df58d637}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Namespace">
       <UniqueIdentifier>{5f1236da-58f4-413c-bb8b-09879f7b9828}</UniqueIdentifier>
     </Filter>
@@ -243,9 +237,6 @@
     <ClInclude Include="..\common\linux\auxvec.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="ElfArguments.h">
-      <Filter>Header Files\Elf</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\Random.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -294,9 +285,6 @@
     <ClInclude Include="..\common\IndexPool2.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClInclude Include="elf_traits.h">
-      <Filter>Header Files\Elf</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\NtApi.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -323,9 +311,6 @@
     </ClInclude>
     <ClInclude Include="NativeProcess.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ElfImage.h">
-      <Filter>Header Files\Elf</Filter>
     </ClInclude>
     <ClInclude Include="..\common\linux\utask.h">
       <Filter>Header Files\Common\linux</Filter>
@@ -429,7 +414,13 @@
     <ClInclude Include="Host.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Image.h">
+    <ClInclude Include="Binary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfBinary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BinaryFormat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -580,9 +571,6 @@
     </ClCompile>
     <ClCompile Include="..\tmp\vm.service\x64\syscalls64_s.c">
       <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ElfArguments.cpp">
-      <Filter>Source Files\Elf</Filter>
     </ClCompile>
     <ClCompile Include="..\common\Random.cpp">
       <Filter>Source Files\Common</Filter>
@@ -797,9 +785,6 @@
     <ClCompile Include="NativeProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ElfImage.cpp">
-      <Filter>Source Files\Elf</Filter>
-    </ClCompile>
     <ClCompile Include="sys_geteuid.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
@@ -890,7 +875,7 @@
     <ClCompile Include="Host.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Image.cpp">
+    <ClCompile Include="ElfBinary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
