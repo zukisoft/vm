@@ -76,18 +76,6 @@
       <UniqueIdentifier>{0e3a533e-5d1b-43e5-aaff-a39afa80a3cc}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="Source Files\Process Model">
-      <UniqueIdentifier>{110a49c5-1d07-4590-8368-d0ff93b497a4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Process Model">
-      <UniqueIdentifier>{7fb0cdfe-2053-4a92-b002-1656d84ece90}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Virtual Machine">
-      <UniqueIdentifier>{480815a4-d506-4f27-a4fd-e2d488ef75cb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Virtual Machine\Process Management">
-      <UniqueIdentifier>{02efbdcd-4420-4472-b275-ce86c24fb2c2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -399,12 +387,6 @@
     <ClInclude Include="..\..\external\cpplib\convert.h">
       <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
-    <ClInclude Include="Session.h">
-      <Filter>Header Files\Process Model</Filter>
-    </ClInclude>
-    <ClInclude Include="ProcessGroup.h">
-      <Filter>Header Files\Process Model</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\external\cpplib\uuidkey.h">
       <Filter>External Libraries\cpplib</Filter>
     </ClInclude>
@@ -427,6 +409,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ElfBinaryImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessGroup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -863,12 +851,6 @@
     <ClCompile Include="..\..\external\cpplib\timespan.cpp">
       <Filter>External Libraries\cpplib</Filter>
     </ClCompile>
-    <ClCompile Include="Session.cpp">
-      <Filter>Source Files\Process Model</Filter>
-    </ClCompile>
-    <ClCompile Include="ProcessGroup.cpp">
-      <Filter>Source Files\Process Model</Filter>
-    </ClCompile>
     <ClCompile Include="Process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -882,6 +864,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ElfBinaryImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessGroup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
