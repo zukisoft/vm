@@ -24,6 +24,9 @@
 #include "Executable.h"
 
 #include <cctype>
+#include "BinaryImage.h"
+#include "ElfBinaryImage.h"
+#include "Host.h"
 #include "LinuxException.h"
 
 #pragma warning(push, 4)
@@ -276,6 +279,27 @@ std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root
 std::shared_ptr<FileSystem::Handle> Executable::getHandle(void) const
 {
 	return m_handle;
+}
+
+//-----------------------------------------------------------------------------
+// Executable::Load
+//
+// Loads the executable into a Host instance
+//
+// Arguments:
+//
+//	host		- Pointer to an existing Host instance
+
+std::unique_ptr<BinaryImage> Executable::Load(Host* host) const
+{
+	switch(m_format) {
+
+		// ELF --> ElfBinary
+		case BinaryFormat::ELF: return ElfBinaryImage::Load(host, this);
+	}
+
+	// Unknown or unsupported binary format
+	throw LinuxException{ LINUX_ENOEXEC };
 }
 
 //-----------------------------------------------------------------------------

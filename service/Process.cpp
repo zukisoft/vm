@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "Process.h"
 
-#include "Binary.h"
+#include "BinaryImage.h"
 #include "Capability.h"
 #include "Executable.h"
 #include "Host.h"
@@ -131,15 +131,15 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, std::shared_ptr<FileSystem::Path> working, char_t const* path,
 		char_t const* const* arguments, char_t const* const* environment)
 {
-	void const*									ldt = nullptr;		// Local descriptor table
-	std::unique_ptr<Binary>						execbinary;			// Executable binary instance
-	std::unique_ptr<Binary>						interpreter;		// Interprter binary instance
-	std::shared_ptr<Process>					process;			// The constructed Process instance
+	void const*							ldt = nullptr;			// Local descriptor table
+	std::unique_ptr<BinaryImage>		executableimage;		// Main executable binary image metadata
+	std::unique_ptr<BinaryImage>		interpreterimage;		// Interpreter binary image metadata
+	std::shared_ptr<Process>			process;				// The constructed Process instance
 
 	// Spawning a new process requires root level access
 	Capability::Demand(Capability::SystemAdmin);
 
-	// Create an Executable instance for the provided path, this will automatically resolve interpreter scripts
+	// Create an Executable instance for the provided path
 	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
 
 	// Create a new Host instance of the appropriate architecture
@@ -148,12 +148,10 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 
 	try {
 
-		// load main executable -- will need some type of load result like before with which to set up stack and entry point
-		// test
-		execbinary = Binary::Load(host.get(), executable.get());
-
-		if(execbinary->Interpreter)
-			interpreter = Binary::Load(host.get(), Executable::FromFile(ns, root, working, execbinary->Interpreter).get());
+		// Load the main executable binary image into the host process.  If it specifies an interpreter (dynamic linker),
+		// that image must also be loaded before continuing
+		executableimage = executable->Load(host.get());
+		if(executableimage->Interpreter) interpreterimage = Executable::FromFile(ns, root, working, executableimage->Interpreter)->Load(host.get());
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));

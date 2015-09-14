@@ -20,13 +20,13 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __ELFBINARY_H_
-#define __ELFBINARY_H_
+#ifndef __ELFBINARYIMAGE_H_
+#define __ELFBINARYIMAGE_H_
 #pragma once
 
 #include <memory>
 #include "Architecture.h"
-#include "Binary.h"
+#include "BinaryImage.h"
 #include "BinaryFormat.h"
 
 #pragma warning(push, 4)
@@ -38,17 +38,17 @@ class Executable;
 class Host;
 
 //-----------------------------------------------------------------------------
-// ElfBinary
+// ElfBinaryImage
 //
-// Specialization of Binary for ELF images
+// Specialization of BinaryImage for ELF images
 
-class ElfBinary : public Binary
+class ElfBinaryImage : public BinaryImage
 {
 public:
 
 	// Destructor
 	//
-	virtual ~ElfBinary()=default;
+	virtual ~ElfBinaryImage()=default;
 
 	//-------------------------------------------------------------------------
 	// Friend Functions
@@ -57,7 +57,7 @@ public:
 	//
 	// Architecture-specific implementation of Load
 	template<Architecture architecture>
-	friend std::unique_ptr<Binary> LoadElfBinary(Host* host, Executable const* executable);
+	friend std::unique_ptr<BinaryImage> LoadElfBinary(Host* host, Executable const* executable);
 
 	// ValidateElfHeader
 	//
@@ -71,7 +71,7 @@ public:
 	// Load (static)
 	//
 	// Loads an ELF binary image
-	static std::unique_ptr<Binary> Load(Host* host, Executable const* executable);
+	static std::unique_ptr<BinaryImage> Load(Host* host, Executable const* executable);
 
 	//-------------------------------------------------------------------------
 	// Binary Implementation
@@ -108,8 +108,8 @@ public:
 
 private:
 
-	ElfBinary(ElfBinary const&)=delete;
-	ElfBinary& operator=(ElfBinary const&)=delete;
+	ElfBinaryImage(ElfBinaryImage const&)=delete;
+	ElfBinaryImage& operator=(ElfBinaryImage const&)=delete;
 
 	// format_traits_t
 	//
@@ -131,8 +131,8 @@ private:
 
 	// Instance Constructor
 	//
-	ElfBinary(metadata_t&& metadata);
-	friend std::unique_ptr<ElfBinary> std::make_unique<ElfBinary, metadata_t>(metadata_t&&);
+	ElfBinaryImage(metadata_t&& metadata);
+	friend std::unique_ptr<ElfBinaryImage> std::make_unique<ElfBinaryImage, metadata_t>(metadata_t&&);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -144,4 +144,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __ELFBINARY_H_
+#endif	// __ELFBINARYIMAGE_H_

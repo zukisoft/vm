@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __BINARY_H_
-#define __BINARY_H_
+#ifndef __BINARYIMAGE_H_
+#define __BINARYIMAGE_H_
 #pragma once
 
 #include <functional>
@@ -29,19 +29,14 @@
 
 #pragma warning(push, 4)
 
-// Forward Declarations
-//
-class Executable;
-class Host;
-
 //-----------------------------------------------------------------------------
-// Class Binary
+// Interface BinaryImage
 //
 // Interface that must be implemented by a binary image loader class, exposes
 // metadata about the image after its loaded so that a Process instance can be
 // constructed and initialized around it
 
-struct __declspec(novtable) Binary
+struct __declspec(novtable) BinaryImage
 {
 	//-------------------------------------------------------------------------
 	// Properties
@@ -81,18 +76,10 @@ struct __declspec(novtable) Binary
 	// Number of program headers defines as part of the loaded image
 	__declspec(property(get=getProgramHeaderCount)) size_t ProgramHeaderCount;
 	virtual size_t getProgramHeaderCount(void) const = 0;
-
-	//-------------------------------------------------------------------------
-	// Member Functions
-	
-	// Load (static)
-	//
-	// Loads an executable binary image into a host instance
-	static std::unique_ptr<Binary> Load(Host* host, Executable const* executable);
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __BINARY_H_
+#endif	// __BINARYIMAGE_H_

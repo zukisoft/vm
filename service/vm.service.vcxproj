@@ -368,10 +368,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Binary.h" />
+    <ClInclude Include="BinaryImage.h" />
     <ClInclude Include="BinaryFormat.h" />
     <ClInclude Include="Capability.h" />
-    <ClInclude Include="ElfBinary.h" />
+    <ClInclude Include="ElfBinaryImage.h" />
     <ClInclude Include="Executable.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Host.h" />
@@ -649,7 +649,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Binary.cpp" />
     <ClCompile Include="Capability.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="Executable.cpp" />
@@ -657,7 +656,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Host.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
-    <ClCompile Include="ElfBinary.cpp" />
+    <ClCompile Include="ElfBinaryImage.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessFileSystem.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

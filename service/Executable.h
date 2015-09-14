@@ -35,6 +35,8 @@
 
 // Forward Declarations
 //
+struct BinaryImage;
+class Host;
 class Namespace;
 
 //-----------------------------------------------------------------------------
@@ -42,7 +44,7 @@ class Namespace;
 //
 // Resolves an executable file and provides information about the architecture
 // and binary format of the target.  Interpreter scripts are parsed and resolved
-// to the target binary, modifying the command line argument array appropriately.
+// to the target binary, modifying the command line argument array appropriately
 
 class Executable
 {
@@ -66,6 +68,11 @@ public:
 	// Creates a new Executable instance from an existing file
 	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
 		std::shared_ptr<FileSystem::Path> current, char_t const* path, char_t const* const* arguments, char_t const* const* environment);
+
+	// Load
+	//
+	// Loads the executable into a Host instance
+	std::unique_ptr<BinaryImage> Load(Host* host) const;
 
 	//-------------------------------------------------------------------------
 	// Properties

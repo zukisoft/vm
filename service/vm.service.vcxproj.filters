@@ -82,6 +82,12 @@
     <Filter Include="Header Files\Process Model">
       <UniqueIdentifier>{7fb0cdfe-2053-4a92-b002-1656d84ece90}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Virtual Machine">
+      <UniqueIdentifier>{480815a4-d506-4f27-a4fd-e2d488ef75cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Virtual Machine\Process Management">
+      <UniqueIdentifier>{02efbdcd-4420-4472-b275-ce86c24fb2c2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -414,13 +420,13 @@
     <ClInclude Include="Host.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Binary.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ElfBinary.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BinaryFormat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BinaryImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfBinaryImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -875,10 +881,7 @@
     <ClCompile Include="Host.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ElfBinary.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Binary.cpp">
+    <ClCompile Include="ElfBinaryImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
