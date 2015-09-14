@@ -403,17 +403,35 @@ size_t Host::ReadMemory(void const* address, void* buffer, size_t length) const
 
 size_t Host::ReadMemoryInto(std::shared_ptr<FileSystem::Handle> handle, size_t offset, void const* address, size_t length) const
 {
-	// todo
-	_ASSERTE(false);
-
-	// See comments in WriteMemoryFrom() as well
-
-	(handle);
-	(offset);
-	(address);
-	(length);
+	uintptr_t			source = uintptr_t(address);		// Easier pointer math as uintptr_t
+	SIZE_T				read;								// Number of bytes read from the process
+	size_t				total = 0;							// Total bytes read
 	
-	return 0;
+	// Prevent changes to the process memory layout while this is operating
+	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
+
+	//
+	// SEE TODO IN WRITEMEMORYFROM, APPLIES HERE AS WELL
+	//
+
+	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
+	auto buffer = std::make_unique<uint8_t[]>(SystemInformation::AllocationGranularity);
+
+	while(length) {
+
+		// Attempt to read the next chunk of memory from the native process
+		NTSTATUS result = NtApi::NtReadVirtualMemory(m_nativeproc->ProcessHandle, reinterpret_cast<void*>(source + total), &buffer[0], std::min(length, SystemInformation::AllocationGranularity), &read);
+		if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EFAULT, StructuredException{ result } };
+
+		// Write the data into the target file handle at the specified offset
+		size_t written = handle->WriteAt(offset + total, &buffer[0], read);
+		if(written == 0) break;
+
+		length -= read;			// Subtract number of bytes read from remaining
+		total += read;			// Add to the total number of bytes read
+	};
+
+	return total;				// Return total bytes read from the process
 }
 
 //-----------------------------------------------------------------------------
@@ -563,7 +581,7 @@ size_t Host::WriteMemoryFrom(std::shared_ptr<FileSystem::Handle> handle, size_t 
 	//
 
 	// This function seems to perform the best with allocation granularity chunks of data (64KiB)
-	auto buffer = std::make_unique <uint8_t[]>(SystemInformation::AllocationGranularity);
+	auto buffer = std::make_unique<uint8_t[]>(SystemInformation::AllocationGranularity);
 
 	while(length) {
 
