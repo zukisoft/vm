@@ -106,12 +106,6 @@ public:
 	__declspec(property(get=getOriginalPath)) char_t const* OriginalPath;
 	char_t const* getOriginalPath(void) const;
 
-	// References
-	//
-	// Gets a reference to the contained executable references vector
-	__declspec(property(get=getReferences)) std::vector<std::string> const& References;
-	std::vector<std::string> const& getReferences(void) const;
-
 private:
 
 	Executable(Executable const &)=delete;
@@ -140,10 +134,10 @@ private:
 	// Instance Constructor
 	//
 	Executable(enum class Architecture architecture, enum class BinaryFormat format, char_t const* originalpath, fshandle_t handle,
-		string_vector_t&& references, string_vector_t&& arguments, string_vector_t&& environment);
+		string_vector_t&& arguments, string_vector_t&& environment);
 	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class BinaryFormat, char_t const*&, 
-		fshandle_t, string_vector_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, char_t const*&, fshandle_t&&,
-		string_vector_t&&, string_vector_t&&, string_vector_t&&);
+		fshandle_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, char_t const*&, fshandle_t&&,
+		string_vector_t&&, string_vector_t&&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -172,7 +166,6 @@ private:
 	enum class BinaryFormat const	m_format;			// Binary file format
 	std::string const				m_originalpath;		// Originally specified path
 	fshandle_t const				m_handle;			// Binary file handle
-	string_vector_t const			m_references;		// Executable references
 	string_vector_t const			m_arguments;		// Command line arguments
 	string_vector_t const			m_environment;		// Environment variables
 };

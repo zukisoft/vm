@@ -132,18 +132,15 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		char_t const* const* arguments, char_t const* const* environment)
 {
 	void const*									ldt = nullptr;		// Local descriptor table
-	std::vector<std::unique_ptr<Executable>>	references;			// Reference modules to be loaded
+	std::unique_ptr<Binary>						execbinary;			// Executable binary instance
+	std::unique_ptr<Binary>						interpreter;		// Interprter binary instance
 	std::shared_ptr<Process>					process;			// The constructed Process instance
 
 	// Spawning a new process requires root level access
 	Capability::Demand(Capability::SystemAdmin);
 
-	// Create an Executable instance for the provided path, this will deal with interpreter scripts
+	// Create an Executable instance for the provided path, this will automatically resolve interpreter scripts
 	auto executable = Executable::FromFile(ns, root, working, path, arguments, environment);
-
-	// Create Executable instances for all modules directly referenced by the main executable
-	for(auto const& iterator : executable->References)
-		references.emplace_back(Executable::FromFile(ns, root, working, iterator.c_str()));
 
 	// Create a new Host instance of the appropriate architecture
 	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
@@ -153,9 +150,10 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 
 		// load main executable -- will need some type of load result like before with which to set up stack and entry point
 		// test
-		auto execbinary = Binary::Load(host.get(), executable.get());
+		execbinary = Binary::Load(host.get(), executable.get());
 
-		// load interpreter -- get rid of "reference modules", that was silly
+		if(execbinary->Interpreter)
+			interpreter = Binary::Load(host.get(), Executable::FromFile(ns, root, working, execbinary->Interpreter).get());
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));
