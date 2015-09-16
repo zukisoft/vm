@@ -368,11 +368,10 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="BinaryImage.h" />
-    <ClInclude Include="BinaryFormat.h" />
     <ClInclude Include="Capability.h" />
-    <ClInclude Include="ElfBinaryImage.h" />
+    <ClInclude Include="ElfExecutable.h" />
     <ClInclude Include="Executable.h" />
+    <ClInclude Include="ExecutableFormat.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Host.h" />
     <ClInclude Include="HostFileSystem.h" />
@@ -651,12 +650,12 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClCompile>
     <ClCompile Include="Capability.cpp" />
     <ClCompile Include="Context.cpp" />
+    <ClCompile Include="ElfExecutable.cpp" />
     <ClCompile Include="Executable.cpp" />
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Host.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
-    <ClCompile Include="ElfBinaryImage.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessFileSystem.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

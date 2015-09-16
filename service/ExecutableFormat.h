@@ -20,18 +20,18 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __BINARYFORMAT_H_
-#define __BINARYFORMAT_H_
+#ifndef __EXECUTABLEFORMAT_H_
+#define __EXECUTABLEFORMAT_H_
 #pragma once
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// BinaryFormat Enumeration
+// ExecutableFormat Enumeration
 //
-// Defines the file format of a binary image
+// Defines the file format of an executable image
 
-enum class BinaryFormat
+enum class ExecutableFormat
 {
 	ELF			= 0,			// ELF executable format
 	//AOut		= 1,			// A.OUT executable format (todo: future - see include/uapi/linux/a.out.h)
@@ -42,4 +42,4 @@ enum class BinaryFormat
 
 #pragma warning(pop)
 
-#endif	// __BINARYFORMAT_H_
+#endif	// __EXECUTABLEFORMAT_H_

@@ -76,6 +76,12 @@
       <UniqueIdentifier>{0e3a533e-5d1b-43e5-aaff-a39afa80a3cc}</UniqueIdentifier>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Virtual Machine">
+      <UniqueIdentifier>{33f2d068-3741-44a0-9dde-c12d50c92375}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Virtual Machine\Executables">
+      <UniqueIdentifier>{f8d15766-e97c-4b0e-8482-416a00bc5557}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -396,19 +402,7 @@
     <ClInclude Include="Thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Executable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Host.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BinaryFormat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BinaryImage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ElfBinaryImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ProcessGroup.h">
@@ -416,6 +410,15 @@
     </ClInclude>
     <ClInclude Include="Session.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ElfExecutable.h">
+      <Filter>Virtual Machine\Executables</Filter>
+    </ClInclude>
+    <ClInclude Include="Executable.h">
+      <Filter>Virtual Machine\Executables</Filter>
+    </ClInclude>
+    <ClInclude Include="ExecutableFormat.h">
+      <Filter>Virtual Machine\Executables</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -857,13 +860,7 @@
     <ClCompile Include="Thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Executable.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Host.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ElfBinaryImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProcessGroup.cpp">
@@ -871,6 +868,12 @@
     </ClCompile>
     <ClCompile Include="Session.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElfExecutable.cpp">
+      <Filter>Virtual Machine\Executables</Filter>
+    </ClCompile>
+    <ClCompile Include="Executable.cpp">
+      <Filter>Virtual Machine\Executables</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

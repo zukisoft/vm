@@ -27,7 +27,7 @@
 #include <memory>
 #include <vector>
 #include "Architecture.h"
-#include "BinaryFormat.h"
+#include "ExecutableFormat.h"
 #include "FileSystem.h"
 
 #pragma warning(push, 4)
@@ -35,7 +35,6 @@
 
 // Forward Declarations
 //
-struct BinaryImage;
 class Host;
 class Namespace;
 
@@ -52,10 +51,41 @@ public:
 
 	// Destructor
 	//
-	~Executable()=default;
+	virtual ~Executable()=default;
+
+	// ElfExecutable::Layout
+	//
+	// Exposes layout information from a loaded executable image
+	struct __declspec(novtable) Layout
+	{
+		//-------------------------------------------------------------------------
+		// Properties
+
+		// BaseAddress
+		//
+		// Gets the base address of the loaded executable image
+		__declspec(property(get=getBaseAddress)) void const* BaseAddress;
+		virtual void const* getBaseAddress(void) const = 0;
+
+		// BreakAddress
+		//
+		// Pointer to the initial program break address
+		__declspec(property(get=getBreakAddress)) void const* BreakAddress;
+		virtual void const* getBreakAddress(void) const = 0;
+
+		// EntryPoint
+		//
+		// Gets the entry point of the loaded executable image
+		__declspec(property(get=getEntryPoint)) void const* EntryPoint;
+		virtual void const* getEntryPoint(void) const = 0;
+	};
 
 	//-------------------------------------------------------------------------
 	// Member Functions
+
+	// CreateStack
+	//
+	// todo: pure virtual
 
 	// FromFile (static)
 	//
@@ -72,7 +102,7 @@ public:
 	// Load
 	//
 	// Loads the executable into a Host instance
-	std::unique_ptr<BinaryImage> Load(Host* host) const;
+	virtual std::unique_ptr<Executable::Layout> Load(Host* host) const = 0;
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -81,37 +111,25 @@ public:
 	//
 	// Gets the architecture flag for the executable
 	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
-	enum class Architecture getArchitecture(void) const;
-
-	// Arguments
-	//
-	// Gets a reference to the contained arguments vector
-	__declspec(property(get=getArguments)) std::vector<std::string> const& Arguments;
-	std::vector<std::string> const& getArguments(void) const;
-
-	// EnvironmentVariables
-	//
-	// Gets a reference to the contained environment variables vector
-	__declspec(property(get=getEnvironmentVariables)) std::vector<std::string> const& EnvironmentVariables;
-	std::vector<std::string> const& getEnvironmentVariables(void) const;
+	virtual enum class Architecture getArchitecture(void) const = 0;
 
 	// Format
 	//
 	// Gets the binary format flag for the executable
-	__declspec(property(get=getFormat)) enum class BinaryFormat Format;
-	enum class BinaryFormat getFormat(void) const;
+	__declspec(property(get=getFormat)) enum class ExecutableFormat Format;
+	virtual enum class ExecutableFormat getFormat(void) const = 0;
 
-	// Handle
+	// Interpreter
 	//
-	// Gets the FileSystem handle to the binary
-	__declspec(property(get=getHandle)) std::shared_ptr<FileSystem::Handle> Handle;
-	std::shared_ptr<FileSystem::Handle> getHandle(void) const;
+	// Gets the path to the interpreter (dynamic linker) or nullptr
+	__declspec(property(get=getInterpreter)) char_t const* Interpreter;
+	virtual char_t const* getInterpreter(void) const = 0;
 
-	// OriginalPath
+protected:
+
+	// Instance Constructor
 	//
-	// Gets the originally specified path of the executable
-	__declspec(property(get=getOriginalPath)) char_t const* OriginalPath;
-	char_t const* getOriginalPath(void) const;
+	Executable()=default;
 
 private:
 
@@ -138,14 +156,6 @@ private:
 	// vector<> of std::string objects
 	using string_vector_t = std::vector<std::string>;
 
-	// Instance Constructor
-	//
-	Executable(enum class Architecture architecture, enum class BinaryFormat format, char_t const* originalpath, fshandle_t handle,
-		string_vector_t&& arguments, string_vector_t&& environment);
-	friend std::unique_ptr<Executable> std::make_unique<Executable, enum class Architecture, enum class BinaryFormat, char_t const*&, 
-		fshandle_t, string_vector_t, string_vector_t>(enum class Architecture&&, enum class BinaryFormat&&, char_t const*&, fshandle_t&&,
-		string_vector_t&&, string_vector_t&&);
-
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
@@ -165,16 +175,6 @@ private:
 	//
 	// Converts a null-terminated array of C-style strings into a vector<string>
 	static string_vector_t StringArrayToVector(char_t const* const* strings);
-
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	enum class Architecture const	m_architecture;		// Architecture flag
-	enum class BinaryFormat const	m_format;			// Binary file format
-	std::string const				m_originalpath;		// Originally specified path
-	fshandle_t const				m_handle;			// Binary file handle
-	string_vector_t const			m_arguments;		// Command line arguments
-	string_vector_t const			m_environment;		// Environment variables
 };
 
 //-----------------------------------------------------------------------------

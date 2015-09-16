@@ -24,8 +24,7 @@
 #include "Executable.h"
 
 #include <cctype>
-#include "BinaryImage.h"
-#include "ElfBinaryImage.h"
+#include "ElfExecutable.h"
 #include "Host.h"
 #include "LinuxException.h"
 
@@ -40,64 +39,6 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_ANSI[] = { 0x23, 0x21 };
 //
 // Magic number present at the head of a UTF-8 interpreter script
 static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 };
-
-//-----------------------------------------------------------------------------
-// Executable Constructor (private)
-//
-// Arguments:
-//
-//	arch			- Executable architecture flag
-//	format			- Executable binary format flag
-//	originalpath	- Originally specified executable path
-//	handle			- Handle instance open against the target file
-//	arguments		- Processed command line arguments
-//	environment		- Processed environment variables
-
-Executable::Executable(enum class Architecture arch, enum class BinaryFormat format, char_t const* originalpath, std::shared_ptr<FileSystem::Handle> handle,
-	string_vector_t&& arguments, string_vector_t&& environment) : m_architecture(arch), m_format(format), m_originalpath(originalpath),
-	m_handle(std::move(handle)), m_arguments(std::move(arguments)), m_environment(std::move(environment))
-{
-}
-
-//-----------------------------------------------------------------------------
-// Executable::getArchitecture
-//
-// Gets the architecture flag for the executable
-
-enum class Architecture Executable::getArchitecture(void) const
-{
-	return m_architecture;
-}
-
-//-----------------------------------------------------------------------------
-// Executable::getArguments
-//
-// Gets a reference to the contained arguments vector
-
-std::vector<std::string> const& Executable::getArguments(void) const
-{
-	return m_arguments;
-}
-
-//-----------------------------------------------------------------------------
-// Executable::getEnvironmentVariables
-//
-// Gets a reference to the contained environment variables vector
-
-std::vector<std::string> const& Executable::getEnvironmentVariables(void) const
-{
-	return m_environment;
-}
-
-//-----------------------------------------------------------------------------
-// Executable::getFormat
-//
-// Gets the binary format of the executable
-
-enum class BinaryFormat Executable::getFormat(void) const
-{
-	return m_format;
-}
 
 //-----------------------------------------------------------------------------
 // Executable::FromFile (static)
@@ -163,7 +104,7 @@ std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, 
 {
 	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT };
 	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
-	
+
 	// Acquire an execute-only handle for the provided path
 	auto handle = FileSystem::OpenExecutable(ns, root, current, path);
 
@@ -171,25 +112,10 @@ std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, 
 	uint8_t magic[LINUX_EI_NIDENT];
 	size_t read = handle->ReadAt(0, magic, LINUX_EI_NIDENT);
 
-	// ELF BINARY
+	// ELF --> ElfExecutable
 	//
-	if((read >= LINUX_EI_NIDENT) && (memcmp(magic, LINUX_ELFMAG, LINUX_SELFMAG) == 0)) {
-
-		// This is a binary file, determine the architecture and complete the operation
-		switch(magic[LINUX_EI_CLASS]) {
-
-			// ELFCLASS32 --> Architecture::x86
-			case LINUX_ELFCLASS32: 
-				return std::make_unique<Executable>(Architecture::x86, BinaryFormat::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
-#ifdef _M_X64
-			// ELFCLASS64: --> Architecture::x86_64
-			case LINUX_ELFCLASS64: 
-				return std::make_unique<Executable>(Architecture::x86_64, BinaryFormat::ELF, originalpath, std::move(handle), std::move(arguments), std::move(environment));
-#endif
-			// Unknown or unsupported ELFCLASS --> ENOEXEC	
-			default: throw LinuxException{ LINUX_ENOEXEC };
-		}
-	}
+	if((read >= LINUX_EI_NIDENT) && (memcmp(magic, LINUX_ELFMAG, LINUX_SELFMAG) == 0))
+		return ElfExecutable::Create(handle, originalpath, std::move(arguments), std::move(environment));
 
 	// A.OUT BINARIES
 	//
@@ -269,47 +195,6 @@ std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root
 
 	// Call back into FromFile with the interpreter binary as the target and new arguments
 	return FromFile(ns, std::move(root), std::move(current), originalpath, interpreter.c_str(), std::move(newarguments), std::move(environment));
-}
-
-//-----------------------------------------------------------------------------
-// Executable::getHandle
-//
-// Gets a reference to the handle instance opened for the executable
-
-std::shared_ptr<FileSystem::Handle> Executable::getHandle(void) const
-{
-	return m_handle;
-}
-
-//-----------------------------------------------------------------------------
-// Executable::Load
-//
-// Loads the executable into a Host instance
-//
-// Arguments:
-//
-//	host		- Pointer to an existing Host instance
-
-std::unique_ptr<BinaryImage> Executable::Load(Host* host) const
-{
-	switch(m_format) {
-
-		// ELF --> ElfBinary
-		case BinaryFormat::ELF: return ElfBinaryImage::Load(host, this);
-	}
-
-	// Unknown or unsupported binary format
-	throw LinuxException{ LINUX_ENOEXEC };
-}
-
-//-----------------------------------------------------------------------------
-// Executable::getOriginalPath
-//
-// Gets the originally specified path of the executable
-
-char_t const* Executable::getOriginalPath(void) const
-{
-	return m_originalpath.c_str();
 }
 
 //-----------------------------------------------------------------------------
