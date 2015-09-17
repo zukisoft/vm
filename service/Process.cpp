@@ -136,17 +136,23 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	// Spawning a new process requires root level access
 	Capability::Demand(Capability::SystemAdmin);
 
+	// Create an Executable::PathResolver lambda (prevents needing to pass all those arguments around)
+	Executable::PathResolver resolver = [&](char_t const* path) { return FileSystem::OpenExecutable(ns, root, working, path); };
+
+	// new version that takes the lambda
+	auto executable = Executable::FromFile(resolver, path, arguments, environment);
+
 	// Create an Executable instance for the provided path
-	std::unique_ptr<Executable> executable = Executable::FromFile(ns, root, working, path, arguments, environment);
-	std::unique_ptr<Executable> interpreter = (executable->Interpreter) ? Executable::FromFile(ns, root, working, executable->Interpreter) : nullptr;
+	//std::unique_ptr<Executable> executable = Executable::FromFile(ns, root, working, path, arguments, environment);
+	//std::unique_ptr<Executable> interpreter = (executable->Interpreter) ? Executable::FromFile(ns, root, working, executable->Interpreter) : nullptr;
 
 	// Create a new Host instance of the appropriate architecture
-	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
-	_ASSERTE(host->Architecture == executable->Architecture);
+	auto host = session->VirtualMachine->CreateHost(/*executable->Architecture*/ Architecture::x86);
+	//_ASSERTE(host->Architecture == executable->Architecture);
 
 	try {
 
-		auto layout = executable->Load(host.get());
+		//auto layout = executable->LoadImage(host.get());
 		// the entry point is different when an interpreter is used, Load() will have to accept it after 
 		// all, not just the forthcoming CreateStack() method
 

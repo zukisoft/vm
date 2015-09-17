@@ -43,99 +43,65 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 //-----------------------------------------------------------------------------
 // Executable::FromFile (static)
 //
-// Creates an executable instance from a file system file
+// Creates an Executable instance from a file system file
 //
 // Arguments:
 //
-//	ns				- Namespace in which to operate
-//	root			- Root directory to assign to the process
-//	current			- Working directory to assign to the process
-//	path			- Path to the executable image
-
-std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-	std::shared_ptr<FileSystem::Path> current, char_t const* path)
-{
-	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
-	
-	// Provide empty vectors for the arguments and environment variables
-	return FromFile(std::move(ns), std::move(root), std::move(current), path, path, string_vector_t(), string_vector_t());
-}
-
-//-----------------------------------------------------------------------------
-// Executable::FromFile (static)
-//
-// Creates an executable instance from a file system file
-//
-// Arguments:
-//
-//	ns				- Namespace in which to operate
-//	root			- Root directory to assign to the process
-//	current			- Working directory to assign to the process
+//	resolver		- Function to use to resolve a file system path
 //	path			- Path to the executable image
 //	arguments		- Array of command-line arguments
 //	environment		- Array of environment variables
 
-std::unique_ptr<Executable> Executable::FromFile(std::shared_ptr<class Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-	std::shared_ptr<FileSystem::Path> current, char_t const* path, char_t const* const* arguments, char_t const* const* environment)
+std::unique_ptr<Executable> Executable::FromFile(PathResolver resolver, char_t const* path, char_t const* const* arguments, char_t const* const* environment)
 {
 	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
-	
-	// Convert the C-style string arrays into vector<string> containers
-	return FromFile(std::move(ns), std::move(root), std::move(current), path, path, StringArrayToVector(arguments), StringArrayToVector(environment));
+
+	// Convert the C-style string arrays into vector<string> containers and invoke the internal implementation.  Note that
+	// the path is provided twice, once as the path to resolve and once to track the 'original' path argument that was sent in
+	return FromFile(resolver, path, StringArrayToVector(arguments), StringArrayToVector(environment), path);
 }
 
 //-----------------------------------------------------------------------------
 // Executable::FromFile (private, static)
 //
-// Creates an executable instance from a file system file
+// Creates an Executable instance from a file system file
 //
 // Arguments:
 //
-//	ns				- Namespace in which to operate
-//	root			- Root directory to assign to the process
-//	current			- Working directory to assign to the process
-//	originalpath	- Original path provided for the executable
+//	resolver		- Function to use to resolve a file system path
 //	path			- Path to the executable image
 //	arguments		- Vector of command-line arguments
 //	environment		- Vector of environment variables
+//	originalpath	- Original path provided for the executable
 
-std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath,
-	char_t const* path, string_vector_t&& arguments, string_vector_t&& environment)
+std::unique_ptr<Executable> Executable::FromFile(PathResolver resolver, char_t const* path, string_vector_t&& arguments, string_vector_t&& environment, char_t const* originalpath)
 {
-	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT };
-	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
+	_ASSERTE((originalpath != nullptr) && (path != nullptr));
 
-	// Acquire an execute-only handle for the provided path
-	auto handle = FileSystem::OpenExecutable(ns, root, current, path);
+	auto handle = resolver(path);					// Acquire execute handle for the target path
 
 	// Read in enough data from the beginning of the file to determine the executable type
 	uint8_t magic[LINUX_EI_NIDENT];
 	size_t read = handle->ReadAt(0, magic, LINUX_EI_NIDENT);
 
-	// ELF --> ElfExecutable
+	// ELF
 	//
 	if((read >= LINUX_EI_NIDENT) && (memcmp(magic, LINUX_ELFMAG, LINUX_SELFMAG) == 0))
-		return ElfExecutable::Create(handle, originalpath, std::move(arguments), std::move(environment));
+		return ElfExecutable::FromHandle(std::move(handle), resolver, std::move(arguments), std::move(environment), originalpath);
 
-	// A.OUT BINARIES
+	// A.OUT
 	//
 	// TODO - FUTURE (OMAGIC, NMAGIC, QMAGIC, etc)
 
-	// INTERPRETER SCRIPT (UTF-8)
+	// ANSI INTERPRETER SCRIPT
 	//
-	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC_UTF8, sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8)) == 0)) {
+	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC_ANSI, sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI)) == 0))
+		return FromScriptFile(std::move(handle), sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI), resolver, std::move(arguments), std::move(environment), originalpath);
 
-		return FromScript(std::move(ns), std::move(root), std::move(current), originalpath, std::move(handle), sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8),
-			std::move(arguments), std::move(environment));
-	}
-
-	// INTERPRETER SCRIPT (ANSI)
+	// UTF-8 INTERPRETER SCRIPT (UTF-8)
 	//
-	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC_ANSI, sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI)) == 0)) {
-
-		return FromScript(std::move(ns), std::move(root), std::move(current), originalpath, std::move(handle), sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI),
-			std::move(arguments), std::move(environment));
-	}
+	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC_UTF8, sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8)) == 0))
+		return FromScriptFile(std::move(handle), sizeof(INTERPRETER_SCRIPT_MAGIC_UTF8), resolver, std::move(arguments), std::move(environment), originalpath);
 
 	// UNSUPPORTED FORMAT
 	//
@@ -143,33 +109,30 @@ std::unique_ptr<Executable> Executable::FromFile(namespace_t ns, fspath_t root, 
 }
 
 //-----------------------------------------------------------------------------
-// Executable::FromScript (private, static)
+// Executable::FromScriptFile (private, static)
 //
 // Creates an executable instance from an interpreter script
 //
 // Arguments:
 //
-//	ns				- Namespace in which to operate
-//	root			- Root directory to assign to the process
-//	current			- Working directory to assign to the process
+//	handle			- Handle to the interpreter script
+//	offset			- Offset within the script to begin processing
 //	originalpath	- Original path provided for the executable
-//	scripthandle	- Handle to the interpreter script
-//	dataoffset		- Offset of data within the interpreter script
 //	arguments		- Vector of command-line arguments
 //	environment		- Vector of environment variables
 
-std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath,
-	fshandle_t scripthandle, size_t dataoffset, string_vector_t&& arguments, string_vector_t&& environment)
+std::unique_ptr<Executable> Executable::FromScriptFile(std::shared_ptr<FileSystem::Handle> handle, size_t offset, PathResolver resolver, 
+		string_vector_t&& arguments, string_vector_t&& environment, char_t const* originalpath)
 {
 	char_t					buffer[MAX_PATH];			// Script data buffer
 	string_vector_t			newarguments;				// New executable arguments
 
-	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT };
+	_ASSERTE(originalpath != nullptr);
 
 	char_t *begin, *end;					// String tokenizing pointers
 
 	// Read up to MAX_PATH data from the interpreter script file
-	char_t *eof = &buffer[0] + scripthandle->ReadAt(dataoffset, &buffer[0], sizeof(buffer));
+	char_t *eof = &buffer[0] + handle->ReadAt(offset, &buffer[0], sizeof(buffer));
 
 	// Find the interperter path, if not present the script is not a valid target
 	for(begin = &buffer[0]; (begin < eof) && (*begin) && (*begin != '\n') && (std::isspace(*begin)); begin++);
@@ -193,8 +156,8 @@ std::unique_ptr<Executable> Executable::FromScript(namespace_t ns, fspath_t root
 		for(auto iterator = arguments.begin() + 1; iterator != arguments.end(); iterator++) newarguments.push_back(*iterator);
 	}
 
-	// Call back into FromFile with the interpreter binary as the target and new arguments
-	return FromFile(ns, std::move(root), std::move(current), originalpath, interpreter.c_str(), std::move(newarguments), std::move(environment));
+	// Call back into FromFile with the resolved interpreter binary as the target and updated arguments
+	return FromFile(resolver, interpreter.c_str(), std::move(newarguments), std::move(environment), originalpath);
 }
 
 //-----------------------------------------------------------------------------

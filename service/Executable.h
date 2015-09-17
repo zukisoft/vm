@@ -24,6 +24,7 @@
 #define __EXECUTABLE_H_
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 #include "Architecture.h"
@@ -41,9 +42,8 @@ class Namespace;
 //-----------------------------------------------------------------------------
 // Executable
 //
-// Resolves an executable file and provides information about the architecture
-// and binary format of the target.  Interpreter scripts are parsed and resolved
-// to the target binary, modifying the command line argument array appropriately
+// Loads an executable binary image into a Host instance.  Interpreter scripts
+// are parsed and resolved to their target interpreter binary instance
 
 class Executable
 {
@@ -53,56 +53,18 @@ public:
 	//
 	virtual ~Executable()=default;
 
-	// ElfExecutable::Layout
+	// PathResolver
 	//
-	// Exposes layout information from a loaded executable image
-	struct __declspec(novtable) Layout
-	{
-		//-------------------------------------------------------------------------
-		// Properties
-
-		// BaseAddress
-		//
-		// Gets the base address of the loaded executable image
-		__declspec(property(get=getBaseAddress)) void const* BaseAddress;
-		virtual void const* getBaseAddress(void) const = 0;
-
-		// BreakAddress
-		//
-		// Pointer to the initial program break address
-		__declspec(property(get=getBreakAddress)) void const* BreakAddress;
-		virtual void const* getBreakAddress(void) const = 0;
-
-		// EntryPoint
-		//
-		// Gets the entry point of the loaded executable image
-		__declspec(property(get=getEntryPoint)) void const* EntryPoint;
-		virtual void const* getEntryPoint(void) const = 0;
-	};
+	// Function used to resolve a path during executable processing
+	using PathResolver = std::function<std::shared_ptr<FileSystem::Handle>(char_t const* path)>;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// CreateStack
-	//
-	// todo: pure virtual
-
 	// FromFile (static)
 	//
-	// Creates a new Executable instance from an existing file
-	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-		std::shared_ptr<FileSystem::Path> current, char_t const* path);
-
-	// FromFile (static)
-	//
-	// Creates a new Executable instance from an existing file
-	static std::unique_ptr<Executable> FromFile(std::shared_ptr<Namespace> ns, std::shared_ptr<FileSystem::Path> root, 
-		std::shared_ptr<FileSystem::Path> current, char_t const* path, char_t const* const* arguments, char_t const* const* environment);
-
-	// Load
-	//
-	// Loads the executable into a Host instance
-	virtual std::unique_ptr<Executable::Layout> Load(Host* host) const = 0;
+	// Creates a new Executable instance from a file system file
+	static std::unique_ptr<Executable> FromFile(PathResolver resolver, char_t const* path, char_t const* const* arguments, char_t const* const* environment);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -115,15 +77,15 @@ public:
 
 	// Format
 	//
-	// Gets the binary format flag for the executable
+	// Gets the binary format of the executable
 	__declspec(property(get=getFormat)) enum class ExecutableFormat Format;
 	virtual enum class ExecutableFormat getFormat(void) const = 0;
 
 	// Interpreter
 	//
-	// Gets the path to the interpreter (dynamic linker) or nullptr
-	__declspec(property(get=getInterpreter)) char_t const* Interpreter;
-	virtual char_t const* getInterpreter(void) const = 0;
+	// Gets the path to the interpreter (dynamic linker), if present
+	__declspec(property(get=getInterpreter)) std::string Interpreter;
+	virtual std::string getInterpreter(void) const = 0;
 
 protected:
 
@@ -136,21 +98,6 @@ private:
 	Executable(Executable const &)=delete;
 	Executable& operator=(Executable const&)=delete;
 
-	// fshandle_t
-	//
-	// FileSystem::Handle shared pointer
-	using fshandle_t = std::shared_ptr<FileSystem::Handle>;
-
-	// fspath_t
-	//
-	// FileSystem::Path shared pointer
-	using fspath_t = std::shared_ptr<FileSystem::Path>;
-
-	// namespace_t
-	//
-	// Namespace shared pointer
-	using namespace_t = std::shared_ptr<Namespace>;
-	
 	// string_vector_t
 	//
 	// vector<> of std::string objects
@@ -161,15 +108,15 @@ private:
 
 	// FromFile (static)
 	//
-	// Internal version of FromFile that accepts an intermediate set of arguments
-	static std::unique_ptr<Executable> FromFile(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath, 
-		char_t const* path, string_vector_t&& arguments, string_vector_t&& environment);
+	// Internal version of FromFile that accepts an intermediate set of arguments and environment variables
+	static std::unique_ptr<Executable> FromFile(PathResolver resolver, char_t const* path, string_vector_t&& arguments, 
+		string_vector_t&& environment, char_t const* originalpath);
 
-	// FromScript (static)
+	// FromScriptFile (static)
 	//
-	// Internal version of FromFile that resolves via an interpreter script
-	static std::unique_ptr<Executable> FromScript(namespace_t ns, fspath_t root, fspath_t current, char_t const* originalpath,
-		fshandle_t scripthandle, size_t dataoffset, string_vector_t&& arguments, string_vector_t&& environment);
+	// Internal version of FromFile that resolves an interpreter script
+	static std::unique_ptr<Executable> FromScriptFile(std::shared_ptr<FileSystem::Handle> handle, size_t offset, PathResolver resolver, 
+		string_vector_t&& arguments, string_vector_t&& environment, char_t const* originalpath);
 
 	// StringArrayToVector (static)
 	//
