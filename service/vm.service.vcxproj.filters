@@ -420,6 +420,9 @@
     <ClInclude Include="ExecutableFormat.h">
       <Filter>Virtual Machine\Executables</Filter>
     </ClInclude>
+    <ClInclude Include="VirtualMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -874,6 +877,9 @@
     </ClCompile>
     <ClCompile Include="Executable.cpp">
       <Filter>Virtual Machine\Executables</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualMemory.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

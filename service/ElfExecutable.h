@@ -25,10 +25,12 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "Architecture.h"
 #include "Executable.h"
 #include "ExecutableFormat.h"
 #include "FileSystem.h"
+#include "VirtualMemory.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -51,34 +53,6 @@ public:
 	virtual ~ElfExecutable()=default;
 
 	//-------------------------------------------------------------------------
-	// Friend Functions
-
-	//// CreateElfStack
-	////
-	//// Architecture-specific implementation of CreateElfStack
-	//template<enum class Architecture architecture>
-	//friend std::unique_ptr<Executable::StackLayout> CreateElfStack(Host* host, size_t length, ElfExecutable const* executable,
-	//	Executable::ImageLayout const* layout);
-
-	//// LoadElfBinary
-	////
-	//// Architecture-specific implementation of LoadImage
-	//template<enum class Architecture architecture>
-	//friend std::unique_ptr<Executable::ImageLayout> LoadElfBinary(Host* host, ElfExecutable const* executable);
-
-	//// ReadElfHeaders
-	////
-	//// Reads the ELF headers from the provided file handle
-	//template<enum class Architecture architecture>
-	//friend std::unique_ptr<uint8_t[]> ReadElfHeaders(std::shared_ptr<FileSystem::Handle> handle);
-
-	//// ReadElfInterpreterPath
-	////
-	//// Reads the interpreter (dynamic linker) path from an ELF binary image
-	//template<enum class Architecture architecture>
-	//friend std::string ReadElfInterpreterPath(void const* headers, std::shared_ptr<FileSystem::Handle> handle);
-
-	//-------------------------------------------------------------------------
 	// Member Functions
 
 	// FromHandle (static)
@@ -90,6 +64,11 @@ public:
 	//-------------------------------------------------------------------------
 	// Executable Implementation
 
+	// Load
+	//
+	// Loads the executable into a host process
+	virtual std::unique_ptr<Executable::Layout> Load(Host* host, size_t stacklength);
+
 	// getArchitecture
 	//
 	// Gets the architecture flag for the executable
@@ -99,11 +78,6 @@ public:
 	//
 	// Gets the binary format of the executable
 	virtual enum class ExecutableFormat getFormat(void) const;
-
-	// getInterpreter
-	//
-	// Gets the path to the interpreter (dynamic linker), if present
-	virtual std::string getInterpreter(void) const = 0;
 
 private:
 
@@ -115,16 +89,140 @@ private:
 	// Architecture specific ELF format traits
 	template<enum class Architecture architecture> struct format_traits_t {};
 
+	// fshandle_t
+	//
+	// FileSystem::Handle shared pointer
+	using fshandle_t = std::shared_ptr<FileSystem::Handle>;
+
+	// headerblob_t
+	//
+	// Dynamically allocated byte array containing the ELF headers
+	using headerblob_t = std::unique_ptr<uint8_t[]>;
+
+	// imagelayout_t
+	//
+	// Layout information for a loaded ELF image
+	struct imagelayout_t
+	{
+		uintptr_t	baseaddress = 0;
+		uintptr_t	breakaddress = 0;
+		uintptr_t	entrypoint = 0;
+		uintptr_t	progheaders = 0;
+		size_t		numprogheaders = 0;
+	};
+
+	// stacklayout_t
+	//
+	// Layout information for a created ELF stack
+	struct stacklayout_t
+	{
+		uintptr_t	baseaddress = 0;
+		size_t		length = 0;
+		uintptr_t	stackpointer = 0;
+	};
+
+	// stringvector_t
+	//
+	// std::vector<> of ANSI/UTF-8 string objects
+	using stringvector_t = std::vector<std::string>;
+
+	// ElfExecutable::Layout
+	//
+	class Layout : public Executable::Layout
+	{
+	public:
+
+		// Instance Constructor
+		//
+		Layout(enum class Architecture architecture, imagelayout_t&& layout, stacklayout_t&& stacklayout);
+
+		//-------------------------------------------------------------------------
+		// Executable::Layout Implementation
+
+		// Architecture
+		//
+		// Gets the architecture of the loaded executable image
+		virtual enum class Architecture getArchitecture(void) const;
+
+		// BreakAddress
+		//
+		// Pointer to the initial program break address
+		virtual uintptr_t getBreakAddress(void) const;
+
+		// EntryPoint
+		//
+		// Gets the entry point of the loaded executable image
+		virtual uintptr_t getEntryPoint(void) const;
+
+		// StackPointer
+		//
+		// Gets the stack pointer for the loaded executable image
+		virtual uintptr_t getStackPointer(void) const;
+
+	private:
+
+		Layout(Layout const&)=delete;
+		Layout& operator=(Layout const&)=delete;
+
+		//---------------------------------------------------------------------
+		// Member Variables
+
+		enum class Architecture const	m_architecture;		// Layout architecture
+		imagelayout_t const				m_layout;			// Layout information
+		stacklayout_t const				m_stacklayout;		// Stack layout information
+	};
+
 	// Instance Constructor
 	//
-	ElfExecutable(enum class Architecture architecture, std::string&& interpreter);
-	friend std::unique_ptr<ElfExecutable> std::make_unique<ElfExecutable, enum class Architecture, std::string>(enum class Architecture&&, std::string&&);
+	ElfExecutable(enum class Architecture architecture, fshandle_t handle, fshandle_t interpreter, char_t const* originalpath, headerblob_t&& headers,
+		stringvector_t&& arguments, stringvector_t&& environment);
+	friend std::unique_ptr<ElfExecutable> std::make_unique<ElfExecutable, enum class Architecture, fshandle_t, fshandle_t, char_t const*&, headerblob_t,
+		stringvector_t, stringvector_t>(enum class Architecture&&, fshandle_t&&, fshandle_t&&, char_t const*&, headerblob_t&&, stringvector_t&&, stringvector_t&&);
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// FromHandle<Architecture> (static)
+	//
+	// Creates an ElfExecutable instance from an open file handle
+	template<enum class Architecture architecture>
+	static std::unique_ptr<ElfExecutable> FromHandle(fshandle_t handle, PathResolver resolver, stringvector_t&& arguments, stringvector_t&& environment, 
+		char_t const* originalpath);
+
+	// Load<Architecture>
+	//
+	// Architecture-specific implementation of Load
+	template<enum class Architecture architecture>
+	std::unique_ptr<Executable::Layout> Load(Host* host, size_t stacklength);
+
+	// LoadImage<Architecture> (static)
+	//
+	// Loads an image into a host process instance
+	template<enum class Architecture architecture>
+	static imagelayout_t LoadImage(void const* headers, fshandle_t handle, Host* host);
+	
+	// ReadHeaders<Architecture> (static)
+	//
+	// Reads ELF and program headers from the provided image file
+	template<enum class Architecture architecture>
+	static headerblob_t ReadHeaders(fshandle_t handle);
+
+	// ReadInterpreterPath
+	//
+	// Reads the interpreter (dynamic linker) path from an ELF image file
+	template<enum class Architecture architecture>
+	static std::string ReadInterpreterPath(void const* headers, fshandle_t handle);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	enum class Architecture const	m_architecture;		// Architecture flag
-	std::string	const				m_interpreter;		// Path to the dynamic linker
+	enum class Architecture const		m_architecture;		// Architecture flag
+	fshandle_t const					m_handle;			// Primary executable handle
+	fshandle_t const					m_interpreter;		// Interpreter binary handle
+	std::string const					m_originalpath;		// Originally specified path
+	headerblob_t const					m_headers;			// Binary file headers
+	stringvector_t const				m_arguments;		// Command line arguments
+	stringvector_t const				m_environment;		// Environment variables
 };
 
 //-----------------------------------------------------------------------------

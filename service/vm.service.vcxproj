@@ -399,6 +399,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="FilePermission.h" />
     <ClInclude Include="UtsNamespace.h" />
     <ClInclude Include="SystemLog.h" />
+    <ClInclude Include="VirtualMemory.h" />
     <ClInclude Include="_VmOld.h" />
     <ClInclude Include="Waitable.h" />
   </ItemGroup>
@@ -755,6 +756,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UtsNamespace.cpp" />
+    <ClCompile Include="VirtualMemory.cpp" />
     <ClCompile Include="_VmOld.cpp" />
     <ClCompile Include="SystemLog.cpp" />
     <ClCompile Include="Waitable.cpp" />

@@ -36,7 +36,7 @@
 
 // Forward Declarations
 //
-class Host;
+class Host;	/* todo: replace with VirtualMemory when Host implements that */
 class Namespace;
 
 //-----------------------------------------------------------------------------
@@ -53,7 +53,37 @@ public:
 	//
 	virtual ~Executable()=default;
 
-	// PathResolver
+	// Executable::Layout Interface
+	//
+	// Exposes layout information from a loaded executable image
+	struct __declspec(novtable) Layout
+	{
+		// Architecture
+		//
+		// Gets the architecture of the loaded executable image
+		__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
+		virtual enum class Architecture getArchitecture(void) const = 0;
+
+		// BreakAddress
+		//
+		// Pointer to the initial program break address
+		__declspec(property(get=getBreakAddress)) uintptr_t BreakAddress;
+		virtual uintptr_t getBreakAddress(void) const = 0;
+
+		// EntryPoint
+		//
+		// Gets the entry point of the loaded executable image
+		__declspec(property(get=getEntryPoint)) uintptr_t EntryPoint;
+		virtual uintptr_t getEntryPoint(void) const = 0;
+
+		// StackPointer
+		//
+		// Gets the stack pointer for the loaded executable image
+		__declspec(property(get=getStackPointer)) uintptr_t StackPointer;
+		virtual uintptr_t getStackPointer(void) const = 0;
+	};
+
+	// Executable::PathResolver
 	//
 	// Function used to resolve a path during executable processing
 	using PathResolver = std::function<std::shared_ptr<FileSystem::Handle>(char_t const* path)>;
@@ -65,6 +95,11 @@ public:
 	//
 	// Creates a new Executable instance from a file system file
 	static std::unique_ptr<Executable> FromFile(PathResolver resolver, char_t const* path, char_t const* const* arguments, char_t const* const* environment);
+
+	// Load
+	//
+	// Loads the executable into a host process
+	virtual std::unique_ptr<Executable::Layout> Load(Host* host, size_t stacklength) = 0;
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -80,12 +115,6 @@ public:
 	// Gets the binary format of the executable
 	__declspec(property(get=getFormat)) enum class ExecutableFormat Format;
 	virtual enum class ExecutableFormat getFormat(void) const = 0;
-
-	// Interpreter
-	//
-	// Gets the path to the interpreter (dynamic linker), if present
-	__declspec(property(get=getInterpreter)) std::string Interpreter;
-	virtual std::string getInterpreter(void) const = 0;
 
 protected:
 

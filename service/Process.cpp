@@ -139,22 +139,19 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	// Create an Executable::PathResolver lambda (prevents needing to pass all those arguments around)
 	Executable::PathResolver resolver = [&](char_t const* path) { return FileSystem::OpenExecutable(ns, root, working, path); };
 
-	// new version that takes the lambda
+	// Construct an Executable instance from the provided file system file
 	auto executable = Executable::FromFile(resolver, path, arguments, environment);
 
-	// Create an Executable instance for the provided path
-	//std::unique_ptr<Executable> executable = Executable::FromFile(ns, root, working, path, arguments, environment);
-	//std::unique_ptr<Executable> interpreter = (executable->Interpreter) ? Executable::FromFile(ns, root, working, executable->Interpreter) : nullptr;
-
 	// Create a new Host instance of the appropriate architecture
-	auto host = session->VirtualMachine->CreateHost(/*executable->Architecture*/ Architecture::x86);
-	//_ASSERTE(host->Architecture == executable->Architecture);
+	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
+	_ASSERTE(host->Architecture == executable->Architecture);
 
 	try {
 
-		//auto layout = executable->LoadImage(host.get());
-		// the entry point is different when an interpreter is used, Load() will have to accept it after 
-		// all, not just the forthcoming CreateStack() method
+		// Load the executable image into the constructed host process instance
+		auto layout = executable->Load(host.get(), 2 MiB);		// <--- todo: get stack size from virtual machine properties
+
+		// layout has entry point and stack pointer in it
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));
