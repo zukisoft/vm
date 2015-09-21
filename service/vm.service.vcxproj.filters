@@ -423,6 +423,9 @@
     <ClInclude Include="VirtualMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Host2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -879,6 +882,9 @@
       <Filter>Virtual Machine\Executables</Filter>
     </ClCompile>
     <ClCompile Include="VirtualMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Host2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

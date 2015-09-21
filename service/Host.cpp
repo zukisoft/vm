@@ -151,7 +151,7 @@ void const* Host::AllocateMemory(void const* address, size_t length, MemoryProte
 	}
 
 	// A specific address was requested, first scan over the virtual address space and fill in any holes
-	// with new meory sections to ensure a contiguous region
+	// with new memory sections to ensure a contiguous region
 	uintptr_t fillbegin = align::down(uintptr_t(address), SystemInformation::AllocationGranularity);
 	uintptr_t fillend = align::up((uintptr_t(address) + length), SystemInformation::AllocationGranularity);
 

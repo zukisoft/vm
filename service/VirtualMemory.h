@@ -42,10 +42,8 @@ struct __declspec(novtable) VirtualMemory
 	// VirtualMemory::Protection
 	//
 	// Generalized protection flags used with memory operations
-	class Protection final : public bitmask<Protection, uint8_t, 0x01 /* Execute */ | 0x02 /* Read */ | 0x04 /* Write */>
+	struct Protection final : public bitmask<Protection, uint8_t, 0x01 /* Execute */ | 0x02 /* Read */ | 0x04 /* Write */>
 	{
-	public:
-
 		using bitmask::bitmask;
 
 		//-------------------------------------------------------------------------
@@ -75,15 +73,11 @@ struct __declspec(novtable) VirtualMemory
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	// Commit
+	// Allocate
 	//
-	// Commits portions of a reserved virtual memory region
+	// Allocates a virtual memory region
+	virtual uintptr_t Allocate(size_t length, VirtualMemory::Protection protection) = 0;
 	virtual uintptr_t Allocate(uintptr_t address, size_t length, VirtualMemory::Protection protection) = 0;
-
-	// Guard
-	//
-	// Sets up guard pages within a virtual memory region
-	virtual void Guard(uintptr_t address, size_t length, VirtualMemory::Protection protection) const = 0;
 
 	// Lock
 	//
@@ -112,7 +106,7 @@ struct __declspec(novtable) VirtualMemory
 
 	// Reserve
 	//
-	// Reserves a virtual memory region
+	// Reserves a virtual memory region for later allocation
 	virtual uintptr_t Reserve(size_t length) = 0;
 	virtual uintptr_t Reserve(uintptr_t address, size_t length) = 0;
 
@@ -129,7 +123,7 @@ struct __declspec(novtable) VirtualMemory
 	// Write
 	//
 	// Writes data into a virtual memory region from the calling process
-	virtual size_t Write(uintptr_t address, uintptr_t buffer, size_t length) const = 0;
+	virtual size_t Write(uintptr_t address, void const* buffer, size_t length) const = 0;
 };
 
 //-----------------------------------------------------------------------------

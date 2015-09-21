@@ -137,7 +137,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	Capability::Demand(Capability::SystemAdmin);
 
 	// Create an Executable::PathResolver lambda (prevents needing to pass all those arguments around)
-	Executable::PathResolver resolver = [&](char_t const* path) { return FileSystem::OpenExecutable(ns, root, working, path); };
+	Executable::PathResolver resolver = [&](char_t const* path) -> std::shared_ptr<FileSystem::Handle> { return FileSystem::OpenExecutable(ns, root, working, path); };
 
 	// Construct an Executable instance from the provided file system file
 	auto executable = Executable::FromFile(resolver, path, arguments, environment);

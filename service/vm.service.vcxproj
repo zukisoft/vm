@@ -374,6 +374,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="ExecutableFormat.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Host.h" />
+    <ClInclude Include="Host2.h" />
     <ClInclude Include="HostFileSystem.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessFileSystem.h" />
@@ -656,6 +657,7 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="FilePermission.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Host.cpp" />
+    <ClCompile Include="Host2.cpp" />
     <ClCompile Include="HostFileSystem.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessFileSystem.cpp">
