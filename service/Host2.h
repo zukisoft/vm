@@ -123,37 +123,35 @@ private:
 	Host2(Host2 const&)=delete;
 	Host2& operator=(Host2 const&)=delete;
 
+	// section_t
+	//
+	// Structure used to track a section allocation and mapping
 	struct section_t
 	{
-		// todo: this needs to own the handle, and close it on destruction.
-		// this should be a class rather than a structure and have copy/move and whatnot
-		section_t(HANDLE proc, void* addr, SIZE_T len, HANDLE h) : process(proc), baseaddress(uintptr_t(addr)), length(len), handle(h), allocationmap(len / 4096) {}
+		// Instance Constructor
+		//
+		section_t(HANDLE section, uintptr_t baseaddress, size_t length);
 
-		~section_t()
-		{
-			// TODO -- this isn't working because of copy ctor being called by CreateSection() + emplace()
-			NTSTATUS result = NtApi::NtUnmapViewOfSection(process, reinterpret_cast<void*>(baseaddress));
-			result = NtApi::NtClose(handle);
-		}
+		// Less-than operator
+		//
+		bool operator <(section_t const& rhs) const;
 
-		section_t(section_t&& rhs) : process(0), baseaddress(0), length(0), handle(0), allocationmap(1)
-		{
-			int x = 123;
-		}
-
-		bool operator < (section_t const& rhs) const {
-			return baseaddress < rhs.baseaddress;
-		}
-
-		HANDLE		const process;
-		uintptr_t	const baseaddress;
-		size_t		const length;
-		HANDLE		const handle;
-		mutable Bitmap		allocationmap;
+		// Fields
+		//
+		HANDLE const		m_section;
+		uintptr_t const		m_baseaddress;
+		size_t const		m_length;
+		mutable Bitmap		m_allocationmap;
 	};
 
-	using iteratefunc_t = std::function<void(section_t const& section, uintptr_t address, size_t length)>;
+	// sectioniterator_t
+	//
+	// Callback/lambda function prototype used when iterating over sections
+	using sectioniterator_t = std::function<void(section_t const& section, uintptr_t address, size_t length)>;
 
+	// sections_t
+	//
+	// Collection of section_t instances
 	typedef std::set<section_t> sections_t;
 
 	//-------------------------------------------------------------------------
@@ -167,7 +165,7 @@ private:
 	// IterateRange
 	//
 	// Iterates across an address range and invokes the specified operation for each section
-	void IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, iteratefunc_t operation) const;
+	void IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, sectioniterator_t operation) const;
 
 	// ReserveRange
 	//
@@ -177,9 +175,9 @@ private:
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	HANDLE								m_process;
-	sections_t							m_sections;
-	mutable sync::reader_writer_lock	m_sectionslock;
+	HANDLE								m_process;			// Process handle
+	sections_t							m_sections;			// Allocated sections
+	mutable sync::reader_writer_lock	m_sectionslock;		// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

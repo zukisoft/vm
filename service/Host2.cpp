@@ -49,13 +49,33 @@ template<> SectionProtection convert<SectionProtection>(VirtualMemory::Protectio
 	return PAGE_NOACCESS;
 }
 
+Host2::section_t::section_t(HANDLE section, uintptr_t baseaddress, size_t length) : m_section(section), m_baseaddress(baseaddress), 
+	m_length(length), m_allocationmap(length / SystemInformation::PageSize)
+{
+}
+
+bool Host2::section_t::operator <(section_t const& rhs) const
+{
+	return m_baseaddress < rhs.m_baseaddress;
+}
+
 Host2::Host2(HANDLE process) : m_process(process)
 {
 }
 
 Host2::~Host2()
 {
-	// release handles as needed
+	// Unmap and release all remaining memory sections in the target process
+	for(auto const& iterator : m_sections) {
+
+		// Unmap the section from the target process' address space
+		NTSTATUS result = NtApi::NtUnmapViewOfSection(m_process, reinterpret_cast<void*>(iterator.m_baseaddress));
+		_ASSERTE(result == NtApi::STATUS_SUCCESS);
+
+		// Release the section handle
+		result = NtApi::NtClose(iterator.m_section);
+		_ASSERTE(result == NtApi::STATUS_SUCCESS);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -79,14 +99,14 @@ uintptr_t Host2::Allocate(size_t length, VirtualMemory::Protection protection)
 	if(!iterator.second) throw LinuxException{ LINUX_ENOMEM };
 
 	// The pages for the section are implicitly committed when mapped, "allocation" merely applies the protection flags
-	void* address = reinterpret_cast<void*>(iterator.first->baseaddress);
+	void* address = reinterpret_cast<void*>(iterator.first->m_baseaddress);
 	NTSTATUS result = NtApi::NtProtectVirtualMemory(m_process, reinterpret_cast<void**>(&address), reinterpret_cast<PSIZE_T>(&length), convert<SectionProtection>(protection), &previous);
 	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_ENOMEM, StructuredException{ result } };
 
 	// Track the "allocated" pages in the section's allocation bitmap
-	iterator.first->allocationmap.Set(0, length / SystemInformation::PageSize);
+	iterator.first->m_allocationmap.Set(0, length / SystemInformation::PageSize);
 
-	return iterator.first->baseaddress;
+	return iterator.first->m_baseaddress;
 }
 
 //-----------------------------------------------------------------------------
@@ -119,7 +139,7 @@ uintptr_t Host2::Allocate(uintptr_t address, size_t length, VirtualMemory::Prote
 		if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EACCES, StructuredException{ result } };
 
 		// Track the allocated pages in the section's allocation bitmap
-		section.allocationmap.Set((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize);
+		section.m_allocationmap.Set((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize);
 	});
 
 	return address;
@@ -174,7 +194,8 @@ Host2::section_t Host2::CreateSection(uintptr_t address, size_t length) const
 	}
 	catch(...) { NtApi::NtClose(section); throw; }
 
-	return section_t(m_process, mapping, mappinglength, section);
+	// Return a new section_t structure instance to the caller
+	return section_t(section, uintptr_t(mapping), mappinglength);
 }
 
 //-----------------------------------------------------------------------------
@@ -191,7 +212,7 @@ Host2::section_t Host2::CreateSection(uintptr_t address, size_t length) const
 //	length		- Length of the range to iterate over
 //	operation	- Operation to execute against each section in the range individually
 
-void Host2::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, iteratefunc_t operation) const
+void Host2::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, sectioniterator_t operation) const
 {
 	UNREFERENCED_PARAMETER(lock);				// This is just to ensure the caller has locked m_sections
 
@@ -201,17 +222,17 @@ void Host2::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t 
 	while((start < end) && (iterator != m_sections.end())) {
 
 		// If the starting address is lower than the current section, it has not been reserved
-		if(start < iterator->baseaddress) throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
+		if(start < iterator->m_baseaddress) throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// If the starting address is beyond the end of the current section, move to the next section
-		else if(start >= (iterator->baseaddress + iterator->length)) ++iterator;
+		else if(start >= (iterator->m_baseaddress + iterator->m_length)) ++iterator;
 
 		// Starting address is within the current section, process up to the end of the section
 		// or the specified address range end, whichever is the lower address, and advance start
 		else {
 
-			operation(*iterator, start, std::min(iterator->baseaddress + iterator->length, end) - start);
-			start = iterator->baseaddress + iterator->length;
+			operation(*iterator, start, std::min(iterator->m_baseaddress + iterator->m_length, end) - start);
+			start = iterator->m_baseaddress + iterator->m_length;
 		}
 	}
 
@@ -237,7 +258,7 @@ void Host2::Lock(uintptr_t address, size_t length) const
 	IterateRange(reader, address, length, [=](section_t const& section, uintptr_t address, size_t length) -> void {
 
 		// Ensure that all the required pages in this section are marked as allocated
-		if(!section.allocationmap.AreBitsSet((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
+		if(!section.m_allocationmap.AreBitsSet((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
 			throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Attempt to lock the specified pages into physical memory
@@ -275,7 +296,7 @@ void Host2::Protect(uintptr_t address, size_t length, VirtualMemory::Protection 
 		ULONG previous;				// Previously set protection flags for this range of pages
 
 		// Ensure that all the required pages in this section are marked as allocated
-		if(!section.allocationmap.AreBitsSet((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
+		if(!section.m_allocationmap.AreBitsSet((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
 			throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Apply the specified protection flags to the region
@@ -307,7 +328,7 @@ size_t Host2::Read(uintptr_t address, void* buffer, size_t length) const
 		SIZE_T				read = 0;				// Number of bytes read from the process
 
 		// Ensure that all the required pages in this section are marked as allocated
-		if(!section.allocationmap.AreBitsSet((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
+		if(!section.m_allocationmap.AreBitsSet((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
 			throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Attempt to read the next chunk of virtual memory from the target process' address space
@@ -349,14 +370,19 @@ void Host2::Release(uintptr_t address, size_t length)
 		NtApi::NtUnlockVirtualMemory(m_process, reinterpret_cast<void**>(&address), reinterpret_cast<PSIZE_T>(&length), NtApi::MAP_PROCESS);
 
 		// Clear the corresponding pages from the section allocation bitmap to indicate they are "released"
-		section.allocationmap.Clear((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize);
+		section.m_allocationmap.Clear((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize);
 	});
 
 	// Remove any sections that are now completely empty to actually release and unmap that memory
 	auto iterator = m_sections.begin();
 	while(iterator != m_sections.end()) {
 
-		if(iterator->allocationmap.Empty) iterator = m_sections.erase(iterator);
+		if(iterator->m_allocationmap.Empty) {
+
+			// TODO: RELEASE MAPPING AND SECTION, NO MORE DESTRUCTOR IN SECTION_T
+			iterator = m_sections.erase(iterator);
+		}
+
 		else ++iterator;
 	}
 }
@@ -378,7 +404,7 @@ uintptr_t Host2::Reserve(size_t length)
 	auto iterator = m_sections.emplace(CreateSection(uintptr_t(0), align::up(length, SystemInformation::AllocationGranularity)));
 
 	if(!iterator.second) throw LinuxException{ LINUX_ENOMEM };
-	return iterator.first->baseaddress;
+	return iterator.first->m_baseaddress;
 }
 
 //-----------------------------------------------------------------------------
@@ -426,14 +452,14 @@ void Host2::ReserveRange(sync::reader_writer_lock::scoped_lock_write& writer, ui
 	while((iterator != m_sections.end()) && (start < end)) {
 
 		// If the start address is lower than the current section, fill the region with a new reservation
-		if(start < iterator->baseaddress) {
+		if(start < iterator->m_baseaddress) {
 
-			m_sections.emplace(CreateSection(start, std::min(end, iterator->baseaddress) - start));
-			start = (iterator->baseaddress + iterator->length);
+			m_sections.emplace(CreateSection(start, std::min(end, iterator->m_baseaddress) - start));
+			start = (iterator->m_baseaddress + iterator->m_length);
 		}
 
 		// If the start address falls within this section, move to the end of this reservation
-		else if(start < (iterator->baseaddress + iterator->length)) start = (iterator->baseaddress + iterator->length);
+		else if(start < (iterator->m_baseaddress + iterator->m_length)) start = (iterator->m_baseaddress + iterator->m_length);
 
 		++iterator;								// Move to the next section
 	}
@@ -460,7 +486,7 @@ void Host2::Unlock(uintptr_t address, size_t length) const
 	IterateRange(reader, address, length, [=](section_t const& section, uintptr_t address, size_t length) -> void {
 
 		// Ensure that all the required pages in this section are marked as allocated
-		if(!section.allocationmap.AreBitsSet((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
+		if(!section.m_allocationmap.AreBitsSet((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
 			throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Attempt to unlock the specified pages from physical memory
@@ -499,7 +525,7 @@ size_t Host2::Write(uintptr_t address, void const* buffer, size_t length) const
 		SIZE_T				written = 0;				// Number of bytes written to the process
 
 		// Ensure that all the required pages in this section are marked as allocated
-		if(!section.allocationmap.AreBitsSet((address - section.baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
+		if(!section.m_allocationmap.AreBitsSet((address - section.m_baseaddress) / SystemInformation::PageSize, length / SystemInformation::PageSize)) 
 			throw LinuxException{ LINUX_EACCES, Win32Exception{ ERROR_INVALID_ADDRESS } };
 
 		// Attempt to write the next chunk of data into the target process' virtual address space
