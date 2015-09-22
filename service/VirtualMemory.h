@@ -42,7 +42,7 @@ struct __declspec(novtable) VirtualMemory
 	// VirtualMemory::Protection
 	//
 	// Generalized protection flags used with memory operations
-	struct Protection final : public bitmask<Protection, uint8_t, 0x01 /* Execute */ | 0x02 /* Read */ | 0x04 /* Write */>
+	struct Protection final : public bitmask<Protection, uint8_t, 0x01 /* Execute */ | 0x02 /* Read */ | 0x04 /* Write */ | 0x80 /* Guard */>
 	{
 		using bitmask::bitmask;
 
@@ -53,6 +53,11 @@ struct __declspec(novtable) VirtualMemory
 		//
 		// Indicates that the memory region can be executed
 		static Protection const Execute;
+
+		// Guard (static)
+		//
+		// Indicates that the memory region consists of guard pages
+		static Protection const Guard;
 
 		// None (static)
 		//
@@ -87,7 +92,7 @@ struct __declspec(novtable) VirtualMemory
 	// Map
 	//
 	// Maps a virtual memory region into the calling process
-	virtual void* Map(uintptr_t address, size_t length) = 0;
+	virtual void* Map(uintptr_t address, size_t length, VirtualMemory::Protection protection) = 0;
 
 	// Protect
 	//

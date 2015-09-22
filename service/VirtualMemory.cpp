@@ -33,6 +33,10 @@
 //
 VirtualMemory::Protection const VirtualMemory::Protection::Execute{ 0x01 };
 
+// VirtualMemory::Protection::Guard (static)
+//
+VirtualMemory::Protection const VirtualMemory::Protection::Guard{ 0x80 };
+
 // VirtualMemory::Protection::None (static)
 //
 VirtualMemory::Protection const VirtualMemory::Protection::None{ 0x00 };

@@ -24,6 +24,7 @@
 #define __HOST2_H_
 #pragma once
 
+#include <unordered_map>
 #include <set>
 #include "Bitmap.h"
 #include "VirtualMemory.h"
@@ -80,7 +81,7 @@ public:
 	// Map
 	//
 	// Maps a virtual memory region into the calling process
-	virtual void* Map(uintptr_t address, size_t length);
+	virtual void* Map(uintptr_t address, size_t length, VirtualMemory::Protection protection);
 
 	// Protect
 	//
@@ -123,6 +124,11 @@ private:
 	Host2(Host2 const&)=delete;
 	Host2& operator=(Host2 const&)=delete;
 
+	// localmappings_t
+	//
+	// Collection to track local process mappings
+	using localmappings_t = std::unordered_map<void const*, std::vector<uintptr_t>>;
+
 	// section_t
 	//
 	// Structure used to track a section allocation and mapping
@@ -160,12 +166,27 @@ private:
 	// CreateSection
 	//
 	// Creates a new memory section object and maps it to the specified address
-	section_t CreateSection(uintptr_t address, size_t length) const;
+	static section_t CreateSection(HANDLE process, uintptr_t address, size_t length);
+
+	// EnsureSectionAllocation (static)
+	//
+	// Verifies that the specified address range is soft-allocated within a section
+	static void EnsureSectionAllocation(section_t const& section, uintptr_t address, size_t length);
 
 	// IterateRange
 	//
 	// Iterates across an address range and invokes the specified operation for each section
 	void IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, sectioniterator_t operation) const;
+
+	// ReleaseLocalMappings (static)
+	//
+	// Releases a vector of local address mappings
+	static void ReleaseLocalMappings(HANDLE process, std::vector<uintptr_t> const& mappings);
+
+	// ReleaseSection (static)
+	//
+	// Releases a memory section object created by CreateSection
+	static void ReleaseSection(HANDLE process, section_t const& section);
 
 	// ReserveRange
 	//
@@ -177,6 +198,7 @@ private:
 
 	HANDLE								m_process;			// Process handle
 	sections_t							m_sections;			// Allocated sections
+	localmappings_t						m_localmappings;	// Local section mappings
 	mutable sync::reader_writer_lock	m_sectionslock;		// Synchronization object
 };
 
