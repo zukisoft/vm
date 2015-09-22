@@ -30,7 +30,6 @@
 #include "Executable.h"
 #include "ExecutableFormat.h"
 #include "FileSystem.h"
-#include "VirtualMemory.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization

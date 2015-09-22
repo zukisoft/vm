@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Host2.h"
+#include "ProcessMemory.h"
 
 #include <tuple>
 #include <vector>
@@ -33,10 +33,18 @@
 
 #pragma warning(push, 4)
 
+// SectionProtection
+//
+// Alias for ULONG, used with convert<> template
 using SectionProtection = ULONG;
-template<> SectionProtection convert<SectionProtection>(VirtualMemory::Protection const& rhs)
+
+// convert<SectionProtection>(ProcessMemory::Protection)
+//
+// Converts a ProcessMemory::Protection value into Win32 Section protection flags
+//
+template<> SectionProtection convert<SectionProtection>(ProcessMemory::Protection const& rhs)
 {
-	using prot = VirtualMemory::Protection;	
+	using prot = ProcessMemory::Protection;	
 	
 	prot base(rhs & ~prot::Guard);
 	SectionProtection result = PAGE_NOACCESS;
@@ -52,39 +60,30 @@ template<> SectionProtection convert<SectionProtection>(VirtualMemory::Protectio
 	return (rhs & prot::Guard) ? result |= PAGE_GUARD : result;
 }
 
+//-----------------------------------------------------------------------------
+// ProcessMemory Constructor
 //
-// HOST::SECTION_T IMPLEMENTATION
+// Arguments:
 //
+//	process		- Target process handle (will be duplicated)
 
-Host2::section_t::section_t(HANDLE section, uintptr_t baseaddress, size_t length) : m_section(section), m_baseaddress(baseaddress), 
-	m_length(length), m_allocationmap(length / SystemInformation::PageSize)
-{
-}
-
-bool Host2::section_t::operator <(section_t const& rhs) const
-{
-	return m_baseaddress < rhs.m_baseaddress;
-}
-
-//
-// HOST IMPLEMENTATION
-//
-
-Host2::Host2(HANDLE process) : m_process(process)
+ProcessMemory::ProcessMemory(HANDLE process) : m_process(DuplicateHandle(process))
 {
 }
 
 //-----------------------------------------------------------------------------
-// Host2 Destructor
+// ProcessMemory Destructor
 
-Host2::~Host2()
+ProcessMemory::~ProcessMemory()
 {
 	for(auto const& iterator : m_localmappings) ReleaseLocalMappings(NtApi::NtCurrentProcess, iterator.second);
 	for(auto const& iterator : m_sections) ReleaseSection(m_process, iterator);
+
+	CloseHandle(m_process);				// Close the duplicate process handle
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Allocate
+// ProcessMemory::Allocate
 //
 // Allocates a region of virtual memory
 //
@@ -93,7 +92,7 @@ Host2::~Host2()
 //	length			- Length of the region to allocate
 //	protection		- Protection flags to assign to the allocated region
 
-uintptr_t Host2::Allocate(size_t length, VirtualMemory::Protection protection)
+uintptr_t ProcessMemory::Allocate(size_t length, ProcessMemory::Protection protection)
 {
 	ULONG				previous;					// Previous memory protection flags
 
@@ -116,7 +115,7 @@ uintptr_t Host2::Allocate(size_t length, VirtualMemory::Protection protection)
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Allocate
+// ProcessMemory::Allocate
 //
 // Allocates a region of virtual memory
 //
@@ -126,7 +125,7 @@ uintptr_t Host2::Allocate(size_t length, VirtualMemory::Protection protection)
 //	length			- Length of the region to allocate
 //	protection		- Protection flags to assign to the allocated region
 
-uintptr_t Host2::Allocate(uintptr_t address, size_t length, VirtualMemory::Protection protection)
+uintptr_t ProcessMemory::Allocate(uintptr_t address, size_t length, ProcessMemory::Protection protection)
 {
 	// This operation is different when the caller doesn't care what the base address is
 	if(address == 0) return Allocate(length, protection);
@@ -153,7 +152,7 @@ uintptr_t Host2::Allocate(uintptr_t address, size_t length, VirtualMemory::Prote
 }
 
 //-----------------------------------------------------------------------------
-// Host2::CreateSection (private, static)
+// ProcessMemory::CreateSection (private, static)
 //
 // Creates a new memory section object and maps it into the process
 //
@@ -163,7 +162,7 @@ uintptr_t Host2::Allocate(uintptr_t address, size_t length, VirtualMemory::Prote
 //	address		- Base address of the section to be created and mapped
 //	length		- Length of the section to be created and mapped
 
-Host2::section_t Host2::CreateSection(HANDLE process, uintptr_t address, size_t length)
+ProcessMemory::section_t ProcessMemory::CreateSection(HANDLE process, uintptr_t address, size_t length)
 {
 	HANDLE					section;				// The newly created section handle
 	LARGE_INTEGER			sectionlength;			// Section length as a LARGE_INTEGER
@@ -209,7 +208,26 @@ Host2::section_t Host2::CreateSection(HANDLE process, uintptr_t address, size_t 
 }
 
 //-----------------------------------------------------------------------------
-// Host2::EnsureSectionAllocation (private, static)
+// ProcessMemory::DuplicateHandle (private, static)
+//
+// Duplicates a Win32 handle with the same attributes and access
+//
+// Arguments:
+//
+//	original	- Original Win32 HANDLE to be duplicated
+
+HANDLE ProcessMemory::DuplicateHandle(HANDLE original)
+{
+	HANDLE duplicate = nullptr;
+
+	if(!::DuplicateHandle(GetCurrentProcess(), original, GetCurrentProcess(), &duplicate, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		throw LinuxException{ LINUX_EACCES, Win32Exception{ GetLastError() } };
+
+	return duplicate;
+}
+
+//-----------------------------------------------------------------------------
+// ProcessMemory::EnsureSectionAllocation (private, static)
 //
 // Verifies that the specified address range is soft-allocated within a section
 //
@@ -219,7 +237,7 @@ Host2::section_t Host2::CreateSection(HANDLE process, uintptr_t address, size_t 
 //	address		- Starting address of the range to check
 //	length		- Length of the range to check
 
-inline void Host2::EnsureSectionAllocation(section_t const& section, uintptr_t address, size_t length)
+inline void ProcessMemory::EnsureSectionAllocation(section_t const& section, uintptr_t address, size_t length)
 {
 	size_t pages = align::up(length, SystemInformation::PageSize) / SystemInformation::PageSize;
 
@@ -228,7 +246,7 @@ inline void Host2::EnsureSectionAllocation(section_t const& section, uintptr_t a
 }
 
 //-----------------------------------------------------------------------------
-// Host2::IterateRange (private)
+// ProcessMemory::IterateRange (private)
 //
 // Iterates across an address range and invokes the specified operation for each section, this
 // ensures that the range is managed by this implementation and allows for operations that do 
@@ -241,7 +259,7 @@ inline void Host2::EnsureSectionAllocation(section_t const& section, uintptr_t a
 //	length		- Length of the range to iterate over
 //	operation	- Operation to execute against each section in the range individually
 
-void Host2::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, sectioniterator_t operation) const
+void ProcessMemory::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, sectioniterator_t operation) const
 {
 	UNREFERENCED_PARAMETER(lock);				// This is just to ensure the caller has locked m_sections
 
@@ -270,7 +288,7 @@ void Host2::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t 
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Lock
+// ProcessMemory::Lock
 //
 // Attempts to lock a region into physical memory
 //
@@ -279,7 +297,7 @@ void Host2::IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t 
 //	address		- Starting address of the region to lock
 //	length		- Length of the region to lock
 
-void Host2::Lock(uintptr_t address, size_t length) const
+void ProcessMemory::Lock(uintptr_t address, size_t length) const
 {
 	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
 
@@ -295,7 +313,7 @@ void Host2::Lock(uintptr_t address, size_t length) const
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Map
+// ProcessMemory::Map
 //
 // Maps a virtual memory region into the calling process.  Note that if the operation spans
 // multiple sections the operation may fail fairly easily since each section will be mapped
@@ -309,14 +327,14 @@ void Host2::Lock(uintptr_t address, size_t length) const
 //	length		- Length of the region to map
 //	protection	- Protection flags to assign to the region after it's been mapped
 
-void* Host2::Map(uintptr_t address, size_t length, VirtualMemory::Protection protection)
+void* ProcessMemory::Map(uintptr_t address, size_t length, ProcessMemory::Protection protection)
 {
 	std::vector<uintptr_t>		mappings;					// Created section mappings
 	void*						nextmapping = nullptr;		// Address of the next mapping
 	void*						returnptr = nullptr;		// Pointer to return to the caller
 
 	// Guard pages cannot be specified as the protection for this function
-	if(protection & VirtualMemory::Protection::Guard) throw LinuxException{ LINUX_EINVAL };
+	if(protection & ProcessMemory::Protection::Guard) throw LinuxException{ LINUX_EINVAL };
 
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
@@ -355,7 +373,7 @@ void* Host2::Map(uintptr_t address, size_t length, VirtualMemory::Protection pro
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Protect
+// ProcessMemory::Protect
 //
 // Sets the memory protection flags for a virtual memory region
 //
@@ -365,7 +383,7 @@ void* Host2::Map(uintptr_t address, size_t length, VirtualMemory::Protection pro
 //	length		- Length of the region to protect
 //	protection	- Protection flags to assign to the region
 
-void Host2::Protect(uintptr_t address, size_t length, VirtualMemory::Protection protection) const
+void ProcessMemory::Protect(uintptr_t address, size_t length, ProcessMemory::Protection protection) const
 {
 	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
 
@@ -382,7 +400,7 @@ void Host2::Protect(uintptr_t address, size_t length, VirtualMemory::Protection 
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Read
+// ProcessMemory::Read
 //
 // Reads data from a virtual memory region into the calling process
 //
@@ -392,7 +410,7 @@ void Host2::Protect(uintptr_t address, size_t length, VirtualMemory::Protection 
 //	buffer		- Destination buffer
 //	length		- Number of bytes to read from the process buffer
 
-size_t Host2::Read(uintptr_t address, void* buffer, size_t length) const
+size_t ProcessMemory::Read(uintptr_t address, void* buffer, size_t length) const
 {
 	size_t					total = 0;				// Number of bytes read from the process
 
@@ -417,7 +435,7 @@ size_t Host2::Read(uintptr_t address, void* buffer, size_t length) const
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Release
+// ProcessMemory::Release
 //
 // Releases a virtual memory region
 //
@@ -426,7 +444,7 @@ size_t Host2::Read(uintptr_t address, void* buffer, size_t length) const
 //	address		- Base address of the region to be released
 //	length		- Length of the region to be released
 
-void Host2::Release(uintptr_t address, size_t length)
+void ProcessMemory::Release(uintptr_t address, size_t length)
 {
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
@@ -462,7 +480,7 @@ void Host2::Release(uintptr_t address, size_t length)
 }
 
 //-----------------------------------------------------------------------------
-// Host2::ReleaseLocalMappings (private, static)
+// ProcessMemory::ReleaseLocalMappings (private, static)
 //
 // Releases mappings contained in a vector of base addresses
 //
@@ -471,14 +489,14 @@ void Host2::Release(uintptr_t address, size_t length)
 //	process		- Target process handle
 //	mappings	- Vector of mapping base addresses to release
 
-inline void Host2::ReleaseLocalMappings(HANDLE process, std::vector<uintptr_t> const& mappings)
+inline void ProcessMemory::ReleaseLocalMappings(HANDLE process, std::vector<uintptr_t> const& mappings)
 {
 	_ASSERTE(process == NtApi::NtCurrentProcess);
 	for(auto const& iterator : mappings) NtApi::NtUnmapViewOfSection(process, reinterpret_cast<void*>(iterator));
 }
 
 //-----------------------------------------------------------------------------
-// Host2::ReleaseSection (private, static)
+// ProcessMemory::ReleaseSection (private, static)
 //
 // Releases a section represented by a section_t instance
 //
@@ -487,14 +505,14 @@ inline void Host2::ReleaseLocalMappings(HANDLE process, std::vector<uintptr_t> c
 //	process		- Target process handle
 //	section		- Reference to the section to be released
 
-inline void Host2::ReleaseSection(HANDLE process, section_t const& section)
+inline void ProcessMemory::ReleaseSection(HANDLE process, section_t const& section)
 {
 	NtApi::NtUnmapViewOfSection(process, reinterpret_cast<void*>(section.m_baseaddress));
 	NtApi::NtClose(section.m_section);
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Reserve
+// ProcessMemory::Reserve
 //
 // Reserves a virtual memory region for later allocation
 //
@@ -502,7 +520,7 @@ inline void Host2::ReleaseSection(HANDLE process, section_t const& section)
 //
 //	length		- Length of the memory region to reserve
 
-uintptr_t Host2::Reserve(size_t length)
+uintptr_t ProcessMemory::Reserve(size_t length)
 {
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
@@ -514,7 +532,7 @@ uintptr_t Host2::Reserve(size_t length)
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Reserve
+// ProcessMemory::Reserve
 //
 // Reserves a virtual memory region for later allocation
 //
@@ -523,7 +541,7 @@ uintptr_t Host2::Reserve(size_t length)
 //	address		- Base address of the region to be reserved
 //	length		- Length of the region to be reserved
 
-uintptr_t Host2::Reserve(uintptr_t address, size_t length)
+uintptr_t ProcessMemory::Reserve(uintptr_t address, size_t length)
 {
 	// This operation is different when the caller doesn't care what the base address is
 	if(address == 0) return Reserve(length);
@@ -535,7 +553,7 @@ uintptr_t Host2::Reserve(uintptr_t address, size_t length)
 }
 
 //-----------------------------------------------------------------------------
-// Host2::ReserveRange (private)
+// ProcessMemory::ReserveRange (private)
 //
 // Ensures that a range of address space is reserved
 //
@@ -543,7 +561,7 @@ uintptr_t Host2::Reserve(uintptr_t address, size_t length)
 //	address		- Starting address of the range to be reserved
 //	length		- Length of the range to be reserved
 
-void Host2::ReserveRange(sync::reader_writer_lock::scoped_lock_write& writer, uintptr_t address, size_t length)
+void ProcessMemory::ReserveRange(sync::reader_writer_lock::scoped_lock_write& writer, uintptr_t address, size_t length)
 {
 	UNREFERENCED_PARAMETER(writer);				// This is just to ensure the caller has locked m_sections
 
@@ -575,7 +593,7 @@ void Host2::ReserveRange(sync::reader_writer_lock::scoped_lock_write& writer, ui
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Unlock
+// ProcessMemory::Unlock
 //
 // Attempts to unlock a region from physical memory
 //
@@ -584,7 +602,7 @@ void Host2::ReserveRange(sync::reader_writer_lock::scoped_lock_write& writer, ui
 //	address		- Starting address of the region to unlock
 //	length		- Length of the region to unlock
 
-void Host2::Unlock(uintptr_t address, size_t length) const
+void ProcessMemory::Unlock(uintptr_t address, size_t length) const
 {
 	sync::reader_writer_lock::scoped_lock_read reader(m_sectionslock);
 
@@ -600,7 +618,7 @@ void Host2::Unlock(uintptr_t address, size_t length) const
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Unmap
+// ProcessMemory::Unmap
 //
 // Unmaps a previously mapped memory region from the calling process
 //
@@ -608,7 +626,7 @@ void Host2::Unlock(uintptr_t address, size_t length) const
 //
 //	mapping		- Address returned from a successful call to Map
 
-void Host2::Unmap(void const* mapping)
+void ProcessMemory::Unmap(void const* mapping)
 {
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
@@ -624,7 +642,7 @@ void Host2::Unmap(void const* mapping)
 }
 
 //-----------------------------------------------------------------------------
-// Host2::Write
+// ProcessMemory::Write
 //
 // Writes data into a virtual memory region from the calling process
 //
@@ -634,7 +652,7 @@ void Host2::Unmap(void const* mapping)
 //	buffer		- Source buffer
 //	length		- Number of bytes to write into the process
 
-size_t Host2::Write(uintptr_t address, void const* buffer, size_t length) const
+size_t ProcessMemory::Write(uintptr_t address, void const* buffer, size_t length) const
 {
 	size_t					total = 0;				// Number of bytes read from the process
 
@@ -656,6 +674,56 @@ size_t Host2::Write(uintptr_t address, void const* buffer, size_t length) const
 	});
 
 	return total;
+}
+
+//
+// PROCESSMEMORY::PROTECTION IMPLEMENTATION
+//
+
+// ProcessMemory::Protection::Execute (static)
+//
+ProcessMemory::Protection const ProcessMemory::Protection::Execute{ 0x01 };
+
+// ProcessMemory::Protection::Guard (static)
+//
+ProcessMemory::Protection const ProcessMemory::Protection::Guard{ 0x80 };
+
+// ProcessMemory::Protection::None (static)
+//
+ProcessMemory::Protection const ProcessMemory::Protection::None{ 0x00 };
+
+// ProcessMemory::Protection::Read (static)
+//
+ProcessMemory::Protection const ProcessMemory::Protection::Read{ 0x02 };
+
+// ProcessMemory::Protection::Write (static)
+//
+ProcessMemory::Protection const ProcessMemory::Protection::Write{ 0x04 };
+
+//
+// PROCESSMEMORY::SECTION_T IMPLEMENTATION
+//
+
+//-----------------------------------------------------------------------------
+// ProcessMemory::section_t Constructor
+//
+// Arguments:
+//
+//	section			- Section object handle
+//	baseaddress		- Mapping base address
+//	length			- Section/mapping length
+
+ProcessMemory::section_t::section_t(HANDLE section, uintptr_t baseaddress, size_t length) : m_section(section), m_baseaddress(baseaddress), 
+	m_length(length), m_allocationmap(length / SystemInformation::PageSize)
+{
+}
+
+//-----------------------------------------------------------------------------
+// ProcessMemory::section_t::operator <
+
+bool ProcessMemory::section_t::operator <(section_t const& rhs) const
+{
+	return m_baseaddress < rhs.m_baseaddress;
 }
 
 //-----------------------------------------------------------------------------

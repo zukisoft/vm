@@ -420,10 +420,7 @@
     <ClInclude Include="ExecutableFormat.h">
       <Filter>Virtual Machine\Executables</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualMemory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Host2.h">
+    <ClInclude Include="ProcessMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -881,10 +878,7 @@
     <ClCompile Include="Executable.cpp">
       <Filter>Virtual Machine\Executables</Filter>
     </ClCompile>
-    <ClCompile Include="VirtualMemory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Host2.cpp">
+    <ClCompile Include="ProcessMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
