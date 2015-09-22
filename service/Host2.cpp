@@ -320,6 +320,12 @@ void* Host2::Map(uintptr_t address, size_t length, VirtualMemory::Protection pro
 
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
+	//
+	// TODO: This doesn't necessarily need to map entire section(s) into the local process,
+	// the offsets and lengths are known.  The complication comes in when multiple sections
+	// need to be mapped -- the boundary between them must fall on a 64K alignment boundary
+	//
+
 	try {
 
 		IterateRange(writer, address, length, [&](section_t const& section, uintptr_t address, size_t length) -> void {

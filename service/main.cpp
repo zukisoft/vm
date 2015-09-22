@@ -27,8 +27,6 @@
 #include "StructuredException.h"
 #include "VirtualMachine.h"
 
-#include "Host2.h"
-
 #pragma warning(push, 4)
 
 //---------------------------------------------------------------------------
@@ -52,37 +50,6 @@ int APIENTRY _tWinMain(HINSTANCE, HINSTANCE, LPTSTR cmdline, int)
 	_CrtSetDbgFlag(nDbgFlags);								// Set the new flags
 
 #endif	// _DEBUG
-
-	/////////////////
-	Host2 host(GetCurrentProcess());
-
-	for(int index = 0; index < 100; index++) VirtualAlloc(nullptr, 65536, MEM_RESERVE, PAGE_NOACCESS);
-
-	uintptr_t test = host.Allocate(0x08000000, 65536, (VirtualMemory::Protection::Write |VirtualMemory::Protection::Guard));		// 64K  --> 0x08010000
-	uintptr_t test3 = host.Allocate(0x08010000, 65536, VirtualMemory::Protection::Write);
-	uintptr_t test2 = host.Allocate(0x08020000, 65536, VirtualMemory::Protection::Read);	// 64K  --> 0x08030000
-
-	void* local = host.Map(0x08000000, 0x100, (VirtualMemory::Protection::Execute | VirtualMemory::Protection::Read | VirtualMemory::Protection::Write));
-
-	auto buffer = std::make_unique<uint8_t[]>(256 KiB);
-
-	host.Read(0x08002000, &buffer[0], 80 KiB);
-	host.Write(0x08002000, &buffer[0], 64 KiB);
-
-	host.Release(0x08010000, 32768);
-	host.Release(0x08010000, 65536);
-	host.Protect(0x08000000, 8192, VirtualMemory::Protection::Execute);
-	host.Release(0x08000000, 65536);
-
-	*reinterpret_cast<uint32_t*>(local) = 0x12345678;
-	//host.Unmap(local);
-
-	//host.Lock(0x08000000, 30000);
-
-	//host.Allocate(test + 1048576, 120000, (VirtualMemory::Protection::Read | VirtualMemory::Protection::Execute));
-	return 0;
-
-	////////////////
 
 	// Initialize the SEH to C++ exception translator
 	_set_se_translator(StructuredException::SeTranslator);
