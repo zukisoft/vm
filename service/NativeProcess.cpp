@@ -482,7 +482,11 @@ void* NativeProcess::MapMemory(uintptr_t address, size_t length, ProcessMemory::
 		IterateRange(writer, address, length, [&](section_t const& section, uintptr_t address, size_t length) -> void {
 
 			SIZE_T mappedlength = 0;								// Length of section mapped by NtMapViewOfSection
-			EnsureSectionAllocation(section, address, length);		// All pages must be marked as allocated
+			
+			// NOTE: Removed the check for soft-allocation here, it's unnecessary and counterproductive.  The calling
+			// process owns the target process and the memory is committed by default so let it do what it wants with it
+			//
+			//EnsureSectionAllocation(section, address, length);		// All pages must be marked as allocated
 
 			// Attempt to map the entire section into the current process' address space.  The first iteration will allow the operating
 			// system to select the destination address, subsequent operations are mapped contiguously with the previous one
