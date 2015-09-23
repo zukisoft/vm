@@ -24,50 +24,18 @@
 #define __PROCESSMEMORY_H_
 #pragma once
 
-#include <unordered_map>
-#include <set>
-#include "Bitmap.h"
+#include <stdint.h>
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Class ProcessMemory
+// Interface ProcessMemory
 //
-// words
-//
-// Memory within the host process is managed by mapped section objects so that they
-// can be shared among multiple processes as necessary.  Limitations of pagefile
-// backed sections are similar to Win32 file mappings -- you can create them as 
-// reservations and subsequently commit individual pages, but you cannot decommit
-// them again, you can only release the entire section.
-//
-// Due to these limitations, when a section is created it is implicitly committed into
-// the process' address space, but given PAGE_NOACCESS protection flags to prevent access
-// until they are soft-allocated.  Soft allocation involves changing those protection
-// flags to whatever the caller wants and marking which pages are now available in a
-// bitmap created for each section.  Since pages cannot be decommitted, a soft release
-// operation is also used, that merely resets the protection back to PAGE_NOACCESS (note
-// that the contents are not cleared).  Only when an entire section has been soft-
-// released will it be removed from the collection and formally deallocated.
-//
-// This memory management method is more involved than a previous iteration of the Host
-// class that left many details to the operating system, but does a lot more to ensure 
-// that only memory allocated by this class is operated against by this class.  This is
-// a bit draconian and can be backed off in the future if it's a big performance problem,
-// but I would rather do it this way for now and keep track of everything.
+// Provides an interface that defines operations required to allocate, release, 
+// and manipulate a process' virtual memory address space
 
-class ProcessMemory
+struct __declspec(novtable) ProcessMemory
 {
-public:
-
-	// Instance Constructor
-	//
-	ProcessMemory(HANDLE process);
-
-	// Destructor
-	//
-	~ProcessMemory();
-
 	// ProcessMemory::Protection
 	//
 	// Generalized protection flags used with memory operations
@@ -105,146 +73,59 @@ public:
 	};
 
 	//-------------------------------------------------------------------------
-	// VirtualMemory Implementation
+	// Member Functions
 
-	// Allocate
+	// AllocateMemory
 	//
-	// Allocates a region of virtual memory
-	uintptr_t Allocate(size_t length, ProcessMemory::Protection protection);
-	uintptr_t Allocate(uintptr_t address, size_t length, ProcessMemory::Protection protection);
+	// Allocates a virtual memory region
+	virtual uintptr_t AllocateMemory(size_t length, ProcessMemory::Protection protection) = 0;
+	virtual uintptr_t AllocateMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection) = 0;
 
-	// Lock
+	// LockMemory
 	//
 	// Attempts to lock a region into physical memory
-	void Lock(uintptr_t address, size_t length) const;
+	virtual void LockMemory(uintptr_t address, size_t length) const = 0;
 
-	// Map
+	// MapMemory
 	//
 	// Maps a virtual memory region into the calling process
-	void* Map(uintptr_t address, size_t length, ProcessMemory::Protection protection);
+	virtual void* MapMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection) = 0;
 
-	// Protect
+	// ProtectMemory
 	//
 	// Sets the memory protection flags for a virtual memory region
-	void Protect(uintptr_t address, size_t length, ProcessMemory::Protection protection) const;
+	virtual void ProtectMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection) const = 0;
 
-	// Read
+	// ReadMemory
 	//
 	// Reads data from a virtual memory region into the calling process
-	size_t Read(uintptr_t address, void* buffer, size_t length) const;
+	virtual size_t ReadMemory(uintptr_t address, void* buffer, size_t length) const = 0;
 
-	// Release
+	// ReleaseMemory
 	//
 	// Releases a virtual memory region
-	void Release(uintptr_t address, size_t length);
+	virtual void ReleaseMemory(uintptr_t address, size_t length) = 0;
 
-	// Reserve
+	// ReserveMemory
 	//
 	// Reserves a virtual memory region for later allocation
-	uintptr_t Reserve(size_t length);
-	uintptr_t Reserve(uintptr_t address, size_t length);
+	virtual uintptr_t ReserveMemory(size_t length) = 0;
+	virtual uintptr_t ReserveMemory(uintptr_t address, size_t length) = 0;
 
-	// Unlock
+	// UnlockMemory
 	//
 	// Attempts to unlock a region from physical memory
-	void Unlock(uintptr_t address, size_t length) const;
+	virtual void UnlockMemory(uintptr_t address, size_t length) const = 0;
 
-	// Unmap
+	// UnmapMemory
 	//
 	// Unmaps a previously mapped memory region from the calling process
-	void Unmap(void const* mapping);
+	virtual void UnmapMemory(void const* mapping) = 0;
 
-	// Write
+	// WriteMemory
 	//
 	// Writes data into a virtual memory region from the calling process
-	size_t Write(uintptr_t address, void const* buffer, size_t length) const;
-
-private:
-
-	ProcessMemory(ProcessMemory const&)=delete;
-	ProcessMemory& operator=(ProcessMemory const&)=delete;
-
-	// localmappings_t
-	//
-	// Collection to track local process mappings
-	using localmappings_t = std::unordered_map<void const*, std::vector<uintptr_t>>;
-
-	// section_t
-	//
-	// Structure used to track a section allocation and mapping
-	struct section_t
-	{
-		// Instance Constructor
-		//
-		section_t(HANDLE section, uintptr_t baseaddress, size_t length);
-
-		// Less-than operator
-		//
-		bool operator <(section_t const& rhs) const;
-
-		// Fields
-		//
-		HANDLE const		m_section;
-		uintptr_t const		m_baseaddress;
-		size_t const		m_length;
-		mutable Bitmap		m_allocationmap;
-	};
-
-	// sectioniterator_t
-	//
-	// Callback/lambda function prototype used when iterating over sections
-	using sectioniterator_t = std::function<void(section_t const& section, uintptr_t address, size_t length)>;
-
-	// sections_t
-	//
-	// Collection of section_t instances
-	typedef std::set<section_t> sections_t;
-
-	//-------------------------------------------------------------------------
-	// Private Member Functions
-	
-	// CreateSection (static)
-	//
-	// Creates a new memory section object and maps it to the specified address
-	static section_t CreateSection(HANDLE process, uintptr_t address, size_t length);
-
-	// DuplicateHandle (static)
-	//
-	// Duplicates a Win32 HANDLE object with the same attributes and access
-	static HANDLE DuplicateHandle(HANDLE original);
-
-	// EnsureSectionAllocation (static)
-	//
-	// Verifies that the specified address range is soft-allocated within a section
-	static void EnsureSectionAllocation(section_t const& section, uintptr_t address, size_t length);
-
-	// IterateRange
-	//
-	// Iterates across an address range and invokes the specified operation for each section
-	void IterateRange(sync::reader_writer_lock::scoped_lock& lock, uintptr_t start, size_t length, sectioniterator_t operation) const;
-
-	// ReleaseLocalMappings (static)
-	//
-	// Releases a vector of local address mappings
-	static void ReleaseLocalMappings(HANDLE process, std::vector<uintptr_t> const& mappings);
-
-	// ReleaseSection (static)
-	//
-	// Releases a memory section object created by CreateSection
-	static void ReleaseSection(HANDLE process, section_t const& section);
-
-	// ReserveRange
-	//
-	// Ensures that a range of address space is reserved
-	void ReserveRange(sync::reader_writer_lock::scoped_lock_write& writer, uintptr_t start, size_t length);
-	
-	//-------------------------------------------------------------------------
-	// Member Variables
-
-	HANDLE								m_process;			// Process handle
-	sections_t							m_sections;			// Allocated sections
-	localmappings_t						m_localmappings;	// Local section mappings
-	mutable sync::reader_writer_lock	m_sectionslock;		// Synchronization object
+	virtual size_t WriteMemory(uintptr_t address, void const* buffer, size_t length) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -252,4 +133,3 @@ private:
 #pragma warning(pop)
 
 #endif	// __PROCESSMEMORY_H_
-

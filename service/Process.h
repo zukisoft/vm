@@ -34,8 +34,8 @@
 
 // Forward Declarations
 //
-class Host;
 class Namespace;
+class NativeProcess;
 class Pid;
 class ProcessGroup;
 class Session;
@@ -96,11 +96,11 @@ public:
 	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
 	enum class Architecture getArchitecture(void) const;
 
-	// LocalDescriptorTable
+	// LocalDescriptorTableAddress
 	//
 	// Gets the address of the local descriptor table for this process
-	__declspec(property(get=getLocalDescriptorTable)) void const* LocalDescriptorTable;
-	void const* getLocalDescriptorTable(void) const;
+	__declspec(property(get=getLocalDescriptorTableAddress)) uintptr_t LocalDescriptorTableAddress;
+	uintptr_t getLocalDescriptorTableAddress(void) const;
 
 	// Namespace
 	//
@@ -148,16 +148,16 @@ private:
 	// FileSystem::Path shared pointer
 	using fspath_t = std::shared_ptr<FileSystem::Path>;
 
-	// host_t
-	//
-	// Host unique pointer
-	using host_t = std::unique_ptr<Host>;
-	
 	// namespace_t
 	//
 	// Namespace shared pointer
 	using namespace_t = std::shared_ptr<class Namespace>;
 
+	// nativeproc_t
+	//
+	// NativeProcess unique pointer
+	using nativeproc_t = std::unique_ptr<NativeProcess>;
+	
 	// pgroup_t
 	//
 	// ProcessGroup shared pointer
@@ -180,13 +180,13 @@ private:
 
 	// Instance Constructor
 	//
-	Process(host_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, void const* ldt, Bitmap&& ldtslots, fspath_t root, fspath_t working);
+	Process(nativeproc_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, uintptr_t ldtaddr, Bitmap&& ldtslots, fspath_t root, fspath_t working);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	host_t const						m_host;			// Host instance
+	nativeproc_t const					m_host;			// Native host instance
 	pid_t const							m_pid;			// Process identifier
 	pgroup_t							m_pgroup;		// Parent ProcessGroup
 	session_t							m_session;		// Parent Session
@@ -194,7 +194,7 @@ private:
 
 	// Local Descriptor Table
 	//
-	void const*	const					m_ldt;			// Address of local descriptor table
+	uintptr_t const						m_ldtaddr;		// Address of local descriptor table
 	Bitmap								m_ldtslots;		// LDT allocation map
 	mutable sync::reader_writer_lock	m_ldtlock;		// Synchronization object
 

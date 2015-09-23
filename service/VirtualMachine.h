@@ -31,8 +31,8 @@
 
 // Forward Declarations
 //
-class Host;
 class Namespace;
+class NativeProcess;
 class Pid;
 class Process;
 class RpcObject;
@@ -76,7 +76,7 @@ public:
 	// CreateHost
 	//
 	// Creates a new Host instance for the specified architecture
-	std::unique_ptr<Host> CreateHost(enum class Architecture architecture);
+	std::unique_ptr<NativeProcess> CreateHost(enum class Architecture architecture);
 
 	// Find (static)
 	//

@@ -270,9 +270,6 @@
     <ClInclude Include="..\common\linux\sched.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\MemorySection.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\SystemInformation.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -308,9 +305,6 @@
     </ClInclude>
     <ClInclude Include="..\common\linux\ptrace.h">
       <Filter>Header Files\Common\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeProcess.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\linux\utask.h">
       <Filter>Header Files\Common\linux</Filter>
@@ -402,9 +396,6 @@
     <ClInclude Include="Thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Host.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ProcessGroup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -421,6 +412,9 @@
       <Filter>Virtual Machine\Executables</Filter>
     </ClInclude>
     <ClInclude Include="ProcessMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeProcess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -716,9 +710,6 @@
     <ClCompile Include="sys_brk.cpp">
       <Filter>Source Files\System Calls</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\MemorySection.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
     <ClCompile Include="..\common\SystemInformation.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
@@ -781,9 +772,6 @@
     </ClCompile>
     <ClCompile Include="sys_execve.cpp">
       <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="NativeProcess.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sys_geteuid.cpp">
       <Filter>Source Files\System Calls</Filter>
@@ -863,9 +851,6 @@
     <ClCompile Include="Thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Host.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProcessGroup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -879,6 +864,9 @@
       <Filter>Virtual Machine\Executables</Filter>
     </ClCompile>
     <ClCompile Include="ProcessMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -24,7 +24,6 @@
 #include "VirtualMachine.h"
 
 #include "Exception.h"
-#include "Host.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
@@ -108,13 +107,13 @@ VirtualMachine::VirtualMachine() : m_instanceid(GenerateInstanceId())
 //---------------------------------------------------------------------------
 // VirtualMachine::CreateHost
 //
-// Creates a Host instance for the specified architecture
+// Creates a NativeProcess host instance for the specified architecture
 //
 // Arguments:
 //
-//	architecture	- Architecture of the native process
+//	architecture	- Architecture of the native process to create
 
-std::unique_ptr<Host> VirtualMachine::CreateHost(enum class Architecture architecture)
+std::unique_ptr<NativeProcess> VirtualMachine::CreateHost(enum class Architecture architecture)
 {
 	std::unique_ptr<NativeProcess>		nativeproc;		// The constructed NativeProcess instance
 
@@ -139,8 +138,7 @@ std::unique_ptr<Host> VirtualMachine::CreateHost(enum class Architecture archite
 	// Terminate the native process on exception before throwing
 	catch(...) { nativeproc->Terminate(0); throw; }
 
-	// Construct and return a new Host instance from the native process
-	return Host::Create(std::move(nativeproc));
+	return nativeproc;					// Return the unique_ptr to the caller
 }
 
 //---------------------------------------------------------------------------

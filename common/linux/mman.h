@@ -106,28 +106,5 @@ const void* LINUX_MAP_FAILED		= reinterpret_cast<void*>(-1);
 #define LINUX_MAP_HUGE_1GB			(30 << LINUX_MAP_HUGE_SHIFT)
 
 //-----------------------------------------------------------------------------
-// extras
-//-----------------------------------------------------------------------------
-
-#if !defined(__midl) && defined(__cplusplus)
-namespace uapi {
-
-	// Converts Linux LINUX_PROT_XXX flags into Windows FILE_MAP_XXX flags
-	//
-	inline uint32_t LinuxProtToWindowsFileMapFlags(uint32_t prot)
-	{
-		uint32_t flags = 0;
-	
-		if(prot & LINUX_PROT_READ) flags |= FILE_MAP_READ;
-		if(prot & LINUX_PROT_WRITE) flags |= FILE_MAP_WRITE;
-		if(prot & LINUX_PROT_EXEC) flags |= FILE_MAP_EXECUTE;
-
-		return flags;
-	}
-
-}	// namespace uapi
-#endif	// !defined(__midl) && defined(__cplusplus)
-
-//-----------------------------------------------------------------------------
 
 #endif		// __LINUX_MMAN_H_

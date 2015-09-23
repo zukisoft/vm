@@ -30,13 +30,13 @@
 #include "Architecture.h"
 #include "ExecutableFormat.h"
 #include "FileSystem.h"
+#include "ProcessMemory.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 // Forward Declarations
 //
-class Host;	/* todo: replace with VirtualMemory when Host implements that */
 class Namespace;
 
 //-----------------------------------------------------------------------------
@@ -98,8 +98,8 @@ public:
 
 	// Load
 	//
-	// Loads the executable into a host process
-	virtual std::unique_ptr<Executable::Layout> Load(Host* host, size_t stacklength) = 0;
+	// Loads the executable into a process
+	virtual std::unique_ptr<Executable::Layout> Load(ProcessMemory* mem, size_t stacklength) = 0;
 
 	//-------------------------------------------------------------------------
 	// Properties

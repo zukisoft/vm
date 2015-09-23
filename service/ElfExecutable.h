@@ -65,8 +65,8 @@ public:
 
 	// Load
 	//
-	// Loads the executable into a host process
-	virtual std::unique_ptr<Executable::Layout> Load(Host* host, size_t stacklength);
+	// Loads the executable into a process
+	virtual std::unique_ptr<Executable::Layout> Load(ProcessMemory* mem, size_t stacklength);
 
 	// getArchitecture
 	//
@@ -192,13 +192,13 @@ private:
 	//
 	// Architecture-specific implementation of Load
 	template<enum class Architecture architecture>
-	std::unique_ptr<Executable::Layout> Load(Host* host, size_t stacklength);
+	std::unique_ptr<Executable::Layout> Load(ProcessMemory* mem, size_t stacklength);
 
 	// LoadImage<Architecture> (static)
 	//
-	// Loads an image into a host process instance
+	// Loads an image into a ProcessMemory implementation
 	template<enum class Architecture architecture>
-	static imagelayout_t LoadImage(void const* headers, fshandle_t handle, Host* host);
+	static imagelayout_t LoadImage(void const* headers, fshandle_t handle, ProcessMemory* mem);
 	
 	// ReadHeaders<Architecture> (static)
 	//

@@ -25,7 +25,6 @@
 
 #include <array>
 #include "Exception.h"
-#include "Host.h"
 #include "LinuxException.h"
 #include "SystemInformation.h"
 
@@ -65,23 +64,21 @@ template <> struct ElfExecutable::format_traits_t<Architecture::x86_64>
 // Conversions
 //-----------------------------------------------------------------------------
 
-// uint32_t --> Host::MemoryProtection (local)
+// uint32_t --> ProcessMemory::Protection
 //
-// Convert ELF protection flags into a Host::MemoryProtection bitmask
-// todo: keep this, but change it to VirtualMemory::Protection when I replace Host* with VirtualMemory*
+// Converts ELF protection flags into a ProcessMemory::Protection bitmask
+template<> ProcessMemory::Protection convert<ProcessMemory::Protection>(uint32_t flags)
+{
+	_ASSERTE((flags & ~(LINUX_PF_R | LINUX_PF_W | LINUX_PF_X)) == 0);
 
-//template<> inline Host::MemoryProtection convert<Host::MemoryProtection>(uint32_t flags)
-//{
-//	int result = LINUX_PROT_NONE;		// Default to PROT_NONE (0x00)
-//
-//	// The ELF flags are the same as the Linux flags, but the bitmask values
-//	// are different.  Accumulate flags in the result based on source
-//	if(flags & LINUX_PF_R) result |= LINUX_PROT_READ;
-//	if(flags & LINUX_PF_W) result |= LINUX_PROT_WRITE;
-//	if(flags & LINUX_PF_X) result |= LINUX_PROT_EXEC;
-//
-//	return Host::MemoryProtection(result);
-//}
+	ProcessMemory::Protection result(ProcessMemory::Protection::None);
+
+	if(flags & LINUX_PF_R) result = (result | ProcessMemory::Protection::Read);
+	if(flags & LINUX_PF_W) result = (result | ProcessMemory::Protection::Write);
+	if(flags & LINUX_PF_X) result = (result | ProcessMemory::Protection::Execute);
+
+	return result;
+}
 
 //-----------------------------------------------------------------------------
 // ElfExecutable Constructor (private)
@@ -191,24 +188,24 @@ std::unique_ptr<ElfExecutable> ElfExecutable::FromHandle(fshandle_t handle, Path
 //-----------------------------------------------------------------------------
 // ElfExecutable::Load
 //
-// Loads the executable into a host process
+// Loads the executable into a process
 //
 // Arguments:
 //
-//	host			- Host process in which to load the executable
+//	mem				- ProcessMemory implementation for the target process
 //	stacklength		- Length of the stack to create in the process
 
-std::unique_ptr<Executable::Layout> ElfExecutable::Load(Host* host, size_t stacklength)
+std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size_t stacklength)
 {
-	if(host == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(mem == nullptr) throw LinuxException{ LINUX_EFAULT };
 	if(stacklength == 0) throw LinuxException{ LINUX_EINVAL };
 
 	// Architecture::x86
-	if(m_architecture == Architecture::x86) return Load<Architecture::x86>(host, stacklength);
+	if(m_architecture == Architecture::x86) return Load<Architecture::x86>(mem, stacklength);
 
 #ifdef _M_X64
 	// Architecture::x86_64
-	else if(m_architecture == Architecture::x86_64) return Load<Architecture::x86_64>(host, stacklength);
+	else if(m_architecture == Architecture::x86_64) return Load<Architecture::x86_64>(mem, stacklength);
 #endif
 
 	else throw LinuxException{ LINUX_ENOEXEC };
@@ -217,32 +214,33 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(Host* host, size_t stack
 //-----------------------------------------------------------------------------
 // ElfExecutable::Load<Architecture> (private)
 //
-// Loads the executable into a host process
+// Loads the executable into a process
 //
 // Arguments:
 //
-//	host			- Host process in which to load the executable
+//	mem				- ProcessMemory implementation for the target process
 //	stacklength		- Length of the stack to create in the process
 
 template<enum class Architecture architecture>
-std::unique_ptr<Executable::Layout> ElfExecutable::Load(Host* host, size_t stacklength)
+std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size_t stacklength)
 {
 	using elf = format_traits_t<architecture>;
 
-	// Load the primary executable image into the host process instance
-	auto layout = LoadImage<architecture>(m_headers.get(), m_handle, host);
+	// Load the primary executable image into the process
+	auto layout = LoadImage<architecture>(m_headers.get(), m_handle, mem);
 
 	if(m_interpreter) {
 
-		// An interpreter binary has been specified for this executable, attempt to load it into the host process
-		auto interpreter = LoadImage<architecture>(ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, host);
+		// An interpreter binary has been specified for this executable, attempt to load it into the process
+		auto interpreter = LoadImage<architecture>(ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, mem);
 
-		// The interpreter's base address and entry point override that of the main executable
+		// The interpreter's base address, break address and entry point override that of the main executable
 		layout.baseaddress = interpreter.baseaddress;
+		layout.breakaddress = interpreter.breakaddress;
 		layout.entrypoint = interpreter.entrypoint;
 	}
 
-	// Create the stack image for the executable in the host process instance
+	// Create the stack image for the executable in the process
 	// todo
 	(stacklength);
 	auto stacklayout = stacklayout_t();
@@ -253,16 +251,16 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(Host* host, size_t stack
 //-----------------------------------------------------------------------------
 // ElfExecutable::LoadImage<Architecture> (static, private)
 //
-// Loads an image into a host process instance
+// Loads an image into a process
 //
 // Arguments:
 //
 //	headers		- Pointer to the ELF headers
 //	handle		- File system object handle for the image
-//	host		- Host instance in which to load the image
+//	mem			- ProcessMemory implementation for the process
 
 template<enum class Architecture architecture>
-ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshandle_t handle, Host* host)
+ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshandle_t handle, ProcessMemory* mem)
 {
 	using elf = format_traits_t<architecture>;
 
@@ -284,20 +282,17 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshan
 		}
 	}
 
-	try {
-
-		// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere so reserve
-		// them at the highest available virtual address to allow for as much heap space as possible in the process
-		if(elfheader->e_type == LINUX_ET_EXEC) layout.baseaddress = uintptr_t(host->AllocateMemory(reinterpret_cast<void*>(minvaddr), maxvaddr - minvaddr, LINUX_PROT_NONE));
-		else layout.baseaddress = uintptr_t(host->AllocateMemory(maxvaddr - minvaddr, LINUX_PROT_NONE));
-		// ^^^^ TODO: Need to be able to specify a high address here, otherwise Windows will put the DYN image
-		// right after the executable and there will be no heap space!!
-	}
-
+	// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
+	try { layout.baseaddress = mem->ReserveMemory((elfheader->e_type == LINUX_ET_EXEC) ? minvaddr : uintptr_t(0), maxvaddr - minvaddr); }
 	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
 
+	//
+	// MAP THE SECTION INTO THE CALLING PROCESS HERE
+	// WILL NEED TRY/CATCH TO ENSURE IT GETS UNMAPPED
+	//
+
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
-	intptr_t vaddrdelta = (elfheader->e_type == LINUX_ET_EXEC) ? 0 : uintptr_t(layout.baseaddress) - minvaddr;
+	intptr_t vaddrdelta = (elfheader->e_type == LINUX_ET_EXEC) ? 0 : layout.baseaddress - minvaddr;
 
 	// Iterate over and load/process all of the program header sections
 	for(size_t index = 0; index < elfheader->e_phnum; index++) {
@@ -310,30 +305,33 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshan
 			layout.numprogheaders = progheaders[index].p_memsz / elfheader->e_phentsize;
 		}
 
-		// PT_LOAD - load the segment into the host process and set the protection flags
+		// PT_LOAD - load the segment into the process and set the protection flags
 		//
 		else if((progheaders[index].p_type == LINUX_PT_LOAD) && (progheaders[index].p_memsz)) {
 
-			// Get the base address of the loadable segment and set it as PAGE_READWRITE to load it
+			// Get the base address of the loadable segment and allocate it with the proper protection
 			uintptr_t segbase = progheaders[index].p_vaddr + vaddrdelta;
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheaders[index].p_memsz, LINUX_PROT_READ | LINUX_PROT_WRITE); }
+			try { mem->AllocateMemory(segbase, progheaders[index].p_memsz, convert<ProcessMemory::Protection>(progheaders[index].p_flags)); }
 			catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFCOMMITSEGMENT, ex } }; }
 
 			// Not all segments contain data that needs to be copied from the source image
 			if(progheaders[index].p_filesz) {
 
-				size_t written = 0;						// Bytes written into the target process
+				// TODO: UNBREAK - NEEDS MEMORY MAPPED INTO THIS CALLING PROCESS NOW
+
+				//size_t written = 0;						// Bytes written into the target process
 
 				// Read the data from the image file into the target process address space at segbase
-				try { written = host->WriteMemoryFrom(handle, progheaders[index].p_offset, reinterpret_cast<void*>(segbase), progheaders[index].p_filesz); }
-				catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFWRITESEGMENT, ex } }; }
+				//try { written = mem->WriteMemoryFrom(handle, progheaders[index].p_offset, reinterpret_cast<void*>(segbase), progheaders[index].p_filesz); }
+				//catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFWRITESEGMENT, ex } }; }
 
-				if(written != progheaders[index].p_filesz) throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFIMAGETRUNCATED } };
+				//if(written != progheaders[index].p_filesz) throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFIMAGETRUNCATED } };
 			}
 
 			// Attempt to apply the proper virtual memory protection flags to the segment now that it's been written
-			try { host->ProtectMemory(reinterpret_cast<void*>(segbase), progheaders[index].p_memsz, progheaders[index].p_flags); }
-			catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFPROTECTSEGMENT, ex } }; }
+			// TODO: NO LONGER NECESSARY
+			//try { mem->ProtectMemory(segbase, progheaders[index].p_memsz, convert<ProcessMemory::Protection>(progheaders[index].p_flags)); }
+			//catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFPROTECTSEGMENT, ex } }; }
 		}
 	}
 

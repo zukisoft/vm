@@ -25,7 +25,6 @@
 
 #include <cctype>
 #include "ElfExecutable.h"
-#include "Host.h"
 #include "LinuxException.h"
 
 #pragma warning(push, 4)
