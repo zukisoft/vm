@@ -286,54 +286,47 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshan
 	try { layout.baseaddress = mem->ReserveMemory((elfheader->e_type == LINUX_ET_EXEC) ? minvaddr : uintptr_t(0), maxvaddr - minvaddr); }
 	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
 
-	//
-	// MAP THE SECTION INTO THE CALLING PROCESS HERE
-	// WILL NEED TRY/CATCH TO ENSURE IT GETS UNMAPPED
-	//
-
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
 	intptr_t vaddrdelta = (elfheader->e_type == LINUX_ET_EXEC) ? 0 : layout.baseaddress - minvaddr;
 
-	// Iterate over and load/process all of the program header sections
-	for(size_t index = 0; index < elfheader->e_phnum; index++) {
+	// Map the created section into the local process for direct write access
+	uintptr_t localaddress = uintptr_t(mem->MapMemory(layout.baseaddress, maxvaddr - minvaddr, ProcessMemory::Protection::Write));
 
-		// PT_PHDR - if it falls within the boundaries of the loadable segments, provide the layout values
-		//
-		if((progheaders[index].p_type == LINUX_PT_PHDR) && (progheaders[index].p_vaddr >= minvaddr) && ((progheaders[index].p_vaddr + progheaders[index].p_memsz) <= maxvaddr)) {
+	try {
 
-			layout.progheaders = uintptr_t(progheaders[index].p_vaddr) + vaddrdelta;
-			layout.numprogheaders = progheaders[index].p_memsz / elfheader->e_phentsize;
-		}
+		// Iterate over and load/process all of the program header sections
+		for(size_t index = 0; index < elfheader->e_phnum; index++) {
 
-		// PT_LOAD - load the segment into the process and set the protection flags
-		//
-		else if((progheaders[index].p_type == LINUX_PT_LOAD) && (progheaders[index].p_memsz)) {
+			// PT_PHDR - if it falls within the boundaries of the loadable segments, provide the layout values
+			//
+			if((progheaders[index].p_type == LINUX_PT_PHDR) && (progheaders[index].p_vaddr >= minvaddr) && ((progheaders[index].p_vaddr + progheaders[index].p_memsz) <= maxvaddr)) {
 
-			// Get the base address of the loadable segment and allocate it with the proper protection
-			uintptr_t segbase = progheaders[index].p_vaddr + vaddrdelta;
-			try { mem->AllocateMemory(segbase, progheaders[index].p_memsz, convert<ProcessMemory::Protection>(progheaders[index].p_flags)); }
-			catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFCOMMITSEGMENT, ex } }; }
-
-			// Not all segments contain data that needs to be copied from the source image
-			if(progheaders[index].p_filesz) {
-
-				// TODO: UNBREAK - NEEDS MEMORY MAPPED INTO THIS CALLING PROCESS NOW
-
-				//size_t written = 0;						// Bytes written into the target process
-
-				// Read the data from the image file into the target process address space at segbase
-				//try { written = mem->WriteMemoryFrom(handle, progheaders[index].p_offset, reinterpret_cast<void*>(segbase), progheaders[index].p_filesz); }
-				//catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFWRITESEGMENT, ex } }; }
-
-				//if(written != progheaders[index].p_filesz) throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFIMAGETRUNCATED } };
+				layout.progheaders = uintptr_t(progheaders[index].p_vaddr) + vaddrdelta;
+				layout.numprogheaders = progheaders[index].p_memsz / elfheader->e_phentsize;
 			}
 
-			// Attempt to apply the proper virtual memory protection flags to the segment now that it's been written
-			// TODO: NO LONGER NECESSARY
-			//try { mem->ProtectMemory(segbase, progheaders[index].p_memsz, convert<ProcessMemory::Protection>(progheaders[index].p_flags)); }
-			//catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFPROTECTSEGMENT, ex } }; }
+			// PT_LOAD - load the segment into the process and set the protection flags
+			//
+			else if((progheaders[index].p_type == LINUX_PT_LOAD) && (progheaders[index].p_memsz)) {
+
+				if(progheaders[index].p_filesz) {
+
+					// Read the data from the image file into the specified address directly via the local mapping
+					size_t read = handle->ReadAt(progheaders[index].p_offset, reinterpret_cast<void*>(localaddress + progheaders[index].p_vaddr), progheaders[index].p_filesz); 
+					if(read != progheaders[index].p_filesz) throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFIMAGETRUNCATED } }; 
+				}
+
+				// Mark the pages in the target process as allocated and apply the specified page protection flags
+				try { mem->AllocateMemory(progheaders[index].p_vaddr + vaddrdelta, progheaders[index].p_memsz, convert<ProcessMemory::Protection>(progheaders[index].p_flags)); }
+				catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFCOMMITSEGMENT, ex } }; }
+			}
 		}
+
+		// Finished with direct access to the target process address space
+		mem->UnmapMemory(reinterpret_cast<void*>(localaddress));
 	}
+	
+	catch(...) { mem->UnmapMemory(reinterpret_cast<void*>(localaddress)); throw; }
 
 	// The initial program break address is the page just beyond the last allocated image segment
 	layout.breakaddress = align::up(maxvaddr + vaddrdelta, SystemInformation::PageSize);
