@@ -234,9 +234,8 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size
 		// An interpreter binary has been specified for this executable, attempt to load it into the process
 		auto interpreter = LoadImage<architecture>(ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, mem);
 
-		// The interpreter's base address, break address and entry point override that of the main executable
+		// The interpreter's base address and entry point override that of the main executable
 		layout.baseaddress = interpreter.baseaddress;
-		layout.breakaddress = interpreter.breakaddress;
 		layout.entrypoint = interpreter.entrypoint;
 	}
 
