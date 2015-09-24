@@ -43,6 +43,7 @@ template <> struct ElfExecutable::format_traits_t<Architecture::x86>
 
 	static int const elfclass		= LINUX_ELFCLASS32;
 	static int const machinetype	= LINUX_EM_386;
+	static addr_t const null		= 0;
 };
 
 // ElfExecutable::format_traits_t<x86_64>
@@ -58,6 +59,7 @@ template <> struct ElfExecutable::format_traits_t<Architecture::x86_64>
 
 	static int const elfclass		= LINUX_ELFCLASS64;
 	static int const machinetype	= LINUX_EM_X86_64;
+	static addr_t const null		= 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -78,6 +80,60 @@ template<> ProcessMemory::Protection convert<ProcessMemory::Protection>(uint32_t
 	if(flags & LINUX_PF_X) result = (result | ProcessMemory::Protection::Execute);
 
 	return result;
+}
+
+//-----------------------------------------------------------------------------
+// PushStack<_type>
+//
+// Pushes a value onto a stack and decrements the stack pointer
+//
+// Arguments:
+//
+//	stackpointer	- Current stack pointer
+//	value			- Value to be pushed
+
+template<typename _type> 
+uintptr_t PushStack(uintptr_t stackpointer, _type const& value)
+{
+	stackpointer -= sizeof(_type);
+	*reinterpret_cast<_type*>(stackpointer) = value;
+	return stackpointer;
+}
+
+//-----------------------------------------------------------------------------
+// PushStack<std::string>
+//
+// Pushes an std::string onto a stack and decrements the stack pointer
+//
+// Arguments:
+//
+//	stackpointer	- Current stack pointer
+//	value			- Value to be pushed
+
+template<>
+uintptr_t PushStack<std::string>(uintptr_t stackpointer, std::string const& value)
+{
+	stackpointer -= value.length() + 1;
+	memcpy(reinterpret_cast<void*>(stackpointer), value.data(), value.length() + 1);
+	return stackpointer;
+}
+
+//-----------------------------------------------------------------------------
+// PushStack
+//
+// Pushes a value onto a stack and decrements the stack pointer
+//
+// Arguments:
+//
+//	stackpointer	- Current stack pointer
+//	data			- Data to be pushed onto the stack
+//	length			- Length of the data to be pushed
+
+uintptr_t PushStack(uintptr_t stackpointer, void const* data, size_t length)
+{
+	stackpointer -= length;
+	memcpy(reinterpret_cast<void*>(stackpointer), data, length);
+	return stackpointer;
 }
 
 //-----------------------------------------------------------------------------
@@ -142,28 +198,6 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 		// Map the stack memory into this process to access it directly
 		uintptr_t mappedbase = uintptr_t(mem->MapMemory(layout.baseaddress, layout.length, ProcessMemory::Protection::Write));
 
-		// temp
-		auto push_string = [](uintptr_t sp, std::string const& str) -> uintptr_t {
-
-			size_t length = str.length() + 1;
-			memcpy(reinterpret_cast<void*>(sp - length), str.data(), length);
-			return sp - length;
-		};
-
-		// temp
-		auto push_null = [](uintptr_t sp) -> uintptr_t {
-
-			memset(reinterpret_cast<void*>(sp - sizeof(elf::addr_t)), 0, sizeof(elf::addr_t));
-			return sp - sizeof(elf::addr_t);
-		};
-
-		// temp
-		auto push = [](uintptr_t sp, void const* data, size_t length) -> uintptr_t {
-			
-			memcpy(reinterpret_cast<void*>(sp - length), data, length);
-			return sp - length;
-		};
-
 		try {
 
 			std::vector<uintptr_t>		argv;			// Command-line argument pointers
@@ -176,24 +210,25 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 			intptr_t delta = layout.baseaddress - mappedbase;
 			uintptr_t sp = mappedbase + layout.length;
 
-			sp = push_null(sp);
+			sp = PushStack(sp, elf::null);
 
-			sp = push_string(sp, std::string("HI THERE"));
-
+			// Is there a range for that goes backwards?
 			auto enviterator = m_environment.rbegin();
 			while(enviterator != m_environment.rend()) {
 
 				envp.emplace_back(sp + delta);
-				sp = push_string(sp, *enviterator);
-				
+				sp = PushStack(sp, *enviterator);
 				++enviterator;
 			}
+
+			// TESTING -- does not work as-is
+			//for(auto& iterator : std::make_reverse_iterator(m_environment.end())) sp = PushStack(sp, *iterator);
 
 			auto argiterator = m_arguments.rbegin();
 			while(argiterator != m_arguments.rend()) {
 
 				argv.push_back(sp + delta);
-				sp = push_string(sp, *argiterator);
+				sp = PushStack(sp, *argiterator);
 
 				++argiterator;
 			}
@@ -201,16 +236,18 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 			sp = align::down(sp, 16);
 
 			// envp NULL
-			sp = push_null(sp);
-			for(auto& iterator : envp) sp = push(sp, &iterator, sizeof(elf::addr_t));
+			sp = PushStack(sp, elf::null);
+			for(auto& iterator : envp) sp = PushStack(sp, static_cast<elf::addr_t>(iterator));
+			//for(auto& iterator : envp) sp = push(sp, &iterator, sizeof(elf::addr_t));
 
 			// argv NULL
-			sp = push_null(sp);
-			for(auto& iterator : argv) sp = push(sp, &iterator, sizeof(elf::addr_t));
+			sp = PushStack(sp, elf::null);
+			for(auto& iterator : argv) sp = PushStack(sp, static_cast<elf::addr_t>(iterator));
+			//for(auto& iterator : argv) sp = push(sp, &iterator, sizeof(elf::addr_t));
 
 			// argc
 			size_t argc = argv.size();
-			sp = push(sp, &argc, sizeof(size_t));
+			sp = PushStack(sp, static_cast<elf::addr_t>(argc));
 
 			layout.stackpointer = sp + delta;
 
