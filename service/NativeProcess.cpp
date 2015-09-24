@@ -43,7 +43,11 @@ using SectionFlags = ULONG;
 // Alias for ULONG, used with convert<> template
 using SectionProtection = ULONG;
 
-// convert<SectionFlags>(ProcessMemory::AllocationFlags)
+//-----------------------------------------------------------------------------
+// Conversions
+//-----------------------------------------------------------------------------
+
+// ProcessMemory::AllocationFlags --> SectionFlags
 //
 // Converts a ProcessMemory::Protection value into section allocation type flags
 template<> SectionFlags convert<SectionFlags>(ProcessMemory::AllocationFlags const& rhs)
@@ -56,7 +60,7 @@ template<> SectionFlags convert<SectionFlags>(ProcessMemory::AllocationFlags con
 	return result;
 }
 
-// convert<SectionProtection>(ProcessMemory::Protection)
+// ProcessMemory::Protection --> SectionProtection
 //
 // Converts a ProcessMemory::Protection value into section protection flags
 template<> SectionProtection convert<SectionProtection>(ProcessMemory::Protection const& rhs)

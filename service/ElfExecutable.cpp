@@ -110,6 +110,125 @@ enum class Architecture ElfExecutable::getArchitecture(void) const
 }
 
 //-----------------------------------------------------------------------------
+// ElfExecutable::CreateStack<Architecture> (private)
+//
+// Creates the initial stack for the executable instance
+//
+// Arguments:
+//
+//	mem				- ProcessMemory implementation for the target process
+//	stacklength		- Length of the stack to create in the process
+
+template<enum class Architecture architecture>
+ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size_t length) const
+{
+	using elf = format_traits_t<architecture>;
+
+	ElfExecutable::stacklayout_t			layout;			// Layout of the generated stack
+
+	try {
+
+		// Attempt to create the stack image for the process at the highest available address
+		uintptr_t base = mem->AllocateMemory(length, ProcessMemory::Protection::Read | ProcessMemory::Protection::Write, ProcessMemory::AllocationFlags::TopDown);
+
+		// Place guard pages at the beginning and end of the allocated region
+		mem->ProtectMemory(base, SystemInformation::PageSize, ProcessMemory::Protection::Read |ProcessMemory::Protection::Guard);
+		mem->ProtectMemory(base + length - SystemInformation::PageSize, SystemInformation::PageSize, ProcessMemory::Protection::Read |ProcessMemory::Protection::Guard);
+
+		// Adjust the base address and length accordingly to accomodate the guard pages
+		layout.baseaddress = base + SystemInformation::PageSize;
+		layout.length = length - (SystemInformation::PageSize * 2);
+
+		// Map the stack memory into this process to access it directly
+		uintptr_t mappedbase = uintptr_t(mem->MapMemory(layout.baseaddress, layout.length, ProcessMemory::Protection::Write));
+
+		// temp
+		auto push_string = [](uintptr_t sp, std::string const& str) -> uintptr_t {
+
+			size_t length = str.length() + 1;
+			memcpy(reinterpret_cast<void*>(sp - length), str.data(), length);
+			return sp - length;
+		};
+
+		// temp
+		auto push_null = [](uintptr_t sp) -> uintptr_t {
+
+			memset(reinterpret_cast<void*>(sp - sizeof(elf::addr_t)), 0, sizeof(elf::addr_t));
+			return sp - sizeof(elf::addr_t);
+		};
+
+		// temp
+		auto push = [](uintptr_t sp, void const* data, size_t length) -> uintptr_t {
+			
+			memcpy(reinterpret_cast<void*>(sp - length), data, length);
+			return sp - length;
+		};
+
+		try {
+
+			std::vector<uintptr_t>		argv;			// Command-line argument pointers
+			std::vector<uintptr_t>		envp;			// Environment variable pointers
+			std::vector<elf::auxv_t>	auxv;			// Auxiliary vectors
+
+			/////////////////////////////////////////////////////////
+			// PLAYING AROUND
+
+			intptr_t delta = layout.baseaddress - mappedbase;
+			uintptr_t sp = mappedbase + layout.length;
+
+			sp = push_null(sp);
+
+			sp = push_string(sp, std::string("HI THERE"));
+
+			auto enviterator = m_environment.rbegin();
+			while(enviterator != m_environment.rend()) {
+
+				envp.emplace_back(sp + delta);
+				sp = push_string(sp, *enviterator);
+				
+				++enviterator;
+			}
+
+			auto argiterator = m_arguments.rbegin();
+			while(argiterator != m_arguments.rend()) {
+
+				argv.push_back(sp + delta);
+				sp = push_string(sp, *argiterator);
+
+				++argiterator;
+			}
+
+			sp = align::down(sp, 16);
+
+			// envp NULL
+			sp = push_null(sp);
+			for(auto& iterator : envp) sp = push(sp, &iterator, sizeof(elf::addr_t));
+
+			// argv NULL
+			sp = push_null(sp);
+			for(auto& iterator : argv) sp = push(sp, &iterator, sizeof(elf::addr_t));
+
+			// argc
+			size_t argc = argv.size();
+			sp = push(sp, &argc, sizeof(size_t));
+
+			layout.stackpointer = sp + delta;
+
+			///////////////////////////////////////
+
+			// Finished with direct access to the target process address space
+			mem->UnmapMemory(reinterpret_cast<void*>(mappedbase));
+		}
+
+		catch(...) { mem->UnmapMemory(reinterpret_cast<void*>(mappedbase)); throw; }
+	}
+
+	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
+
+	return layout;
+}
+	
+//-----------------------------------------------------------------------------
 // ElfExecutable::getFormat
 //
 // Gets the binary format of the executable
@@ -239,12 +358,8 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size
 		layout.entrypoint = interpreter.entrypoint;
 	}
 
-	// Create the stack image for the executable in the process
-	// todo
-	(stacklength);
-	auto stacklayout = stacklayout_t();
-
-	return std::make_unique<ElfExecutable::Layout>(architecture, std::move(layout), std::move(stacklayout));
+	// Generate the stack image in the created region and generate a Layout to return to the caller
+	return std::make_unique<ElfExecutable::Layout>(architecture, std::move(layout), std::move(CreateStack<architecture>(mem, stacklength)));
 }
 
 //-----------------------------------------------------------------------------
@@ -289,8 +404,8 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(imagetype type, void const
 
 		// ET_DYN images can go anywhere in memory, but when loading an interpreter library place it at the highest possible
 		// address to keep it away from the primary image's program break address
-		else if(elfheader->e_type == LINUX_ET_DYN) layout.baseaddress =
-			mem->ReserveMemory(maxvaddr - minvaddr, (type == imagetype::interpreter) ? ProcessMemory::AllocationFlags::TopDown : ProcessMemory::AllocationFlags::None);
+		else if(elfheader->e_type == LINUX_ET_DYN) layout.baseaddress = mem->ReserveMemory(maxvaddr - minvaddr, 
+			(type == imagetype::interpreter) ? ProcessMemory::AllocationFlags::TopDown : ProcessMemory::AllocationFlags::None);
 
 		// Unsupported image type
 		else throw Win32Exception{ ERROR_BAD_FORMAT };

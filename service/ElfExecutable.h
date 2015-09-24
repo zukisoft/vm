@@ -194,6 +194,12 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
+	// CreateStack<Architecture>
+	//
+	// Creates the stack image for the executable
+	template<enum class Architecture architecture>
+	stacklayout_t CreateStack(ProcessMemory* mem, size_t length) const;
+
 	// FromHandle<Architecture> (static)
 	//
 	// Creates an ElfExecutable instance from an open file handle
