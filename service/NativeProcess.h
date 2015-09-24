@@ -128,8 +128,9 @@ public:
 	// AllocateMemory
 	//
 	// Allocates a region of virtual memory
-	virtual uintptr_t AllocateMemory(size_t length, NativeProcess::Protection protection);
-	virtual uintptr_t AllocateMemory(uintptr_t address, size_t length, NativeProcess::Protection protection);
+	virtual uintptr_t AllocateMemory(size_t length, ProcessMemory::Protection protection);
+	virtual uintptr_t AllocateMemory(size_t length, ProcessMemory::Protection protection, ProcessMemory::AllocationFlags flags);
+	virtual uintptr_t AllocateMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection);
 
 	// LockMemory
 	//
@@ -139,12 +140,12 @@ public:
 	// MapMemory
 	//
 	// Maps a virtual memory region into the calling process
-	virtual void* MapMemory(uintptr_t address, size_t length, NativeProcess::Protection protection);
+	virtual void* MapMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection);
 
 	// ProtectMemory
 	//
 	// Sets the memory protection flags for a virtual memory region
-	virtual void ProtectMemory(uintptr_t address, size_t length, NativeProcess::Protection protection) const;
+	virtual void ProtectMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection) const;
 
 	// ReadMemory
 	//
@@ -160,6 +161,7 @@ public:
 	//
 	// Reserves a virtual memory region for later allocation
 	virtual uintptr_t ReserveMemory(size_t length);
+	virtual uintptr_t ReserveMemory(size_t length, ProcessMemory::AllocationFlags flags);
 	virtual uintptr_t ReserveMemory(uintptr_t address, size_t length);
 
 	// UnlockMemory
@@ -229,7 +231,7 @@ private:
 	// CreateSection (static)
 	//
 	// Creates a new memory section object and maps it to the specified address
-	static section_t CreateSection(HANDLE process, uintptr_t address, size_t length);
+	static section_t CreateSection(HANDLE process, uintptr_t address, size_t length, ProcessMemory::AllocationFlags flags);
 
 	// DuplicateHandle (static)
 	//

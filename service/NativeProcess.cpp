@@ -33,15 +33,32 @@
 
 #pragma warning(push, 4)
 
+// SectionFlags
+//
+// Alias for ULONG, used with convert<> template
+using SectionFlags = ULONG;
+
 // SectionProtection
 //
 // Alias for ULONG, used with convert<> template
 using SectionProtection = ULONG;
 
+// convert<SectionFlags>(ProcessMemory::AllocationFlags)
+//
+// Converts a ProcessMemory::Protection value into section allocation type flags
+template<> SectionFlags convert<SectionFlags>(ProcessMemory::AllocationFlags const& rhs)
+{
+	SectionFlags result = 0;
+
+	// The only currently supported flag is MEM_TOP_DOWN
+	if(rhs & (ProcessMemory::AllocationFlags::TopDown)) result |= MEM_TOP_DOWN;
+
+	return result;
+}
+
 // convert<SectionProtection>(ProcessMemory::Protection)
 //
-// Converts a ProcessMemory::Protection value into Win32 Section protection flags
-//
+// Converts a ProcessMemory::Protection value into section protection flags
 template<> SectionProtection convert<SectionProtection>(ProcessMemory::Protection const& rhs)
 {
 	using prot = ProcessMemory::Protection;	
@@ -98,12 +115,28 @@ NativeProcess::~NativeProcess()
 
 uintptr_t NativeProcess::AllocateMemory(size_t length, ProcessMemory::Protection protection)
 {
+	return AllocateMemory(length, protection, ProcessMemory::AllocationFlags::None);
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::AllocateMemory
+//
+// Allocates a region of virtual memory
+//
+// Arguments:
+//
+//	length			- Length of the region to allocate
+//	protection		- Protection flags to assign to the allocated region
+//	flags			- Allocation flags to control the allocation region
+
+uintptr_t NativeProcess::AllocateMemory(size_t length, ProcessMemory::Protection protection, ProcessMemory::AllocationFlags flags)
+{
 	ULONG				previous;					// Previous memory protection flags
 
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
 	// Emplace a new section into the section collection, aligning the length up to the allocation granularity
-	auto iterator = m_sections.emplace(CreateSection(m_process, uintptr_t(0), align::up(length, SystemInformation::AllocationGranularity)));
+	auto iterator = m_sections.emplace(CreateSection(m_process, uintptr_t(0), align::up(length, SystemInformation::AllocationGranularity), flags));
 	if(!iterator.second) throw LinuxException{ LINUX_ENOMEM };
 
 	// The pages for the section are implicitly committed when mapped, "allocation" merely applies the protection flags
@@ -132,7 +165,7 @@ uintptr_t NativeProcess::AllocateMemory(size_t length, ProcessMemory::Protection
 uintptr_t NativeProcess::AllocateMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection)
 {
 	// This operation is different when the caller doesn't care what the base address is
-	if(address == 0) return AllocateMemory(length, protection);
+	if(address == 0) return AllocateMemory(length, protection, ProcessMemory::AllocationFlags::None);
 
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
@@ -258,8 +291,9 @@ std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const 
 //	process		- Target process handle
 //	address		- Base address of the section to be created and mapped
 //	length		- Length of the section to be created and mapped
+//	flags		- Allocation flags to use when creating the section
 
-NativeProcess::section_t NativeProcess::CreateSection(HANDLE process, uintptr_t address, size_t length)
+NativeProcess::section_t NativeProcess::CreateSection(HANDLE process, uintptr_t address, size_t length, ProcessMemory::AllocationFlags flags)
 {
 	HANDLE					section;				// The newly created section handle
 	LARGE_INTEGER			sectionlength;			// Section length as a LARGE_INTEGER
@@ -283,7 +317,7 @@ NativeProcess::section_t NativeProcess::CreateSection(HANDLE process, uintptr_t 
 	try {
 
 		// Attempt to map the section into the target process' address space with PAGE_EXECUTE_READWRITE as the allowable protection
-		result = NtApi::NtMapViewOfSection(section, process, &mapping, 0, 0, nullptr, &mappinglength, NtApi::ViewUnmap, 0, PAGE_EXECUTE_READWRITE);
+		result = NtApi::NtMapViewOfSection(section, process, &mapping, 0, 0, nullptr, &mappinglength, NtApi::ViewUnmap, convert<SectionFlags>(flags), PAGE_EXECUTE_READWRITE);
 		if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_ENOMEM, StructuredException{ result } };
 
 		try {
@@ -480,6 +514,8 @@ void* NativeProcess::MapMemory(uintptr_t address, size_t length, ProcessMemory::
 	try {
 
 		IterateRange(writer, address, length, [&](section_t const& section, uintptr_t address, size_t length) -> void {
+
+			UNREFERENCED_PARAMETER(length);
 
 			SIZE_T mappedlength = 0;								// Length of section mapped by NtMapViewOfSection
 			
@@ -679,10 +715,25 @@ inline void NativeProcess::ReleaseSection(HANDLE process, section_t const& secti
 
 uintptr_t NativeProcess::ReserveMemory(size_t length)
 {
+	return ReserveMemory(length, ProcessMemory::AllocationFlags::None);
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::ReserveMemory
+//
+// Reserves a virtual memory region for later allocation
+//
+// Arguments:
+//
+//	length		- Length of the memory region to reserve
+//	flags		- Allocation flags to control the allocation region
+
+uintptr_t NativeProcess::ReserveMemory(size_t length, ProcessMemory::AllocationFlags flags)
+{
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
 	// Emplace a new section into the section collection, aligning the length up to the allocation granularity
-	auto iterator = m_sections.emplace(CreateSection(m_process, uintptr_t(0), align::up(length, SystemInformation::AllocationGranularity)));
+	auto iterator = m_sections.emplace(CreateSection(m_process, uintptr_t(0), align::up(length, SystemInformation::AllocationGranularity), flags));
 
 	if(!iterator.second) throw LinuxException{ LINUX_ENOMEM };
 	return iterator.first->m_baseaddress;
@@ -701,7 +752,7 @@ uintptr_t NativeProcess::ReserveMemory(size_t length)
 uintptr_t NativeProcess::ReserveMemory(uintptr_t address, size_t length)
 {
 	// This operation is different when the caller doesn't care what the base address is
-	if(address == 0) return ReserveMemory(length);
+	if(address == 0) return ReserveMemory(length, ProcessMemory::AllocationFlags::None);
 
 	sync::reader_writer_lock::scoped_lock_write writer(m_sectionslock);
 
@@ -735,7 +786,7 @@ void NativeProcess::ReserveRange(sync::reader_writer_lock::scoped_lock_write& wr
 		// If the start address is lower than the current section, fill the region with a new reservation
 		if(start < iterator->m_baseaddress) {
 
-			m_sections.emplace(CreateSection(m_process, start, std::min(end, iterator->m_baseaddress) - start));
+			m_sections.emplace(CreateSection(m_process, start, std::min(end, iterator->m_baseaddress) - start, ProcessMemory::AllocationFlags::None));
 			start = (iterator->m_baseaddress + iterator->m_length);
 		}
 
@@ -746,7 +797,7 @@ void NativeProcess::ReserveRange(sync::reader_writer_lock::scoped_lock_write& wr
 	}
 
 	// After all the sections have been examined, create a final section if necessary
-	if(start < end) m_sections.emplace(CreateSection(m_process, start, end - start));
+	if(start < end) m_sections.emplace(CreateSection(m_process, start, end - start, ProcessMemory::AllocationFlags::None));
 }
 
 //-----------------------------------------------------------------------------

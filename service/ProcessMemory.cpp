@@ -26,7 +26,19 @@
 #pragma warning(push, 4)
 
 //
-// VIRTUALMEMORY::PROTECTION
+// PROCESSMEMORY::ALLOCATIONFLAGS
+//
+
+// ProcessMemory::AllocationFlags::None (static)
+//
+ProcessMemory::AllocationFlags const ProcessMemory::AllocationFlags::None{ 0x00 };
+
+// ProcessMemory::AllocationFlags::TopDown (static)
+//
+ProcessMemory::AllocationFlags const ProcessMemory::AllocationFlags::TopDown{ 0x01 };
+
+//
+// PROCESSMEMORY::PROTECTION
 //
 
 // ProcessMemory::Protection::Execute (static)

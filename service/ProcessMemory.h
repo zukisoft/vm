@@ -36,6 +36,27 @@
 
 struct __declspec(novtable) ProcessMemory
 {
+	// ProcessMemory::AllocationFlags
+	//
+	// Flags used with memory allocation and reservation operations
+	struct AllocationFlags final : public bitmask<AllocationFlags, uint8_t, 0x01 /* TopDown */>
+	{
+		using bitmask::bitmask;
+
+		//---------------------------------------------------------------------
+		// Fields
+
+		// None (static)
+		//
+		// Indicates no special allocation flags
+		static AllocationFlags const None;
+
+		// TopDown (static)
+		//
+		// Indicates to use the highest available address
+		static AllocationFlags const TopDown;
+	};
+
 	// ProcessMemory::Protection
 	//
 	// Generalized protection flags used with memory operations
@@ -79,6 +100,7 @@ struct __declspec(novtable) ProcessMemory
 	//
 	// Allocates a virtual memory region
 	virtual uintptr_t AllocateMemory(size_t length, ProcessMemory::Protection protection) = 0;
+	virtual uintptr_t AllocateMemory(size_t length, ProcessMemory::Protection protection, ProcessMemory::AllocationFlags flags) = 0;
 	virtual uintptr_t AllocateMemory(uintptr_t address, size_t length, ProcessMemory::Protection protection) = 0;
 
 	// LockMemory
@@ -110,6 +132,7 @@ struct __declspec(novtable) ProcessMemory
 	//
 	// Reserves a virtual memory region for later allocation
 	virtual uintptr_t ReserveMemory(size_t length) = 0;
+	virtual uintptr_t ReserveMemory(size_t length, ProcessMemory::AllocationFlags flags) = 0;
 	virtual uintptr_t ReserveMemory(uintptr_t address, size_t length) = 0;
 
 	// UnlockMemory
