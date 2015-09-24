@@ -42,6 +42,10 @@ class Host;
 // ElfExecutable
 //
 // Specialization of Executable for ELF images
+//
+// TODO: Should have some plan to get ET_DYN images into the proper address
+// range with 'zero bits' flags on the memory mapping; there needs to be
+// a sizeable dead zone for the program break (heap) to grow
 
 class ElfExecutable : public Executable
 {
@@ -108,6 +112,15 @@ private:
 		uintptr_t	entrypoint = 0;
 		uintptr_t	progheaders = 0;
 		size_t		numprogheaders = 0;
+	};
+
+	// imagetype
+	//
+	// Enumeration used to indicate what type of image this is
+	enum class imagetype
+	{
+		primary			= 0,
+		interpreter		= 1,
 	};
 
 	// stacklayout_t
@@ -198,7 +211,7 @@ private:
 	//
 	// Loads an image into a ProcessMemory implementation
 	template<enum class Architecture architecture>
-	static imagelayout_t LoadImage(void const* headers, fshandle_t handle, ProcessMemory* mem);
+	static imagelayout_t LoadImage(imagetype type, void const* headers, fshandle_t handle, ProcessMemory* mem);
 	
 	// ReadHeaders<Architecture> (static)
 	//

@@ -227,12 +227,12 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size
 	using elf = format_traits_t<architecture>;
 
 	// Load the primary executable image into the process
-	auto layout = LoadImage<architecture>(m_headers.get(), m_handle, mem);
+	auto layout = LoadImage<architecture>(imagetype::primary, m_headers.get(), m_handle, mem);
 
 	if(m_interpreter) {
 
 		// An interpreter binary has been specified for this executable, attempt to load it into the process
-		auto interpreter = LoadImage<architecture>(ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, mem);
+		auto interpreter = LoadImage<architecture>(imagetype::interpreter, ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, mem);
 
 		// The interpreter's base address and entry point override that of the main executable
 		layout.baseaddress = interpreter.baseaddress;
@@ -254,12 +254,13 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size
 //
 // Arguments:
 //
+//	type		- Type of image being loaded (primary or interpreter)
 //	headers		- Pointer to the ELF headers
 //	handle		- File system object handle for the image
 //	mem			- ProcessMemory implementation for the process
 
 template<enum class Architecture architecture>
-ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshandle_t handle, ProcessMemory* mem)
+ElfExecutable::imagelayout_t ElfExecutable::LoadImage(imagetype type, void const* headers, fshandle_t handle, ProcessMemory* mem)
 {
 	using elf = format_traits_t<architecture>;
 
@@ -281,8 +282,20 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(void const* headers, fshan
 		}
 	}
 
-	// ET_EXEC images must be reserved at the proper virtual address; ET_DYN images can go anywhere
-	try { layout.baseaddress = mem->ReserveMemory((elfheader->e_type == LINUX_ET_EXEC) ? minvaddr : uintptr_t(0), maxvaddr - minvaddr); }
+	try { 
+		
+		// ET_EXEC images must be reserved at the proper virtual address
+		if(elfheader->e_type == LINUX_ET_EXEC) layout.baseaddress = mem->ReserveMemory(minvaddr, maxvaddr - minvaddr);
+
+		// ET_DYN images can go anywhere in memory, but when loading an interpreter library place it at the highest possible
+		// address to keep it away from the primary image's program break address
+		else if(elfheader->e_type == LINUX_ET_DYN) layout.baseaddress =
+			mem->ReserveMemory(maxvaddr - minvaddr, (type == imagetype::interpreter) ? ProcessMemory::AllocationFlags::TopDown : ProcessMemory::AllocationFlags::None);
+
+		// Unsupported image type
+		else throw Win32Exception{ ERROR_BAD_FORMAT };
+	}
+
 	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
