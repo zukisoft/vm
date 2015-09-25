@@ -26,8 +26,6 @@
 
 #include <memory>
 #include "Architecture.h"
-#include "Exception.h"
-#include "Win32Exception.h"
 
 #pragma warning(push, 4)				
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
@@ -53,18 +51,18 @@ public:
 	//
 	// Creates a new TaskState for the specified architecture
 	template<enum class Architecture architecture>
-	static std::unique_ptr<TaskState> Create(const void* entrypoint, const void* stackpointer);
+	static std::unique_ptr<TaskState> Create(void const* entrypoint, void const* stackpointer);
 
 	// Duplicate (static)
 	//
 	// Duplicates an existing TaskState instance
-	static std::unique_ptr<TaskState> Duplicate(const std::unique_ptr<TaskState>& existing);
+	static std::unique_ptr<TaskState> Duplicate(std::unique_ptr<TaskState> const& existing);
 
 	// FromExisting (static)
 	//
 	// Creates a TaskState from an existing task state
 	template <enum class Architecture architecture>
-	static std::unique_ptr<TaskState> FromExisting(const void* existing, size_t length);
+	static std::unique_ptr<TaskState> FromExisting(void const* existing, size_t length);
 
 	// Restore
 	//
@@ -83,15 +81,15 @@ public:
 	// Data
 	//
 	// Gets a pointer to the contained task state
-	__declspec(property(get=getData)) const void* Data;
-	const void* getData(void) const;
+	__declspec(property(get=getData)) void const* Data;
+	void const* getData(void) const;
 
 	// InstructionPointer
 	//
 	// Gets/sets the instruction pointer contained by the task state
-	__declspec(property(get=getInstructionPointer, put=putInstructionPointer)) const void* InstructionPointer;
-	const void* getInstructionPointer(void) const;
-	void putInstructionPointer(const void* value);
+	__declspec(property(get=getInstructionPointer, put=putInstructionPointer)) void const* InstructionPointer;
+	void const* getInstructionPointer(void) const;
+	void putInstructionPointer(void const* value);
 
 	// Length
 	//
@@ -109,14 +107,14 @@ public:
 	// StackPointer
 	//
 	// Gets/sets the stack pointer contained by the task state
-	__declspec(property(get=getStackPointer, put=putStackPointer)) const void* StackPointer;
-	const void* getStackPointer(void) const;
-	void putStackPointer(const void* value);
+	__declspec(property(get=getStackPointer, put=putStackPointer)) void const* StackPointer;
+	void const* getStackPointer(void) const;
+	void putStackPointer(void const* value);
 
 private:
 
-	TaskState(const TaskState&)=delete;
-	TaskState& operator=(const TaskState&)=delete;
+	TaskState(TaskState const&)=delete;
+	TaskState& operator=(TaskState const&)=delete;
 
 	// context_t
 	//
@@ -132,10 +130,10 @@ private:
 	// Windows API
 	//
 	using GetThreadContext32Func = BOOL(WINAPI*)(HANDLE, uapi::utask32*);
-	using SetThreadContext32Func = BOOL(WINAPI*)(HANDLE, const uapi::utask32*);
+	using SetThreadContext32Func = BOOL(WINAPI*)(HANDLE, uapi::utask32 const*);
 #ifdef _M_X64
 	using GetThreadContext64Func = BOOL(WINAPI*)(HANDLE, uapi::utask64*);
-	using SetThreadContext64Func = BOOL(WINAPI*)(HANDLE, const uapi::utask64*);
+	using SetThreadContext64Func = BOOL(WINAPI*)(HANDLE, uapi::utask64 const*);
 #endif
 
 	// Instance Constructor
@@ -151,11 +149,11 @@ private:
 
 	// Windows API
 	//
-	static const GetThreadContext32Func GetThreadContext32;
-	static const SetThreadContext32Func SetThreadContext32;
+	static GetThreadContext32Func const GetThreadContext32;
+	static SetThreadContext32Func const SetThreadContext32;
 #ifdef _M_X64
-	static const GetThreadContext64Func GetThreadContext64;
-	static const SetThreadContext64Func SetThreadContext64;
+	static GetThreadContext64Func const GetThreadContext64;
+	static SetThreadContext64Func const SetThreadContext64;
 #endif
 };
 

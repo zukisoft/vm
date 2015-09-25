@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "TaskState.h"
 
+#include "Exception.h"
+#include "Win32Exception.h"
+
 #pragma warning(push, 4)
 
 // g_initonce (local)
@@ -43,7 +46,7 @@ static BOOL CALLBACK InitOnceLoadModule(PINIT_ONCE, PVOID, PVOID* context)
 //
 // Retrieves a function pointer from the KERNEL32.DLL module
 template<typename _funcptr> 
-static _funcptr GetFunctionPointer(const char* name)
+static _funcptr GetFunctionPointer(char const* name)
 {
 	HMODULE module;
 	InitOnceExecuteOnce(&g_initonce, InitOnceLoadModule, nullptr, reinterpret_cast<PVOID*>(&module));
@@ -53,16 +56,16 @@ static _funcptr GetFunctionPointer(const char* name)
 #ifndef _M_X64
 // 32-bit builds
 static_assert(sizeof(CONTEXT) == sizeof(uapi::utask32), "uapi::utask32 structure is not equivalent to CONTEXT structure");
-const TaskState::GetThreadContext32Func TaskState::GetThreadContext32 = GetFunctionPointer<TaskState::GetThreadContext32Func>("GetThreadContext");
-const TaskState::SetThreadContext32Func TaskState::SetThreadContext32 = GetFunctionPointer<TaskState::SetThreadContext32Func>("SetThreadContext");
+TaskState::GetThreadContext32Func const TaskState::GetThreadContext32 = GetFunctionPointer<TaskState::GetThreadContext32Func>("GetThreadContext");
+TaskState::SetThreadContext32Func const TaskState::SetThreadContext32 = GetFunctionPointer<TaskState::SetThreadContext32Func>("SetThreadContext");
 #else
 // 64-bit builds
 static_assert(sizeof(WOW64_CONTEXT) == sizeof(uapi::utask32), "uapi::utask32 structure is not equivalent to WOW64_CONTEXT structure");
 static_assert(sizeof(CONTEXT) == sizeof(uapi::utask64), "uapi::utask64 structure is not equivalent to CONTEXT structure");
-const TaskState::GetThreadContext32Func TaskState::GetThreadContext32 = GetFunctionPointer<TaskState::GetThreadContext32Func>("Wow64GetThreadContext");
-const TaskState::SetThreadContext32Func TaskState::SetThreadContext32 = GetFunctionPointer<TaskState::SetThreadContext32Func>("Wow64SetThreadContext");
-const TaskState::GetThreadContext64Func TaskState::GetThreadContext64 = GetFunctionPointer<TaskState::GetThreadContext64Func>("GetThreadContext");
-const TaskState::SetThreadContext64Func TaskState::SetThreadContext64 = GetFunctionPointer<TaskState::SetThreadContext64Func>("SetThreadContext");
+TaskState::GetThreadContext32Func const TaskState::GetThreadContext32 = GetFunctionPointer<TaskState::GetThreadContext32Func>("Wow64GetThreadContext");
+TaskState::SetThreadContext32Func const TaskState::SetThreadContext32 = GetFunctionPointer<TaskState::SetThreadContext32Func>("Wow64SetThreadContext");
+TaskState::GetThreadContext64Func const TaskState::GetThreadContext64 = GetFunctionPointer<TaskState::GetThreadContext64Func>("GetThreadContext");
+TaskState::SetThreadContext64Func const TaskState::SetThreadContext64 = GetFunctionPointer<TaskState::SetThreadContext64Func>("SetThreadContext");
 #endif
 
 //-----------------------------------------------------------------------------
@@ -121,7 +124,7 @@ std::unique_ptr<TaskState> TaskState::Capture(enum class Architecture architectu
 //	stackpointer	- Initial stack pointer value
 
 template<>
-std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(void const* entrypoint, void const* stackpointer)
 {
 	context_t				context;			// New context information
 
@@ -159,7 +162,7 @@ std::unique_ptr<TaskState> TaskState::Create<Architecture::x86>(const void* entr
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* entrypoint, const void* stackpointer)
+std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(void const* entrypoint, void const* stackpointer)
 {
 	context_t				context;			// New context information
 
@@ -192,7 +195,7 @@ std::unique_ptr<TaskState> TaskState::Create<Architecture::x86_64>(const void* e
 //
 // Gets a pointer to the underlying context information structure
 
-const void* TaskState::getData(void) const
+void const* TaskState::getData(void) const
 {
 	// Architecture::x86 --> 32-bit context
 	if(m_architecture == Architecture::x86) return &m_context.x86;
@@ -215,7 +218,7 @@ const void* TaskState::getData(void) const
 //
 //	existing		- Existing task state to be duplicated
 
-std::unique_ptr<TaskState> TaskState::Duplicate(const std::unique_ptr<TaskState>& existing)
+std::unique_ptr<TaskState> TaskState::Duplicate(std::unique_ptr<TaskState> const& existing)
 {
 	// Copy the existing context structure and construct a new TaskState instance
 	context_t context = existing->m_context;
@@ -233,7 +236,7 @@ std::unique_ptr<TaskState> TaskState::Duplicate(const std::unique_ptr<TaskState>
 //	length			- Length of the existing task information
 
 template<>
-std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86>(const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86>(void const* existing, size_t length)
 {
 	context_t				context;			// Context information
 
@@ -259,7 +262,7 @@ std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86>(const void
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86_64>(const void* existing, size_t length)
+std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86_64>(void const* existing, size_t length)
 {
 	context_t				context;			// Context information
 
@@ -279,7 +282,7 @@ std::unique_ptr<TaskState> TaskState::FromExisting<Architecture::x86_64>(const v
 //
 // Gets the contained xIP register value
 
-const void* TaskState::getInstructionPointer(void) const
+void const* TaskState::getInstructionPointer(void) const
 {
 	// Architecture::x86 --> EIP
 	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_context.x86.eip);
@@ -298,7 +301,7 @@ const void* TaskState::getInstructionPointer(void) const
 //
 // Sets the contained xIP register value
 
-void TaskState::putInstructionPointer(const void* value)
+void TaskState::putInstructionPointer(void const* value)
 {
 	// Architecture::x86 --> EIP
 	if(m_architecture == Architecture::x86) {
@@ -411,7 +414,7 @@ void TaskState::putReturnValue(unsigned __int3264 value)
 //
 // Gets the contained xSP register value
 
-const void* TaskState::getStackPointer(void) const
+void const* TaskState::getStackPointer(void) const
 {
 	// Architecture::x86 --> ESP
 	if(m_architecture == Architecture::x86) return reinterpret_cast<void*>(m_context.x86.esp);
@@ -430,7 +433,7 @@ const void* TaskState::getStackPointer(void) const
 //
 // Sets the contained xSP register value
 
-void TaskState::putStackPointer(const void* value)
+void TaskState::putStackPointer(void const* value)
 {
 	// Architecture::x86 --> ESP
 	if(m_architecture == Architecture::x86) {
