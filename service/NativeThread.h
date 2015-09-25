@@ -20,8 +20,8 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __TASK_H_
-#define __TASK_H_
+#ifndef __NATIVETHREAD_H_
+#define __NATIVETHREAD_H_
 #pragma once
 
 #include <memory>
@@ -31,18 +31,17 @@
 #pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
-// Task
+// NativeThread
 //
-// Abstraction of an architecture-specific register set that define a task for
-// a hosted native thread to execute as part of the virtual machine
+//	words
 
-class Task
+class NativeThread
 {
 public:
 
 	// Destructor
 	//
-	~Task()=default;
+	~NativeThread()=default;
 
 	//-------------------------------------------------------------------------
 	// Member Functions
@@ -55,7 +54,7 @@ public:
 	// Create (static)
 	//
 	// Creates a new Task for the specified architecture
-	static std::unique_ptr<Task> Create(enum class Architecture architecture, uintptr_t instructionpointer, uintptr_t stackpointer);
+	static std::unique_ptr<NativeThread> Create(enum class Architecture architecture, uintptr_t instructionpointer, uintptr_t stackpointer);
 
 	// Duplicate (static)
 	//
@@ -115,8 +114,8 @@ public:
 
 private:
 
-	Task(Task const&)=delete;
-	Task& operator=(Task const&)=delete;
+	NativeThread(NativeThread const&)=delete;
+	NativeThread& operator=(NativeThread const&)=delete;
 
 	// task_t
 	//
@@ -140,8 +139,8 @@ private:
 
 	// Instance Constructor
 	//
-	Task(enum class Architecture architecture, task_t&& task); //// : m_architecture(std::move(architecture)), m_task(std::move(task)) {}
-	friend std::unique_ptr<Task> std::make_unique<Task, enum class Architecture, task_t>(enum class Architecture&&, task_t&&);
+	NativeThread(enum class Architecture architecture, task_t&& task); //// : m_architecture(std::move(architecture)), m_task(std::move(task)) {}
+	friend std::unique_ptr<NativeThread> std::make_unique<NativeThread, enum class Architecture, task_t>(enum class Architecture&&, task_t&&);
 
 	//-------------------------------------------------------------------------
 	// Private Member Functions
@@ -150,7 +149,7 @@ private:
 	//
 	// Architecture-specific implementation of Create()
 	template<enum class Architecture architecture>
-	static std::unique_ptr<Task> Create(uintptr_t instructionpointer, uintptr_t stackpointer);
+	static std::unique_ptr<NativeThread> Create(uintptr_t instructionpointer, uintptr_t stackpointer);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -172,4 +171,4 @@ private:
 
 #pragma warning(pop)
 
-#endif	// __TASK_H_
+#endif	// __NATIVETHREAD_H_

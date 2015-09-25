@@ -30,7 +30,6 @@
 #include "Pid.h"
 #include "ProcessGroup.h"
 #include "Session.h"
-#include "Task.h"
 #include "Thread.h"
 #include "VirtualMachine.h"
 
@@ -157,7 +156,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		// new way I want to do this ... create the Thread instance around the main thread handle/id, let it call acquire_thread
 		// like any other thread would.  Doing it at time of process creation is a smidge faster but complicates the code, and there
 		// is absolutely no reason to assume that performance won't be so horrible it would make any difference regardless
-		auto task = Task::Create(layout->Architecture, layout->EntryPoint, layout->StackPointer);
+		//auto task = Task::Create(layout->Architecture, layout->EntryPoint, layout->StackPointer);
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "stdafx.h"
-#include "Task.h"
+#include "NativeThread.h"
 
 #pragma warning(push, 4)
 
@@ -53,16 +53,16 @@ static _funcptr GetFunctionPointer(char const* name)
 #ifndef _M_X64
 // 32-bit builds
 static_assert(sizeof(CONTEXT) == sizeof(uapi::utask32), "uapi::utask32 structure is not equivalent to CONTEXT structure");
-Task::GetThreadContext32Func const Task::GetThreadContext32 = GetFunctionPointer<Task::GetThreadContext32Func>("GetThreadContext");
-Task::SetThreadContext32Func const Task::SetThreadContext32 = GetFunctionPointer<Task::SetThreadContext32Func>("SetThreadContext");
+NativeThread::GetThreadContext32Func const NativeThread::GetThreadContext32 = GetFunctionPointer<NativeThread::GetThreadContext32Func>("GetThreadContext");
+NativeThread::SetThreadContext32Func const NativeThread::SetThreadContext32 = GetFunctionPointer<NativeThread::SetThreadContext32Func>("SetThreadContext");
 #else
 // 64-bit builds
 static_assert(sizeof(WOW64_CONTEXT) == sizeof(uapi::utask32), "uapi::utask32 structure is not equivalent to WOW64_CONTEXT structure");
 static_assert(sizeof(CONTEXT) == sizeof(uapi::utask64), "uapi::utask64 structure is not equivalent to CONTEXT structure");
-Task::GetThreadContext32Func const Task::GetThreadContext32 = GetFunctionPointer<Task::GetThreadContext32Func>("Wow64GetThreadContext");
-Task::SetThreadContext32Func const Task::SetThreadContext32 = GetFunctionPointer<Task::SetThreadContext32Func>("Wow64SetThreadContext");
-Task::GetThreadContext64Func const Task::GetThreadContext64 = GetFunctionPointer<Task::GetThreadContext64Func>("GetThreadContext");
-Task::SetThreadContext64Func const Task::SetThreadContext64 = GetFunctionPointer<Task::SetThreadContext64Func>("SetThreadContext");
+NativeThread::GetThreadContext32Func const NativeThread::GetThreadContext32 = GetFunctionPointer<NativeThread::GetThreadContext32Func>("Wow64GetThreadContext");
+NativeThread::SetThreadContext32Func const NativeThread::SetThreadContext32 = GetFunctionPointer<NativeThread::SetThreadContext32Func>("Wow64SetThreadContext");
+NativeThread::GetThreadContext64Func const NativeThread::GetThreadContext64 = GetFunctionPointer<NativeThread::GetThreadContext64Func>("GetThreadContext");
+NativeThread::SetThreadContext64Func const NativeThread::SetThreadContext64 = GetFunctionPointer<NativeThread::SetThreadContext64Func>("SetThreadContext");
 #endif
 
 //-----------------------------------------------------------------------------
@@ -73,22 +73,22 @@ Task::SetThreadContext64Func const Task::SetThreadContext64 = GetFunctionPointer
 //	architecture		- Task architecture
 //	task				- Architecture-specific task information
 
-Task::Task(enum class Architecture architecture, task_t&& task) : m_architecture(architecture), m_task(std::move(task))
+NativeThread::NativeThread(enum class Architecture architecture, task_t&& task) : m_architecture(architecture), m_task(std::move(task))
 {
 }
 
 //-----------------------------------------------------------------------------
-// Task::getArchitecture
+// NativeThread::getArchitecture
 //
 // Gets the architecture code for the contained task state
 
-enum class Architecture Task::getArchitecture(void) const
+enum class Architecture NativeThread::getArchitecture(void) const
 {
 	return m_architecture;
 }
 
 //-----------------------------------------------------------------------------
-// Task::Create<Architecture::x86> (static, private)
+// NativeThread::Create<Architecture::x86> (static, private)
 //
 // Creates a new 32-bit task state
 //
@@ -98,7 +98,7 @@ enum class Architecture Task::getArchitecture(void) const
 //	stackpointer		- Initial stack pointer value
 
 template<>
-std::unique_ptr<Task> Task::Create<Architecture::x86>(uintptr_t instructionpointer, uintptr_t stackpointer)
+std::unique_ptr<NativeThread> NativeThread::Create<Architecture::x86>(uintptr_t instructionpointer, uintptr_t stackpointer)
 {
 	task_t					task;				// New task information
 
@@ -120,11 +120,11 @@ std::unique_ptr<Task> Task::Create<Architecture::x86>(uintptr_t instructionpoint
 	// processor flags
 	task.x86.eflags = 0x200;			// EFLAGS_IF_MASK
 
-	return std::make_unique<Task>(Architecture::x86, std::move(task));
+	return std::make_unique<NativeThread>(Architecture::x86, std::move(task));
 }
 
 //-----------------------------------------------------------------------------
-// Task::Create<Architecture::x86_64> (static)
+// NativeThread::Create<Architecture::x86_64> (static)
 //
 // Creates a new 64-bit task state
 //
@@ -135,7 +135,7 @@ std::unique_ptr<Task> Task::Create<Architecture::x86>(uintptr_t instructionpoint
 
 #ifdef _M_X64
 template<>
-std::unique_ptr<Task> Task::Create<Architecture::x86_64>(uintptr_t instructionpointer, uintptr_t stackpointer)
+std::unique_ptr<NativeThread> NativeThread::Create<Architecture::x86_64>(uintptr_t instructionpointer, uintptr_t stackpointer)
 {
 	task_t					task;			// New task information
 
@@ -158,12 +158,12 @@ std::unique_ptr<Task> Task::Create<Architecture::x86_64>(uintptr_t instructionpo
 	task.x86_64.fltsave.controlword	= 0x027F;	// INITIAL_FPCSR
 	task.x86_64.fltsave.mxcsr		= 0x1F80;	// INITIAL_MXCSR
 
-	return std::make_unique<Task>(Architecture::x86_64, std::move(task));
+	return std::make_unique<NativeThread>(Architecture::x86_64, std::move(task));
 }
 #endif
 
 //-----------------------------------------------------------------------------
-// Task::Create (static)
+// NativeThread::Create (static)
 //
 // Creates a new architecture-specific task instance
 //
@@ -173,7 +173,7 @@ std::unique_ptr<Task> Task::Create<Architecture::x86_64>(uintptr_t instructionpo
 //	instructionpointer	- Value to assign to the instruction pointer
 //	stackpointer		- Value to assign to the stack pointer
 
-std::unique_ptr<Task> Task::Create(enum class Architecture architecture, uintptr_t instructionpointer, uintptr_t stackpointer)
+std::unique_ptr<NativeThread> NativeThread::Create(enum class Architecture architecture, uintptr_t instructionpointer, uintptr_t stackpointer)
 {
 	if(architecture == Architecture::x86) return Create<Architecture::x86>(instructionpointer, stackpointer);
 #ifdef _M_X64
