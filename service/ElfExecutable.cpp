@@ -26,7 +26,9 @@
 #include <array>
 #include "Exception.h"
 #include "LinuxException.h"
+#include "Random.h"
 #include "SystemInformation.h"
+#include "Win32Exception.h"
 
 #pragma warning(push, 4)
 
@@ -44,6 +46,8 @@ template <> struct ElfExecutable::format_traits_t<Architecture::x86>
 	static int const elfclass		= LINUX_ELFCLASS32;
 	static int const machinetype	= LINUX_EM_386;
 	static addr_t const null		= 0;
+
+	static std::string const platform;
 };
 
 // ElfExecutable::format_traits_t<x86_64>
@@ -60,7 +64,14 @@ template <> struct ElfExecutable::format_traits_t<Architecture::x86_64>
 	static int const elfclass		= LINUX_ELFCLASS64;
 	static int const machinetype	= LINUX_EM_X86_64;
 	static addr_t const null		= 0;
+
+	static std::string const platform;
 };
+
+// ElfExecutable::format_traits_t<> static initializers
+//
+std::string const ElfExecutable::format_traits_t<Architecture::x86>::platform("i686");
+std::string const ElfExecutable::format_traits_t<Architecture::x86_64>::platform("x86_64");
 
 //-----------------------------------------------------------------------------
 // Conversions
@@ -69,7 +80,8 @@ template <> struct ElfExecutable::format_traits_t<Architecture::x86_64>
 // uint32_t --> ProcessMemory::Protection
 //
 // Converts ELF protection flags into a ProcessMemory::Protection bitmask
-template<> ProcessMemory::Protection convert<ProcessMemory::Protection>(uint32_t flags)
+template<> 
+inline ProcessMemory::Protection convert<ProcessMemory::Protection>(uint32_t flags)
 {
 	_ASSERTE((flags & ~(LINUX_PF_R | LINUX_PF_W | LINUX_PF_X)) == 0);
 
@@ -83,6 +95,10 @@ template<> ProcessMemory::Protection convert<ProcessMemory::Protection>(uint32_t
 }
 
 //-----------------------------------------------------------------------------
+// Local Helper Functions
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
 // PushStack<_type>
 //
 // Pushes a value onto a stack and decrements the stack pointer
@@ -93,7 +109,7 @@ template<> ProcessMemory::Protection convert<ProcessMemory::Protection>(uint32_t
 //	value			- Value to be pushed
 
 template<typename _type> 
-uintptr_t PushStack(uintptr_t stackpointer, _type const& value)
+inline uintptr_t PushStack(uintptr_t stackpointer, _type const& value)
 {
 	stackpointer -= sizeof(_type);
 	*reinterpret_cast<_type*>(stackpointer) = value;
@@ -111,7 +127,7 @@ uintptr_t PushStack(uintptr_t stackpointer, _type const& value)
 //	value			- Value to be pushed
 
 template<>
-uintptr_t PushStack<std::string>(uintptr_t stackpointer, std::string const& value)
+inline uintptr_t PushStack<std::string>(uintptr_t stackpointer, std::string const& value)
 {
 	stackpointer -= value.length() + 1;
 	memcpy(reinterpret_cast<void*>(stackpointer), value.data(), value.length() + 1);
@@ -129,11 +145,28 @@ uintptr_t PushStack<std::string>(uintptr_t stackpointer, std::string const& valu
 //	data			- Data to be pushed onto the stack
 //	length			- Length of the data to be pushed
 
-uintptr_t PushStack(uintptr_t stackpointer, void const* data, size_t length)
+inline uintptr_t PushStack(uintptr_t stackpointer, void const* data, size_t length)
 {
 	stackpointer -= length;
 	memcpy(reinterpret_cast<void*>(stackpointer), data, length);
 	return stackpointer;
+}
+
+//-----------------------------------------------------------------------------
+// WriteStack<_type>
+//
+// Writes a value onto a stack and increments the stack pointer
+//
+// Arguments:
+//
+//	stackpointer	- Current stack pointer
+//	value			- Value to be written
+
+template<typename _type> 
+inline uintptr_t WriteStack(uintptr_t stackpointer, _type const& value)
+{
+	*reinterpret_cast<_type*>(stackpointer) = value;
+	return stackpointer + sizeof(_type);
 }
 
 //-----------------------------------------------------------------------------
@@ -172,15 +205,20 @@ enum class Architecture ElfExecutable::getArchitecture(void) const
 //
 // Arguments:
 //
-//	mem				- ProcessMemory implementation for the target process
-//	stacklength		- Length of the stack to create in the process
+//	mem					- ProcessMemory implementation for the target process
+//	stacklength			- Length of the stack to create in the process
+//	primarylayout		- Layout of the primary executable image
+//	interpreterlayout	- Layout of the interpreter library image
 
 template<enum class Architecture architecture>
-ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size_t length) const
+ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size_t length, imagelayout_t const& primarylayout, imagelayout_t const& interpreterlayout) const
 {
 	using elf = format_traits_t<architecture>;
 
-	ElfExecutable::stacklayout_t			layout;			// Layout of the generated stack
+	stacklayout_t				stacklayout;			// Layout of the generated stack
+	uint8_t						random[16];				// Data for AT_RANDOM aux vector
+
+	Random::Generate(random, sizeof(random));			// Generate 16 bytes of pseudo-random data
 
 	try {
 
@@ -192,66 +230,105 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 		mem->ProtectMemory(base + length - SystemInformation::PageSize, SystemInformation::PageSize, ProcessMemory::Protection::Read |ProcessMemory::Protection::Guard);
 
 		// Adjust the base address and length accordingly to accomodate the guard pages
-		layout.baseaddress = base + SystemInformation::PageSize;
-		layout.length = length - (SystemInformation::PageSize * 2);
+		stacklayout.baseaddress = base + SystemInformation::PageSize;
+		stacklayout.length = length - (SystemInformation::PageSize * 2);
 
 		// Map the stack memory into this process to access it directly
-		uintptr_t mappedbase = uintptr_t(mem->MapMemory(layout.baseaddress, layout.length, ProcessMemory::Protection::Write));
+		uintptr_t mappedbase = uintptr_t(mem->MapMemory(stacklayout.baseaddress, stacklayout.length, ProcessMemory::Protection::Write));
 
 		try {
 
-			std::vector<uintptr_t>		argv;			// Command-line argument pointers
-			std::vector<uintptr_t>		envp;			// Environment variable pointers
-			std::vector<elf::auxv_t>	auxv;			// Auxiliary vectors
+			std::vector<elf::addr_t>		argv;		// Argument string pointers
+			std::vector<elf::addr_t>		envp;		// Environment variable string pointers
+			std::vector<elf::auxv_t>		auxv;		// Auxiliary vectors and pointers
 
-			/////////////////////////////////////////////////////////
-			// PLAYING AROUND
+			// Determine the difference between the target process base address and the local mapping,
+			// the pointers placed into the stack must of course be relative to the target process
+			intptr_t localdelta = stacklayout.baseaddress - mappedbase;
 
-			intptr_t delta = layout.baseaddress - mappedbase;
-			uintptr_t sp = mappedbase + layout.length;
+			// Start at the end of the mapped region, the stack grows downward in memory
+			uintptr_t stackpointer = mappedbase + stacklayout.length;
 
-			sp = PushStack(sp, elf::null);
+			// END MARKER
+			//
+			stackpointer = PushStack(stackpointer, elf::null);
 
-			// Is there a range for that goes backwards?
-			auto enviterator = m_environment.rbegin();
-			while(enviterator != m_environment.rend()) {
+			// AUXILIARY VECTORS
+			//
+			auxv.push_back({ LINUX_AT_NULL, 0 });																// 0  - TERMINATOR
+			(LINUX_AT_SYSINFO_EHDR);																			// 33 - TODO (NEEDS VDSO)
+			(LINUX_AT_SYSINFO);																					// 32 - TODO (MAY NOT NEED TO IMPLEMENT)
 
-				envp.emplace_back(sp + delta);
-				sp = PushStack(sp, *enviterator);
-				++enviterator;
+			stackpointer = PushStack(stackpointer, m_originalpath);
+			auxv.push_back({ LINUX_AT_EXECFN, stackpointer + localdelta });										// 31
+
+			(LINUX_AT_HWCAP2);																					// 26 - NOT IMPLEMENTED
+
+			stackpointer = PushStack(stackpointer, random, sizeof(random));
+			auxv.push_back({ LINUX_AT_RANDOM, stackpointer + localdelta });										// 25
+
+			(LINUX_AT_BASE_PLATFORM);																			// 24 - NOT IMPLEMENTED
+			(LINUX_AT_SECURE);																					// 23 - TODO (SUID) SEE GETAUXVAL(3)
+			auxv.push_back({ LINUX_AT_CLKTCK, 100 });															// 17
+			auxv.push_back({ LINUX_AT_HWCAP, SystemInformation::ProcessorFeatureMask });						// 16
+
+			stackpointer = PushStack(stackpointer, elf::platform);
+			auxv.push_back({ LINUX_AT_PLATFORM, stackpointer + localdelta });									// 15
+
+			(LINUX_AT_EGID);																					// 14
+			(LINUX_AT_GID);																						// 13 - TODO
+			(LINUX_AT_EUID);																					// 12 - TODO
+			(LINUX_AT_UID);																						// 11 - TODO
+			(LINUX_AT_NOTELF);																					// 10 - NOT IMPLEMENTED
+			auxv.push_back({ LINUX_AT_ENTRY, primarylayout.entrypoint });										// 9
+			auxv.push_back({ LINUX_AT_FLAGS, 0 });																// 8
+			if(interpreterlayout.baseaddress) auxv.push_back({ LINUX_AT_BASE, interpreterlayout.baseaddress });	// 7
+			auxv.push_back({ LINUX_AT_PAGESZ, SystemInformation::PageSize });									// 6
+
+			if(primarylayout.progheaders) {
+
+				auxv.push_back({ LINUX_AT_PHNUM, primarylayout.numprogheaders });								// 5
+				auxv.push_back({ LINUX_AT_PHENT, sizeof(elf::progheader_t) });									// 4
+				auxv.push_back({ LINUX_AT_PHDR, primarylayout.progheaders });									// 3
 			}
 
-			// TESTING -- does not work as-is
-			//for(auto& iterator : std::make_reverse_iterator(m_environment.end())) sp = PushStack(sp, *iterator);
+			(LINUX_AT_EXECFD);																					//  2  - TODO (MAY NOT NEED TO IMPLEMENT)
 
-			auto argiterator = m_arguments.rbegin();
-			while(argiterator != m_arguments.rend()) {
+			// ENVIRONMENT VARIABLE STRINGS
+			//
+			envp.push_back(0);
+			std::for_each(m_environment.rbegin(), m_environment.rend(), [&](std::string const& value) { stackpointer = PushStack(stackpointer, value); envp.push_back(stackpointer + localdelta); });
 
-				argv.push_back(sp + delta);
-				sp = PushStack(sp, *argiterator);
+			// ARGUMENT STRINGS
+			//
+			argv.push_back(0);
+			std::for_each(m_arguments.rbegin(), m_arguments.rend(), [&](std::string const& value) { stackpointer = PushStack(stackpointer, value); argv.push_back(stackpointer + localdelta); });
 
-				++argiterator;
-			}
+			// Count the remaining amount of data to derive alignment and padding
+			size_t remaining = sizeof(elf::addr_t);
+			remaining += argv.size() * sizeof(elf::addr_t);
+			remaining += envp.size() * sizeof(elf::addr_t);
+			remaining += auxv.size() * sizeof(elf::auxv_t);
 
-			sp = align::down(sp, 16);
+			// Calculate and align the final stack pointer for the target process
+			stackpointer = align::down(stackpointer - remaining, 16);
+			stacklayout.stackpointer = stackpointer + localdelta;
 
-			// envp NULL
-			sp = PushStack(sp, elf::null);
-			for(auto& iterator : envp) sp = PushStack(sp, static_cast<elf::addr_t>(iterator));
-			//for(auto& iterator : envp) sp = push(sp, &iterator, sizeof(elf::addr_t));
+			// ARGC
+			//
+			stackpointer = WriteStack(stackpointer, static_cast<elf::addr_t>(argv.size() - 1));
 
-			// argv NULL
-			sp = PushStack(sp, elf::null);
-			for(auto& iterator : argv) sp = PushStack(sp, static_cast<elf::addr_t>(iterator));
-			//for(auto& iterator : argv) sp = push(sp, &iterator, sizeof(elf::addr_t));
+			// ARGV
+			//
+			std::for_each(argv.rbegin(), argv.rend(), [&](elf::addr_t& ptr) { stackpointer = WriteStack(stackpointer, ptr); });
 
-			// argc
-			size_t argc = argv.size();
-			sp = PushStack(sp, static_cast<elf::addr_t>(argc));
+			// ENVP
+			//
+			std::for_each(envp.rbegin(), envp.rend(), [&](uintptr_t& ptr) { stackpointer = WriteStack(stackpointer, ptr); });
 
-			layout.stackpointer = sp + delta;
-
-			///////////////////////////////////////
+			// AUXV
+			//
+			std::for_each(auxv.rbegin(), auxv.rend(), [&](elf::auxv_t& vec) { stackpointer = WriteStack(stackpointer, vec); });
 
 			// Finished with direct access to the target process address space
 			mem->UnmapMemory(reinterpret_cast<void*>(mappedbase));
@@ -262,7 +339,7 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 
 	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
 
-	return layout;
+	return stacklayout;
 }
 	
 //-----------------------------------------------------------------------------
@@ -382,21 +459,22 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size
 {
 	using elf = format_traits_t<architecture>;
 
+	imagelayout_t			primarylayout;				// Primary image layout
+	imagelayout_t			interpreterlayout;			// Interpreter image layout
+
 	// Load the primary executable image into the process
-	auto layout = LoadImage<architecture>(imagetype::primary, m_headers.get(), m_handle, mem);
+	primarylayout = LoadImage<architecture>(imagetype::primary, m_headers.get(), m_handle, mem);
 
-	if(m_interpreter) {
+	// If an interpreter binary has been specified for this executable, attempt to load it into the process
+	if(m_interpreter) interpreterlayout = LoadImage<architecture>(imagetype::interpreter, ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, mem);
 
-		// An interpreter binary has been specified for this executable, attempt to load it into the process
-		auto interpreter = LoadImage<architecture>(imagetype::interpreter, ReadHeaders<architecture>(m_interpreter).get(), m_interpreter, mem);
+	// Create a stack image of the specified size for the process (requires both image layouts)
+	auto stacklayout = CreateStack<architecture>(mem, stacklength, primarylayout, interpreterlayout);
 
-		// The interpreter's base address and entry point override that of the main executable
-		layout.baseaddress = interpreter.baseaddress;
-		layout.entrypoint = interpreter.entrypoint;
-	}
+	// If an interpreter image is present, override the entry point of the primary layout
+	if(m_interpreter) primarylayout.entrypoint = interpreterlayout.entrypoint;
 
-	// Generate the stack image in the created region and generate a Layout to return to the caller
-	return std::make_unique<ElfExecutable::Layout>(architecture, std::move(layout), std::move(CreateStack<architecture>(mem, stacklength)));
+	return std::make_unique<ElfExecutable::Layout>(architecture, std::move(primarylayout), std::move(stacklayout));
 }
 
 //-----------------------------------------------------------------------------

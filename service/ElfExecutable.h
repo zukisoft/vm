@@ -43,9 +43,21 @@ class Host;
 //
 // Specialization of Executable for ELF images
 //
-// TODO: Should have some plan to get ET_DYN images into the proper address
-// range with 'zero bits' flags on the memory mapping; there needs to be
-// a sizeable dead zone for the program break (heap) to grow
+// ELF arguments on the x86/x64 platform are provided by pushing a vector of
+// values/pointers onto the stack prior to jumping to the entry point:
+//
+//  STACK POINTER --->  argc          number of arguments
+//                      argv[0-n]     pointers to command line arguments
+//                      NULL          separator
+//                      env[0-n]      pointers to environment variables
+//                      NULL          separator
+//                      auxv[0-n]     auxiliary vectors
+//                      AT_NULL       separator
+//                      zero[0-15]    16-byte alignment
+//  INFO BLOCK ------>  [argv]        packed command line argument strings
+//                      [env]         packed environment variable strings
+//                      [auxv]        packed auxiliary vector data
+//  STACK BOTTOM ---->  NULL          terminator
 
 class ElfExecutable : public Executable
 {
@@ -198,7 +210,7 @@ private:
 	//
 	// Creates the stack image for the executable
 	template<enum class Architecture architecture>
-	stacklayout_t CreateStack(ProcessMemory* mem, size_t length) const;
+	stacklayout_t CreateStack(ProcessMemory* mem, size_t length, imagelayout_t const& primarylayout, imagelayout_t const& interpreterlayout) const;
 
 	// FromHandle<Architecture> (static)
 	//
