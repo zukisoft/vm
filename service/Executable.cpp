@@ -88,10 +88,6 @@ std::unique_ptr<Executable> Executable::FromFile(PathResolver resolver, char_t c
 	if((read >= LINUX_EI_NIDENT) && (memcmp(magic, LINUX_ELFMAG, LINUX_SELFMAG) == 0))
 		return ElfExecutable::FromHandle(std::move(handle), resolver, std::move(arguments), std::move(environment), originalpath);
 
-	// A.OUT
-	//
-	// TODO - FUTURE (OMAGIC, NMAGIC, QMAGIC, etc)
-
 	// ANSI INTERPRETER SCRIPT
 	//
 	else if((read >= sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI)) && (memcmp(magic, &INTERPRETER_SCRIPT_MAGIC_ANSI, sizeof(INTERPRETER_SCRIPT_MAGIC_ANSI)) == 0))

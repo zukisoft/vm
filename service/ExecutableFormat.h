@@ -34,9 +34,6 @@
 enum class ExecutableFormat
 {
 	ELF			= 0,			// ELF executable format
-	//AOut		= 1,			// A.OUT executable format (todo: future - see include/uapi/linux/a.out.h)
-	// note: there are multiple A.OUT formats - OMAGIC, NMAGIC, ZMAGIC, QMAGIC, SMAGIC and so on
-	// FatELF	= 2,			// TODO: Don't forget to add support for these
 };
 
 //-----------------------------------------------------------------------------
