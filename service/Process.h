@@ -180,13 +180,13 @@ private:
 
 	// Instance Constructor
 	//
-	Process(nativeproc_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, uintptr_t ldtaddr, Bitmap&& ldtslots, fspath_t root, fspath_t working);
+	Process(nativeproc_t nativeproc, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, uintptr_t ldtaddr, Bitmap&& ldtslots, fspath_t root, fspath_t working);
 	friend class std::_Ref_count_obj<Process>;
 
 	//-------------------------------------------------------------------------
 	// Member Variables
 
-	nativeproc_t const					m_host;			// Native host instance
+	nativeproc_t const					m_nativeproc;	// NativeProcess instance
 	pid_t const							m_pid;			// Process identifier
 	pgroup_t							m_pgroup;		// Parent ProcessGroup
 	session_t							m_session;		// Parent Session

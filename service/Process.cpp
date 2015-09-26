@@ -74,7 +74,7 @@ void RemoveProcessThread(std::shared_ptr<Process> process, Thread const* thread)
 //
 // Arguments:
 //
-//	host		- NativeProcess host instance to take ownership of
+//	nativeproc	- NativeProcess instance to take ownership of
 //	pid			- Process identifier to assign to the process
 //	session		- Session in which the process will be a member
 //	pgroup		- ProcessGroup in which the process will be a member
@@ -84,8 +84,8 @@ void RemoveProcessThread(std::shared_ptr<Process> process, Thread const* thread)
 //	root		- Initial root path for this process
 //	working		- Initial working path for this process
 
-Process::Process(nativeproc_t host, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, uintptr_t ldtaddr, Bitmap&& ldtslots, fspath_t root, fspath_t working) : 
-	m_host(std::move(host)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
+Process::Process(nativeproc_t nativeproc, pid_t pid, session_t session, pgroup_t pgroup, namespace_t ns, uintptr_t ldtaddr, Bitmap&& ldtslots, fspath_t root, fspath_t working) : 
+	m_nativeproc(std::move(nativeproc)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
 	m_ldtaddr(ldtaddr), m_ldtslots(std::move(ldtslots)), m_root(std::move(root)), m_working(std::move(working))
 {
 }
@@ -106,7 +106,7 @@ Process::~Process()
 
 enum class Architecture Process::getArchitecture(void) const
 {
-	return m_host->Architecture;
+	return m_nativeproc->Architecture;
 }
 
 //-----------------------------------------------------------------------------
