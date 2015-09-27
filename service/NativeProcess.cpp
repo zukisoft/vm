@@ -805,6 +805,36 @@ void NativeProcess::ReserveRange(sync::reader_writer_lock::scoped_lock_write& wr
 }
 
 //-----------------------------------------------------------------------------
+// NativeProcess::Resume
+//
+// Resumes the process
+//
+// Arguments:
+//
+//	NONE
+
+void NativeProcess::Resume(void) const
+{
+	NTSTATUS result = NtApi::NtResumeProcess(m_process);
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EACCES, StructuredException{ result } };
+}
+
+//-----------------------------------------------------------------------------
+// NativeProcess::Suspend
+//
+// Suspends the process
+//
+// Arguments:
+//
+//	NONE
+
+void NativeProcess::Suspend(void) const
+{
+	NTSTATUS result = NtApi::NtSuspendProcess(m_process);
+	if(result != NtApi::STATUS_SUCCESS) throw LinuxException{ LINUX_EACCES, StructuredException{ result } };
+}
+
+//-----------------------------------------------------------------------------
 // NativeProcess::UnlockMemory
 //
 // Attempts to unlock a region from physical memory

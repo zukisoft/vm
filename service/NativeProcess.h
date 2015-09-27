@@ -77,6 +77,16 @@ public:
 	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments);
 	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
 
+	// Resume
+	//
+	// Resumes the process
+	void Resume(void) const;
+
+	// Suspend
+	//
+	// Suspends the process
+	void Suspend(void) const;
+	
 	// Terminate
 	//
 	// Terminates the native process
