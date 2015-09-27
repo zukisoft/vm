@@ -25,7 +25,7 @@
 
 #include "Context.h"
 #include "Process.h"
-#include "_VmOld.h"
+#include "VirtualMachine.h"
 
 #pragma warning(push, 4)
 
@@ -44,22 +44,32 @@
 
 HRESULT sys32_attach_process(handle_t rpchandle, sys32_uint_t tid, sys32_addr_t threadproc, sys32_process_t* process, sys32_context_exclusive_t* context)
 {
-	//uuid_t						objectid;			// RPC object identifier
+	uuid_t						objectid;			// RPC object identifier
 	//Context*					handle = nullptr;	// System call context handle
-	//RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
-	//RPC_STATUS					rpcresult;			// Result from RPC function call
+	RPC_CALL_ATTRIBUTES			attributes;			// Client call attributes
+	RPC_STATUS					rpcresult;			// Result from RPC function call
 
-	//// Acquire the object id for the interface connected to by the client
-	//rpcresult = RpcBindingInqObject(rpchandle, &objectid);
-	//if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
+	// Acquire the object id for the interface connected to by the client
+	rpcresult = RpcBindingInqObject(rpchandle, &objectid);
+	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
 
-	//// Acquire the attributes of the calling process
-	//memset(&attributes, 0, sizeof(RPC_CALL_ATTRIBUTES));
-	//attributes.Version = RPC_CALL_ATTRIBUTES_VERSION;
-	//attributes.Flags = RPC_QUERY_CLIENT_PID;
+	// Acquire the attributes of the calling process
+	memset(&attributes, 0, sizeof(RPC_CALL_ATTRIBUTES));
+	attributes.Version = RPC_CALL_ATTRIBUTES_VERSION;
+	attributes.Flags = RPC_QUERY_CLIENT_PID;
 
-	//rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
-	//if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult); 
+	rpcresult = RpcServerInqCallAttributes(rpchandle, &attributes);
+	if(rpcresult != RPC_S_OK) return HRESULT_FROM_WIN32(rpcresult);
+
+	// TESTING
+	//
+	auto vm = VirtualMachine::Find(objectid);
+	if(vm == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+
+	auto proc = Process::Attach(reinterpret_cast<DWORD>(attributes.ClientPID));
+	if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
+	//
+	////////
 
 	//try {
 

@@ -35,6 +35,21 @@
 
 #pragma warning(push, 4)
 
+// Process::s_pendingmap (static)
+//
+// Collection of processes pending attach
+Process::pendingmap_t Process::s_pendingmap;
+
+// Process::s_pendingcond (static)
+//
+// Condition variable used to signal pending process attach
+std::condition_variable	Process::s_pendingcond;
+
+// Process::s_pendinglock (static)
+//
+// Synchronization object for the pending condition variable
+std::mutex Process::s_pendinglock;
+
 //-----------------------------------------------------------------------------
 // AddProcessThread
 //
@@ -88,6 +103,7 @@ Process::Process(nativeproc_t nativeproc, pid_t pid, session_t session, pgroup_t
 	m_nativeproc(std::move(nativeproc)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
 	m_ldtaddr(ldtaddr), m_ldtslots(std::move(ldtslots)), m_root(std::move(root)), m_working(std::move(working))
 {
+	m_state = State::Pending;			// Process is pending by default
 }
 
 //-----------------------------------------------------------------------------
@@ -107,6 +123,38 @@ Process::~Process()
 enum class Architecture Process::getArchitecture(void) const
 {
 	return m_nativeproc->Architecture;
+}
+
+//-----------------------------------------------------------------------------
+// Process::Attach (static)
+//
+// Attaches a native process to this Process instance
+//
+// Arguments:
+//
+//	nativepid		- Native process identifier
+
+std::shared_ptr<Process> Process::Attach(DWORD nativepid)
+{
+	std::unique_lock<std::mutex> critsec{ s_pendinglock };
+
+	// Attempt to locate the process in the pending process collection
+	auto found = s_pendingmap.find(nativepid);
+	if(found == s_pendingmap.end()) return nullptr;
+
+	// Pull out the shared_ptr for the process and remove the pending element
+	auto process = found->second;
+	s_pendingmap.erase(found);
+
+	// Notify all waiting threads to reevaluate the condition
+	s_pendingcond.notify_all();
+	critsec.unlock();
+
+	// Wait up to the configured timeout for the process to reach a Running state
+	// todo: this value needs to be configurable, can get to VirtualMachine from Process
+	if(!process->WaitForState(State::Running, 10000)) return nullptr;
+
+	return process;
 }
 
 //-----------------------------------------------------------------------------
@@ -133,8 +181,7 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	uintptr_t							ldtaddr(0);				// Local descriptor table address
 	std::shared_ptr<Process>			process;				// The constructed Process instance
 
-	// Spawning a new process requires root level access
-	Capability::Demand(Capability::SystemAdmin);
+	Capability::Demand(Capability::SystemAdmin);				// Only root can spawn a process directly
 
 	// Create an Executable::PathResolver lambda (prevents needing to pass all those arguments around)
 	Executable::PathResolver resolver = [&](char_t const* path) -> std::shared_ptr<FileSystem::Handle> { return FileSystem::OpenExecutable(ns, root, working, path); };
@@ -168,12 +215,37 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 			std::move(root), std::move(working));
 	}
 
-	// Terminate the host process if any exceptions occurred during process creation
-	catch(...) { if(host) host->Terminate(ERROR_PROCESS_ABORTED, true); throw; }
+	catch(...) { if(host) host->Terminate(LINUX_SIGKILL, true); throw; }
 
-	// Establish links to the parent process group and session containers
-	AddProcessGroupProcess(pgroup, process);
-	AddSessionProcess(session, process);
+	// The Process instance was successfully created and has taken ownership of everything.  Start the
+	// native process and wait for it to attach to the virtual machine
+	try {
+
+		DWORD nativepid = process->m_nativeproc->ProcessId;
+
+		// Insert an entry into the pending process collection and start the native process
+		std::unique_lock<std::mutex> critsec{ s_pendinglock };
+		s_pendingmap.emplace(nativepid, process);
+		process->m_nativeproc->Resume();
+
+		// Wait for the process to attach and remove the shared_ptr placed into the collection
+		// todo: get timeout value from virtual machine properties
+		if(!s_pendingcond.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(30000),
+			[=]() -> bool { return s_pendingmap.count(nativepid) == 0; })) {
+
+			// The process failed to attach, remove the pending entry and throw
+			// todo: custom exception -- this is important to know what happened
+			throw LinuxException{ LINUX_ENOEXEC, Win32Exception{ ERROR_PROCESS_ABORTED } };	// todo: custom exception
+		}
+
+		// The process has attached successfully, add links to the session and group
+		AddProcessGroupProcess(pgroup, process);
+		AddSessionProcess(session, process);
+
+		process->SetState(State::Running);				// Process is now running
+	}
+
+	catch(...) { /* TODO: KILL THE PROCESS */ throw; }
 
 	return process;
 }
@@ -274,6 +346,52 @@ void Process::SetSession(std::shared_ptr<class Session> session, std::shared_ptr
 	sync::critical_section::scoped_lock cs{ m_cs };
 	m_session = SwapSessionProcess(m_session, session, this);
 	m_pgroup = SwapProcessGroupProcess(m_pgroup, pgroup, this);
+}
+
+//-----------------------------------------------------------------------------
+// Process::getState
+//
+// Gets the state of the process
+
+enum class Process::State Process::getState(void) const
+{
+	// Allow a dirty read of the state variable, locking the mutex here wouldn't do
+	// anything useful -- value could still change between the time this function
+	// ends (releasing the mutex) and the time the caller examines the result
+	return m_state;
+}
+
+//-----------------------------------------------------------------------------
+// Process::SetState (private)
+//
+// Sets the state of the process and signals the condition variable
+//
+// Arguments:
+//
+//	state		- New state of the process
+
+void Process::SetState(enum class State state)
+{
+	std::unique_lock<std::mutex> critsec{ m_statelock };
+	m_state = state;
+	m_statecond.notify_all();
+}
+
+//-----------------------------------------------------------------------------
+// Process::WaitForState
+//
+// Waits for the process to reach a specific state
+//
+// Arguments:
+//
+//	state		- Process state to wait for
+//	timeoutms	- Timeout for the wait operation, in milliseconds
+
+bool Process::WaitForState(enum class State state, uint32_t timeoutms) const
+{
+	std::unique_lock<std::mutex> critsec{ m_statelock };
+	return m_statecond.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(timeoutms), 
+		[&]() -> bool { return m_state == state; });
 }
 
 //-----------------------------------------------------------------------------
