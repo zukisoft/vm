@@ -81,6 +81,9 @@ public:
 	//-------------------------------------------------------------------------
 	// Member Functions
 
+	// Attach (static)
+	//
+	// Attaches a native process to a pending virtual machine process
 	static std::shared_ptr<Process> Attach(DWORD nativepid);
 
 	// Create (static)
