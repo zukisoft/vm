@@ -23,6 +23,7 @@
 #include "stdafx.h"
 #include "VirtualMachine.h"
 
+#include "Context.h"
 #include "Exception.h"
 #include "LinuxException.h"
 #include "MountOptions.h"
@@ -197,6 +198,9 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
+	// Establish a root-level context object for this thread
+	VirtualMachine::Context vmcontext;
+
 	try {
 
 		// JOB OBJECT FOR PROCESS CONTROL
@@ -256,6 +260,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	}
 
 	// Win32Exception and Exception can be translated into ServiceExceptions
+	// todo: context needs to be destroyed or it will leak
 	catch(Win32Exception& ex) { throw ServiceException(static_cast<DWORD>(ex.Code)); }
 	catch(Exception& ex) { throw ServiceException(ex.HResult); }
 	// catch(std::exception& ex) { /* TODO: PUT SOMETHING HERE */ }
@@ -264,6 +269,8 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	// todo: should this be in the initialization try/catch above?
 	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);
 	s_instances.emplace(m_instanceid, shared_from_this());
+	writer.unlock();		// <-- TODO: Cheesy hack, this was OK until I moved init process creation below, but
+	// of course the lock has to be free before the process can find the virtual machine
 
 	// todo: this needs to be wrapped in its own exception handler, prefer moving it
 	// out into it's own function since it will need to wait for the process to terminate
@@ -293,6 +300,9 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 void VirtualMachine::OnStop(void)
 {
+	// Establish a root-level context object for this thread
+	VirtualMachine::Context vmcontext;
+
 	// todo: try to kill everything politely first, the sessions collection
 	// will probably be the best way to deal with this
 
@@ -309,6 +319,28 @@ void VirtualMachine::OnStop(void)
 	// Remove this virtual machine from the active instance collection
 	sync::reader_writer_lock::scoped_lock_write writer(s_instancelock);
 	s_instances.erase(m_instanceid);
+}
+
+//
+// VIRTUALMACHINE::CONTEXT
+//
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::Context Constructor
+//
+// Arguments:
+//
+//	NONE
+
+VirtualMachine::Context::Context() : ::Context(0, 0)
+{
+}
+
+//-----------------------------------------------------------------------------
+// VirtualMachine::Context Destructor
+
+VirtualMachine::Context::~Context()
+{
 }
 
 //

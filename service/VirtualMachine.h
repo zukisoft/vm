@@ -27,6 +27,7 @@
 #include <memory>
 #include <unordered_map>
 #include "Architecture.h"
+#include "Context.h"
 #include "FileSystem.h"
 
 // Forward Declarations
@@ -96,6 +97,22 @@ private:
 
 	VirtualMachine(VirtualMachine const&)=delete;
 	VirtualMachine& operator=(VirtualMachine const&)=delete;
+
+	// VirtualMachine::Context
+	//
+	// Implements an RAII context implementation for the virtual machine
+	class Context : public ::Context
+	{
+	public:
+
+		// Instance Constructor
+		//
+		Context();
+
+		// Destructor
+		//
+		virtual ~Context();
+	};
 
 	// VirtualMachine::RootAlias
 	//
