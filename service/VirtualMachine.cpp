@@ -198,7 +198,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
-	// Establish a root-level context object for this thread
+	// Establish a root-level context object during initialization
 	VirtualMachine::Context vmcontext;
 
 	try {
@@ -300,7 +300,7 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 void VirtualMachine::OnStop(void)
 {
-	// Establish a root-level context object for this thread
+	// Establish a root-level context during shutdown
 	VirtualMachine::Context vmcontext;
 
 	// todo: try to kill everything politely first, the sessions collection

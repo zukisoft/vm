@@ -275,7 +275,7 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 			stackpointer = PushStack(stackpointer, elf::platform);
 			auxv.push_back({ LINUX_AT_PLATFORM, stackpointer + localdelta });									// 15
 
-			(LINUX_AT_EGID);																					// 14
+			(LINUX_AT_EGID);																					// 14 - TODO
 			(LINUX_AT_GID);																						// 13 - TODO
 			(LINUX_AT_EUID);																					// 12 - TODO
 			(LINUX_AT_UID);																						// 11 - TODO
