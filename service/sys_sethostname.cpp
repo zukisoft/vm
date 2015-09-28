@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
-#include "Context.h"
+#include "SystemCallContext.h"
 #include "_VmOld.h"
 
 #pragma warning(push, 4)

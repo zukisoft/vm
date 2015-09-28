@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
-#include "Context.h"
+#include "SystemCallContext.h"
 #include "Process.h"
 #include "Thread.h"
 
@@ -39,7 +39,7 @@
 //
 //	context		- System call context object to be rundown
 
-void sys_rundown_context(Context* context)
+void sys_rundown_context(SystemCallContext* context)
 {
 	//if(context == nullptr) return;
 
@@ -49,21 +49,21 @@ void sys_rundown_context(Context* context)
 	//// until all the Thread instances have been removed from its collection
 	//context->Process->RundownThread(context->Thread);
 
-	Context::Release(context);			// Release the context object
+	SystemCallContext::Release(context);			// Release the context object
 }
 
 // sys32_context_t_rundown
 //
 void __RPC_USER sys32_context_t_rundown(sys32_context_t context)
 {
-	sys_rundown_context(reinterpret_cast<Context*>(context));
+	sys_rundown_context(reinterpret_cast<SystemCallContext*>(context));
 }
 
 // sys32_context_exclusive_t_rundown
 //
 void __RPC_USER sys32_context_exclusive_t_rundown(sys32_context_exclusive_t context)
 {
-	sys_rundown_context(reinterpret_cast<Context*>(context));
+	sys_rundown_context(reinterpret_cast<SystemCallContext*>(context));
 }
 
 #ifdef _M_X64

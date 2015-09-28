@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
-#include "Context.h"
+#include "SystemCallContext.h"
 #include "Process.h"
 #include "SystemInformation.h"
 

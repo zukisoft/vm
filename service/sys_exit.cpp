@@ -23,7 +23,7 @@
 #include "stdafx.h"
 #include "SystemCall.h"
 
-#include "Context.h"
+#include "SystemCallContext.h"
 #include "Process.h"
 
 #pragma warning(push, 4)
@@ -51,13 +51,13 @@ uapi::long_t sys_exit(const Context* context, int exitcode)
 sys32_long_t sys32_exit(sys32_context_exclusive_t* context_handle, sys32_int_t exitcode)
 {
 	// context_handle is [in, out, ref] for this system call
-	Context* context = reinterpret_cast<Context*>(*context_handle);
+	SystemCallContext* context = reinterpret_cast<SystemCallContext*>(*context_handle);
 
 	// Invoke the sys_exit system call and release the context handle if successful
 	uapi::long_t result = static_cast<sys32_long_t>(SystemCall::Invoke(sys_exit, context, exitcode));
 	if(result == 0) {
 
-		Context::Release(context);				// Release the context object
+		SystemCallContext::Release(context);	// Release the context object
 		*context_handle = nullptr;				// Release the context handle
 	}
 
