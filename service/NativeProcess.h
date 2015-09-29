@@ -24,7 +24,6 @@
 #define __NATIVEPROCESS_H_
 #pragma once
 
-#include <memory>
 #include <set>
 #include <unordered_map>
 #include "Architecture.h"
@@ -32,14 +31,14 @@
 #include "ProcessMemory.h"
 
 #pragma warning(push, 4)
-#pragma warning(disable:4396)	// inline specifier cannot be used with specialization
 
 //-----------------------------------------------------------------------------
 // Class NativeProcess
 //
-// words
+// Owns a native operating system process handle and abstracts the operations that
+// can be performed against that process.
 //
-// Memory within the host process is managed by mapped section objects so that they
+// Memory within the native process is managed by mapped section objects so that they
 // can be shared among multiple processes as necessary.  Limitations of pagefile
 // backed sections are similar to Win32 file mappings -- you can create them as 
 // reservations and subsequently commit individual pages, but you cannot decommit
@@ -53,16 +52,14 @@
 // operation is also used, that merely resets the protection back to PAGE_NOACCESS (note
 // that the contents are not cleared).  Only when an entire section has been soft-
 // released will it be removed from the collection and formally deallocated.
-//
-// This memory management method is more involved than a previous iteration of the Host
-// class that left many details to the operating system, but does a lot more to ensure 
-// that only memory allocated by this class is operated against by this class.  This is
-// a bit draconian and can be backed off in the future if it's a big performance problem,
-// but I would rather do it this way for now and keep track of everything.
 
 class NativeProcess : public ProcessMemory
 {
 public:
+
+	// Instance Constructor
+	//
+	NativeProcess(enum class Architecture architecture, HANDLE process, DWORD processid);
 
 	// Destructor
 	//
@@ -70,12 +67,6 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Member Functions
-
-	// Create (static)
-	//
-	// Creates a new NativeProcess instance
-	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments);
-	static std::unique_ptr<NativeProcess> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
 
 	// Resume
 	//
@@ -110,27 +101,15 @@ public:
 
 	// ProcessHandle
 	//
-	// Gets the host process handle
+	// Gets the native process handle
 	__declspec(property(get=getProcessHandle)) HANDLE ProcessHandle;
 	HANDLE getProcessHandle(void) const;
 
 	// ProcessId
 	//
-	// Gets the host process identifier
+	// Gets the native process identifier
 	__declspec(property(get=getProcessId)) DWORD ProcessId;
 	DWORD getProcessId(void) const;
-
-	// ThreadHandle
-	//
-	// Gets the host main thread handle
-	__declspec(property(get=getThreadHandle)) HANDLE ThreadHandle;
-	HANDLE getThreadHandle(void) const;
-
-	// ThreadId
-	//
-	// Gets the host main thread identifier
-	__declspec(property(get=getThreadId)) DWORD ThreadId;
-	DWORD getThreadId(void) const;
 
 	//-------------------------------------------------------------------------
 	// ProcessMemory Implementation
@@ -230,11 +209,6 @@ private:
 	// Collection of section_t instances
 	typedef std::set<section_t> sections_t;
 
-	// Instance Constructor
-	//
-	NativeProcess(enum class Architecture architecture, PROCESS_INFORMATION& procinfo);
-	friend std::unique_ptr<NativeProcess> std::make_unique<NativeProcess, enum class Architecture, PROCESS_INFORMATION&>(enum class Architecture&&, PROCESS_INFORMATION&);
-
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 	
@@ -242,16 +216,6 @@ private:
 	//
 	// Creates a new memory section object and maps it to the specified address
 	static section_t CreateSection(HANDLE process, uintptr_t address, size_t length, ProcessMemory::AllocationFlags flags);
-
-	// DuplicateHandle (static)
-	//
-	// Duplicates a Win32 HANDLE object with the same attributes and access
-	static HANDLE DuplicateHandle(HANDLE original);
-
-	// GetProcessArchitecture (static)
-	//
-	// Determines the Architecture of a native process
-	static enum class Architecture GetProcessArchitecture(HANDLE process);
 
 	// EnsureSectionAllocation (static)
 	//
@@ -283,9 +247,10 @@ private:
 
 	enum class Architecture	const		m_architecture;		// Native process architecture
 	HANDLE const						m_process;			// Native process handle
-	DWORD								m_processid;		// Native process identifier
-	HANDLE const						m_thread;			// Native thread handle
-	DWORD								m_threadid;			// Native thread identifier
+	DWORD const							m_processid;		// Native process identifier
+
+	// Memory Management
+	//
 	sections_t							m_sections;			// Allocated sections
 	localmappings_t						m_localmappings;	// Local section mappings
 	mutable sync::reader_writer_lock	m_sectionslock;		// Synchronization object

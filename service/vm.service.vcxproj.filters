@@ -82,6 +82,9 @@
     <Filter Include="Virtual Machine\Executables">
       <UniqueIdentifier>{f8d15766-e97c-4b0e-8482-416a00bc5557}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Virtual Machine\Native Process Control">
+      <UniqueIdentifier>{bc74222e-053a-44df-8ec3-4d1cd2c75404}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -411,17 +414,20 @@
     <ClInclude Include="ProcessMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NativeProcess.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeThread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SystemCallContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Context.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeHost.h">
+      <Filter>Virtual Machine\Native Process Control</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeProcess.h">
+      <Filter>Virtual Machine\Native Process Control</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeThread.h">
+      <Filter>Virtual Machine\Native Process Control</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -869,17 +875,20 @@
     <ClCompile Include="ProcessMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NativeProcess.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NativeThread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SystemCallContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Context.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeProcess.cpp">
+      <Filter>Virtual Machine\Native Process Control</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeThread.cpp">
+      <Filter>Virtual Machine\Native Process Control</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeHost.cpp">
+      <Filter>Virtual Machine\Native Process Control</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

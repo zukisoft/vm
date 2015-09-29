@@ -20,59 +20,60 @@
 // SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef __NATIVETHREAD_H_
-#define __NATIVETHREAD_H_
+#ifndef __NATIVEHOST_H_
+#define __NATIVEHOST_H_
 #pragma once
 
+#include <memory>
+#include <tuple>
 #include "Architecture.h"
 
-#pragma warning(push, 4)				
+#pragma warning(push, 4)
+
+// Forward Declarations
+//
+class NativeProcess;
+class NativeThread;
 
 //-----------------------------------------------------------------------------
-// NativeThread
+// Class NativeHost
 //
-// Owns a native operating system thread handle and abstracts the operations that
-// can be performed against that thread
+// Wrapper around creation of a native operating system process, the result of
+// which is a NativeProcess/NativeThread tuple that allows the two instances
+// to be separated and treated as individual entities
 
-class NativeThread
+class NativeHost
 {
 public:
-
-	// Instance Constructor
-	//
-	NativeThread(enum class Architecture architecture, HANDLE thread, DWORD threadid);
-
-	// Destructor
-	//
-	~NativeThread();
 
 	//-------------------------------------------------------------------------
 	// Member Functions
 
-	//-------------------------------------------------------------------------
-	// Properties
-
-	// Architecture
+	// Create (static)
 	//
-	// Gets the architecture associated with the task state
-	__declspec(property(get=getArchitecture)) enum class Architecture Architecture;
-	enum class Architecture getArchitecture(void) const;
+	// Creates a new NativeProcess/NativeThread instance pair
+	static std::tuple<std::unique_ptr<NativeProcess>, std::unique_ptr<NativeThread>> Create(const tchar_t* path, const tchar_t* arguments);
+	static std::tuple<std::unique_ptr<NativeProcess>, std::unique_ptr<NativeThread>> Create(const tchar_t* path, const tchar_t* arguments, HANDLE handles[], size_t numhandles);
 
 private:
 
-	NativeThread(NativeThread const&)=delete;
-	NativeThread& operator=(NativeThread const&)=delete;
+	NativeHost()=delete;
+	~NativeHost()=delete;
+	NativeHost(NativeHost const&)=delete;
+	NativeHost& operator=(NativeHost const&)=delete;
 
 	//-------------------------------------------------------------------------
-	// Member Variables
+	// Private Member Functions
 	
-	enum class Architecture	const	m_architecture;		// Task architecture
-	HANDLE const					m_thread;			// Thread handle
-	DWORD const						m_threadid;			// Thread identifier
+	// GetProcessArchitecture (static)
+	//
+	// Determines the Architecture of a native process
+	static enum class Architecture GetProcessArchitecture(HANDLE process);
 };
 
 //-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
-#endif	// __NATIVETHREAD_H_
+#endif	// __NATIVEHOST_H_
+

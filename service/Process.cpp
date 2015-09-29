@@ -23,10 +23,12 @@
 #include "stdafx.h"
 #include "Process.h"
 
+#include <tuple>
 #include "Capability.h"
 #include "Executable.h"
 #include "LinuxException.h"
 #include "NativeProcess.h"
+#include "NativeThread.h"
 #include "Pid.h"
 #include "ProcessGroup.h"
 #include "Session.h"
@@ -189,14 +191,15 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	// Construct an Executable instance from the provided file system file
 	auto executable = Executable::FromFile(resolver, path, arguments, environment);
 
-	// Create a new Host instance of the appropriate architecture
-	auto host = session->VirtualMachine->CreateHost(executable->Architecture);
-	_ASSERTE(host->Architecture == executable->Architecture);
+	// Create a new hosting process/thread of the appropriate architecture
+	std::unique_ptr<NativeProcess> nativeprocess;
+	std::unique_ptr<NativeThread> nativethread;
+	std::tie(nativeprocess, nativethread) = session->VirtualMachine->CreateHost(executable->Architecture);
 
 	try {
 
 		// Load the executable image into the constructed host process instance
-		auto layout = executable->Load(host.get(), 2 MiB);		// <--- todo: get stack size from virtual machine properties
+		auto layout = executable->Load(nativeprocess.get(), 2 MiB);		// <--- todo: get stack size from virtual machine properties
 
 		// layout has entry point and stack pointer in it
 
@@ -206,16 +209,22 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		//auto task = Task::Create(layout->Architecture, layout->EntryPoint, layout->StackPointer);
 
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
-		size_t ldtsize = LINUX_LDT_ENTRIES * ((host->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));
-		try { ldtaddr = host->AllocateMemory(ldtsize, ProcessMemory::Protection::Read | ProcessMemory::Protection::Write); }
+		size_t ldtsize = LINUX_LDT_ENTRIES * ((nativeprocess->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));
+		try { ldtaddr = nativeprocess->AllocateMemory(ldtsize, ProcessMemory::Protection::Read | ProcessMemory::Protection::Write); }
 		catch(...) { throw LinuxException{ LINUX_ENOMEM }; }
 
+		// todo: need to pass the thread to Process ctor
+
 		// Create the Process instance, providing a blank local descriptor table allocation bitmap
-		process = std::make_shared<Process>(std::move(host), std::move(pid), session, pgroup, std::move(ns), ldtaddr, Bitmap(LINUX_LDT_ENTRIES), 
+		process = std::make_shared<Process>(std::move(nativeprocess), std::move(pid), session, pgroup, std::move(ns), ldtaddr, Bitmap(LINUX_LDT_ENTRIES), 
 			std::move(root), std::move(working));
 	}
 
-	catch(...) { if(host) host->Terminate(LINUX_SIGKILL, true); throw; }
+	catch(...) { nativeprocess->Terminate(LINUX_SIGKILL, true); throw; }
+
+	//
+	// todo: this is pretty ugly down here, I think there needs to be a helper function
+	//
 
 	// The Process instance was successfully created and has taken ownership of everything.  Start the
 	// native process and wait for it to attach to the virtual machine

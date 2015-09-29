@@ -28,7 +28,9 @@
 #include "LinuxException.h"
 #include "MountOptions.h"
 #include "Namespace.h"
+#include "NativeHost.h"
 #include "NativeProcess.h"
+#include "NativeThread.h"
 #include "Process.h"
 #include "ProcessGroup.h"
 #include "RpcObject.h"
@@ -108,38 +110,38 @@ VirtualMachine::VirtualMachine() : m_instanceid(GenerateInstanceId())
 //---------------------------------------------------------------------------
 // VirtualMachine::CreateHost
 //
-// Creates a NativeProcess host instance for the specified architecture
+// Creates a NativeProcess/NativeThread host pair for the specified architecture
 //
 // Arguments:
 //
 //	architecture	- Architecture of the native process to create
 
-std::unique_ptr<NativeProcess> VirtualMachine::CreateHost(enum class Architecture architecture)
+std::tuple<std::unique_ptr<NativeProcess>, std::unique_ptr<NativeThread>> VirtualMachine::CreateHost(enum class Architecture architecture)
 {
-	std::unique_ptr<NativeProcess>		nativeproc;		// The constructed NativeProcess instance
+	std::tuple<std::unique_ptr<NativeProcess>, std::unique_ptr<NativeThread>>	hostpair;	// Constructed process/thread pair
 
 	// Construct a NativeProcess instance for the specified architecture
 	if(architecture == Architecture::x86) 
-		nativeproc = NativeProcess::Create(m_paramhost32.Value.c_str(), m_syscalls32->BindingString);
+		hostpair = NativeHost::Create(m_paramhost32.Value.c_str(), m_syscalls32->BindingString);
 #ifdef _M_X64
 	else if(architecture == Architecture::x86_64) 
-		nativeproc = NativeProcess::Create(m_paramhost64.Value.c_str(), m_syscalls64->BindingString);
+		hostpair = NativeProcess::Create(m_paramhost64.Value.c_str(), m_syscalls64->BindingString);
 #endif
 	else throw LinuxException{ LINUX_ENOEXEC };
 
 	try {
 
-		// Verify that the architecture of the created process matches the request
-		if(nativeproc->Architecture != architecture) throw LinuxException{ LINUX_ENOEXEC };
+		// Verify that the architecture of the created process matches the request, can assume thread is the same
+		if(std::get<0>(hostpair)->Architecture != architecture) throw LinuxException{ LINUX_ENOEXEC };
 
 		// Associate the native process with the instance job object before returning
-		if(!AssignProcessToJobObject(m_job, nativeproc->ProcessHandle)) throw LinuxException{ LINUX_ENOEXEC, Win32Exception{} };
+		if(!AssignProcessToJobObject(m_job, std::get<0>(hostpair)->ProcessHandle)) throw LinuxException{ LINUX_ENOEXEC, Win32Exception{} };
 	}
 
 	// Terminate the native process on exception before throwing
-	catch(...) { nativeproc->Terminate(0); throw; }
+	catch(...) { std::get<0>(hostpair)->Terminate(ERROR_PROCESS_ABORTED); throw; }
 
-	return nativeproc;					// Return the unique_ptr to the caller
+	return hostpair;					// Return the tuple<> to the caller
 }
 
 //---------------------------------------------------------------------------

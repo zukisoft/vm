@@ -25,6 +25,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <unordered_map>
 #include "Architecture.h"
 #include "Context.h"
@@ -34,6 +35,7 @@
 //
 class Namespace;
 class NativeProcess;
+class NativeThread;
 class Pid;
 class Process;
 class RpcObject;
@@ -77,7 +79,7 @@ public:
 	// CreateHost
 	//
 	// Creates a new Host instance for the specified architecture
-	std::unique_ptr<NativeProcess> CreateHost(enum class Architecture architecture);
+	std::tuple<std::unique_ptr<NativeProcess>, std::unique_ptr<NativeThread>> CreateHost(enum class Architecture architecture);
 
 	// Find (static)
 	//
