@@ -243,12 +243,12 @@ std::unique_ptr<NativeProcess> NativeProcess::Create(const tchar_t* path, const 
 	// Determine the size of the attributes buffer required to hold the inheritable handles property
 	SIZE_T required = 0;
 	InitializeProcThreadAttributeList(nullptr, 1, 0, &required);
-	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) LinuxException{ LINUX_EACCES, Win32Exception{ GetLastError() } };
+	if(GetLastError() != ERROR_INSUFFICIENT_BUFFER) throw LinuxException{ LINUX_EACCES, Win32Exception{ GetLastError() } };
 
 	// Allocate a buffer large enough to hold the attribute data and initialize it
 	auto buffer = std::make_unique<uint8_t[]>(required);
 	PPROC_THREAD_ATTRIBUTE_LIST attributes = reinterpret_cast<PPROC_THREAD_ATTRIBUTE_LIST>(&buffer[0]);
-	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) LinuxException{ LINUX_EACCES, Win32Exception{ GetLastError() } };
+	if(!InitializeProcThreadAttributeList(attributes, 1, 0, &required)) throw LinuxException{ LINUX_EACCES, Win32Exception{ GetLastError() } };
 
 	try {
 
