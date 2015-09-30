@@ -134,11 +134,30 @@ void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
 //
 // Arguments:
 //
+//	object		- Waitable instances to be waited upon
+//	options		- Wait operation flags and options
+//	siginfo		- On success, contains resultant signal information
+
+std::shared_ptr<Waitable> Waitable::Wait(std::shared_ptr<Waitable> object, int options, uapi::siginfo* siginfo)
+{
+	std::vector<std::shared_ptr<Waitable>> waitvec;
+	waitvec.emplace_back(std::move(object));
+
+	return Wait(waitvec, options, siginfo);
+}
+
+//-----------------------------------------------------------------------------
+// Waitable::Wait (static)
+//
+// Waits for a Waitable instance to become signaled
+//
+// Arguments:
+//
 //	objects		- Vector of Waitable instances to be waited upon
 //	options		- Wait operation flags and options
 //	siginfo		- On success, contains resultant signal information
 
-std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waitable>>& objects, int options, uapi::siginfo* siginfo)
+std::shared_ptr<Waitable> Waitable::Wait(std::vector<std::shared_ptr<Waitable>> const& objects, int options, uapi::siginfo* siginfo)
 {
 	std::condition_variable			signal;				// Signaled on a successful wait
 	std::mutex						lock;				// Condition variable synchronization object
@@ -162,7 +181,7 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 
 	// Iterate over all of the Waitable instances to check for a pending signal that can be
 	// consumed immediately, or to register a wait operation against it
-	for(const auto& iterator : objects) {
+	for(auto const& iterator : objects) {
 
 		std::lock_guard<std::mutex> cswaitable(iterator->m_lock);
 
@@ -193,10 +212,10 @@ std::shared_ptr<Waitable> Waitable::Wait(const std::vector<std::shared_ptr<Waita
 	signal.wait(cscondvar, [&]() -> bool { return siginfo->linux_si_pid != 0; });
 
 	// Remove this wait from the provided Waitable instances
-	for(const auto& iterator : objects) {
+	for(auto const& iterator : objects) {
 
 		std::lock_guard<std::mutex> critsec(iterator->m_lock);
-		iterator->m_waiters.remove_if([&](const waiter_t& item) -> bool { return &item.signal == &signal; });
+		iterator->m_waiters.remove_if([&](waiter_t const& item) -> bool { return &item.signal == &signal; });
 	}
 
 	return signaled;			// Return Waitable instance that was signaled

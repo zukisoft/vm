@@ -66,7 +66,8 @@ public:
 	// Wait
 	//
 	// Waits for a waitable instance to become signaled
-	static std::shared_ptr<Waitable> Wait(const std::vector<std::shared_ptr<Waitable>>& objects, int options, uapi::siginfo* siginfo);
+	static std::shared_ptr<Waitable> Wait(std::shared_ptr<Waitable> object, int options, uapi::siginfo* siginfo);
+	static std::shared_ptr<Waitable> Wait(std::vector<std::shared_ptr<Waitable>> const& objects, int options, uapi::siginfo* siginfo);
 
 protected:
 
@@ -84,8 +85,8 @@ protected:
 
 private:
 
-	Waitable(const Waitable&)=delete;
-	Waitable& operator=(const Waitable&)=delete;
+	Waitable(Waitable const&)=delete;
+	Waitable& operator=(Waitable const&)=delete;
 	
 	// waiter_t
 	//
@@ -103,12 +104,12 @@ private:
 		std::condition_variable&			signal;			// Condition variable to signal
 		std::mutex&							lock;			// Condition variable lock object
 		int const							options;		// Wait operation mask and flags
-		const std::shared_ptr<Waitable>&	object;			// Wait operation context object
+		std::shared_ptr<Waitable> const&	object;			// Wait operation context object
 		uapi::siginfo*						siginfo;		// Resultant signal information
 		std::shared_ptr<Waitable>&			result;			// Resultant signaled object
 
-		waiter_t(const waiter_t&)=delete;
-		waiter_t& operator=(const waiter_t&)=delete;
+		waiter_t(waiter_t const&)=delete;
+		waiter_t& operator=(waiter_t const&)=delete;
 	};
 
 	//-------------------------------------------------------------------------
