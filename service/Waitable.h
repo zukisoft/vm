@@ -91,24 +91,14 @@ private:
 	// waiter_t
 	//
 	// Structure used to register a wait operation with a Waitable instance
-	struct waiter_t {
-
-		// Instance Constructor
-		//
-		waiter_t(std::condition_variable& _signal, std::mutex& _lock, int _options, std::shared_ptr<Waitable> const& _object, 
-			uapi::siginfo* _siginfo, std::shared_ptr<Waitable>& _result);
-
-		// Fields
-		//
+	struct waiter_t 
+	{
 		std::condition_variable&			signal;			// Condition variable to signal
 		std::mutex&							lock;			// Condition variable lock object
 		int const							options;		// Wait operation mask and flags
 		std::shared_ptr<Waitable> const&	object;			// Wait operation context object
 		uapi::siginfo*						siginfo;		// Resultant signal information
 		std::shared_ptr<Waitable>&			result;			// Resultant signaled object
-
-		waiter_t(waiter_t const&)=delete;
-		waiter_t& operator=(waiter_t const&)=delete;
 	};
 
 	//-------------------------------------------------------------------------

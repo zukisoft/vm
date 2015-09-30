@@ -96,7 +96,7 @@ void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
 	siginfo.linux_si_status = status;
 
 	// Lock the waiters collection and pending siginfo member variables
-	std::lock_guard<std::mutex> cscollection(m_lock);
+	std::lock_guard<std::mutex> cscollection{ m_lock };
 
 	// Revoke any pending signal that was not processed by a waiter
 	memset(&m_pending, 0, sizeof(uapi::siginfo));
@@ -106,7 +106,7 @@ void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
 		// Take the lock for this waiter and check that it hasn't already been spent,
 		// this is necessary to prevent a race condition wherein a second call to this
 		// function before the waiter could be removed would resignal it
-		std::unique_lock<std::mutex> cswaiter(iterator.lock);
+		std::unique_lock<std::mutex> cswaiter{ iterator.lock };
 		if(iterator.siginfo->linux_si_pid != 0) continue;
 
 		// If this waiter is not interested in the signal, move on to the next one
@@ -201,7 +201,7 @@ std::shared_ptr<Waitable> Waitable::Wait(std::vector<std::shared_ptr<Waitable>> 
 		}
 
 		// Unless WNOHANG has been specified, register a wait operation for this Waitable instance
-		if((options & LINUX_WNOHANG) == 0) iterator->m_waiters.emplace_back(signal, lock, options, iterator, siginfo, signaled);
+		if((options & LINUX_WNOHANG) == 0) iterator->m_waiters.push_back({ signal, lock, options, iterator, siginfo, signaled });
 	}
 
 	// If WNOHANG was specified, nothing will have been registered to wait against; only a
@@ -219,15 +219,6 @@ std::shared_ptr<Waitable> Waitable::Wait(std::vector<std::shared_ptr<Waitable>> 
 	}
 
 	return signaled;			// Return Waitable instance that was signaled
-}
-
-//
-// WAITABLE::WAITER_T
-//
-
-Waitable::waiter_t::waiter_t(std::condition_variable& _signal, std::mutex& _lock, int _options, std::shared_ptr<Waitable> const& _object, uapi::siginfo* _siginfo, 
-	std::shared_ptr<Waitable>& _result) : signal(_signal), lock(_lock), options(_options), object(_object), siginfo(_siginfo), result(_result) 
-{
 }
 
 //-----------------------------------------------------------------------------
