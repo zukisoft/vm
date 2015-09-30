@@ -95,9 +95,8 @@ private:
 
 		// Instance Constructor
 		//
-		waiter_t(std::condition_variable& _signal, std::mutex& _lock, int _options,
-			const std::shared_ptr<Waitable>& _object, uapi::siginfo* _siginfo, std::shared_ptr<Waitable>& _result) :
-			signal(_signal), lock(_lock), options(_options), object(_object), siginfo(_siginfo), result(_result) {}
+		waiter_t(std::condition_variable& _signal, std::mutex& _lock, int _options, std::shared_ptr<Waitable> const& _object, 
+			uapi::siginfo* _siginfo, std::shared_ptr<Waitable>& _result);
 
 		// Fields
 		//

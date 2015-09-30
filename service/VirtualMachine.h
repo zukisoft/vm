@@ -189,11 +189,6 @@ private:
 	// Collection of available file systems (name, mount function)
 	using filesystem_map_t = std::unordered_map<std::string, FileSystem::MountFunction>;
 
-	// fsalias_t
-	//
-	// FileSystem::Alias shared pointer
-	//using fsalias_t = std::shared_ptr<FileSystem::Alias>;
-
 	// fsmount_t
 	//
 	// FileSystem::Mount shared pointer

@@ -201,34 +201,30 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 		// Load the executable image into the constructed host process instance
 		auto layout = executable->Load(nativeprocess.get(), 2 MiB);		// <--- todo: get stack size from virtual machine properties
 
-		// layout has entry point and stack pointer in it
-
-		// new way I want to do this ... create the Thread instance around the main thread handle/id, let it call acquire_thread
-		// like any other thread would.  Doing it at time of process creation is a smidge faster but complicates the code, and there
-		// is absolutely no reason to assume that performance won't be so horrible it would make any difference regardless
-		//auto task = Task::Create(layout->Architecture, layout->EntryPoint, layout->StackPointer);
-
 		// Attempt to allocate a new Local Descriptor Table for the process, the size is architecture dependent
 		size_t ldtsize = LINUX_LDT_ENTRIES * ((nativeprocess->Architecture == Architecture::x86) ? sizeof(uapi::user_desc32) : sizeof(uapi::user_desc64));
 		try { ldtaddr = nativeprocess->AllocateMemory(ldtsize, ProcessMemory::Protection::Read | ProcessMemory::Protection::Write); }
 		catch(...) { throw LinuxException{ LINUX_ENOMEM }; }
-
-		// todo: need to pass the thread to Process ctor
 
 		// Create the Process instance, providing a blank local descriptor table allocation bitmap
 		process = std::make_shared<Process>(std::move(nativeprocess), std::move(pid), session, pgroup, std::move(ns), ldtaddr, Bitmap(LINUX_LDT_ENTRIES), 
 			std::move(root), std::move(working));
 	}
 
-	catch(...) { nativeprocess->Terminate(LINUX_SIGKILL, true); throw; }
+	// Kill the process with ERROR_PROCESS_ABORTED if there was a problem before it becomes a Process instance
+	catch(...) { nativeprocess->Terminate(ERROR_PROCESS_ABORTED, true); throw; }
 
 	//
-	// todo: this is pretty ugly down here, I think there needs to be a helper function
+	// todo: this is pretty ugly down here, I think there needs to be a helper function, perhaps make "Start"
+	// which can be called publicly and stop this Create() function after the process is created (kinda makes
+	// sense when you think about it, huh?)
 	//
 
 	// The Process instance was successfully created and has taken ownership of everything.  Start the
 	// native process and wait for it to attach to the virtual machine
 	try {
+
+		// todo: ensure state is Pending here if moving into a new function
 
 		DWORD nativepid = process->m_nativeproc->ProcessId;
 
