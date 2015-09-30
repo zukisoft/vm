@@ -63,12 +63,12 @@ protected:
 	// Indicates the type of state change that has occurred
 	enum class StateChange 
 	{
-		Exited			= 1,		// Child has exited normally
-		Killed			= 2,		// Child was killed by a signal
-		Dumped			= 3,		// Child was killed and dumped
-		Trapped			= 4,		// Traced child was trapped
-		Stopped			= 5,		// Child was stopped by a signal
-		Continued		= 6,		// Child was continued by SIGCONT
+		Exited			= 1,		// Process has exited normally
+		Killed			= 2,		// Process was killed by a signal
+		Dumped			= 3,		// Process was killed and dumped
+		Trapped			= 4,		// Traced process was trapped
+		Stopped			= 5,		// Process was stopped by a signal
+		Continued		= 6,		// Process was continued by SIGCONT
 	};
 
 	// Instance Constructor
