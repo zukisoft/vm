@@ -23,6 +23,8 @@
 #include "stdafx.h"
 #include "Waitable.h"
 
+#include "LinuxException.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -39,33 +41,35 @@ Waitable::Waitable()
 }
 
 //-----------------------------------------------------------------------------
-// Waitable::MaskAcceptsState (private, static)
+// Waitable::MaskAcceptsStateChange (private, static)
+//
+// Determines if a wait options mask accepts a specific StateChange code
 //
 // Arguments:
 //
-//	mask	- Wait operation flags and options mask
-//	state	- State code to check against the provided mask
+//	mask		- Wait operation flags and options mask
+//	newstate	- StateChange code to check against the provided mask
 
-bool Waitable::MaskAcceptsState(int mask, State state)
+inline bool Waitable::MaskAcceptsStateChange(int mask, StateChange newstate)
 {
-	switch(state) {
+	switch(newstate) {
 
-		// WEXITED -- Accepts State::Exited, State::Killed, State::Dumped
+		// WEXITED -- Accepts StateChange::Exited, StateChange::Killed, StateChange::Dumped
 		//
-		case State::Exited:
-		case State::Killed:
-		case State::Dumped:
+		case StateChange::Exited:
+		case StateChange::Killed:
+		case StateChange::Dumped:
 			return ((mask & LINUX_WEXITED) == LINUX_WEXITED);
 
-		// WSTOPPED -- Accepts State::Trapped, State::Stopped
+		// WSTOPPED -- Accepts StateChange::Trapped, StateChange::Stopped
 		//
-		case State::Trapped:
-		case State::Stopped:
+		case StateChange::Trapped:
+		case StateChange::Stopped:
 			return ((mask & LINUX_WSTOPPED) == LINUX_WSTOPPED);
 
-		// WCONTINUED -- Accepts State::Continued
+		// WCONTINUED -- Accepts StateChange::Continued
 		//
-		case State::Continued:
+		case StateChange::Continued:
 			return ((mask & LINUX_WCONTINUED) == LINUX_WCONTINUED);
 	}
 
@@ -80,17 +84,17 @@ bool Waitable::MaskAcceptsState(int mask, State state)
 // Arguments:
 //
 //	pid			- PID/TID of the object that has changed state
-//	state		- New state to be reported for the object
+//	newstate	- New state to be reported for the object
 //	status		- Current object status/exit code
 
-void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
+void Waitable::NotifyStateChange(uapi::pid_t pid, StateChange newstate, int32_t status)
 {
 	uapi::siginfo		siginfo;			// Signal information (SIGCHLD)
 
 	// Convert the input arguments into a siginfo (SIGCHLD) structure
 	siginfo.si_signo = LINUX_SIGCHLD;
 	siginfo.si_errno = 0;
-	siginfo.si_code = static_cast<int32_t>(state);
+	siginfo.si_code = static_cast<int32_t>(newstate);
 	siginfo.linux_si_pid = pid;
 	siginfo.linux_si_uid = 0;
 	siginfo.linux_si_status = status;
@@ -109,8 +113,8 @@ void Waitable::NotifyStateChange(uapi::pid_t pid, State state, int32_t status)
 		std::unique_lock<std::mutex> cswaiter{ iterator.lock };
 		if(iterator.siginfo->linux_si_pid != 0) continue;
 
-		// If this waiter is not interested in the signal, move on to the next one
-		if(!MaskAcceptsState(iterator.options, state)) continue;
+		// If this waiter is not interested in this state change, move on to the next one
+		if(!MaskAcceptsStateChange(iterator.options, newstate)) continue;
 
 		// Write the signal information out through the provided pointer and assign
 		// the context object of this waiter to the shared result object reference
@@ -187,7 +191,7 @@ std::shared_ptr<Waitable> Waitable::Wait(std::vector<std::shared_ptr<Waitable>> 
 
 		// If there is already a pending state for this Waitable instance that matches the
 		// requested wait operation mask, pull it out and stop registering waits
-		if((iterator->m_pending.linux_si_pid != 0) && (MaskAcceptsState(options, static_cast<State>(iterator->m_pending.si_code)))) {
+		if((iterator->m_pending.linux_si_pid != 0) && (MaskAcceptsStateChange(options, static_cast<StateChange>(iterator->m_pending.si_code)))) {
 
 			// Pull out the pending signal information and assign the result object
 			*siginfo = iterator->m_pending;

@@ -27,34 +27,21 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
-#include "LinuxException.h"
 
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
 // Waitable
 //
-// Base class for a waitable object (process/thread) that provides the mechanism
-// that allows the object to be waited upon for a state change
+// Base class for a waitable object that provides the mechanism that allows an
+// object to be waited upon for a state change.
 //
-// TODO: THIS GETS COLLAPSED INTO PROCESS
+// TODO: Consider moving this into Process, no other virtual machine objects
+// should need this functionality.
 
 class Waitable
 {
 public:
-
-	// State
-	//
-	// Indicates the type of state change that has occurred
-	enum class State {
-
-		Exited			= 1,		// Child has exited normally
-		Killed			= 2,		// Child was killed by a signal
-		Dumped			= 3,		// Child was killed and dumped
-		Trapped			= 4,		// Traced child was trapped
-		Stopped			= 5,		// Child was stopped by a signal
-		Continued		= 6,		// Child was continued by SIGCONT
-	};
 
 	// Destructor
 	//
@@ -71,6 +58,19 @@ public:
 
 protected:
 
+	// StateChange
+	//
+	// Indicates the type of state change that has occurred
+	enum class StateChange 
+	{
+		Exited			= 1,		// Child has exited normally
+		Killed			= 2,		// Child was killed by a signal
+		Dumped			= 3,		// Child was killed and dumped
+		Trapped			= 4,		// Traced child was trapped
+		Stopped			= 5,		// Child was stopped by a signal
+		Continued		= 6,		// Child was continued by SIGCONT
+	};
+
 	// Instance Constructor
 	//
 	Waitable();
@@ -81,7 +81,7 @@ protected:
 	// NotifyStateChange
 	//
 	// Signals that a change in waitable object state has occurred
-	void NotifyStateChange(uapi::pid_t pid, State state, int32_t status); 
+	void NotifyStateChange(uapi::pid_t pid, StateChange newstate, int32_t status); 
 
 private:
 
@@ -104,10 +104,10 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// MaskAcceptsState (static)
+	// MaskAcceptsStateChange (static)
 	//
-	// Determines if a wait options mask accepts a specific State code
-	static bool MaskAcceptsState(int mask, State state);
+	// Determines if a wait options mask accepts a specific StateChange code
+	static bool MaskAcceptsStateChange(int mask, StateChange newstate);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
