@@ -108,6 +108,8 @@
     <ClCompile Include="..\tmp\vm.service\x86\syscalls32_c.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4213</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4213</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="emulator.cpp" />
     <ClCompile Include="stdafx.cpp">
