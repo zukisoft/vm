@@ -73,18 +73,23 @@ public:
 	// Adds a thread to the collection
 	friend std::shared_ptr<Process> AddProcessThread(std::shared_ptr<Process> process, std::shared_ptr<Thread> thread);
 
+	// AttachProcess
+	//
+	// Attaches a native process to a pending Process instance
+	friend std::shared_ptr<Process> AttachProcess(DWORD nativepid, uint32_t timeoutms);
+
 	// RemoveProcessThread
 	//
 	// Removes a thread from the collection
 	friend void RemoveProcessThread(std::shared_ptr<Process> process, Thread const* thread);
 
+	// StartProcess
+	//
+	// Starts a Process and waits for it to attach from the native process
+	friend void StartProcess(std::shared_ptr<Process> process, uint32_t timeoutms);
+
 	//-------------------------------------------------------------------------
 	// Member Functions
-
-	// Attach (static)
-	//
-	// Attaches a native process to a pending virtual machine process
-	static std::shared_ptr<Process> Attach(DWORD nativepid);
 
 	// Create (static)
 	//
@@ -185,11 +190,6 @@ private:
 	// NativeProcess unique pointer
 	using nativeproc_t = std::unique_ptr<NativeProcess>;
 
-	// pendingmap_t
-	//
-	// Collection of pending process objects
-	using pendingmap_t = std::unordered_map<DWORD, std::shared_ptr<Process>>;
-	
 	// pgroup_t
 	//
 	// ProcessGroup shared pointer
@@ -254,12 +254,6 @@ private:
 	thread_map_t						m_threads;			// Collection of threads
 
 	mutable sync::critical_section		m_cs;				// Synchronization object
-
-	// Pending Processes (static)
-	//
-	static pendingmap_t					s_pendingmap;		// Collection of pending processes
-	static std::condition_variable		s_pendingcond;		// Process attach condition
-	static std::mutex					s_pendinglock;		// Synchronization object
 };
 
 //-----------------------------------------------------------------------------

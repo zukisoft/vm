@@ -37,20 +37,20 @@
 
 #pragma warning(push, 4)
 
-// Process::s_pendingmap (static)
+// g_pendingmap (local)
 //
 // Collection of processes pending attach
-Process::pendingmap_t Process::s_pendingmap;
+static std::unordered_map<DWORD, std::shared_ptr<Process>> g_pendingmap;
 
-// Process::s_pendingcond (static)
+// g_pendingcond (local)
 //
 // Condition variable used to signal pending process attach
-std::condition_variable	Process::s_pendingcond;
+static std::condition_variable g_pendingcond;
 
-// Process::s_pendinglock (static)
+// g_pendinglock (local)
 //
 // Synchronization object for the pending condition variable
-std::mutex Process::s_pendinglock;
+static std::mutex g_pendinglock;
 
 //-----------------------------------------------------------------------------
 // AddProcessThread
@@ -71,6 +71,39 @@ std::shared_ptr<Process> AddProcessThread(std::shared_ptr<Process> process, std:
 }
 
 //-----------------------------------------------------------------------------
+// Process::Attach (static)
+//
+// Attaches a native process to this Process instance
+//
+// Arguments:
+//
+//	nativepid		- Native process identifier
+//	timeoutms		- Timeout for the operation in milliseconds
+
+std::shared_ptr<Process> AttachProcess(DWORD nativepid, uint32_t timeoutms)
+{
+	std::unique_lock<std::mutex> critsec{ g_pendinglock };
+
+	// Attempt to locate the process in the pending process collection
+	auto found = g_pendingmap.find(nativepid);
+	if(found == g_pendingmap.end()) return nullptr;
+
+	// Pull out the shared_ptr for the process and remove the pending element
+	auto process = found->second;
+	g_pendingmap.erase(found);
+
+	// Notify all waiting threads to reevaluate the condition
+	g_pendingcond.notify_all();
+	critsec.unlock();
+
+	// Wait up to the configured timeout for the process to reach a Running state
+	// todo: this value needs to be configurable, can get to VirtualMachine from Process
+	if(!process->WaitForState(Process::State::Running, timeoutms)) return nullptr;
+
+	return process;
+}
+
+//-----------------------------------------------------------------------------
 // RemoveProcessThread
 //
 // Removes a thread from a Process instance
@@ -84,6 +117,36 @@ void RemoveProcessThread(std::shared_ptr<Process> process, Thread const* thread)
 {
 	sync::critical_section::scoped_lock cs{ process->m_cs };
 	process->m_threads.erase(thread);
+}
+
+//-----------------------------------------------------------------------------
+// StartProcess
+//
+// Starts a process and waits for it to attach to the Process instance
+//
+// Arguments:
+//
+//	process		- Process instance to be started
+//	timeoutms	- Timeout value for the operation in milliseconds
+
+void StartProcess(std::shared_ptr<Process> process, uint32_t timeoutms)
+{
+	DWORD nativepid = process->m_nativeproc->ProcessId;
+
+	std::unique_lock<std::mutex> critsec{ g_pendinglock };
+
+	// Insert an entry into the pending process collection and start the native process
+	g_pendingmap.emplace(nativepid, process);
+	process->m_nativeproc->Resume();
+
+	// Wait for the process to attach and remove the shared_ptr placed into the collection
+	if(!g_pendingcond.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(timeoutms),
+		[=]() -> bool { return g_pendingmap.count(nativepid) == 0; })) {
+
+		// The process failed to attach in the time specified, remove the entry and throw
+		g_pendingmap.erase(nativepid);
+		throw LinuxException{ LINUX_ENOEXEC, Win32Exception{ ERROR_PROCESS_ABORTED } };
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -125,38 +188,6 @@ Process::~Process()
 enum class Architecture Process::getArchitecture(void) const
 {
 	return m_nativeproc->Architecture;
-}
-
-//-----------------------------------------------------------------------------
-// Process::Attach (static)
-//
-// Attaches a native process to this Process instance
-//
-// Arguments:
-//
-//	nativepid		- Native process identifier
-
-std::shared_ptr<Process> Process::Attach(DWORD nativepid)
-{
-	std::unique_lock<std::mutex> critsec{ s_pendinglock };
-
-	// Attempt to locate the process in the pending process collection
-	auto found = s_pendingmap.find(nativepid);
-	if(found == s_pendingmap.end()) return nullptr;
-
-	// Pull out the shared_ptr for the process and remove the pending element
-	auto process = found->second;
-	s_pendingmap.erase(found);
-
-	// Notify all waiting threads to reevaluate the condition
-	s_pendingcond.notify_all();
-	critsec.unlock();
-
-	// Wait up to the configured timeout for the process to reach a Running state
-	// todo: this value needs to be configurable, can get to VirtualMachine from Process
-	if(!process->WaitForState(State::Running, 10000)) return nullptr;
-
-	return process;
 }
 
 //-----------------------------------------------------------------------------
@@ -214,43 +245,14 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	// Kill the process with ERROR_PROCESS_ABORTED if there was a problem before it becomes a Process instance
 	catch(...) { nativeprocess->Terminate(ERROR_PROCESS_ABORTED, true); throw; }
 
-	//
-	// todo: this is pretty ugly down here, I think there needs to be a helper function, perhaps make "Start"
-	// which can be called publicly and stop this Create() function after the process is created (kinda makes
-	// sense when you think about it, huh?)
-	//
+	// Start the Process instance and wait for the native process to attach to it
+	try { StartProcess(process, 30000); }	// <-- todo: get timeout from virtual machine properties
+	catch(...) { /* TODO: TERMINATE PROCESS USING PROCESS->KILL()/TERMINATE() */ throw; }
 
-	// The Process instance was successfully created and has taken ownership of everything.  Start the
-	// native process and wait for it to attach to the virtual machine
-	try {
+	AddProcessGroupProcess(pgroup, process);		// Link to the process group
+	AddSessionProcess(session, process);			// Link to the session
 
-		// todo: ensure state is Pending here if moving into a new function
-
-		DWORD nativepid = process->m_nativeproc->ProcessId;
-
-		// Insert an entry into the pending process collection and start the native process
-		std::unique_lock<std::mutex> critsec{ s_pendinglock };
-		s_pendingmap.emplace(nativepid, process);
-		process->m_nativeproc->Resume();
-
-		// Wait for the process to attach and remove the shared_ptr placed into the collection
-		// todo: get timeout value from virtual machine properties
-		if(!s_pendingcond.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(30000),
-			[=]() -> bool { return s_pendingmap.count(nativepid) == 0; })) {
-
-			// The process failed to attach, remove the pending entry and throw
-			// todo: custom exception -- this is important to know what happened
-			throw LinuxException{ LINUX_ENOEXEC, Win32Exception{ ERROR_PROCESS_ABORTED } };	// todo: custom exception
-		}
-
-		// The process has attached successfully, add links to the session and group
-		AddProcessGroupProcess(pgroup, process);
-		AddSessionProcess(session, process);
-
-		process->SetState(State::Running);				// Process is now running
-	}
-
-	catch(...) { /* TODO: KILL THE PROCESS */ throw; }
+	process->SetState(State::Running);				// Process is now running
 
 	return process;
 }
