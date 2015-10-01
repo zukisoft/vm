@@ -71,17 +71,18 @@ std::shared_ptr<Process> AddProcessThread(std::shared_ptr<Process> process, std:
 }
 
 //-----------------------------------------------------------------------------
-// Process::Attach (static)
+// AttachProcess
 //
 // Attaches a native process to this Process instance
 //
 // Arguments:
 //
 //	nativepid		- Native process identifier
-//	timeoutms		- Timeout for the operation in milliseconds
 
-std::shared_ptr<Process> AttachProcess(DWORD nativepid, uint32_t timeoutms)
+std::shared_ptr<Process> AttachProcess(DWORD nativepid)
 {
+	uapi::siginfo		siginfo;			// Process wait operation data
+
 	std::unique_lock<std::mutex> critsec{ g_pendinglock };
 
 	// Attempt to locate the process in the pending process collection
@@ -96,9 +97,9 @@ std::shared_ptr<Process> AttachProcess(DWORD nativepid, uint32_t timeoutms)
 	g_pendingcond.notify_all();
 	critsec.unlock();
 
-	// Wait up to the configured timeout for the process to reach a Running state
-	// todo: this value needs to be configurable, can get to VirtualMachine from Process
-	if(!process->WaitForState(Process::State::Running, timeoutms)) return nullptr;
+	// Wait for the process to signal that it is running (StartProcess simulates a SIGCONT)
+	Process::Wait({ process }, LINUX_WEXITED | LINUX_WSTOPPED | LINUX_WCONTINUED, &siginfo);
+	if(siginfo.si_code != LINUX_CLD_CONTINUED) throw Exception{ E_FAIL };		// <-- todo: exception
 
 	return process;
 }
@@ -168,7 +169,8 @@ Process::Process(nativeproc_t nativeproc, pid_t pid, session_t session, pgroup_t
 	m_nativeproc(std::move(nativeproc)), m_pid(std::move(pid)), m_session(std::move(session)), m_pgroup(std::move(pgroup)), m_ns(std::move(ns)), 
 	m_ldtaddr(ldtaddr), m_ldtslots(std::move(ldtslots)), m_root(std::move(root)), m_working(std::move(working))
 {
-	m_state = State::Pending;			// Process is pending by default
+	// Initialize the pending state change signal information
+	memset(&m_statepending, 0, sizeof(uapi::siginfo));
 }
 
 //-----------------------------------------------------------------------------
@@ -252,7 +254,8 @@ std::shared_ptr<Process> Process::Create(std::shared_ptr<Pid> pid, std::shared_p
 	AddProcessGroupProcess(pgroup, process);		// Link to the process group
 	AddSessionProcess(session, process);			// Link to the session
 
-	process->SetState(State::Running);				// Process is now running
+	// Indicate that the process is now running by simulating a SIGCONT
+	process->NotifyStateChange(statechange_t::continued, 0);
 
 	return process;
 }
@@ -275,6 +278,60 @@ uintptr_t Process::getLocalDescriptorTableAddress(void) const
 std::shared_ptr<class Namespace> Process::getNamespace(void) const
 {
 	return m_ns;
+}
+
+//-----------------------------------------------------------------------------
+// Process::NotifyStateChange (protected)
+//
+// Signals that a change in process state has occurred
+//
+// Arguments:
+//
+//	newstate	- New state to be reported for the object
+//	status		- Current object status/exit code
+
+void Process::NotifyStateChange(statechange_t newstate, int32_t status)
+{
+	uapi::siginfo		siginfo;			// Signal information (SIGCHLD)
+
+	// Convert the input arguments into a siginfo (SIGCHLD) structure
+	siginfo.si_signo = LINUX_SIGCHLD;
+	siginfo.si_errno = 0;
+	siginfo.si_code = static_cast<int32_t>(newstate);
+	siginfo.linux_si_pid = m_pid->getValue(m_ns);
+	siginfo.linux_si_uid = 0;
+	siginfo.linux_si_status = status;
+
+	// Lock the waiters collection and pending siginfo member variables
+	std::lock_guard<std::mutex> cscollection{ m_statelock };
+
+	// Revoke any pending signal that was not processed by a waiter
+	memset(&m_statepending, 0, sizeof(uapi::siginfo));
+
+	for(auto& iterator : m_waiters) {
+
+		// Take the lock for this waiter and check that it hasn't already been spent,
+		// this is necessary to prevent a race condition wherein a second call to this
+		// function before the waiter could be removed would resignal it
+		std::unique_lock<std::mutex> cswaiter{ iterator.lock };
+		if(iterator.siginfo->linux_si_pid != 0) continue;
+
+		// If this waiter is not interested in this state change, move on to the next one
+		if(!WaitOperationAcceptsStateChange(iterator.options, newstate)) continue;
+
+		// Write the signal information out through the provided pointer and assign
+		// the context object of this waiter to the shared result object reference
+		*iterator.siginfo = siginfo;
+		iterator.result = iterator.process;
+
+		// Signal the waiter's condition variable that a result is available
+		iterator.signal.notify_one();
+
+		// If WNOWAIT has not been specified by this waiter, the signal is consumed
+		if((iterator.options & LINUX_WNOWAIT) == 0) return;
+	}
+	
+	m_statepending = siginfo;		// Save the signal for another waiter (WNOWAIT)
 }
 
 //-----------------------------------------------------------------------------
@@ -356,49 +413,114 @@ void Process::SetSession(std::shared_ptr<class Session> session, std::shared_ptr
 }
 
 //-----------------------------------------------------------------------------
-// Process::getState
+// Process::Wait (private, static)
 //
-// Gets the state of the process
-
-enum class Process::State Process::getState(void) const
-{
-	// Allow a dirty read of the state variable, locking the mutex here wouldn't do
-	// anything useful -- value could still change between the time this function
-	// ends (releasing the mutex) and the time the caller examines the result
-	return m_state;
-}
-
-//-----------------------------------------------------------------------------
-// Process::SetState (private)
-//
-// Sets the state of the process and signals the condition variable
+// Waits for a Process instance to become signaled
 //
 // Arguments:
 //
-//	state		- New state of the process
+//	processes	- Vector of Process instances to be waited upon
+//	options		- Wait operation flags and options
+//	siginfo		- On success, contains resultant signal information
 
-void Process::SetState(enum class State state)
+std::shared_ptr<Process> Process::Wait(std::vector<std::shared_ptr<Process>> const& processes, int options, uapi::siginfo* siginfo)
 {
-	std::unique_lock<std::mutex> critsec{ m_statelock };
-	m_state = state;
-	m_statecond.notify_all();
+	std::condition_variable			signal;				// Signaled on a successful wait
+	std::mutex						lock;				// Condition variable synchronization object
+	std::shared_ptr<Process>		signaled;			// Process that was signaled
+
+	// The caller has to be willing to wait for something otherwise this would never return
+	_ASSERTE(options & (LINUX_WEXITED | LINUX_WSTOPPED | LINUX_WCONTINUED));
+	if(options & ~(LINUX_WEXITED | LINUX_WSTOPPED | LINUX_WCONTINUED)) throw LinuxException{ LINUX_EINVAL };
+
+	// The si_pid field of the signal information is used to detect spurious condition variable
+	// wakes as well as preventing it from being signaled multiple times; initialize it to zero
+	_ASSERTE(siginfo);
+	siginfo->linux_si_pid = 0;
+
+	// At least one Process instance must have been provided
+	_ASSERTE(processes.size());
+	if(processes.size() == 0) return nullptr;
+
+	// Take the condition variable lock before adding any waiters
+	std::unique_lock<std::mutex> cscondvar{ lock };
+
+	// Iterate over all of the Process instances to check for a pending signal that can be
+	// consumed immediately, or to register a wait operation against it
+	for(auto const& iterator : processes) {
+
+		std::lock_guard<std::mutex> cswaitable{ iterator->m_statelock };
+
+		// If there is already a pending state for this Process instance that matches the
+		// requested wait operation mask, pull it out and stop registering waits
+		if((iterator->m_statepending.linux_si_pid != 0) && (WaitOperationAcceptsStateChange(options, static_cast<statechange_t>(iterator->m_statepending.si_code)))) {
+
+			// Pull out the pending signal information and assign the result object
+			*siginfo = iterator->m_statepending;
+			signaled = iterator;
+
+			// If WNOWAIT has not been specified, reset the pending signal information
+			if((options & LINUX_WNOWAIT) == 0) memset(&iterator->m_statepending, 0, sizeof(uapi::siginfo));
+
+			signal.notify_one();			// Condition will signal immediately if waited upon
+			break;							// No need to register any more waiters
+		}
+
+		// Unless WNOHANG has been specified, register a wait operation for this Process instance
+		if((options & LINUX_WNOHANG) == 0) iterator->m_waiters.push_back({ signal, lock, options, iterator, siginfo, signaled });
+	}
+
+	// If WNOHANG was specified, nothing will have been registered to wait against; only a
+	// consumed pending signal from a Process instance is considered as a result
+	if(options & LINUX_WNOHANG) return signaled;
+
+	// Wait indefinitely for the condition variable to become signaled and retake the lock
+	signal.wait(cscondvar, [&]() -> bool { return siginfo->linux_si_pid != 0; });
+
+	// Remove this wait from the provided Process instances
+	for(auto const& iterator : processes) {
+
+		std::lock_guard<std::mutex> critsec{ iterator->m_statelock };
+		iterator->m_waiters.remove_if([&](waiter_t const& item) -> bool { return &item.signal == &signal; });
+	}
+
+	return signaled;			// Return Process instance that was signaled
 }
 
 //-----------------------------------------------------------------------------
-// Process::WaitForState
+// Process::WaitOperationAcceptsStateChange (private, static)
 //
-// Waits for the process to reach a specific state
+// Determines if a wait options mask accepts a specific state change code
 //
 // Arguments:
 //
-//	state		- Process state to wait for
-//	timeoutms	- Timeout for the wait operation, in milliseconds
+//	mask		- Wait operation flags and options mask
+//	newstate	- StateChange code to check against the provided mask
 
-bool Process::WaitForState(enum class State state, uint32_t timeoutms) const
+inline bool Process::WaitOperationAcceptsStateChange(int mask, statechange_t newstate)
 {
-	std::unique_lock<std::mutex> critsec{ m_statelock };
-	return m_statecond.wait_until(critsec, std::chrono::system_clock::now() + std::chrono::milliseconds(timeoutms), 
-		[&]() -> bool { return m_state == state; });
+	switch(newstate) {
+
+		// WEXITED -- Accepts exited, killed, dumped
+		//
+		case statechange_t::exited:
+		case statechange_t::killed:
+		case statechange_t::dumped:
+			return ((mask & LINUX_WEXITED) == LINUX_WEXITED);
+
+		// WSTOPPED -- Accepts trapped, stopped
+		//
+		case statechange_t::trapped:
+		case statechange_t::stopped:
+			return ((mask & LINUX_WSTOPPED) == LINUX_WSTOPPED);
+
+		// WCONTINUED -- Accepts continued
+		//
+		case statechange_t::continued:
+			return ((mask & LINUX_WCONTINUED) == LINUX_WCONTINUED);
+	}
+
+	return false;
 }
 
 //-----------------------------------------------------------------------------

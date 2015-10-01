@@ -66,7 +66,7 @@ HRESULT sys32_attach_process(handle_t rpchandle, sys32_uint_t tid, sys32_addr_t 
 	auto vm = VirtualMachine::Find(objectid);
 	if(vm == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 
-	auto proc = AttachProcess(reinterpret_cast<DWORD>(attributes.ClientPID), 10000);
+	auto proc = AttachProcess(reinterpret_cast<DWORD>(attributes.ClientPID));
 	if(proc == nullptr) { /* TODO: THROW CUSTOM EXCEPTION */ }
 	//
 	////////

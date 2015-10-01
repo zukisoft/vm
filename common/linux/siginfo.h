@@ -159,6 +159,14 @@ typedef struct {
 #define linux_si_band			_sifields._sigpoll._band
 #define linux_si_fd				_sifields._sigpoll._fd
 
+#define LINUX_CLD_EXITED		1				/* child has exited */
+#define LINUX_CLD_KILLED		2				/* child was killed */
+#define LINUX_CLD_DUMPED		3				/* child terminated abnormally */
+#define LINUX_CLD_TRAPPED		4				/* traced child has trapped */
+#define LINUX_CLD_STOPPED		5				/* child has stopped */
+#define LINUX_CLD_CONTINUED		6				/* stopped child has continued */
+#define LINUX_NSIGCHLD			6
+
 #if !defined(__midl) && defined(__cplusplus)
 namespace uapi {
 

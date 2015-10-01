@@ -315,9 +315,6 @@
     <ClInclude Include="..\common\linux\siginfo.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
-    <ClInclude Include="Waitable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\ScalarCondition.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
@@ -784,9 +781,6 @@
     </ClCompile>
     <ClCompile Include="sys_geteuid.cpp">
       <Filter>Source Files\System Calls</Filter>
-    </ClCompile>
-    <ClCompile Include="Waitable.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sys_getrusage.cpp">
       <Filter>Source Files\System Calls</Filter>

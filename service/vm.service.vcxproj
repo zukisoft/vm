@@ -402,7 +402,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClInclude Include="SystemLog.h" />
     <ClInclude Include="ProcessMemory.h" />
     <ClInclude Include="_VmOld.h" />
-    <ClInclude Include="Waitable.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\bzip2\blocksort.c">
@@ -761,7 +760,6 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     <ClCompile Include="ProcessMemory.cpp" />
     <ClCompile Include="_VmOld.cpp" />
     <ClCompile Include="SystemLog.cpp" />
-    <ClCompile Include="Waitable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />

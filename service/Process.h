@@ -24,7 +24,10 @@
 #define __PROCESS_H_
 #pragma once
 
+#include <condition_variable>
+#include <list>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include "Architecture.h"
 #include "Bitmap.h"
@@ -54,17 +57,6 @@ public:
 	//
 	~Process();
 
-	// Process::State
-	//
-	// Defines the state of the process
-	enum class State
-	{
-		Pending		= 0,			// Process is pending
-		Running,					// Process is running
-		Suspended,					// Process is suspended
-		Stopped,					// Process is stopped
-	};
-
 	//-------------------------------------------------------------------------
 	// Friend Functions
 
@@ -76,7 +68,7 @@ public:
 	// AttachProcess
 	//
 	// Attaches a native process to a pending Process instance
-	friend std::shared_ptr<Process> AttachProcess(DWORD nativepid, uint32_t timeoutms);
+	friend std::shared_ptr<Process> AttachProcess(DWORD nativepid);
 
 	// RemoveProcessThread
 	//
@@ -107,11 +99,6 @@ public:
 	//
 	// Changes the session that this process is a member of
 	void SetSession(std::shared_ptr<class Session> session, std::shared_ptr<class ProcessGroup> pgroup);
-
-	// WaitForState
-	//
-	// Waits for the process to reach a specific state
-	bool WaitForState(enum class State, uint32_t timeoutms) const;
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -158,12 +145,6 @@ public:
 	__declspec(property(get=getSession)) std::shared_ptr<class Session> Session;
 	std::shared_ptr<class Session> getSession(void) const;
 
-	// State
-	//
-	// Gets the current process state
-	__declspec(property(get=getState)) enum class State State;
-	enum class State getState(void) const;
-
 	// WorkingPath
 	//
 	// Gets the process working path
@@ -205,10 +186,36 @@ private:
 	// Session shared pointer
 	using session_t = std::shared_ptr<class Session>;
 
+	// statechange_t
+	//
+	// Indicates the type of state change that has occurred
+	enum class statechange_t 
+	{
+		exited			= LINUX_CLD_EXITED,			// Process has exited normally
+		killed			= LINUX_CLD_KILLED,			// Process was killed by a signal
+		dumped			= LINUX_CLD_DUMPED,			// Process was killed and dumped
+		trapped			= LINUX_CLD_TRAPPED,		// Traced process was trapped
+		stopped			= LINUX_CLD_STOPPED,		// Process was stopped by a signal
+		continued		= LINUX_CLD_CONTINUED,		// Process was continued by SIGCONT
+	};
+
 	// thread_map_t
 	//
 	// Collection of thread instances
 	using thread_map_t = std::unordered_map<Thread const*, std::weak_ptr<Thread>>;
+
+	// waiter_t
+	//
+	// Structure used to register a wait operation
+	struct waiter_t 
+	{
+		std::condition_variable&			signal;			// Condition variable to signal
+		std::mutex&							lock;			// Condition variable lock object
+		int const							options;		// Wait operation mask and flags
+		std::shared_ptr<Process> const&		process;		// Wait operation context object
+		uapi::siginfo*						siginfo;		// Resultant signal information
+		std::shared_ptr<Process>&			result;			// Resultant signaled object
+	};
 
 	// Instance Constructor
 	//
@@ -218,10 +225,20 @@ private:
 	//-------------------------------------------------------------------------
 	// Private Member Functions
 
-	// SetState
+	// NotifyStateChange
 	//
-	// Sets the process state value and signals the condition variable
-	void SetState(enum class State state);
+	// Signals that a change in the process state has occurred
+	void NotifyStateChange(statechange_t newstate, int32_t status); 
+
+	// Wait (static)
+	//
+	// Waits for a process instance to become signaled
+	static std::shared_ptr<Process> Wait(std::vector<std::shared_ptr<Process>> const& processes, int options, uapi::siginfo* siginfo);
+
+	// WaitOperationAcceptsStateChange (static)
+	//
+	// Determines if a wait options mask accepts a specific state change code
+	static bool WaitOperationAcceptsStateChange(int mask, statechange_t newstate);
 
 	//-------------------------------------------------------------------------
 	// Member Variables
@@ -231,12 +248,6 @@ private:
 	pgroup_t							m_pgroup;			// Parent ProcessGroup
 	session_t							m_session;			// Parent Session
 	namespace_t const					m_ns;				// Process namespace
-
-	// Process State
-	//
-	enum class State					m_state;			// Current process state
-	mutable std::condition_variable		m_statecond;		// State change condition
-	mutable std::mutex					m_statelock;		// Synchronization object
 
 	// Local Descriptor Table
 	//
@@ -252,6 +263,13 @@ private:
 	// Threads
 	//
 	thread_map_t						m_threads;			// Collection of threads
+
+	// Wait Operations
+	//
+	std::list<waiter_t>					m_waiters;			// Objects waiting for a state change
+	uapi::siginfo						m_statepending;		// Unprocessed state change signal
+	std::mutex							m_statelock;		// Synchronization object
+
 
 	mutable sync::critical_section		m_cs;				// Synchronization object
 };
