@@ -52,7 +52,7 @@
 //	Exception(HRESULT, ...)
 //		- Attempts to load the message for HRESULT with optional insert arguments
 //
-//	Exception(HRESULT, const Exception&, ...)
+//	Exception(HRESULT, Exception const&, ...)
 //		- Attempts to load the message for HRESULT with optional insert arguments
 //		- Copies the inner exception; accessible via .InnerException
 //
@@ -60,7 +60,7 @@
 //		- Attempts to load the message for HRESULT with optional insert arguments
 //		- Uses a specific module handle rather than the default
 //
-//	Exception(HRESULT, HMODULE, const Exception&, ...)
+//	Exception(HRESULT, HMODULE, Exception const&, ...)
 //		- Attempts to load the message for HRESULT with optional insert arguments
 //		- Uses a specific module handle rather than the default
 //		- Copies the inner exception; accessible via .InnerException
@@ -71,17 +71,18 @@ public:
 
 	// Instance Constructor (HRESULT)
 	//
-	template <typename... _remaining>
-	Exception(const HRESULT& hresult, const _remaining&... remaining) : Exception(hresult, s_module, remaining...) {}
+	template <typename... _insertions>
+	Exception(HRESULT const& hresult, _insertions const&... remaining) : Exception{ hresult, s_module, remaining... } {}
 
 	// Instance Constructor (HRESULT + Inner Exception)
 	//
-	template <typename... _remaining>
-	Exception(const HRESULT& hresult, const Exception& inner, const _remaining&... remaining) : Exception(hresult, s_module, inner, remaining...) {}
+	template <typename... _insertions>
+	Exception(HRESULT const& hresult, Exception const& inner, _insertions const&... remaining) : Exception{ hresult, s_module, inner, remaining... } {}
 
 	// Instance Constructor (HRESULT + HMODULE)
-	template <typename... _remaining>
-	Exception(const HRESULT& hresult, const HMODULE& module, const _remaining&... remaining)
+	//
+	template <typename... _insertions>
+	Exception(HRESULT const& hresult, HMODULE const& module, _insertions const&... remaining)
 	{
 		m_hresult = hresult;				// Store the thrown error code
 
@@ -91,8 +92,9 @@ public:
 	}
 
 	// Instance Constructor (HRESULT + HMODULE + Inner Exception)
-	template <typename... _remaining>
-	Exception(const HRESULT& hresult, const HMODULE& module, const Exception& inner, const _remaining&... remaining)
+	//
+	template <typename... _insertions>
+	Exception(HRESULT const& hresult, HMODULE const& module, Exception const& inner, _insertions const&... remaining)
 	{
 		m_hresult = hresult;				// Store the thrown error code
 		m_inner = new Exception(inner);		// Create a copy of the inner exception
@@ -108,11 +110,11 @@ public:
 
 	// Copy Constructor
 	//
-	Exception(const Exception& rhs);
+	Exception(Exception const& rhs);
 
 	// Assignment operator
 	//
-	Exception& operator=(const Exception& rhs);
+	Exception& operator=(Exception const& rhs);
 	
 	// SetDefaultMessagesModule (static)
 	//
@@ -127,7 +129,7 @@ public:
 	// what (std::exception)
 	//
 	// Gets the exception message text
-	virtual const char_t* what(void) const { return m_what.c_str(); }
+	virtual char_t const* what(void) const { return m_what.c_str(); }
 
 	// Code
 	//
@@ -150,14 +152,14 @@ public:
 	// InnerException
 	//
 	// Accesses the inner exception; may be NULL
-	__declspec(property(get=getInnerException)) const Exception* InnerException;
-	const Exception* getInnerException(void) const { return m_inner; }
+	__declspec(property(get=getInnerException)) Exception const* InnerException;
+	Exception const* getInnerException(void) const { return m_inner; }
 
 	// Message
 	//
 	// Gets the exception message text
-	__declspec(property(get=getMessage)) const tchar_t* Message;
-	const tchar_t* getMessage(void) const { return m_message.c_str(); }
+	__declspec(property(get=getMessage)) tchar_t const* Message;
+	tchar_t const* getMessage(void) const { return m_message.c_str(); }
 
 	// Severity
 	//
@@ -170,7 +172,7 @@ protected:
 	// GetDefaultMessage
 	//
 	// Invoked when an HRESULT code cannot be mapped to a message table string
-	virtual std::tstring GetDefaultMessage(const HRESULT& hresult);
+	virtual std::tstring GetDefaultMessage(HRESULT const& hresult);
 
 private:
 
@@ -179,13 +181,13 @@ private:
 	// FormatMessage (static)
 	//
 	// Specialization of ::FormatMessage specifically for Exception
-	static tchar_t* FormatMessage(HRESULT hresult, DWORD langid, HMODULE module, const DWORD_PTR* args);
+	static tchar_t* FormatMessage(HRESULT hresult, DWORD langid, HMODULE module, DWORD_PTR const* args);
 
 	// SetExceptionMessage
 	//
 	// Variadic function used to process each message insert parameter
-	template<typename _first, typename... _remaining>
-	void SetExceptionMessage(const HRESULT& hresult, HMODULE module, std::vector<DWORD_PTR>& args, const _first& first, const _remaining&... remaining)
+	template<typename _first, typename... _insertions>
+	void SetExceptionMessage(HRESULT const& hresult, HMODULE module, std::vector<DWORD_PTR>& args, _first const& first, _insertions const&... remaining)
 	{
 		// FormatMessage() does not support floating-point values as insertion arguments
 		static_assert(!std::is_floating_point<_first>::value, "Floating point values cannot be specified as Exception message insert arguments");
@@ -202,7 +204,7 @@ private:
 	// SetExceptionMessage
 	//
 	// Final variadic function in the chain; sets the contained message strings
-	void SetExceptionMessage(const HRESULT& hresult, HMODULE module, std::vector<DWORD_PTR>& args);
+	void SetExceptionMessage(HRESULT const& hresult, HMODULE module, std::vector<DWORD_PTR>& args);
 
 	// m_hresult
 	//
@@ -228,6 +230,48 @@ private:
 	//
 	// Module handle used to load message resources
 	static HMODULE s_module;
+};
+
+//-----------------------------------------------------------------------------
+// ExceptionT<>
+//
+// Template version of Exception used to indicate an HRESULT at compile time,
+// for example as part of a using clause:
+//
+// using MyException = ExceptionT<E_MYHRESULT>;
+
+template<HRESULT const _hr>
+class ExceptionT : public Exception
+{
+public:
+
+	// Instance Constructor
+	//
+	template<typename... _insertions>
+	ExceptionT(_insertions const&... remaining) : Exception{ _hr, remaining... }
+	{
+	}
+
+	// Instance Constructor (Inner Exception)
+	//
+	template <typename... _insertions>
+	ExceptionT(Exception const& inner, _insertions const&... remaining) : Exception{ _hr, s_module, inner, remaining... } 
+	{
+	}
+
+	// Instance Constructor (HRESULT + HMODULE)
+	//
+	template <typename... _insertions>
+	ExceptionT(HMODULE const& module, _insertions const&... remaining) : Exception{ _hr, module, remaining... }
+	{
+	}
+
+	// Instance Constructor (HRESULT + HMODULE + Inner Exception)
+	//
+	template <typename... _insertions>
+	ExceptionT(HMODULE const& module, Exception const& inner, _insertions const&... remaining) : Exception{ _hr, module, inner, remaining... }
+	{
+	}
 };
 
 //-----------------------------------------------------------------------------

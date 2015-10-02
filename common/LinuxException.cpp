@@ -34,7 +34,7 @@
 //
 //	hresult		- Thrown HRESULT code
 
-std::tstring LinuxException::GetDefaultMessage(const HRESULT& hresult)
+std::tstring LinuxException::GetDefaultMessage(HRESULT const& hresult)
 {
 	// Technically anything that gets in here came from HRESULT_FROM_LINUX(), but in case not ...
 	if(HRESULT_FACILITY(hresult) != FACILITY_LINUX) return Exception::GetDefaultMessage(hresult);

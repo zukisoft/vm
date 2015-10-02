@@ -34,7 +34,7 @@ HMODULE Exception::s_module = Exception::ModuleHasMessageTable(GetModuleHandle(n
 //-----------------------------------------------------------------------------
 // Exception Copy Constructor
 
-Exception::Exception(const Exception& rhs) 
+Exception::Exception(Exception const& rhs) 
 {
 	m_hresult = rhs.m_hresult;
 	m_message = rhs.m_message;
@@ -53,7 +53,7 @@ Exception::~Exception()
 //-----------------------------------------------------------------------------
 // Exception::operator=
 
-Exception& Exception::operator=(const Exception& rhs)
+Exception& Exception::operator=(Exception const& rhs)
 {
 	m_hresult = rhs.m_hresult;
 	m_message = rhs.m_message;
@@ -78,7 +78,7 @@ Exception& Exception::operator=(const Exception& rhs)
 //	module			- Module containing the message table resources
 //	args			- Array of message insertion arguments
 
-tchar_t* Exception::FormatMessage(HRESULT hresult, DWORD langid, HMODULE module, const DWORD_PTR* args)
+tchar_t* Exception::FormatMessage(HRESULT hresult, DWORD langid, HMODULE module, DWORD_PTR const* args)
 {
 	tchar_t* out = nullptr;					// Allocated buffer from ::FormatMessage
 	DWORD result;							// Result from ::FormatMessage
@@ -120,7 +120,7 @@ tchar_t* Exception::FormatMessage(HRESULT hresult, DWORD langid, HMODULE module,
 //
 //	hresult		- Thrown HRESULT code
 
-std::tstring Exception::GetDefaultMessage(const HRESULT& hresult)
+std::tstring Exception::GetDefaultMessage(HRESULT const& hresult)
 {
 	tchar_t buffer[256];			// Stack buffer to hold formatted string
 
@@ -170,7 +170,7 @@ bool Exception::ModuleHasMessageTable(HMODULE module)
 //	module		- Module handle to use for message resources, or nullptr
 //	args		- Collection of insert argument pointers
 
-void Exception::SetExceptionMessage(const HRESULT& hresult, HMODULE module, std::vector<DWORD_PTR>& args)
+void Exception::SetExceptionMessage(HRESULT const& hresult, HMODULE module, std::vector<DWORD_PTR>& args)
 {
 	// Invoke the specialized FormatMessage() function to format the exception message
 	tchar_t* message = FormatMessage(hresult, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), module, args.data());

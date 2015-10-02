@@ -34,7 +34,7 @@
 //
 //	hresult		- Thrown HRESULT code
 
-std::tstring StructuredException::GetDefaultMessage(const HRESULT& hresult)
+std::tstring StructuredException::GetDefaultMessage(HRESULT const& hresult)
 {
 	tchar_t buffer[256];			// Stack buffer to hold formatted string
 

@@ -58,19 +58,11 @@ public:
 
 	// Instance Constructor (int)
 	//
-	LinuxException(const int& result) : Exception(HRESULT_FROM_LINUX(result)) {}
+	LinuxException(int const& result) : Exception{ HRESULT_FROM_LINUX(result) } {}
 
 	// Instance Constructor (int + Inner Exception)
 	//
-	LinuxException(const int& result, const Exception& inner) : Exception(HRESULT_FROM_LINUX(result), inner) {}
-
-	// Instance Constructor (int + HMODULE)
-	//
-	LinuxException(const int& result, const HMODULE& module) : Exception(HRESULT_FROM_LINUX(result), module) {}
-
-	// Instance Constructor (int + HMODULE, Inner Exception)
-	//
-	LinuxException(const int& result, const HMODULE& module, const Exception& inner) : Exception(HRESULT_FROM_LINUX(result), module, inner) {}
+	LinuxException(int const& result, Exception const& inner) : Exception{ HRESULT_FROM_LINUX(result), inner } {}
 
 	// Destructor
 	//
@@ -81,11 +73,39 @@ protected:
 	// GetDefaultMessage (Exception)
 	//
 	// Invoked when an HRESULT code cannot be mapped to a message table string
-	virtual std::tstring GetDefaultMessage(const HRESULT& hresult);
+	virtual std::tstring GetDefaultMessage(HRESULT const& hresult);
 
 private:
 
 	LinuxException()=delete;
+};
+
+//-----------------------------------------------------------------------------
+// LinuxExceptionT<>
+//
+// Template version of LinuxException used to indicate the code at compile time,
+// for example as part of a using clause:
+//
+// using MyLinuxException = LinuxExceptionT<LINUX_ENOEXEC>;
+
+template<int const _code>
+class LinuxExceptionT : public LinuxException
+{
+public:
+
+	// Instance Constructor
+	//
+	template<typename... _insertions>
+	LinuxExceptionT(_insertions const&... remaining) : LinuxException{ _code, remaining... }
+	{
+	}
+
+	// Instance Constructor (Inner Exception)
+	//
+	template <typename... _insertions>
+	LinuxExceptionT(Exception const& inner, _insertions const&... remaining) : LinuxException{ _code, inner, remaining... } 
+	{
+	}
 };
 
 //-----------------------------------------------------------------------------
