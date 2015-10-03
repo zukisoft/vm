@@ -233,48 +233,6 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// ExceptionT<>
-//
-// Template version of Exception used to indicate an HRESULT at compile time,
-// for example as part of a using clause:
-//
-// using MyException = ExceptionT<E_MYHRESULT>;
-
-template<HRESULT const _hr>
-class ExceptionT : public Exception
-{
-public:
-
-	// Instance Constructor
-	//
-	template<typename... _insertions>
-	ExceptionT(_insertions const&... insertions) : Exception{ _hr, insertions... }
-	{
-	}
-
-	// Instance Constructor (Inner Exception)
-	//
-	template <typename... _insertions>
-	ExceptionT(Exception const& inner, _insertions const&... insertions) : Exception{ _hr, s_module, inner, insertions... } 
-	{
-	}
-
-	// Instance Constructor (HRESULT + HMODULE)
-	//
-	template <typename... _insertions>
-	ExceptionT(HMODULE const& module, _insertions const&... insertions) : Exception{ _hr, module, insertions... }
-	{
-	}
-
-	// Instance Constructor (HRESULT + HMODULE + Inner Exception)
-	//
-	template <typename... _insertions>
-	ExceptionT(HMODULE const& module, Exception const& inner, _insertions const&... insertions) : Exception{ _hr, module, inner, insertions... }
-	{
-	}
-};
-
-//-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 

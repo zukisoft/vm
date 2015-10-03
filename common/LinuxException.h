@@ -81,32 +81,6 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// LinuxExceptionT<>
-//
-// Template version of LinuxException used to indicate the code at compile time:
-//
-// throw LinuxExceptionT<LINUX_ENOEXEC>{};
-// throw LinuxExceptionT<LINUX_ENOEXEC>{ ExceptionT<E_FAIL>{} };
-
-template<int const _code>
-class LinuxExceptionT : public LinuxException
-{
-public:
-
-	// Instance Constructor
-	//
-	LinuxExceptionT() : LinuxException{ _code }
-	{
-	}
-
-	// Instance Constructor (Inner Exception)
-	//
-	LinuxExceptionT(Exception const& inner) : LinuxException{ _code, inner } 
-	{
-	}
-};
-
-//-----------------------------------------------------------------------------
 
 #pragma warning(pop)
 
