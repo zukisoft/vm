@@ -72,36 +72,36 @@ public:
 	// Instance Constructor (HRESULT)
 	//
 	template <typename... _insertions>
-	Exception(HRESULT const& hresult, _insertions const&... remaining) : Exception{ hresult, s_module, remaining... } {}
+	Exception(HRESULT const& hresult, _insertions const&... insertions) : Exception{ hresult, s_module, insertions... } {}
 
 	// Instance Constructor (HRESULT + Inner Exception)
 	//
 	template <typename... _insertions>
-	Exception(HRESULT const& hresult, Exception const& inner, _insertions const&... remaining) : Exception{ hresult, s_module, inner, remaining... } {}
+	Exception(HRESULT const& hresult, Exception const& inner, _insertions const&... insertions) : Exception{ hresult, s_module, inner, insertions... } {}
 
 	// Instance Constructor (HRESULT + HMODULE)
 	//
 	template <typename... _insertions>
-	Exception(HRESULT const& hresult, HMODULE const& module, _insertions const&... remaining)
+	Exception(HRESULT const& hresult, HMODULE const& module, _insertions const&... insertions)
 	{
 		m_hresult = hresult;				// Store the thrown error code
 
 		// Process the HRESULT and the insertions into a single message string
 		std::vector<DWORD_PTR> args;
-		SetExceptionMessage(hresult, module, args, remaining...);
+		SetExceptionMessage(hresult, module, args, insertions...);
 	}
 
 	// Instance Constructor (HRESULT + HMODULE + Inner Exception)
 	//
 	template <typename... _insertions>
-	Exception(HRESULT const& hresult, HMODULE const& module, Exception const& inner, _insertions const&... remaining)
+	Exception(HRESULT const& hresult, HMODULE const& module, Exception const& inner, _insertions const&... insertions)
 	{
 		m_hresult = hresult;				// Store the thrown error code
 		m_inner = new Exception(inner);		// Create a copy of the inner exception
 
 		// Process the HRESULT and the insertions into a single message string
 		std::vector<DWORD_PTR> args;
-		SetExceptionMessage(hresult, module, args, remaining...);
+		SetExceptionMessage(hresult, module, args, insertions...);
 	}
 
 	// Destructor
@@ -248,28 +248,28 @@ public:
 	// Instance Constructor
 	//
 	template<typename... _insertions>
-	ExceptionT(_insertions const&... remaining) : Exception{ _hr, remaining... }
+	ExceptionT(_insertions const&... insertions) : Exception{ _hr, insertions... }
 	{
 	}
 
 	// Instance Constructor (Inner Exception)
 	//
 	template <typename... _insertions>
-	ExceptionT(Exception const& inner, _insertions const&... remaining) : Exception{ _hr, s_module, inner, remaining... } 
+	ExceptionT(Exception const& inner, _insertions const&... insertions) : Exception{ _hr, s_module, inner, insertions... } 
 	{
 	}
 
 	// Instance Constructor (HRESULT + HMODULE)
 	//
 	template <typename... _insertions>
-	ExceptionT(HMODULE const& module, _insertions const&... remaining) : Exception{ _hr, module, remaining... }
+	ExceptionT(HMODULE const& module, _insertions const&... insertions) : Exception{ _hr, module, insertions... }
 	{
 	}
 
 	// Instance Constructor (HRESULT + HMODULE + Inner Exception)
 	//
 	template <typename... _insertions>
-	ExceptionT(HMODULE const& module, Exception const& inner, _insertions const&... remaining) : Exception{ _hr, module, inner, remaining... }
+	ExceptionT(HMODULE const& module, Exception const& inner, _insertions const&... insertions) : Exception{ _hr, module, inner, insertions... }
 	{
 	}
 };

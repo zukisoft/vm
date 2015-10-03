@@ -40,7 +40,7 @@
 // HRESULT_FROM_LINUX
 //
 // Creates an HRESULT from a linux error code
-static inline HRESULT HRESULT_FROM_LINUX(int code)
+static inline constexpr HRESULT HRESULT_FROM_LINUX(int code)
 {
 	// Convert the code into an HRESULT value for Exception (0xE0000000 = SS|C bits)
 	return (0xE0000000 | (FACILITY_LINUX << 16) | code);
@@ -83,10 +83,10 @@ private:
 //-----------------------------------------------------------------------------
 // LinuxExceptionT<>
 //
-// Template version of LinuxException used to indicate the code at compile time,
-// for example as part of a using clause:
+// Template version of LinuxException used to indicate the code at compile time:
 //
-// using MyLinuxException = LinuxExceptionT<LINUX_ENOEXEC>;
+// throw LinuxExceptionT<LINUX_ENOEXEC>{};
+// throw LinuxExceptionT<LINUX_ENOEXEC>{ ExceptionT<E_FAIL>{} };
 
 template<int const _code>
 class LinuxExceptionT : public LinuxException
@@ -95,15 +95,13 @@ public:
 
 	// Instance Constructor
 	//
-	template<typename... _insertions>
-	LinuxExceptionT(_insertions const&... remaining) : LinuxException{ _code, remaining... }
+	LinuxExceptionT() : LinuxException{ _code }
 	{
 	}
 
 	// Instance Constructor (Inner Exception)
 	//
-	template <typename... _insertions>
-	LinuxExceptionT(Exception const& inner, _insertions const&... remaining) : LinuxException{ _code, inner, remaining... } 
+	LinuxExceptionT(Exception const& inner) : LinuxException{ _code, inner } 
 	{
 	}
 };

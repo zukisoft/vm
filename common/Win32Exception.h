@@ -45,28 +45,28 @@ public:
 	//
 	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
 
-	// Instance Constructor (Inner Exception)
-	//
-	Win32Exception(const Exception& inner) : Exception(HRESULT_FROM_WIN32(GetLastError()), inner) {}
-
-	// Instance Constructor (DWORD)
-	//
-	Win32Exception(const DWORD& result) : Exception(HRESULT_FROM_WIN32(result)) {}
-
-	// Instance Constructor (DWORD + Inner Exception)
-	//
-	Win32Exception(const DWORD& result, const Exception& inner) : Exception(HRESULT_FROM_WIN32(result), inner) {}
-
 	// Destructor
 	//
 	virtual ~Win32Exception()=default;
+
+	// Instance Constructor (Inner Exception)
+	//
+	Win32Exception(Exception const& inner) : Exception(HRESULT_FROM_WIN32(GetLastError()), inner) {}
+
+	// Instance Constructor (DWORD)
+	//
+	Win32Exception(DWORD const& result) : Exception(HRESULT_FROM_WIN32(result)) {}
+
+	// Instance Constructor (DWORD + Inner Exception)
+	//
+	Win32Exception(DWORD const& result, Exception const& inner) : Exception(HRESULT_FROM_WIN32(result), inner) {}
 
 protected:
 
 	// GetDefaultMessage (Exception)
 	//
 	// Invoked when an HRESULT code cannot be mapped to a message table string
-	virtual std::tstring GetDefaultMessage(const HRESULT& hresult);
+	virtual std::tstring GetDefaultMessage(HRESULT const& hresult);
 };
 
 //-----------------------------------------------------------------------------

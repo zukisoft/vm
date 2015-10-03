@@ -34,7 +34,7 @@
 //
 //	hresult		- Thrown HRESULT code
 
-std::tstring Win32Exception::GetDefaultMessage(const HRESULT& hresult)
+std::tstring Win32Exception::GetDefaultMessage(HRESULT const& hresult)
 {
 	// Technically anything that gets in here came from HRESULT_FROM_WIN32(), but in case not ...
 	if(HRESULT_FACILITY(hresult) != FACILITY_WIN32) return Exception::GetDefaultMessage(hresult);
