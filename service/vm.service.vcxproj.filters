@@ -426,6 +426,9 @@
     <ClInclude Include="NativeThread.h">
       <Filter>Virtual Machine\Native Process Control</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\linux\kern_levels.h">
+      <Filter>Header Files\Common\linux</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

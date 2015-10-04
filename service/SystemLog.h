@@ -24,9 +24,7 @@
 #define __SYSTEMLOG_H_
 #pragma once
 
-#include "Exception.h"
 #include "MemoryRegion.h"
-#include "SystemInformation.h"
 
 #pragma warning(push, 4)
 #pragma warning(disable:4200)		// zero-sized array in struct/union
@@ -54,16 +52,17 @@ enum class SystemLogFormat
 // SystemLogLevel
 //
 // Strongly typed enumeration defining the level of a log entry
-enum class SystemLogLevel : uint8_t
+enum class SystemLogLevel : int8_t
 {
-	Emergency		= 0,			// System is unusable
-	Alert			= 1,			// Action must be taken immediately
-	Critical		= 2,			// Critical conditions
-	Error			= 3,			// Error conditions
-	Warning			= 4,			// Warning conditions
-	Notice			= 5,			// Normal but significant condition
-	Informational	= 6,			// Informational
-	Debug			= 7,			// Debug-level messages
+	Default			= LINUX_LOGLEVEL_DEFAULT,		// Default (or last) log level
+	Emergency		= LINUX_LOGLEVEL_EMERG,			// System is unusable
+	Alert			= LINUX_LOGLEVEL_ALERT,			// Action must be taken immediately
+	Critical		= LINUX_LOGLEVEL_CRIT,			// Critical conditions
+	Error			= LINUX_LOGLEVEL_ERR,			// Error conditions
+	Warning			= LINUX_LOGLEVEL_WARNING,		// Warning conditions
+	Notice			= LINUX_LOGLEVEL_NOTICE,		// Normal but significant condition
+	Informational	= LINUX_LOGLEVEL_INFO,			// Informational
+	Debug			= LINUX_LOGLEVEL_DEBUG,			// Debug-level messages
 };
 
 //-----------------------------------------------------------------------------
@@ -81,9 +80,12 @@ class SystemLog
 {
 public:
 
-	// Constructor / Destructor
+	// Instance Constructor
 	//
 	SystemLog(size_t size);
+
+	// Destructor
+	//
 	~SystemLog()=default;
 
 	//-------------------------------------------------------------------------
@@ -105,9 +107,9 @@ public:
 	// 
 	// Writes an entry into the system log
 	// TODO: needs better overloads for facility, level, should accept varargs, and so on
-	void Push(const char_t* message) { return Push(SystemLogLevel::Error, SystemLogFacility::Kernel, message); }
-	void Push(SystemLogLevel level, const char_t* message) { return Push(level, SystemLogFacility::Kernel, message); }
-	void Push(SystemLogLevel level, SystemLogFacility facility, const char_t* message);
+	void Push(char_t const* message) { return Push(SystemLogLevel::Error, SystemLogFacility::Kernel, message); }
+	void Push(SystemLogLevel level, char_t const* message) { return Push(level, SystemLogFacility::Kernel, message); }
+	void Push(SystemLogLevel level, SystemLogFacility facility, char_t const* message);
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -136,13 +138,13 @@ public:
 
 private:
 
-	SystemLog(const SystemLog&)=delete;
-	SystemLog& operator=(const SystemLog&)=delete;
+	SystemLog(SystemLog const&)=delete;
+	SystemLog& operator=(SystemLog const&)=delete;
 
 	// MAX_BUFFER
 	//
 	// Controls the upper boundary on the system log size
-	static const size_t MAX_BUFFER	= (1 << 23);
+	static size_t const MAX_BUFFER	= (1 << 23);
 
 	// LogEntry
 	//
@@ -176,12 +178,12 @@ private:
 	// PrintDeviceFormat
 	//
 	// Formats a log entry to an output buffer in DEVICE format
-	size_t PrintDeviceFormat(const LogEntry* entry, char* buffer, size_t length);
+	size_t PrintDeviceFormat(LogEntry const* entry, char* buffer, size_t length);
 
 	// PrintStandardFormat
 	//
 	// Formats a log entry to an output buffer in STANDARD format
-	size_t PrintStandardFormat(const LogEntry* entry, char* buffer, size_t length);
+	size_t PrintStandardFormat(LogEntry const* entry, char* buffer, size_t length);
 
 	//-------------------------------------------------------------------------
 	// Member Variables

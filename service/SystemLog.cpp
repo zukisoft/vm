@@ -23,6 +23,9 @@
 #include "stdafx.h"
 #include "SystemLog.h"
 
+#include "Exception.h"
+#include "SystemInformation.h"
+
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
@@ -30,7 +33,7 @@
 //
 // Arguments:
 //
-//	size		- Size of the system log ring buffer
+//	size		- Size of the system log ring buffer in bytes
 
 SystemLog::SystemLog(size_t size)
 {
@@ -163,7 +166,7 @@ size_t SystemLog::Print(SystemLogFormat format, char* buffer, size_t length, uin
 //	buffer		- Current pointer into the output buffer or NULL
 //	length		- Space remaining in the output buffer
 
-size_t SystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_t length)
+size_t SystemLog::PrintDeviceFormat(LogEntry const* entry, char* buffer, size_t length)
 {
 	//
 	// TODO: THIS IS JUST STANDARD FORMAT -- IMPLEMENT IT
@@ -197,7 +200,7 @@ size_t SystemLog::PrintDeviceFormat(const LogEntry* entry, char* buffer, size_t 
 //	buffer		- Current pointer into the output buffer or NULL
 //	length		- Space remaining in the output buffer
 
-size_t SystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, size_t length)
+size_t SystemLog::PrintStandardFormat(LogEntry const* entry, char* buffer, size_t length)
 {
 	// Check that there is at least one byte of buffer left to write into
 	if(length == 0) return 0;
@@ -227,7 +230,7 @@ size_t SystemLog::PrintStandardFormat(const LogEntry* entry, char* buffer, size_
 //	facility	- Log entry facility code
 //	message		- Message to be pushed
 
-void SystemLog::Push(SystemLogLevel level, SystemLogFacility facility, const char_t* message)
+void SystemLog::Push(SystemLogLevel level, SystemLogFacility facility, char_t const* message)
 {
 	// The maximum message length is UINT16_MAX (64KiB)
 	size_t messagelength = std::min(strlen(message) * sizeof(char_t), static_cast<size_t>(UINT16_MAX));

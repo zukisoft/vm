@@ -32,6 +32,7 @@
 #include <linux/errno.h>
 #include <linux/fcntl.h>
 #include <linux/fs.h>
+#include <linux/kern_levels.h>
 #include <linux/ldt.h>
 #include <linux/magic.h>
 #include <linux/major.h>
