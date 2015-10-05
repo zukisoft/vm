@@ -40,6 +40,7 @@ class Pid;
 class Process;
 class RpcObject;
 class Session;
+class SystemLog;
 
 #pragma warning(push, 4)
 
@@ -85,6 +86,20 @@ public:
 	//
 	// Locates a virtual machine instance based on its uuid
 	static std::shared_ptr<VirtualMachine> Find(uuid_t const& instanceid);
+
+	// Log
+	//
+	// Writes an entry into the system log, first argument can optionally be the level
+	template<typename _first, typename... _remaining>
+	void Log(_first first, _remaining... remaining)
+	{
+		(first);
+		(remaining);
+
+		// this will be recursive variadic, call into a private helper to 
+		// generate an std::string from all the arguments, specialize to
+		// deal with first argument being SystemLog::Level
+	}
 
 	//-------------------------------------------------------------------------
 	// Properties
@@ -239,6 +254,7 @@ private:
 	std::unique_ptr<RpcObject>		m_syscalls32;		// 32-bit system calls object
 	std::unique_ptr<RpcObject>		m_syscalls64;		// 64-bit system calls object
 
+	std::unique_ptr<SystemLog>		m_syslog;			// SystemLog instance
 	std::shared_ptr<Namespace>		m_rootns;			// Root namespace instance
 
 	// Job

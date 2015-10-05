@@ -35,6 +35,7 @@
 #include "ProcessGroup.h"
 #include "RpcObject.h"
 #include "Session.h"
+#include "SystemLog.h"
 #include "Win32Exception.h"
 
 // System Call RPC Interfaces
@@ -205,20 +206,21 @@ void VirtualMachine::OnStart(int argc, LPTSTR* argv)
 
 	try {
 
-		// JOB OBJECT FOR PROCESS CONTROL
-		//
-		m_job = CreateJobObject(nullptr, nullptr);
-		if(m_job == nullptr) { throw std::exception("todo: job object creation failed"); /* todo: exception and panic */ }
-
-		// ROOT NAMESPACE
-		//
-		m_rootns = Namespace::Create();
-
 		// PROPERTIES
 		//
 
 		// SYSTEM LOG
 		//
+		m_syslog = std::make_unique<SystemLog>(8 MiB);		// <--- todo: size controlled by property
+
+		// JOB OBJECT FOR PROCESS CONTROL
+		//
+		m_job = CreateJobObject(nullptr, nullptr);
+		if(m_job == nullptr) { throw std::exception("todo: job object creation failed"); /* todo: exception and panic */ }
+		
+		// ROOT NAMESPACE
+		//
+		m_rootns = Namespace::Create();
 
 		// FILE SYSTEMS
 		//
