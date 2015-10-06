@@ -159,917 +159,917 @@ Compressed file format %1 is not supported
 MessageId=1
 Severity=Error
 Facility=Linux
-SymbolicName=E_LINUX_EPERM 
+SymbolicName=E_LINUXEPERM 
 Language=English
 EPERM: Operation not permitted
 .
 
 MessageId=2
 Severity=Error
-SymbolicName=E_LINUX_ENOENT
+SymbolicName=E_LINUXENOENT
 Language=English
 ENOENT: No such file or directory
 .
 
 MessageId=3
 Severity=Error
-SymbolicName=E_LINUX_ESRCH
+SymbolicName=E_LINUXESRCH
 Language=English
 ESRCH: No such process
 .
 
 MessageId=4
 Severity=Error
-SymbolicName=E_LINUX_EINTR
+SymbolicName=E_LINUXEINTR
 Language=English
 EINTR: Interrupted system call
 .
 
 MessageId=5
 Severity=Error
-SymbolicName=E_LINUX_EIO
+SymbolicName=E_LINUXEIO
 Language=English
 EIO: I/O error
 .
 
 MessageId=6
 Severity=Error
-SymbolicName=E_LINUX_ENXIO
+SymbolicName=E_LINUXENXIO
 Language=English
 ENXIO: No such device or address
 .
 
 MessageId=7
 Severity=Error
-SymbolicName=E_LINUX_E2BIG           
+SymbolicName=E_LINUXE2BIG           
 Language=English
 E2BIG: Argument list too long
 .
 
 MessageId=8
 Severity=Error
-SymbolicName=E_LINUX_ENOEXEC         
+SymbolicName=E_LINUXENOEXEC         
 Language=English
 ENOEXEC: Exec format error
 .
 
 MessageId=9
 Severity=Error
-SymbolicName=E_LINUX_EBADF           
+SymbolicName=E_LINUXEBADF           
 Language=English
 EBADF: Bad file number
 .
 
 MessageId=10
 Severity=Error
-SymbolicName=E_LINUX_ECHILD          
+SymbolicName=E_LINUXECHILD          
 Language=English
 ECHILD: No child processes
 .
 
 MessageId=11
 Severity=Error
-SymbolicName=E_LINUX_EAGAIN          
+SymbolicName=E_LINUXEAGAIN          
 Language=English
 EAGAIN: Try again
 .
 
 MessageId=12
 Severity=Error
-SymbolicName=E_LINUX_ENOMEM          
+SymbolicName=E_LINUXENOMEM          
 Language=English
 ENOMEM: Out of memory
 .
 
 MessageId=13
 Severity=Error
-SymbolicName=E_LINUX_EACCES          
+SymbolicName=E_LINUXEACCES          
 Language=English
 EACCES: Permission denied
 .
 
 MessageId=14
 Severity=Error
-SymbolicName=E_LINUX_EFAULT          
+SymbolicName=E_LINUXEFAULT          
 Language=English
 EFAULT: Bad address
 .
 
 MessageId=15
 Severity=Error
-SymbolicName=E_LINUX_ENOTBLK         
+SymbolicName=E_LINUXENOTBLK         
 Language=English
 ENOTBLK: Block device required
 .
 
 MessageId=16
 Severity=Error
-SymbolicName=E_LINUX_EBUSY           
+SymbolicName=E_LINUXEBUSY           
 Language=English
 EBUSY: Device or resource busy
 .
 
 MessageId=17
 Severity=Error
-SymbolicName=E_LINUX_EEXIST          
+SymbolicName=E_LINUXEEXIST          
 Language=English
 EEXIST: File exists
 .
 
 MessageId=18
 Severity=Error
-SymbolicName=E_LINUX_EXDEV           
+SymbolicName=E_LINUXEXDEV           
 Language=English
 EXDEV: Cross-device link
 .
 
 MessageId=19
 Severity=Error
-SymbolicName=E_LINUX_ENODEV          
+SymbolicName=E_LINUXENODEV          
 Language=English
 ENODEV: No such device
 .
 
 MessageId=20
 Severity=Error
-SymbolicName=E_LINUX_ENOTDIR         
+SymbolicName=E_LINUXENOTDIR         
 Language=English
 ENOTDIR: Not a directory
 .
 
 MessageId=21
 Severity=Error
-SymbolicName=E_LINUX_EISDIR          
+SymbolicName=E_LINUXEISDIR          
 Language=English
 EISDIR: Is a directory
 .
 
 MessageId=22
 Severity=Error
-SymbolicName=E_LINUX_EINVAL          
+SymbolicName=E_LINUXEINVAL          
 Language=English
 EINVAL: Invalid argument
 .
 
 MessageId=23
 Severity=Error
-SymbolicName=E_LINUX_ENFILE          
+SymbolicName=E_LINUXENFILE          
 Language=English
 ENFILE: File table overflow
 .
 
 MessageId=24
 Severity=Error
-SymbolicName=E_LINUX_EMFILE          
+SymbolicName=E_LINUXEMFILE          
 Language=English
 EMFILE: Too many open files
 .
 
 MessageId=25
 Severity=Error
-SymbolicName=E_LINUX_ENOTTY          
+SymbolicName=E_LINUXENOTTY          
 Language=English
 ENOTTY: Not a typewriter
 .
 
 MessageId=26
 Severity=Error
-SymbolicName=E_LINUX_ETXTBSY         
+SymbolicName=E_LINUXETXTBSY         
 Language=English
 ETXTBSY: Text file busy
 .
 
 MessageId=27
 Severity=Error
-SymbolicName=E_LINUX_EFBIG           
+SymbolicName=E_LINUXEFBIG           
 Language=English
 EFBIG: File too large
 .
 
 MessageId=28
 Severity=Error
-SymbolicName=E_LINUX_ENOSPC          
+SymbolicName=E_LINUXENOSPC          
 Language=English
 ENOSPC: No space left on device
 .
 
 MessageId=29
 Severity=Error
-SymbolicName=E_LINUX_ESPIPE          
+SymbolicName=E_LINUXESPIPE          
 Language=English
 ESPIPE: Illegal seek
 .
 
 MessageId=30
 Severity=Error
-SymbolicName=E_LINUX_EROFS           
+SymbolicName=E_LINUXEROFS           
 Language=English
 EROFS: Read-only file system
 .
 
 MessageId=31
 Severity=Error
-SymbolicName=E_LINUX_EMLINK          
+SymbolicName=E_LINUXEMLINK          
 Language=English
 EMLINK: Too many links
 .
 
 MessageId=32
 Severity=Error
-SymbolicName=E_LINUX_EPIPE          
+SymbolicName=E_LINUXEPIPE          
 Language=English
 EPIPE: Broken pipe
 .
 
 MessageId=33
 Severity=Error
-SymbolicName=E_LINUX_EDOM            
+SymbolicName=E_LINUXEDOM            
 Language=English
 EDOM: Math argument out of domain of func
 .
 
 MessageId=34
 Severity=Error
-SymbolicName=E_LINUX_ERANGE          
+SymbolicName=E_LINUXERANGE          
 Language=English
 ERANGE: Math result not representable
 .
 
 MessageId=35
 Severity=Error
-SymbolicName=E_LINUX_EDEADLK         
+SymbolicName=E_LINUXEDEADLK         
 Language=English
 EDEADLK: Resource deadlock would occur
 .
 
 MessageId=36
 Severity=Error
-SymbolicName=E_LINUX_ENAMETOOLONG    
+SymbolicName=E_LINUXENAMETOOLONG    
 Language=English
 ENAMETOOLONG: File name too long
 .
 
 MessageId=37
 Severity=Error
-SymbolicName=E_LINUX_ENOLCK          
+SymbolicName=E_LINUXENOLCK          
 Language=English
 ENOLCK: No record locks available
 .
 
 MessageId=38
 Severity=Error
-SymbolicName=E_LINUX_ENOSYS          
+SymbolicName=E_LINUXENOSYS          
 Language=English
 ENOSYS: Function not implemented
 .
 
 MessageId=39
 Severity=Error
-SymbolicName=E_LINUX_ENOTEMPTY       
+SymbolicName=E_LINUXENOTEMPTY       
 Language=English
 ENOTEMPTY: Directory not empty
 .
 
 MessageId=40
 Severity=Error
-SymbolicName=E_LINUX_ELOOP           
+SymbolicName=E_LINUXELOOP           
 Language=English
 ELOOP: Too many symbolic links encountered
 .
 
 MessageId=42
 Severity=Error
-SymbolicName=E_LINUX_ENOMSG          
+SymbolicName=E_LINUXENOMSG          
 Language=English
 ENOMSG: No message of desired type
 .
 
 MessageId=43
 Severity=Error
-SymbolicName=E_LINUX_EIDRM           
+SymbolicName=E_LINUXEIDRM           
 Language=English
 EIDRM: Identifier removed
 .
 
 MessageId=44
 Severity=Error
-SymbolicName=E_LINUX_ECHRNG          
+SymbolicName=E_LINUXECHRNG          
 Language=English
 ECHRNG: Channel number out of range
 .
 
 MessageId=45
 Severity=Error
-SymbolicName=E_LINUX_EL2NSYNC        
+SymbolicName=E_LINUXEL2NSYNC        
 Language=English
 EL2NSYNC: Level 2 not synchronized
 .
 
 MessageId=46
 Severity=Error
-SymbolicName=E_LINUX_EL3HLT          
+SymbolicName=E_LINUXEL3HLT          
 Language=English
 EL3HLT: Level 3 halted
 .
 
 MessageId=47
 Severity=Error
-SymbolicName=E_LINUX_EL3RST          
+SymbolicName=E_LINUXEL3RST          
 Language=English
 EL3RST: Level 3 reset
 .
 
 MessageId=48
 Severity=Error
-SymbolicName=E_LINUX_ELNRNG          
+SymbolicName=E_LINUXELNRNG          
 Language=English
 ELNRNG: Link number out of range
 .
 
 MessageId=49
 Severity=Error
-SymbolicName=E_LINUX_EUNATCH         
+SymbolicName=E_LINUXEUNATCH         
 Language=English
 EUNATCH: Protocol driver not attached
 .
 
 MessageId=50
 Severity=Error
-SymbolicName=E_LINUX_ENOCSI          
+SymbolicName=E_LINUXENOCSI          
 Language=English
 ENOCSI: No CSI structure available
 .
 
 MessageId=51
 Severity=Error
-SymbolicName=E_LINUX_EL2HLT          
+SymbolicName=E_LINUXEL2HLT          
 Language=English
 EL2HLT: Level 2 halted
 .
 
 MessageId=52
 Severity=Error
-SymbolicName=E_LINUX_EBADE           
+SymbolicName=E_LINUXEBADE           
 Language=English
 EBADEL: Invalid exchange
 .
 
 MessageId=53
 Severity=Error
-SymbolicName=E_LINUX_EBADR           
+SymbolicName=E_LINUXEBADR           
 Language=English
 EBADR: Invalid request descriptor
 .
 
 MessageId=54
 Severity=Error
-SymbolicName=E_LINUX_EXFULL          
+SymbolicName=E_LINUXEXFULL          
 Language=English
 EXFULL: Exchange full
 .
 
 MessageId=55
 Severity=Error
-SymbolicName=E_LINUX_ENOANO          
+SymbolicName=E_LINUXENOANO          
 Language=English
 ENOANO: No anode
 .
 
 MessageId=56
 Severity=Error
-SymbolicName=E_LINUX_EBADRQC         
+SymbolicName=E_LINUXEBADRQC         
 Language=English
 EBADRQC: Invalid request code
 .
 
 MessageId=57
 Severity=Error
-SymbolicName=E_LINUX_EBADSLT         
+SymbolicName=E_LINUXEBADSLT         
 Language=English
 EBADSLT: Invalid slot
 .
 
 MessageId=59
 Severity=Error
-SymbolicName=E_LINUX_EBFONT          
+SymbolicName=E_LINUXEBFONT          
 Language=English
 EBFONT: Bad font file format
 .
 
 MessageId=60
 Severity=Error
-SymbolicName=E_LINUX_ENOSTR          
+SymbolicName=E_LINUXENOSTR          
 Language=English
 ENOSTR: Device not a stream
 .
 
 MessageId=61
 Severity=Error
-SymbolicName=E_LINUX_ENODATA         
+SymbolicName=E_LINUXENODATA         
 Language=English
 ENODATA: No data available
 .
 
 MessageId=62
 Severity=Error
-SymbolicName=E_LINUX_ETIME           
+SymbolicName=E_LINUXETIME           
 Language=English
 ETIME: Timer expired
 .
 
 MessageId=63
 Severity=Error
-SymbolicName=E_LINUX_ENOSR           
+SymbolicName=E_LINUXENOSR           
 Language=English
 ENOSR: Out of streams resources
 .
 
 MessageId=64
 Severity=Error
-SymbolicName=E_LINUX_ENONET          
+SymbolicName=E_LINUXENONET          
 Language=English
 ENONET: Machine is not on the network
 .
 
 MessageId=65
 Severity=Error
-SymbolicName=E_LINUX_ENOPKG          
+SymbolicName=E_LINUXENOPKG          
 Language=English
 ENOPKG: Package not installed
 .
 
 MessageId=66
 Severity=Error
-SymbolicName=E_LINUX_EREMOTE         
+SymbolicName=E_LINUXEREMOTE         
 Language=English
 EREMOTE: Object is remote
 .
 
 MessageId=67
 Severity=Error
-SymbolicName=E_LINUX_ENOLINK        
+SymbolicName=E_LINUXENOLINK        
 Language=English
 ENOLINK: Link has been severed
 .
 
 MessageId=68
 Severity=Error
-SymbolicName=E_LINUX_EADV            
+SymbolicName=E_LINUXEADV            
 Language=English
 EADV: Advertise error
 .
 
 MessageId=69
 Severity=Error
-SymbolicName=E_LINUX_ESRMNT          
+SymbolicName=E_LINUXESRMNT          
 Language=English
 ESRMNT: Srmount error
 .
 
 MessageId=70
 Severity=Error
-SymbolicName=E_LINUX_ECOMM           
+SymbolicName=E_LINUXECOMM           
 Language=English
 ECOMM: Communication error on send
 .
 
 MessageId=71
 Severity=Error
-SymbolicName=E_LINUX_EPROTO          
+SymbolicName=E_LINUXEPROTO          
 Language=English
 EPROTO: Protocol error
 .
 
 MessageId=72
 Severity=Error
-SymbolicName=E_LINUX_EMULTIHOP       
+SymbolicName=E_LINUXEMULTIHOP       
 Language=English
 EMULTIHOP: Multihop attempted
 .
 
 MessageId=73
 Severity=Error
-SymbolicName=E_LINUX_EDOTDOT         
+SymbolicName=E_LINUXEDOTDOT         
 Language=English
 EDOTDOT: RFS specific error
 .
 
 MessageId=74
 Severity=Error
-SymbolicName=E_LINUX_EBADMSG         
+SymbolicName=E_LINUXEBADMSG         
 Language=English
 EBADMSG: Not a data message
 .
 
 MessageId=75
 Severity=Error
-SymbolicName=E_LINUX_EOVERFLOW       
+SymbolicName=E_LINUXEOVERFLOW       
 Language=English
 EOVERFLOW: Value too large for defined data type
 .
 
 MessageId=76
 Severity=Error
-SymbolicName=E_LINUX_ENOTUNIQ        
+SymbolicName=E_LINUXENOTUNIQ        
 Language=English
 ENOTUNIQ: Name not unique on network
 .
 
 MessageId=77
 Severity=Error
-SymbolicName=E_LINUX_EBADFD          
+SymbolicName=E_LINUXEBADFD          
 Language=English
 EBADFD: File descriptor in bad state
 .
 
 MessageId=78
 Severity=Error
-SymbolicName=E_LINUX_EREMCHG         
+SymbolicName=E_LINUXEREMCHG         
 Language=English
 EREMCHG: Remote address changed
 .
 
 MessageId=79
 Severity=Error
-SymbolicName=E_LINUX_ELIBACC         
+SymbolicName=E_LINUXELIBACC         
 Language=English
 ELIBACC: Can not access a needed shared library
 .
 
 MessageId=80
 Severity=Error
-SymbolicName=E_LINUX_ELIBBAD         
+SymbolicName=E_LINUXELIBBAD         
 Language=English
 ELIBBAD: Accessing a corrupted shared library
 .
 
 MessageId=81
 Severity=Error
-SymbolicName=E_LINUX_ELIBSCN         
+SymbolicName=E_LINUXELIBSCN         
 Language=English
 ELIBSCN: .lib section in a.out corrupted
 .
 
 MessageId=82
 Severity=Error
-SymbolicName=E_LINUX_ELIBMAX         
+SymbolicName=E_LINUXELIBMAX         
 Language=English
 ELIBMAX: Attempting to link in too many shared libraries
 .
 
 MessageId=83
 Severity=Error
-SymbolicName=E_LINUX_ELIBEXEC        
+SymbolicName=E_LINUXELIBEXEC        
 Language=English
 ELIBEXEC: Cannot exec a shared library directly
 .
 
 MessageId=84
 Severity=Error
-SymbolicName=E_LINUX_EILSEQ          
+SymbolicName=E_LINUXEILSEQ          
 Language=English
 EILSEQ: Illegal byte sequence
 .
 
 MessageId=85
 Severity=Error
-SymbolicName=E_LINUX_ERESTART        
+SymbolicName=E_LINUXERESTART        
 Language=English
 ERESTART: Interrupted system call should be restarted
 .
 
 MessageId=86
 Severity=Error
-SymbolicName=E_LINUX_ESTRPIPE        
+SymbolicName=E_LINUXESTRPIPE        
 Language=English
 ESTRPIPE: Streams pipe error
 .
 
 MessageId=87
 Severity=Error
-SymbolicName=E_LINUX_EUSERS          
+SymbolicName=E_LINUXEUSERS          
 Language=English
 EUSERS: Too many users
 .
 
 MessageId=88
 Severity=Error
-SymbolicName=E_LINUX_ENOTSOCK        
+SymbolicName=E_LINUXENOTSOCK        
 Language=English
 ENOTSOCK: Socket operation on non-socket
 .
 
 MessageId=89
 Severity=Error
-SymbolicName=E_LINUX_EDESTADDRREQ    
+SymbolicName=E_LINUXEDESTADDRREQ    
 Language=English
 EDESTADDRREQ: Destination address required
 .
 
 MessageId=90
 Severity=Error
-SymbolicName=E_LINUX_EMSGSIZE        
+SymbolicName=E_LINUXEMSGSIZE        
 Language=English
 EMSGSIZE: Message too long
 .
 
 MessageId=91
 Severity=Error
-SymbolicName=E_LINUX_EPROTOTYPE      
+SymbolicName=E_LINUXEPROTOTYPE      
 Language=English
 EPROTOTYPE: Protocol wrong type for socket
 .
 
 MessageId=92
 Severity=Error
-SymbolicName=E_LINUX_ENOPROTOOPT     
+SymbolicName=E_LINUXENOPROTOOPT     
 Language=English
 ENOPROTOOPT: Protocol not available
 .
 
 MessageId=93
 Severity=Error
-SymbolicName=E_LINUX_EPROTONOSUPPORT 
+SymbolicName=E_LINUXEPROTONOSUPPORT 
 Language=English
 EPROTONOSUPPORT: Protocol not supported
 .
 
 MessageId=94
 Severity=Error
-SymbolicName=E_LINUX_ESOCKTNOSUPPORT 
+SymbolicName=E_LINUXESOCKTNOSUPPORT 
 Language=English
 ESOCKTNOSUPPORT: Socket type not supported
 .
 
 MessageId=95
 Severity=Error
-SymbolicName=E_LINUX_EOPNOTSUPP      
+SymbolicName=E_LINUXEOPNOTSUPP      
 Language=English
 EOPNOTSUPP: Operation not supported on transport endpoint
 .
 
 MessageId=96
 Severity=Error
-SymbolicName=E_LINUX_EPFNOSUPPORT    
+SymbolicName=E_LINUXEPFNOSUPPORT    
 Language=English
 EPFNOSUPPORT: Protocol family not supported
 .
 
 MessageId=97
 Severity=Error
-SymbolicName=E_LINUX_EAFNOSUPPORT    
+SymbolicName=E_LINUXEAFNOSUPPORT    
 Language=English
 EAFNOSUPPORT: Address family not supported by protocol
 .
 
 MessageId=98
 Severity=Error
-SymbolicName=E_LINUX_EADDRINUSE      
+SymbolicName=E_LINUXEADDRINUSE      
 Language=English
 EADDRINUSE: Address already in use
 .
 
 MessageId=99
 Severity=Error
-SymbolicName=E_LINUX_EADDRNOTAVAIL   
+SymbolicName=E_LINUXEADDRNOTAVAIL   
 Language=English
 EADDRNOTAVAIL: Cannot assign requested address
 .
 
 MessageId=100
 Severity=Error
-SymbolicName=E_LINUX_ENETDOWN        
+SymbolicName=E_LINUXENETDOWN        
 Language=English
 ENETDOWN: Network is down
 .
 
 MessageId=101
 Severity=Error
-SymbolicName=E_LINUX_ENETUNREACH     
+SymbolicName=E_LINUXENETUNREACH     
 Language=English
 ENETUNREACH: Network is unreachable
 .
 
 MessageId=102
 Severity=Error
-SymbolicName=E_LINUX_ENETRESET       
+SymbolicName=E_LINUXENETRESET       
 Language=English
 ENETRESET: Network dropped connection because of reset
 .
 
 MessageId=103
 Severity=Error
-SymbolicName=E_LINUX_ECONNABORTED    
+SymbolicName=E_LINUXECONNABORTED    
 Language=English
 ECONNABORTED: Software caused connection abort
 .
 
 MessageId=104
 Severity=Error
-SymbolicName=E_LINUX_ECONNRESET      
+SymbolicName=E_LINUXECONNRESET      
 Language=English
 ECONNRESET: Connection reset by peer
 .
 
 MessageId=105
 Severity=Error
-SymbolicName=E_LINUX_ENOBUFS         
+SymbolicName=E_LINUXENOBUFS         
 Language=English
 ENOBUFS: No buffer space available
 .
 
 MessageId=106
 Severity=Error
-SymbolicName=E_LINUX_EISCONN         
+SymbolicName=E_LINUXEISCONN         
 Language=English
 EISCONN: Transport endpoint is already connected
 .
 
 MessageId=107
 Severity=Error
-SymbolicName=E_LINUX_ENOTCONN        
+SymbolicName=E_LINUXENOTCONN        
 Language=English
 ENOTCONN: Transport endpoint is not connected
 .
 
 MessageId=108
 Severity=Error
-SymbolicName=E_LINUX_ESHUTDOWN       
+SymbolicName=E_LINUXESHUTDOWN       
 Language=English
 ESHUTDOWN: Cannot send after transport endpoint shutdown
 .
 
 MessageId=109
 Severity=Error
-SymbolicName=E_LINUX_ETOOMANYREFS    
+SymbolicName=E_LINUXETOOMANYREFS    
 Language=English
 ETOOMANYREFS: Too many references: cannot splice
 .
 
 MessageId=110
 Severity=Error
-SymbolicName=E_LINUX_ETIMEDOUT       
+SymbolicName=E_LINUXETIMEDOUT       
 Language=English
 ETIMEDOUT: Connection timed out
 .
 
 MessageId=111
 Severity=Error
-SymbolicName=E_LINUX_ECONNREFUSED    
+SymbolicName=E_LINUXECONNREFUSED    
 Language=English
 ECONNREFUSED: Connection refused
 .
 
 MessageId=112
 Severity=Error
-SymbolicName=E_LINUX_EHOSTDOWN       
+SymbolicName=E_LINUXEHOSTDOWN       
 Language=English
 EHOSTDOWN: Host is down
 .
 
 MessageId=113
 Severity=Error
-SymbolicName=E_LINUX_EHOSTUNREACH    
+SymbolicName=E_LINUXEHOSTUNREACH    
 Language=English
 EHOSTUNREACH: No route to host
 .
 
 MessageId=114
 Severity=Error
-SymbolicName=E_LINUX_EALREADY        
+SymbolicName=E_LINUXEALREADY        
 Language=English
 EALREADY: Operation already in progress
 .
 
 MessageId=115
 Severity=Error
-SymbolicName=E_LINUX_EINPROGRESS     
+SymbolicName=E_LINUXEINPROGRESS     
 Language=English
 EINPROGRESS: Operation now in progress
 .
 
 MessageId=116
 Severity=Error
-SymbolicName=E_LINUX_ESTALE         
+SymbolicName=E_LINUXESTALE         
 Language=English
 ESTALE: Stale file handle
 .
 
 MessageId=117
 Severity=Error
-SymbolicName=E_LINUX_EUCLEAN         
+SymbolicName=E_LINUXEUCLEAN         
 Language=English
 EUCLEAN: Structure needs cleaning
 .
 
 MessageId=118
 Severity=Error
-SymbolicName=E_LINUX_ENOTNAM         
+SymbolicName=E_LINUXENOTNAM         
 Language=English
 ENOTNAM: Not a XENIX named type file
 .
 
 MessageId=119
 Severity=Error
-SymbolicName=E_LINUX_ENAVAIL         
+SymbolicName=E_LINUXENAVAIL         
 Language=English
 ENAVAIL: No XENIX semaphores available
 .
 
 MessageId=120
 Severity=Error
-SymbolicName=E_LINUX_EISNAM          
+SymbolicName=E_LINUXEISNAM          
 Language=English
 EISNAM: Is a named type file
 .
 
 MessageId=121
 Severity=Error
-SymbolicName=E_LINUX_EREMOTEIO       
+SymbolicName=E_LINUXEREMOTEIO       
 Language=English
 EREMOTEIO: Remote I/O error
 .
 
 MessageId=122
 Severity=Error
-SymbolicName=E_LINUX_EDQUOT          
+SymbolicName=E_LINUXEDQUOT          
 Language=English
 EDQUOT: Quota exceeded
 .
 
 MessageId=123
 Severity=Error
-SymbolicName=E_LINUX_ENOMEDIUM       
+SymbolicName=E_LINUXENOMEDIUM       
 Language=English
 ENOMEDIUM: No medium found
 .
 
 MessageId=124
 Severity=Error
-SymbolicName=E_LINUX_EMEDIUMTYPE     
+SymbolicName=E_LINUXEMEDIUMTYPE     
 Language=English
 EMEDIUMTYPE: Wrong medium type
 .
 
 MessageId=125
 Severity=Error
-SymbolicName=E_LINUX_ECANCELED       
+SymbolicName=E_LINUXECANCELED       
 Language=English
 ECANCELED: Operation Canceled
 .
 
 MessageId=126
 Severity=Error
-SymbolicName=E_LINUX_ENOKEY          
+SymbolicName=E_LINUXENOKEY          
 Language=English
 ENOKEY: Required key not available
 .
 
 MessageId=127
 Severity=Error
-SymbolicName=E_LINUX_EKEYEXPIRED     
+SymbolicName=E_LINUXEKEYEXPIRED     
 Language=English
 EKEYEXPIRED: Key has expired
 .
 
 MessageId=128
 Severity=Error
-SymbolicName=E_LINUX_EKEYREVOKED     
+SymbolicName=E_LINUXEKEYREVOKED     
 Language=English
 EKEYREVOKED: Key has been revoked
 .
 
 MessageId=129
 Severity=Error
-SymbolicName=E_LINUX_EKEYREJECTED    
+SymbolicName=E_LINUXEKEYREJECTED    
 Language=English
 EKEYREJECTED: Key was rejected by service
 .
 
 MessageId=130
 Severity=Error
-SymbolicName=E_LINUX_EOWNERDEAD      
+SymbolicName=E_LINUXEOWNERDEAD      
 Language=English
 EOWNERDEAD: Owner died
 .
 
 MessageId=131
 Severity=Error
-SymbolicName=E_LINUX_ENOTRECOVERABLE 
+SymbolicName=E_LINUXENOTRECOVERABLE 
 Language=English
 ENOTRECOVERABLE: State not recoverable
 .
 
 MessageId=132
 Severity=Error
-SymbolicName=E_LINUX_ERFKILL         
+SymbolicName=E_LINUXERFKILL         
 Language=English
 ERFKILL: Operation not possible due to RF-kill
 .
 
 MessageId=133
 Severity=Error
-SymbolicName=E_LINUX_EHWPOISON       
+SymbolicName=E_LINUXEHWPOISON       
 Language=English
 EHWPOISON: Memory page has hardware error
 .
@@ -1262,49 +1262,49 @@ The specified thread architecture class (%1!d!) does not match that from which a
 MessageId=1
 Severity=Error
 Facility=Process
-SymbolicName=E_PROCESSINVALIDX86HOST
+SymbolicName=E_PROCESSInvalidX86Host
 Language=English
 The configured host application for 32-bit x86 processes is not a 32-bit application.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROCESSINVALIDX64HOST
+SymbolicName=E_PROCESSInvalidX64Host
 Language=English
 The configured host application for 64-bit x86_64 processes is not a 64-bit application.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROCESSINVALIDTHREADPROC
+SymbolicName=E_PROCESSInvalidThreadProc
 Language=English
 The remote thread entry point provided for a hosted process is invalid.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROCESSINVALIDSTACKSIZE
+SymbolicName=E_PROCESSInvalidStackSize
 Language=English
 The thread stack size virtual machine property is invalid.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROCESSINVALIDTHREADTIMEOUT
+SymbolicName=E_PROCESSInvalidThreadTimeout
 Language=English
 The thread attach timeout virtual machine property is invalid.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROCESSDUPLICATEPID
+SymbolicName=E_PROCESSDuplicatePid
 Language=English
 The provided pid (%1!d!) cannot be inserted as a child for process (%2!d!); the pid has already been added.
 .
 
 MessageId=
 Severity=Error
-SymbolicName=E_PROCESSTHREADTIMEOUT
+SymbolicName=E_PROCESSThreadTimeout
 Language=English
 Process (%1!d!) timed out waiting for a newly created native OS thread to become attached.
 .
