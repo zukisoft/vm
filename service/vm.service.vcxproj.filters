@@ -429,6 +429,9 @@
     <ClInclude Include="..\common\linux\kern_levels.h">
       <Filter>Header Files\Common\linux</Filter>
     </ClInclude>
+    <ClInclude Include="..\tmp\vm.messages\exceptions.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
