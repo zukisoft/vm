@@ -72,7 +72,10 @@
 // Service Template Library
 #include <servicelib.h>
 
+// Messages
+//
 #include <messages.h>
+#include <exceptions.h>
 
 // find a place to put this - it's used sporadically
 template <typename _type>

@@ -76,7 +76,7 @@ Language=English
 .
 
 MessageId=
-;//ExceptionName=ArgumentNullException
+;//ExceptionName=ArgumentNullException,paramname
 Severity=Error
 SymbolicName=E_ARGUMENTNULL
 Language=English
@@ -84,7 +84,7 @@ Parameter %1 value cannot be null.
 .
 
 MessageId=
-;//ExceptionName=ArgumentOutOfRangeException
+;//ExceptionName=ArgumentOutOfRangeException,paramname
 Severity=Error
 SymbolicName=E_ARGUMENTOUTOFRANGE
 Language=English
@@ -1091,7 +1091,7 @@ ELF image header does not contain the required magic number.
 .
 
 MessageId=
-;//ExceptionName=ElfInvalidClassException
+;//ExceptionName=ElfInvalidClassException,imageclass
 Severity=Error
 SymbolicName=E_ELFINVALIDCLASS
 Language=English
@@ -1099,7 +1099,7 @@ ELF image class %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
-;//ExceptionName=ElfInvalidEncodingException
+;//ExceptionName=ElfInvalidEncodingException,encoding
 Severity=Error
 SymbolicName=E_ELFINVALIDENCODING
 Language=English
