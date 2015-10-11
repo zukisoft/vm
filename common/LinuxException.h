@@ -24,8 +24,9 @@
 #define __LINUXEXCEPTION_H_
 #pragma once
 
-#include "generic_text.h"
+#include <exception>
 #include <messages.h>
+#include <Windows.h>
 
 #pragma warning(push, 4)
 

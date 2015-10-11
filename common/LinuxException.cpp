@@ -77,13 +77,13 @@ char* LinuxException::AllocateMessage(int result)
 	LPTSTR message = nullptr;					// Allocated string from ::FormatMessage
 
 	// Attempt to format the message from the current module resources
-	DWORD cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE, nullptr,
+	DWORD cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
 		static_cast<DWORD>(HRESULT_FROM_LINUX(result)), GetThreadUILanguage(), reinterpret_cast<LPTSTR>(&message), 0, nullptr); 
 	if(cchmessage == 0) {
 
 		// The message could not be looked up in the specified module; generate the default message instead
 		if(message) { LocalFree(message); message = nullptr; }
-		cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY, 
+		cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
 			s_defaultformat, 0, 0, reinterpret_cast<LPTSTR>(&message), 0, reinterpret_cast<va_list*>(&result));
 		if(cchmessage == 0) {
 
