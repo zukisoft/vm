@@ -30,6 +30,8 @@
 #include "SystemInformation.h"
 #include "Win32Exception.h"
 
+#include "Exception.h"
+
 #pragma comment(lib, "shlwapi.lib")
 
 #pragma warning(push, 4)

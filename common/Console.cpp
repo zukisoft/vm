@@ -23,6 +23,8 @@
 #include "stdafx.h"
 #include "Console.h"
 
+#include "Exception.h"
+
 #pragma warning(push, 4)				
 
 //-----------------------------------------------------------------------------

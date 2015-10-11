@@ -35,6 +35,8 @@
 #include "Thread.h"
 #include "VirtualMachine.h"
 
+#include "Exception.h"
+
 #pragma warning(push, 4)
 
 // g_pendingmap (local)

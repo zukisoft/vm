@@ -47,13 +47,13 @@ uapi::long_t SystemCall::TranslateException(std::exception_ptr ex)
 
 	// TODO: Win32Exception translation
 
-	// Exception: 
-	catch(Exception& ex) {
+	//// Exception: 
+	//catch(LinuxException& ex) {
 
-		// TODO: SOMETHING REASONABLE HERE
-		int x = (int)ex.Code;
-		return -x;
-	}
+	//	// TODO: SOMETHING REASONABLE HERE
+	//	int x = (int)ex.Code;
+	//	return -x;
+	//}
 
 	// Anything else:
 	// TODO: SOMETHING REASONABLE HERE
