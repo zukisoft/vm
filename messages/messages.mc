@@ -27,10 +27,11 @@ FacilityNames=(
 			Common=1:FACILITY_COMMON
 			Linux=2:FACILITY_LINUX
 			Elf=3:FACILITY_ELF
-			TaskState=4:FACILITY_TASKSTATE
-			Process=5:FACILITY_PROCESS
-			Thread=6:FACILITY_THREAD
-			Service=7:FACILITY_SERVICE
+			Executable=4:FACILITY_EXECUTABLE
+			TaskState=5:FACILITY_TASKSTATE
+			Process=6:FACILITY_PROCESS
+			Thread=7:FACILITY_THREAD
+			Service=8:FACILITY_SERVICE
 			)
 
 ;//--------------------------------------------------------------------------
@@ -1227,6 +1228,28 @@ Severity=Error
 SymbolicName=E_ELFARGUMENTSEXCEEDSTACK
 Language=English
 The amount of memory required (%1!lu! bytes) for the ELF process arguments exceeds the allocated stack size of %2!lu! bytes.
+.
+
+;//----------------------------------------------------------------------------
+;// Executable
+;//
+;// Messages specific to the parsing and loading of executable images
+
+MessageId=1
+;//ExceptionName=ExecutableInvalidFormatException
+Severity=Error
+Facility=Executable
+SymbolicName=E_EXECUTABLEINVALIDFORMAT
+Language=English
+Unrecognized or unsupported executable format.
+.
+
+MessageId=
+;//ExceptionName=ExecutableInterpreterBinaryException
+Severity=Error
+SymbolicName=E_EXECUTABLEINTERPRETERBINARY
+Language=English
+Interpreter script does not specify a path to a target executable.
 .
 
 ;//----------------------------------------------------------------------------

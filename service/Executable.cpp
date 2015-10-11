@@ -53,7 +53,7 @@ static uint8_t INTERPRETER_SCRIPT_MAGIC_UTF8[] = { 0xEF, 0xBB, 0xBF, 0x23, 0x21 
 
 std::unique_ptr<Executable> Executable::FromFile(PathResolver resolver, char_t const* path, char_t const* const* arguments, char_t const* const* environment)
 {
-	if(path == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(path == nullptr) throw LinuxException{ LINUX_EFAULT, ArgumentNullException{ L"path" } };
 
 	// Convert the C-style string arrays into vector<string> containers and invoke the internal implementation.  Note that
 	// the path is provided twice, once as the path to resolve and once to track the 'original' path argument that was sent in
@@ -100,7 +100,7 @@ std::unique_ptr<Executable> Executable::FromFile(PathResolver resolver, char_t c
 
 	// UNSUPPORTED FORMAT
 	//
-	else throw LinuxException{ LINUX_ENOEXEC };
+	else throw LinuxException{ LINUX_ENOEXEC, ExecutableInvalidFormatException{} };
 }
 
 //-----------------------------------------------------------------------------
@@ -132,7 +132,7 @@ std::unique_ptr<Executable> Executable::FromScriptFile(std::shared_ptr<FileSyste
 	// Find the interperter path, if not present the script is not a valid target
 	for(begin = &buffer[0]; (begin < eof) && (*begin) && (*begin != '\n') && (std::isspace(*begin)); begin++);
 	for(end = begin; (end < eof) && (*end) && (*end != '\n') && (!std::isspace(*end)); end++);
-	if(begin == end) throw LinuxException{ LINUX_ENOEXEC };
+	if(begin == end) throw LinuxException{ LINUX_ENOEXEC, ExecutableInterpreterBinaryException{} };
 	std::string interpreter(begin, end);
 
 	// Find the optional argument string that follows the interpreter path
