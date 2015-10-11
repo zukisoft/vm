@@ -25,7 +25,6 @@
 #pragma once
 
 #include "generic_text.h"
-#include "Exception.h"
 #include <messages.h>
 
 #pragma warning(push, 4)
@@ -49,35 +48,68 @@ static inline constexpr HRESULT HRESULT_FROM_LINUX(int code)
 //-----------------------------------------------------------------------------
 // Class LinuxException
 //
-// Exception-based class used to wrap Linux system error codes.  Insertion
-// arguments are not supported as none of these messages will have inserts
+// Exception-based class used to wrap Linux system error codes
 
-class LinuxException : public Exception
+class LinuxException : public std::exception
 {
 public:
 
-	// Instance Constructor (int)
+	// Instance Constructors
 	//
-	LinuxException(int const& result) : Exception{ HRESULT_FROM_LINUX(result) } {}
+	explicit LinuxException(int result);
+	explicit LinuxException(int result, std::exception const& inner);
 
-	// Instance Constructor (int + Inner Exception)
+	// Copy Constructor
 	//
-	LinuxException(int const& result, Exception const& inner) : Exception{ HRESULT_FROM_LINUX(result), inner } {}
+	LinuxException(LinuxException const& rhs);
 
 	// Destructor
 	//
-	virtual ~LinuxException()=default;
+	virtual ~LinuxException();
 
-protected:
+	//-------------------------------------------------------------------------
+	// std::exception implementation
 
-	// GetDefaultMessage (Exception)
+	// what
 	//
-	// Invoked when an HRESULT code cannot be mapped to a message table string
-	virtual std::tstring GetDefaultMessage(HRESULT const& hresult);
+	// Gets a pointer to the exception message text
+	virtual char const* what(void) const;
+		
+	//-------------------------------------------------------------------------
+	// Properties
+
+	// Code
+	//
+	// Exposes the Linux/POSIX result code
+	__declspec(property(get=getCode)) int Code;
+	int getCode(void) const;
+
+	// InnerException
+	//
+	// Exposes a reference to the inner exception
+	__declspec(property(get=getInnerException)) std::exception const& InnerException;
+	std::exception const& getInnerException(void) const;
 
 private:
 
-	LinuxException()=delete;
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// AllocateMessage
+	//
+	// Generates the formatted message string from the project resources
+	static char* AllocateMessage(int result);
+
+	//-------------------------------------------------------------------------
+	// Member Variables
+
+	int const					m_code;			// Linux/POSIX result code
+	char* const					m_what;			// Formatted message text
+	bool const					m_owned;		// Flag if message is owned
+	std::exception const		m_inner;		// Inner exception reference
+
+	// Fallback message text if the code could not be looked up in the messages
+	static constexpr LPCTSTR s_defaultformat = TEXT("LinuxException code %1!d!");
 };
 
 //-----------------------------------------------------------------------------

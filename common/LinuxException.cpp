@@ -26,24 +26,118 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// LinuxException::GetDefaultMessage (protected)
-//
-// Invoked when an HRESULT cannot be mapped to a message table string
+// LinuxException Constructor
 //
 // Arguments:
 //
-//	hresult		- Thrown HRESULT code
+//	result		- Linux/POSIX result code
 
-std::tstring LinuxException::GetDefaultMessage(HRESULT const& hresult)
+LinuxException::LinuxException(int result) : m_code(result), m_what(AllocateMessage(result)), m_owned((m_what != nullptr)) 
 {
-	// Technically anything that gets in here came from HRESULT_FROM_LINUX(), but in case not ...
-	if(HRESULT_FACILITY(hresult) != FACILITY_LINUX) return Exception::GetDefaultMessage(hresult);
+}
 
-	tchar_t buffer[256];			// Stack buffer to hold formatted string
+//-----------------------------------------------------------------------------
+// LinuxException Constructor
+//
+// Arguments:
+//
+//	result		- Linux/POSIX result code
+//	inner		- Inner std::exception object reference
 
-	// Format a default message for the HRESULT that just shows the result code as an integer
-	_sntprintf_s(buffer, 256, _TRUNCATE, _T("Linux system error code %d\r\n"), HRESULT_CODE(hresult));
-	return std::tstring(buffer);
+LinuxException::LinuxException(int result, std::exception const& inner) : m_code(result), m_what(AllocateMessage(result)), m_owned((m_what != nullptr)), m_inner(inner)
+{
+}
+
+//-----------------------------------------------------------------------------
+// LinuxException Copy Constructor
+
+LinuxException::LinuxException(LinuxException const& rhs) : m_code(rhs.m_code), m_what(rhs.m_what), m_owned(false), m_inner(rhs.m_inner)
+{
+}
+
+//-----------------------------------------------------------------------------
+// LinuxException Destructor
+
+LinuxException::~LinuxException()
+{
+	if(m_owned && (m_what != nullptr)) LocalFree(m_what);
+}
+
+//-----------------------------------------------------------------------------
+// LinuxException::AllocateMessage (private, static)
+//
+// Generates the formatted message string from the project resources
+//
+// Arguments:
+//
+//	result		- Linux/POSIX result code for which to generate the message
+
+char* LinuxException::AllocateMessage(int result)
+{
+	LPTSTR message = nullptr;					// Allocated string from ::FormatMessage
+
+	// Attempt to format the message from the current module resources
+	DWORD cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE, nullptr,
+		static_cast<DWORD>(HRESULT_FROM_LINUX(result)), GetThreadUILanguage(), reinterpret_cast<LPTSTR>(&message), 0, nullptr); 
+	if(cchmessage == 0) {
+
+		// The message could not be looked up in the specified module; generate the default message instead
+		if(message) { LocalFree(message); message = nullptr; }
+		cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY, 
+			s_defaultformat, 0, 0, reinterpret_cast<LPTSTR>(&message), 0, reinterpret_cast<va_list*>(&result));
+		if(cchmessage == 0) {
+
+			// The default message could not be generated; give up
+			if(message) ::LocalFree(message);
+			return nullptr;
+		}
+	}
+
+#ifdef _UNICODE
+	// UNICODE projects need to convert the message string into CP_UTF8 or CP_ACP
+	int convertcch = ::WideCharToMultiByte(CP_UTF8, 0, message, cchmessage, nullptr, 0, nullptr, nullptr);
+	char* converted = reinterpret_cast<char*>(::LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, (convertcch + 1) * sizeof(char)));
+	if(converted) ::WideCharToMultiByte(CP_UTF8, 0, message, cchmessage, converted, convertcch, nullptr, nullptr);
+
+	LocalFree(message);
+	return converted;
+#else
+	return message;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// LinuxException::getCode
+//
+// Gets the Linux/POSIX result code
+
+int LinuxException::getCode(void) const
+{
+	return m_code;
+}
+
+//-----------------------------------------------------------------------------
+// LinuxException::getInnerException
+//
+// Exposes a reference to the inner exception
+
+std::exception const& LinuxException::getInnerException(void) const
+{
+	return m_inner;
+}
+
+//-----------------------------------------------------------------------------
+// LinuxException::what
+//
+// Gets a pointer to the exception message text
+//
+// Arguments:
+//
+//	NONE
+
+char const* LinuxException::what(void) const
+{
+	return m_what;
 }
 
 //-----------------------------------------------------------------------------
