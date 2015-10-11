@@ -26,24 +26,108 @@
 #pragma warning(push, 4)
 
 //-----------------------------------------------------------------------------
-// Win32Exception::GetDefaultMessage (protected)
-//
-// Invoked when an HRESULT cannot be mapped to a message table string
+// Win32Exception Constructor
 //
 // Arguments:
 //
-//	hresult		- Thrown HRESULT code
+//	NONE
 
-std::tstring Win32Exception::GetDefaultMessage(HRESULT const& hresult)
+Win32Exception::Win32Exception() : Win32Exception(GetLastError())
 {
-	// Technically anything that gets in here came from HRESULT_FROM_WIN32(), but in case not ...
-	if(HRESULT_FACILITY(hresult) != FACILITY_WIN32) return Exception::GetDefaultMessage(hresult);
+}
 
-	tchar_t buffer[256];			// Stack buffer to hold formatted string
+//-----------------------------------------------------------------------------
+// Win32Exception Constructor
+//
+// Arguments:
+//
+//	result		- Windows system error code
+//	inner		- Inner std::exception object reference
 
-	// Format a default message for the HRESULT that just shows the result code as an integer
-	_sntprintf_s(buffer, 256, _TRUNCATE, _T("Win32 system error code %d\r\n"), HRESULT_CODE(hresult));
-	return std::tstring(buffer);
+Win32Exception::Win32Exception(DWORD result) : m_code(result), m_what(AllocateMessage(result)), m_owned((m_what != nullptr))
+{
+}
+
+//-----------------------------------------------------------------------------
+// Win32Exception Copy Constructor
+
+Win32Exception::Win32Exception(Win32Exception const& rhs) : m_code(rhs.m_code), m_what(rhs.m_what), m_owned(false)
+{
+}
+
+//-----------------------------------------------------------------------------
+// Win32Exception Destructor
+
+Win32Exception::~Win32Exception()
+{
+	if(m_owned && (m_what != nullptr)) LocalFree(m_what);
+}
+
+//-----------------------------------------------------------------------------
+// Win32Exception::AllocateMessage (private, static)
+//
+// Generates the formatted message string
+//
+// Arguments:
+//
+//	result		- Windows system error code for which to generate the message
+
+char* Win32Exception::AllocateMessage(DWORD result)
+{
+	LPTSTR message = nullptr;					// Allocated string from ::FormatMessage
+
+	// Attempt to format the message from the current module resources
+	DWORD cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+		result, GetThreadUILanguage(), reinterpret_cast<LPTSTR>(&message), 0, nullptr); 
+	if(cchmessage == 0) {
+
+		// The message could not be looked up in the specified module; generate the default message instead
+		if(message) { LocalFree(message); message = nullptr; }
+		cchmessage = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY, 
+			s_defaultformat, 0, 0, reinterpret_cast<LPTSTR>(&message), 0, reinterpret_cast<va_list*>(&result));
+		if(cchmessage == 0) {
+
+			// The default message could not be generated; give up
+			if(message) ::LocalFree(message);
+			return nullptr;
+		}
+	}
+
+#ifdef _UNICODE
+	// UNICODE projects need to convert the message string into CP_UTF8 or CP_ACP
+	int convertcch = ::WideCharToMultiByte(CP_UTF8, 0, message, cchmessage, nullptr, 0, nullptr, nullptr);
+	char* converted = reinterpret_cast<char*>(::LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, (convertcch + 1) * sizeof(char)));
+	if(converted) ::WideCharToMultiByte(CP_UTF8, 0, message, cchmessage, converted, convertcch, nullptr, nullptr);
+
+	LocalFree(message);
+	return converted;
+#else
+	return message;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Win32Exception::getCode
+//
+// Gets the Linux/POSIX result code
+
+DWORD Win32Exception::getCode(void) const
+{
+	return m_code;
+}
+
+//-----------------------------------------------------------------------------
+// Win32Exception::what
+//
+// Gets a pointer to the exception message text
+//
+// Arguments:
+//
+//	NONE
+
+char const* Win32Exception::what(void) const
+{
+	return m_what;
 }
 
 //-----------------------------------------------------------------------------

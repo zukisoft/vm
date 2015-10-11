@@ -24,50 +24,71 @@
 #define __WIN32EXCEPTION_H_
 #pragma once
 
+#include <exception>
 #include <Windows.h>
-#include "Exception.h"
-#include "generic_text.h"
 
 #pragma warning(push, 4)	
 
 //-----------------------------------------------------------------------------
 // Class Win32Exception
 //
-// Exception-based class used to wrap Windows system error codes.  Insertion
-// arguments are not supported nor is a module handle as these messages are
-// system defined and almost never have useful insertions
+// Exception-based class used to wrap Windows system error codes
 
-class Win32Exception : public Exception
+class Win32Exception : public std::exception
 {
 public:
 
-	// Instance Constructor
+	// Instance Constructors
 	//
-	Win32Exception() : Exception(HRESULT_FROM_WIN32(GetLastError())) {}
+	Win32Exception();
+	explicit Win32Exception(DWORD result);
+
+	// Copy Constructor
+	//
+	Win32Exception(Win32Exception const& rhs);
 
 	// Destructor
 	//
-	virtual ~Win32Exception()=default;
+	virtual ~Win32Exception();
 
-	// Instance Constructor (Inner Exception)
+	//-------------------------------------------------------------------------
+	// std::exception implementation
+
+	// what
 	//
-	Win32Exception(Exception const& inner) : Exception(HRESULT_FROM_WIN32(GetLastError()), inner) {}
+	// Gets a pointer to the exception message text
+	virtual char const* what(void) const;
+		
+	//-------------------------------------------------------------------------
+	// Properties
 
-	// Instance Constructor (DWORD)
+	// Code
 	//
-	Win32Exception(DWORD const& result) : Exception(HRESULT_FROM_WIN32(result)) {}
+	// Exposes the Windows system error code
+	__declspec(property(get=getCode)) DWORD Code;
+	DWORD getCode(void) const;
 
-	// Instance Constructor (DWORD + Inner Exception)
+private:
+
+	//-------------------------------------------------------------------------
+	// Private Member Functions
+
+	// AllocateMessage
 	//
-	Win32Exception(DWORD const& result, Exception const& inner) : Exception(HRESULT_FROM_WIN32(result), inner) {}
+	// Generates the formatted message string from the project resources
+	static char* AllocateMessage(DWORD result);
 
-protected:
+	//-------------------------------------------------------------------------
+	// Member Variables
 
-	// GetDefaultMessage (Exception)
-	//
-	// Invoked when an HRESULT code cannot be mapped to a message table string
-	virtual std::tstring GetDefaultMessage(HRESULT const& hresult);
+	DWORD const					m_code;			// Windows system error code
+	char* const					m_what;			// Formatted message text
+	bool const					m_owned;		// Flag if message is owned
+
+	// Fallback message text if the code could not be looked up
+	static constexpr LPCTSTR s_defaultformat = TEXT("Win32Exception code %1!lu!");
 };
+
 
 //-----------------------------------------------------------------------------
 
