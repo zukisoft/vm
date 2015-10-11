@@ -1107,6 +1107,7 @@ ELF image encoding %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
+;//ExceptionName=ElfInvalidVersionException,imageversion
 Severity=Error
 SymbolicName=E_ELFINVALIDVERSION
 Language=English
@@ -1114,6 +1115,7 @@ ELF image format version %1!d! is not supported.
 .
 
 MessageId=
+;//ExceptionName=ElfInvalidTypeException,imagetype
 Severity=Error
 SymbolicName=E_ELFINVALIDTYPE
 Language=English
@@ -1121,6 +1123,7 @@ Elf image type %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
+;//ExceptionName=ElfInvalidMachineTypeException,machinetype
 Severity=Error
 SymbolicName=E_ELFINVALIDMACHINETYPE
 Language=English
@@ -1128,6 +1131,7 @@ Elf image machine type %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
+;//ExceptionName=ElfInvalidHeaderException
 Severity=Error
 SymbolicName=E_ELFHEADERFORMAT
 Language=English
