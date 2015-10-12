@@ -24,11 +24,9 @@
 #include "ElfExecutable.h"
 
 #include <array>
-#include "Exception.h"
 #include "LinuxException.h"
 #include "Random.h"
 #include "SystemInformation.h"
-#include "Win32Exception.h"
 
 #pragma warning(push, 4)
 
@@ -337,7 +335,7 @@ ElfExecutable::stacklayout_t ElfExecutable::CreateStack(ProcessMemory* mem, size
 		catch(...) { mem->UnmapMemory(reinterpret_cast<void*>(mappedbase)); throw; }
 	}
 
-	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
+	catch(std::exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
 
 	return stacklayout;
 }
@@ -368,11 +366,11 @@ enum class ExecutableFormat ElfExecutable::getFormat(void) const
 std::unique_ptr<ElfExecutable> ElfExecutable::FromHandle(std::shared_ptr<FileSystem::Handle> handle, PathResolver resolver, std::vector<std::string>&& arguments, 
 		std::vector<std::string>&& environment, char_t const* originalpath)
 {
-	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(originalpath == nullptr) throw LinuxException{ LINUX_EFAULT, ArgumentNullException{ L"originalpath" } };
 
 	// Read the ELF identification data from the image handle
 	std::array<uint8_t, LINUX_EI_NIDENT> identification;
-	if(handle->ReadAt(0, &identification, LINUX_EI_NIDENT) != LINUX_EI_NIDENT) throw LinuxException{ LINUX_ENOEXEC };
+	if(handle->ReadAt(0, &identification, LINUX_EI_NIDENT) != LINUX_EI_NIDENT) throw LinuxException{ LINUX_ENOEXEC, ElfTruncatedHeaderException{} };
 
 	// LINUX_ELFCLASS32 --> Architecture::x86
 	if(identification[LINUX_EI_CLASS] == LINUX_ELFCLASS32) 
@@ -384,7 +382,7 @@ std::unique_ptr<ElfExecutable> ElfExecutable::FromHandle(std::shared_ptr<FileSys
 		return FromHandle<Architecture::x86_64>(std::move(handle), resolver, std::move(arguments), std::move(environment), originalpath);
 #endif
 
-	else throw LinuxException{ LINUX_ENOEXEC };
+	else throw LinuxException{ LINUX_ENOEXEC, ElfInvalidClassException{ identification[LINUX_EI_CLASS] } };
 }
 
 //-----------------------------------------------------------------------------
@@ -430,8 +428,8 @@ std::unique_ptr<ElfExecutable> ElfExecutable::FromHandle(fshandle_t handle, Path
 
 std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size_t stacklength)
 {
-	if(mem == nullptr) throw LinuxException{ LINUX_EFAULT };
-	if(stacklength == 0) throw LinuxException{ LINUX_EINVAL };
+	if(mem == nullptr) throw LinuxException{ LINUX_EFAULT, ArgumentNullException{ L"mem" } };
+	if(stacklength == 0) throw LinuxException{ LINUX_EINVAL, ArgumentOutOfRangeException{ L"stacklength" } };
 
 	// Architecture::x86
 	if(m_architecture == Architecture::x86) return Load<Architecture::x86>(mem, stacklength);
@@ -441,7 +439,7 @@ std::unique_ptr<Executable::Layout> ElfExecutable::Load(ProcessMemory* mem, size
 	else if(m_architecture == Architecture::x86_64) return Load<Architecture::x86_64>(mem, stacklength);
 #endif
 
-	else throw LinuxException{ LINUX_ENOEXEC };
+	else throw LinuxException{ LINUX_ENOEXEC, ElfUnexpectedArchitectureException{ static_cast<int>(m_architecture) } };
 }	
 
 //-----------------------------------------------------------------------------
@@ -522,11 +520,11 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(imagetype type, void const
 		else if(elfheader->e_type == LINUX_ET_DYN) layout.baseaddress = mem->ReserveMemory(maxvaddr - minvaddr, 
 			(type == imagetype::interpreter) ? ProcessMemory::AllocationFlags::TopDown : ProcessMemory::AllocationFlags::None);
 
-		// Unsupported image type
-		else throw Win32Exception{ ERROR_BAD_FORMAT };
+		// Unsupported image type -- should have been filtered out by the header validation but throw anyway
+		else throw LinuxException{ LINUX_ENOEXEC, ElfInvalidTypeException{ elfheader->e_type } };
 	}
 
-	catch(Exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
+	catch(std::exception& ex) { throw LinuxException{ LINUX_ENOMEM, ex }; }
 
 	// ET_EXEC images are loaded at their virtual address, whereas ET_DYN images need a load delta to work with
 	intptr_t vaddrdelta = (elfheader->e_type == LINUX_ET_EXEC) ? 0 : layout.baseaddress - minvaddr;
@@ -555,12 +553,12 @@ ElfExecutable::imagelayout_t ElfExecutable::LoadImage(imagetype type, void const
 
 					// Read the data from the image file into the specified address directly via the local mapping
 					size_t read = handle->ReadAt(progheaders[index].p_offset, reinterpret_cast<void*>(localaddress + progheaders[index].p_vaddr), progheaders[index].p_filesz); 
-					if(read != progheaders[index].p_filesz) throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFIMAGETRUNCATED } }; 
+					if(read != progheaders[index].p_filesz) throw LinuxException{ LINUX_ENOEXEC, ElfImageTruncatedException{} };
 				}
 
 				// Mark the pages in the target process as allocated and apply the specified page protection flags
 				try { mem->AllocateMemory(progheaders[index].p_vaddr + vaddrdelta, progheaders[index].p_memsz, convert<ProcessMemory::Protection>(progheaders[index].p_flags)); }
-				catch(Exception& ex) { throw LinuxException{ LINUX_ENOEXEC, Exception{ E_ELFCOMMITSEGMENT, ex } }; }
+				catch(...) { throw LinuxException{ LINUX_ENOEXEC, ElfCommitSegmentException{} }; }
 			}
 		}
 
@@ -596,38 +594,50 @@ ElfExecutable::headerblob_t ElfExecutable::ReadHeaders(fshandle_t handle)
 	typename elf::elfheader_t	elfheader;			// Primary ELF header information
 
 	// Read the primary ELF header from the file at offset zero
-	if(handle->ReadAt(0, &elfheader, sizeof(typename elf::elfheader_t)) != sizeof(typename elf::elfheader_t)) throw LinuxException{ LINUX_ENOEXEC };
+	if(handle->ReadAt(0, &elfheader, sizeof(typename elf::elfheader_t)) != sizeof(typename elf::elfheader_t)) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfTruncatedHeaderException{} };
 
 	// Verify the ELF header magic number
-	if(memcmp(&elfheader.e_ident[LINUX_EI_MAG0], LINUX_ELFMAG, LINUX_SELFMAG) != 0) throw LinuxException{ LINUX_ENOEXEC };
+	if(memcmp(&elfheader.e_ident[LINUX_EI_MAG0], LINUX_ELFMAG, LINUX_SELFMAG) != 0) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidMagicException{} };
 
 	// Verify the ELF class is appropriate for this architecture
-	if(elfheader.e_ident[LINUX_EI_CLASS] != elf::elfclass) throw LinuxException{ LINUX_ENOEXEC };
+	if(elfheader.e_ident[LINUX_EI_CLASS] != elf::elfclass) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidClassException{ elfheader.e_ident[LINUX_EI_CLASS] } };
 
 	// Verify the endianness and version of the ELF binary image
-	if(elfheader.e_ident[LINUX_EI_DATA] != LINUX_ELFDATA2LSB) throw LinuxException{ LINUX_ENOEXEC };
-	if(elfheader.e_ident[LINUX_EI_VERSION] != LINUX_EV_CURRENT) throw LinuxException{ LINUX_ENOEXEC };
+	if(elfheader.e_ident[LINUX_EI_DATA] != LINUX_ELFDATA2LSB) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidEncodingException{ elfheader.e_ident[LINUX_EI_DATA] } };
+	if(elfheader.e_ident[LINUX_EI_VERSION] != LINUX_EV_CURRENT) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidVersionException{ elfheader.e_ident[LINUX_EI_VERSION] } };
 
 	// Only ET_EXEC and ET_DYN images are currently supported by the virtual machine
-	if((elfheader.e_type != LINUX_ET_EXEC) && (elfheader.e_type != LINUX_ET_DYN)) throw LinuxException{ LINUX_ENOEXEC };
+	if((elfheader.e_type != LINUX_ET_EXEC) && (elfheader.e_type != LINUX_ET_DYN)) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidTypeException{ elfheader.e_type } };
 
 	// The machine type must match the value defined for the format_traits_t<>
-	if(elfheader.e_machine != elf::machinetype) throw LinuxException{ LINUX_ENOEXEC };
+	if(elfheader.e_machine != elf::machinetype) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidMachineTypeException{ elfheader.e_machine } };
 
 	// Verify that the version code matches the ELF headers used
-	if(elfheader.e_version != LINUX_EV_CURRENT) throw LinuxException{ LINUX_ENOEXEC };
+	if(elfheader.e_version != LINUX_EV_CURRENT) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfInvalidVersionException{ static_cast<int>(elfheader.e_version) } };
 
 	// Verify that the header length matches the architecture and that the program and section header entries are appropriate
-	if(elfheader.e_ehsize != sizeof(typename elf::elfheader_t)) throw LinuxException{ LINUX_ENOEXEC };;
-	if((elfheader.e_phentsize) && (elfheader.e_phentsize < sizeof(typename elf::progheader_t))) throw LinuxException{ LINUX_ENOEXEC };
-	if((elfheader.e_shentsize) && (elfheader.e_shentsize < sizeof(typename elf::sectheader_t))) throw LinuxException{ LINUX_ENOEXEC };
+	if(elfheader.e_ehsize != sizeof(typename elf::elfheader_t)) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfHeaderFormatException{} };
+	if((elfheader.e_phentsize) && (elfheader.e_phentsize < sizeof(typename elf::progheader_t))) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfProgramHeaderFormatException{} };
+	if((elfheader.e_shentsize) && (elfheader.e_shentsize < sizeof(typename elf::sectheader_t))) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfSectionHeaderFormatException{} };
 
 	// Determine how much data needs to be loaded from the file to contain all the program headers
 	size_t headerslength = elfheader.e_phoff + (elfheader.e_phnum * elfheader.e_phentsize);
 	
 	// Load the portion of the header required for loading the image into a heap buffer
 	auto headers = std::make_unique<uint8_t[]>(headerslength);
-	if(handle->ReadAt(0, &headers[0], headerslength) != headerslength) throw LinuxException{ LINUX_ENOEXEC };
+	if(handle->ReadAt(0, &headers[0], headerslength) != headerslength) 
+		throw LinuxException{ LINUX_ENOEXEC, ElfTruncatedHeaderException{} };
 
 	return headers;
 }
@@ -647,7 +657,7 @@ std::string ElfExecutable::ReadInterpreterPath(void const* headers, fshandle_t h
 {
 	using elf = format_traits_t<architecture>;
 
-	if(headers == nullptr) throw LinuxException{ LINUX_EFAULT };
+	if(headers == nullptr) throw LinuxException{ LINUX_EFAULT, ArgumentNullException{ L"headers" } };
 
 	// Cast out an architecture-appropriate pointer to the main ELF header
 	typename elf::elfheader_t const* elfheader = reinterpret_cast<typename elf::elfheader_t const*>(headers);
@@ -664,7 +674,8 @@ std::string ElfExecutable::ReadInterpreterPath(void const* headers, fshandle_t h
 
 			// Copy the interpreter path from the binary image into a local heap buffer
 			auto interpreter = std::make_unique<char_t[]>(progheader->p_filesz);
-			if(handle->ReadAt(progheader->p_offset, &interpreter[0], progheader->p_filesz) != progheader->p_filesz) throw LinuxException{ LINUX_ENOEXEC };
+			if(handle->ReadAt(progheader->p_offset, &interpreter[0], progheader->p_filesz) != progheader->p_filesz) 
+				throw LinuxException{ LINUX_ENOEXEC, ElfInvalidInterpreterException{} };
 
 			// Convert the path into an std::string and return it to the caller
 			return std::string(&interpreter[0], progheader->p_filesz);

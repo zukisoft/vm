@@ -1092,11 +1092,51 @@ ELF image header does not contain the required magic number.
 .
 
 MessageId=
+;//ExceptionName=ElfTruncatedHeaderException
+Severity=Error
+SymbolicName=E_ELFTRUNCATEDHEADER
+Language=English
+ELF image header has been truncated.
+.
+
+MessageId=
 ;//ExceptionName=ElfInvalidClassException,imageclass
 Severity=Error
 SymbolicName=E_ELFINVALIDCLASS
 Language=English
 ELF image class %1!d! is not valid for execution on this platform.
+.
+
+MessageId=
+;//ExceptionName=ElfUnexpectedArchitectureException,architecture
+Severity=Error
+SymbolicName=E_ELFUNEXPECTEDARCHITECTURE
+Language=English
+Executable architecture code %1!d! was unexpected, the ELF image cannot be loaded.
+.
+
+MessageId=
+;//ExceptionName=ElfInvalidTypeException,imagetype
+Severity=Error
+SymbolicName=E_ELFINVALIDTYPE
+Language=English
+Elf image type %1!d! is not valid for execution on this platform.
+.
+
+MessageId=
+;//ExceptionName=ElfImageTruncatedException
+Severity=Error
+SymbolicName=E_ELFIMAGETRUNCATED
+Language=English
+ELF image metadata indicates a source data offset that lies beyond the end of the file.
+.
+
+MessageId=
+;//ExceptionName=ElfCommitSegmentException
+Severity=Error
+SymbolicName=E_ELFCOMMITSEGMENT
+Language=English
+Unable to commit the virtual memory required to load an ELF image segment.
 .
 
 MessageId=
@@ -1116,14 +1156,6 @@ ELF image format version %1!d! is not supported.
 .
 
 MessageId=
-;//ExceptionName=ElfInvalidTypeException,imagetype
-Severity=Error
-SymbolicName=E_ELFINVALIDTYPE
-Language=English
-Elf image type %1!d! is not valid for execution on this platform.
-.
-
-MessageId=
 ;//ExceptionName=ElfInvalidMachineTypeException,machinetype
 Severity=Error
 SymbolicName=E_ELFINVALIDMACHINETYPE
@@ -1132,7 +1164,7 @@ Elf image machine type %1!d! is not valid for execution on this platform.
 .
 
 MessageId=
-;//ExceptionName=ElfInvalidHeaderException
+;//ExceptionName=ElfHeaderFormatException
 Severity=Error
 SymbolicName=E_ELFHEADERFORMAT
 Language=English
@@ -1140,6 +1172,7 @@ ELF image header format is not supported.
 .
 
 MessageId=
+;//ExceptionName=ElfProgramHeaderFormatException
 Severity=Error
 SymbolicName=E_ELFPROGHEADERFORMAT
 Language=English
@@ -1147,6 +1180,7 @@ ELF image program header format is not supported.
 .
 
 MessageId=
+;//ExceptionName=ElfSectionHeaderFormatException
 Severity=Error
 SymbolicName=E_ELFSECTHEADERFORMAT
 Language=English
@@ -1154,80 +1188,11 @@ ELF image section header format is not supported.
 .
 
 MessageId=
-Severity=Error
-SymbolicName=E_ELFTRUNCATEDHEADER
-Language=English
-ELF image header has been truncated.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFIMAGETRUNCATED
-Language=English
-ELF image indicates a source data offset that lies beyond the end of the file.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFEXECUTABLESTACK
-Language=English
-ELF image specifies that the stack must be executable, which is not valid for this platform.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFRESERVEREGION
-Language=English
-Unable to reserve the virtual memory region required to load the ELF image.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFCOMMITSEGMENT
-Language=English
-Unable to commit the virtual memory required to load an ELF image segment.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFWRITESEGMENT
-Language=English
-Unable to write to the virtual memory region allocated for an ELF image segment.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFPROTECTSEGMENT
-Language=English
-Unable to set protection attributes on loaded ELF image segment.
-.
-
-MessageId=
+;//ExceptionName=ElfInvalidInterpreterException
 Severity=Error
 SymbolicName=E_ELFINVALIDINTERPRETER
 Language=English
 ELF image interpreter path is invalid or corrupt.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFARGUMENTSTOOBIG
-Language=English
-The amount of memory allocated (%1!lu! bytes) for an ELF startup information block exceeds the maximum size of %2!lu! bytes.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFWRITEARGUMENTS
-Language=English
-Unable to write ELF argument data to the allocated virtual memory region.
-.
-
-MessageId=
-Severity=Error
-SymbolicName=E_ELFARGUMENTSEXCEEDSTACK
-Language=English
-The amount of memory required (%1!lu! bytes) for the ELF process arguments exceeds the allocated stack size of %2!lu! bytes.
 .
 
 ;//----------------------------------------------------------------------------
