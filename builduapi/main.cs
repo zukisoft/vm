@@ -88,12 +88,19 @@ namespace zuki.vm.tools
 				// Create the output file, overwriting any existing file
 				using (StreamWriter writer = SysFile.CreateText(outfile))
 				{
+					// Generate and emit the preamble
+					writer.Write(new Preamble(outfile).TransformText());
+
 					// Enumerate the direct descendants of the translation unit
 					tu.Cursor.EnumerateChildren((cursor, parent) =>
 					{
 						EmitTranslationUnitCursor(writer, cursor, parent);
 						return EnumerateChildrenResult.Continue;
 					});
+
+					// Generate and emit the epilogue
+					writer.Write(new Epilogue(outfile).TransformText());
+					writer.Flush();
 				}
 			}
 		}

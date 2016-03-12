@@ -68,7 +68,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandLine.cs" />
+    <Compile Include="Epilogue1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Epilogue.tt</DependentUpon>
+    </Compile>
+    <Compile Include="EpilogueCode.cs" />
     <Compile Include="main.cs" />
+    <Compile Include="Preamble1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Preamble.tt</DependentUpon>
+    </Compile>
+    <Compile Include="PreambleCode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -78,6 +90,14 @@
     <Content Include="..\..\external\clang\x86\libclang.dll">
       <Link>libclang.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Epilogue.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Epilogue1.cs</LastGenOutput>
+    </Content>
+    <Content Include="Preamble.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Preamble1.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>
