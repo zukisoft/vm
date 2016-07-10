@@ -23,19 +23,19 @@
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
 MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
 MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
 MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
 MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;$(SolutionDir)tmp\$(ProjectName)\exceptions.h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;$(SolutionDir)tmp\$(ProjectName)\exceptions.h</Outputs>
