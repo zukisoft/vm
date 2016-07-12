@@ -216,3 +216,4 @@ pip-log.txt
 
 # Visual C++ Database
 *.VC.db
+*.opendb
