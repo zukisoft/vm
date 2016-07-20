@@ -61,13 +61,13 @@ namespace zuki.vm.tools
 				if (commandline.Switches.ContainsKey("i")) includepath = commandline.Switches["i"];
 				clangargs.Add("-I" + includepath);
 
-				// -m64 --> x64 build target
-				if (commandline.Switches.ContainsKey("m64")) clangargs.Add("-m64");
+				// -m64 / -x64 --> x64 build target
+				if (commandline.Switches.ContainsKey("m64") || commandline.Switches.ContainsKey("x64")) clangargs.Add("-m64");
 
-				// -mx32 --> x32 build target
-				else if (commandline.Switches.ContainsKey("mx32")) clangargs.Add("-mx32");
+				// -mx32 / -x32 --> x32 build target
+				else if (commandline.Switches.ContainsKey("mx32") || commandline.Switches.ContainsKey("x32")) clangargs.Add("-mx32");
 
-				// -m32 --> x86 build target (default)
+				// -m32 / -x86 --> x86 build target (default)
 				else clangargs.Add("-m32");
 
 				// Verify that the input file and include directory exist

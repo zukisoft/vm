@@ -926,4 +926,9 @@
       <Filter>External Libraries\servicelib</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="genuapi.c">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
 </Project>

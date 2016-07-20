@@ -652,6 +652,20 @@ if not exist "$(SolutionDir)\tmp\$(ProjectName)\$(PlatformShortName)" mkdir "$(S
     </ClCompile>
     <ClCompile Include="Capability.cpp" />
     <ClCompile Include="Context.cpp" />
+    <CustomBuild Include="genuapi.c">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(OutDir)zuki.vm.builduapi.exe" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h" "-i:$(SolutionDir)..\external-kernel-headers\linux-4.4.5\include" "-$(PlatformShortName)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(OutDir)zuki.vm.builduapi.exe" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h" "-i:$(SolutionDir)..\external-kernel-headers\linux-4.4.5\include" "-$(PlatformShortName)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(OutDir)zuki.vm.builduapi.exe" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h" "-i:$(SolutionDir)..\external-kernel-headers\linux-4.4.5\include" "-$(PlatformShortName)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(OutDir)zuki.vm.builduapi.exe" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h" "-i:$(SolutionDir)..\external-kernel-headers\linux-4.4.5\include" "-$(PlatformShortName)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\$(PlatformShortName)\uapi_$(PlatformShortName).h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+    </CustomBuild>
     <ClCompile Include="NativeHost.cpp" />
     <ClCompile Include="SystemCallContext.cpp" />
     <ClCompile Include="ElfExecutable.cpp" />
