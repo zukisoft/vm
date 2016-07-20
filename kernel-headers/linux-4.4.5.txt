@@ -1,0 +1,11 @@
+Linux Kernel Headers
+====================
+
+Version: 4.4.5
+
+wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.5.tar.xz
+tar xJvf linux-4.4.5.tar.xz
+pushd linux-4.4.5
+make headers_install ARCH=i386 INSTALL_HDR_PATH={path to repository}/kernel-headers/
+popd
+
