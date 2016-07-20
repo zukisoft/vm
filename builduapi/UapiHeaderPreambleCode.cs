@@ -20,28 +20,21 @@
 // SOFTWARE.
 //---------------------------------------------------------------------------
 
-using System.IO;
+using System;
+using System.Collections.Generic;
 
 namespace zuki.vm.tools
 {
-	/// <summary>
-	/// Specialization for Epilogue runtime text template
-	/// </summary>
-	public partial class Epilogue
+	public partial class UapiHeaderPreamble
 	{
 		/// <summary>
-		/// Instance constructor
+		/// Command-line arguments passed into the clang engine
 		/// </summary>
-		/// <param name="filename">Output file name</param>
-		public Epilogue(string filename)
-		{
-			// Convert the filename into an include guard identifier
-			m_includeguard = "__" + Path.GetFileName(filename).Replace('.', '_').ToUpper() + "_";
-		}
+		public IEnumerable<string> ClangArguments;
 
 		/// <summary>
-		/// Multiple inclusion guard identifier name
+		/// The output header name
 		/// </summary>
-		private string m_includeguard;
+		public string HeaderName = String.Empty;
 	}
 }

@@ -20,12 +20,8 @@
 // SOFTWARE.
 //---------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace zuki.vm.tools
 {
@@ -61,11 +57,11 @@ namespace zuki.vm.tools
 						if (colon != -1) switches.Add(switcharg.Substring(0, colon), switcharg.Substring(colon + 1));
 						else switches.Add(switcharg, string.Empty);
 
-						arguments.RemoveAt(index);			// Remove switch from the argument list
+						arguments.RemoveAt(index);          // Remove switch from the argument list
 					}
 				}
 
-				else index++;								// Move to the next argument string
+				else index++;                               // Move to the next argument string
 			}
 
 			// Convert the argument and switch collections into ReadOnly<> fields

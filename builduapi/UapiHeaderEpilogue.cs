@@ -18,9 +18,9 @@ namespace zuki.vm.tools
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "D:\GitHub\vm\builduapi\Epilogue.tt"
+    #line 1 "d:\code\builduapi\builduapi\UapiHeaderEpilogue.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
-    public partial class Epilogue : EpilogueBase
+    public partial class UapiHeaderEpilogue : UapiHeaderEpilogueBase
     {
 #line hidden
         /// <summary>
@@ -28,15 +28,15 @@ namespace zuki.vm.tools
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\n//---------------------------------------------------------------------------\r\n" +
-                    "\r\n#endif\t// ");
+            this.Write("//---------------------------------------------------------------------------\r\n\r\n" +
+                    "#endif\t// __");
             
-            #line 9 "D:\GitHub\vm\builduapi\Epilogue.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(m_includeguard));
+            #line 8 "d:\code\builduapi\builduapi\UapiHeaderEpilogue.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_")));
             
             #line default
             #line hidden
-            this.Write("\r\n");
+            this.Write("_");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -48,7 +48,7 @@ namespace zuki.vm.tools
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
-    public class EpilogueBase
+    public class UapiHeaderEpilogueBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

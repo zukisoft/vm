@@ -25,7 +25,13 @@
 // SOFTWARE.
 //---------------------------------------------------------------------------
 
-#ifndef <#= m_includeguard #>
-#define <#= m_includeguard #>
+#ifndef __<#= HeaderName.ToUpper().Replace(".", "_") #>_
+#define __<#= HeaderName.ToUpper().Replace(".", "_") #>_
 #pragma once
+
+//
+// AUTO-GENERATED FILE - DO NOT EDIT MANUALY
+//
+// clang <#= String.Join(" ", ClangArguments) #>
+//
 

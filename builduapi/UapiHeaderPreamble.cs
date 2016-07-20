@@ -18,9 +18,9 @@ namespace zuki.vm.tools
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "D:\GitHub\vm\builduapi\Preamble.tt"
+    #line 1 "d:\code\builduapi\builduapi\UapiHeaderPreamble.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
-    public partial class Preamble : PreambleBase
+    public partial class UapiHeaderPreamble : UapiHeaderPreambleBase
     {
 #line hidden
         /// <summary>
@@ -50,21 +50,29 @@ namespace zuki.vm.tools
 // SOFTWARE.
 //---------------------------------------------------------------------------
 
-#ifndef ");
+#ifndef __");
             
-            #line 28 "D:\GitHub\vm\builduapi\Preamble.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(m_includeguard));
-            
-            #line default
-            #line hidden
-            this.Write("\r\n#define ");
-            
-            #line 29 "D:\GitHub\vm\builduapi\Preamble.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(m_includeguard));
+            #line 28 "d:\code\builduapi\builduapi\UapiHeaderPreamble.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_")));
             
             #line default
             #line hidden
-            this.Write("\r\n#pragma once\r\n\r\n");
+            this.Write("_\r\n#define __");
+            
+            #line 29 "d:\code\builduapi\builduapi\UapiHeaderPreamble.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_")));
+            
+            #line default
+            #line hidden
+            this.Write("_\r\n#pragma once\r\n\r\n//\r\n// AUTO-GENERATED FILE - DO NOT EDIT MANUALY\r\n//\r\n// clang" +
+                    " ");
+            
+            #line 35 "d:\code\builduapi\builduapi\UapiHeaderPreamble.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(String.Join(" ", ClangArguments)));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n//\r\n\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -76,7 +84,7 @@ namespace zuki.vm.tools
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
-    public class PreambleBase
+    public class UapiHeaderPreambleBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

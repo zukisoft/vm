@@ -20,24 +20,15 @@
 // SOFTWARE.
 //---------------------------------------------------------------------------
 
-using System.IO;
+using System;
 
 namespace zuki.vm.tools
 {
-	/// <summary>
-	/// Specialization for Preamble runtime text template
-	/// </summary>
-	public partial class Preamble
+	partial class UapiHeaderEpilogue
 	{
-		public Preamble(string filename)
-		{
-			// Convert the filename into an include guard identifier
-			m_includeguard = "__" + Path.GetFileName(filename).Replace('.', '_').ToUpper() + "_";
-		}
-
 		/// <summary>
-		/// Multiple inclusion guard identifier name
+		/// The output header file name
 		/// </summary>
-		private string m_includeguard;
+		public string HeaderName = String.Empty;
 	}
 }

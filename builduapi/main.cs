@@ -22,59 +22,68 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using zuki.tools.llvm.clang;
-using zuki.tools.llvm.clang.extensions;
 
-using ClangFile = zuki.tools.llvm.clang.File;
 using SysFile = System.IO.File;
 
 namespace zuki.vm.tools
 {
 	class main
 	{
-		static void ShowUsage()
-		{
-			Console.WriteLine("todo");
-		}
-
 		/// <summary>
 		/// Main application entry point
 		/// </summary>
-		/// <param name="args">Command-line arguments</param>
+		/// <param name="args">Array of command line arguments</param>
 		static void Main(string[] args)
 		{
-			CommandLine commandline = new CommandLine(args);
+			CommandLine commandline = new CommandLine(args);		// Command line parser
+			List<string> clangargs = new List<string>();            // Arguments for libclang
 
-			// arg[0] --> input translation unit file
-			string infile = @"D:\\uapi.c";
-			if (!SysFile.Exists(infile)) { /* todo: throw */ } 
+			// Simple banner for the output panel
+			Console.WriteLine();
+			Console.WriteLine("builduapi " + String.Join(" ", args));
+			Console.WriteLine();
 
-			// arg[1] --> output header file
-			string outfile = @"D:\\uapi.h";
-			if (!Directory.Exists(Path.GetDirectoryName(outfile))) { /* todo: throw */ }
-
-			// -i:<directory> : original linux header file path (defaults to input file directory)
-			string originalheaders = @"D:\GitHub\external-kernel-headers\linux-4.4.5\include";
-
-			// -m:<directory> : modified linux header file path (defaults to none)
-			string modifiedheaders = @"";
-
-			// Build the collection of override files for the translation unit
-			var virtualfiles = CollectVirtualFiles(modifiedheaders, originalheaders);
-
-			// Build the command line arguments to pass into the clang frontend
-			List<string> arguments = new List<string>();
-			arguments.Add("-E");
-			arguments.Add("-I" + originalheaders);
-
-			using (Index index = Clang.CreateIndex())
+			try
 			{
-				// Create a clang translation unit using the provided source file and specifying all
-				// modified headers as virtual files to override any matching physical headers
-				using (TranslationUnit transunit = index.CreateTranslationUnit(infile, arguments, virtualfiles, TranslationUnitParseOptions.DetailedPreprocessingRecord))
+				// There needs to be at least 2 command line arguments present
+				if (commandline.Arguments.Count < 2) throw new ArgumentException("Invalid command line arguments");
+
+				// arg[0] --> input translation unit file
+				string infile = commandline.Arguments[0];
+
+				// arg[1] --> output header file
+				string outfile = commandline.Arguments[1];
+
+				// -i:<directory> --> include file path
+				string includepath = Environment.CurrentDirectory;
+				if (commandline.Switches.ContainsKey("i")) includepath = commandline.Switches["i"];
+				clangargs.Add("-I" + includepath);
+
+				// -m64 --> x64 build target
+				if (commandline.Switches.ContainsKey("m64")) clangargs.Add("-m64");
+
+				// -mx32 --> x32 build target
+				else if (commandline.Switches.ContainsKey("mx32")) clangargs.Add("-mx32");
+
+				// -m32 --> x86 build target (default)
+				else clangargs.Add("-m32");
+
+				// Verify that the input file and include directory exist
+				if (!SysFile.Exists(infile)) throw new FileNotFoundException("Translation unit input file not found", infile);
+				if (!Directory.Exists(includepath)) throw new DirectoryNotFoundException("Include path " + includepath + " not found");
+
+				// Attempt to create the output directory
+				try { Directory.CreateDirectory(Path.GetDirectoryName(outfile)); }
+				catch { /* DO NOTHING */ }
+
+				// Ensure that the output directory exists or was successfully created above
+				if (!Directory.Exists(Path.GetDirectoryName(outfile)))
+					throw new DirectoryNotFoundException("Output file directory " + Path.GetDirectoryName(outfile) + " not found");
+
+				// Create a clang translation unit using the provided information
+				using (TranslationUnit transunit = Clang.CreateTranslationUnit(infile, clangargs, TranslationUnitParseOptions.DetailedPreprocessingRecord))
 				{
 					bool hasfatal = false;              // Flag indicating a fatal error occurred
 
@@ -87,195 +96,19 @@ namespace zuki.vm.tools
 					}
 
 					// If any of the translation unit diagnostics were a fatal error, stop now
-					if (hasfatal) return;
+					if (hasfatal) throw new Exception("Fatal error occurred processing input translation unit " + infile);
 
-					TranslationUnitToXml.Transform(transunit, "d:\\uapi.xml");
-
-					//index.Declaration += OnDeclaration;
-					//index.EntityReference += OnEntityReference;
-
-					//// Create the output file, overwriting any existing file
-					//using (StreamWriter writer = SysFile.CreateText(outfile))
-					//{
-					//	// Generate and emit the preamble
-					//	writer.Write(new Preamble(outfile).TransformText());
-
-					//	// First emit all of the modified preprocessor macros
-					//	EmitPreprocessorMacros(writer, transunit);
-
-					//	index.IndexTranslationUnit(transunit, IndexOptions.None, writer);
-
-					//	//// Enumerate and emit the direct descendants of the translation unit cursor
-					//	//tu.Cursor.EnumerateChildren((cursor, parent) =>
-					//	//{
-					//	//	// Don't emit any cursors that were generated by CLANG, they have to 
-					//	//	// have been sourced from a location in a physical input file
-					//	//	if (!ClangFile.IsNull(cursor.Location.File)) EmitCursor(writer, definitions, originalheaders, cursor, parent);
-					//	//	return EnumerateChildrenResult.Continue;
-					//	//});
-
-					//	// Generate and emit the epilogue
-					//	writer.Write(new Epilogue(outfile).TransformText());
-					//	writer.Flush();
-					//}
-				}
-			}
-		}
-
-		private static void OnEntityReference(object sender, IndexEntityReferenceEventArgs e)
-		{
-			throw new NotImplementedException();
-		}
-
-		private static void OnDeclaration(object sender, IndexDeclarationEventArgs args)
-		{
-			StreamWriter writer = (StreamWriter)args.State;
-
-			// All declarations are expected to be "None" when processing these files
-			Debug.Assert(args.Declaration.Kind == IndexDeclarationKind.None);
-
-			// Pull out the declaration and entity objects for clarity
-			IndexDeclaration declaration = args.Declaration;
-			IndexEntity entity = args.Declaration.Entity;
-
-			entity.ClientData = "uapi_" + entity.Name;
-
-			// TYPEDEF
-			//
-			if (entity.Kind == IndexEntityKind.Typedef)
-			{
-				writer.WriteLine("typedef " + entity.Cursor.UnderlyingTypedefType.ToString() + " uapi_" + entity.Name);
-			}
-		}
-
-		/// <summary>
-		/// Builds a collection of VirtualFile objects that override the original headers
-		/// </summary>
-		/// <param name="virtualbase">Virtual/modified header file base path</param>
-		/// <param name="physicalbase">Physical/original header file base path</param>
-		/// <returns>Collection of VirtualFile objects for the translation unit</returns>
-		static List<UnsavedFile> CollectVirtualFiles(string virtualbase, string physicalbase)
-		{
-			List<UnsavedFile> virtualfiles = new List<UnsavedFile>();
-
-			// If the input directory does not exist, there can be no override files
-			if (!Directory.Exists(virtualbase)) return virtualfiles;
-
-			// Normalize the virtual path (within reason)
-			virtualbase = new DirectoryInfo(Path.GetFullPath(virtualbase)).FullName;
-
-			// Use a stack so this doesn't need to be done recursively
-			Stack<string> directories = new Stack<string>();
-			directories.Push(virtualbase);
-
-			while (directories.Count > 0)
-			{
-				string current = directories.Pop();
-
-				// Add all subdirectories of this directory for subsequent processing 
-				foreach (string subdirectory in Directory.GetDirectories(current)) directories.Push(subdirectory);
-
-				// Create VirtualFile entries for each file in this directory, making the names
-				// relative to the physical base path rather than the virtual one
-				foreach (string file in Directory.GetFiles(current, "*.h"))
-				{
-					string filename = Path.Combine(physicalbase, file.Substring(virtualbase.Length + 1));
-					virtualfiles.Add(new UnsavedFile(filename, SysFile.ReadAllText(file)));
+					// Generate the UAPI header
+					UapiHeader.Generate(transunit, clangargs, outfile);
 				}
 			}
 
-			return virtualfiles;
-		}
-
-		/// <summary>
-		/// Processes and emits a single translation unit cursor
-		/// </summary>
-		/// <param name="writer">Output file StreamWriter instance</param>
-		/// <param name="cursor">Cursor to be processed</param>
-		/// <param name="parent">Parent cursor instance (if available)</param>
-		static void EmitCursor(StreamWriter writer, Dictionary<string, string> replacements, string trimpath, Cursor cursor, Cursor parent)
-		{
-			if (writer == null) throw new ArgumentNullException("writer");
-			if (replacements == null) throw new ArgumentNullException("definitions");
-			if (cursor == null) throw new ArgumentNullException("cursor");
-			if (parent == null) throw new ArgumentNullException("parent");
-
-			// INCLUSION DIRECTIVE
-			//
-			if (cursor.Kind == CursorKind.InclusionDirective)
+			catch (Exception ex)
 			{
-				writer.WriteLine();
-				writer.WriteLine("//" + new string('-', 76));
-				writer.WriteLine("// " + cursor.IncludedFile.Name.Replace(trimpath + "\\", ""));
-				writer.WriteLine("//" + new string('-', 76));
-				writer.WriteLine();
+				Console.WriteLine();
+				Console.WriteLine(">> ERROR: " + ex.Message);
+				Console.WriteLine();
 			}
-
-			// MACRO DEFINITION
-			//
-			// When macro definitions are processed, the body of the macro has to be searched for replacement tokens
-			// TODO: Need to preserve original macro body whitespace?
-			if (cursor.Kind == CursorKind.MacroDefinition)
-			{
-				writer.Write("#define UAPI_" + cursor.Spelling);
-				foreach (Token token in cursor.Extent.GetTokens().Skip(1))
-					writer.Write(" " + (replacements.ContainsKey(token.Spelling) ? replacements[token.Spelling] : token.Spelling));
-
-				writer.WriteLine();
-			}
-
-			// TYPEDEF
-			//
-			//if (cursor.Kind == CursorKind.TypedefDecl)
-			//{
-			//	writer.WriteLine("typedef " + cursor.Type.ToString() + " " + cursor.ReferencedCursor.Spelling);
-			//}
-		}
-
-		static void EmitPreprocessorMacros(StreamWriter writer, TranslationUnit transunit)
-		{
-			if (writer == null) throw new ArgumentNullException("writer");
-			if (transunit == null) throw new ArgumentNullException("transunit");
-
-			// Get a Dictionary<> of all replacement macro names in the translation unit that are
-			// declared in a non-null File instance (to omit the built-in CLANG definitions) 
-			// When these cursors are emitted into the output file, any instance of another
-			// preprocessor definition in its body has to be string replaced with a prefix version
-			var replacements = GetPreprocessorReplacements(transunit, ((c) => !ClangFile.IsNull(c.Location.File)));
-
-			transunit.Cursor.EnumerateChildren((c, p) =>
-			{
-				if (!ClangFile.IsNull(c.Location.File) && (c.Kind == CursorKind.MacroDefinition))
-				{
-					writer.Write("#define UAPI_" + c.Spelling);
-					foreach (Token token in c.Extent.GetTokens().Skip(1))
-						writer.Write(" " + (replacements.ContainsKey(token.Spelling) ? replacements[token.Spelling] : token.Spelling));
-
-					writer.WriteLine();
-				}
-
-				return EnumerateChildrenResult.Continue;
-			});
-		}
-
-		/// <summary>
-		/// Generates a List<> of all the preprocessor definitions in a translation unit
-		/// </summary>
-		/// <param name="transunit">TranslationUnit instance to scan for preprocessor definitions</param>
-		static Dictionary<string, string> GetPreprocessorReplacements(TranslationUnit transunit, Func<Cursor, bool> predicate)
-		{
-			if (transunit == null) throw new ArgumentNullException("transunit");
-			if (predicate == null) predicate = new Func<Cursor, bool>((c) => true);
-
-			Dictionary<string, string> definitions = new Dictionary<string, string>();
-
-			// Recursively find all MacroDefinition cursors that match the specified predicate
-			foreach (var item in transunit.Cursor.FindChildren((c, p) => c.Kind == CursorKind.MacroDefinition && predicate(c), true))
-			{
-				definitions.Add(item.Item1.Spelling, "UAPI_" + item.Item1.Spelling);
-			}
-
-			return definitions;
 		}
 	}
 }
