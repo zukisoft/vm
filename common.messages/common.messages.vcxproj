@@ -21,26 +21,30 @@
   <ItemGroup>
     <CustomBuild Include="messages.mc">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">@if not exist "$(SolutionDir)tmp\messages" mkdir "$(SolutionDir)tmp\messages"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\messages" -r "$(SolutionDir)tmp\messages" "%(FullPath)"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\messages\exceptions.h"
+
 </Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">@if not exist "$(SolutionDir)tmp\messages" mkdir "$(SolutionDir)tmp\messages"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\messages" -r "$(SolutionDir)tmp\messages" "%(FullPath)"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\messages\exceptions.h"
+
 </Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">@if not exist "$(SolutionDir)tmp\messages" mkdir "$(SolutionDir)tmp\messages"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\messages" -r "$(SolutionDir)tmp\messages" "%(FullPath)"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\messages\exceptions.h"
+
 </Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\$(ProjectName)" mkdir "$(SolutionDir)tmp\$(ProjectName)"
-MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(ProjectName)" "%(FullPath)"
-"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\$(ProjectName)\exceptions.h"
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">@if not exist "$(SolutionDir)tmp\messages" mkdir "$(SolutionDir)tmp\messages"
+MC.EXE -v -U -c -h "$(SolutionDir)tmp\messages" -r "$(SolutionDir)tmp\messages" "%(FullPath)"
+"$(SolutionDir)..\build\zuki.build.tools.mctoexception.exe" -unicode "-include:"""messages.h"""" "%(FullPath)" "$(SolutionDir)tmp\messages\exceptions.h"
+
 </Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;$(SolutionDir)tmp\$(ProjectName)\exceptions.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;$(SolutionDir)tmp\$(ProjectName)\exceptions.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;$(SolutionDir)tmp\$(ProjectName)\exceptions.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\$(ProjectName)\%(Filename).h;$(SolutionDir)tmp\$(ProjectName)\%(Filename).rc;$(SolutionDir)tmp\$(ProjectName)\MSG00409.bin;$(SolutionDir)tmp\$(ProjectName)\exceptions.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)tmp\messages\%(Filename).h;$(SolutionDir)tmp\messages\%(Filename).rc;$(SolutionDir)tmp\messages\MSG00409.bin;$(SolutionDir)tmp\messages\exceptions.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)tmp\messages\%(Filename).h;$(SolutionDir)tmp\messages\%(Filename).rc;$(SolutionDir)tmp\messages\MSG00409.bin;$(SolutionDir)tmp\messages\exceptions.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)tmp\messages\%(Filename).h;$(SolutionDir)tmp\messages\%(Filename).rc;$(SolutionDir)tmp\messages\MSG00409.bin;$(SolutionDir)tmp\messages\exceptions.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)tmp\messages\%(Filename).h;$(SolutionDir)tmp\messages\%(Filename).rc;$(SolutionDir)tmp\messages\MSG00409.bin;$(SolutionDir)tmp\messages\exceptions.h</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing Message Compiler</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Executing Message Compiler</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Executing Message Compiler</Message>
@@ -48,17 +52,17 @@ MC.EXE -v -U -c -h "$(SolutionDir)tmp\$(ProjectName)" -r "$(SolutionDir)tmp\$(Pr
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\tmp\vm.messages\messages.h" />
+    <ClInclude Include="..\tmp\messages\messages.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
-    <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
+    <ResourceCompile Include="..\tmp\messages\messages.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1CE1CA90-2F0D-449F-B33A-5E0452DFE658}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>zuki.vm.messages</RootNamespace>
-    <ProjectName>vm.messages</ProjectName>
+    <RootNamespace>zuki.vm.common.messages</RootNamespace>
+    <ProjectName>common.messages</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

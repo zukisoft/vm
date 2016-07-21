@@ -1,29 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
+    <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
+    <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{06049322-2B39-476B-BA85-92F79AEFBB48}</ProjectGuid>
+    <ProjectGuid>{3BB26A3C-61CF-4F3D-B6C1-4C9C6C20EA99}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>zuki.vm.host32</RootNamespace>
-    <ProjectName>vm.host32</ProjectName>
+    <RootNamespace>zuki.vm.host.x32</RootNamespace>
+    <ProjectName>host.x32</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
@@ -34,41 +34,39 @@
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(RootNamespace)</TargetName>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)out\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(RootNamespace)</TargetName>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <StackReserveSize>
-      </StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -77,7 +75,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\vm.messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)common;$(SolutionDir)..\external\cpplib;$(SolutionDir)tmp\messages;$(SolutionDir)tmp\vm.service\$(PlatformShortName)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -85,50 +83,37 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\common\Exception.h" />
     <ClInclude Include="..\common\generic_text.h" />
-    <ClInclude Include="..\common\linux\errno.h" />
     <ClInclude Include="..\common\SystemInformation.h" />
     <ClInclude Include="..\common\Win32Exception.h" />
-    <ClInclude Include="..\tmp\vm.messages\messages.h" />
-    <ClInclude Include="..\tmp\vm.service\x86\syscalls32.h" />
-    <ClInclude Include="emulator.h" />
+    <ClInclude Include="..\tmp\messages\messages.h" />
+    <ClInclude Include="..\tmp\vm.service\x64\syscalls64.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="syscalls.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\Exception.cpp" />
     <ClCompile Include="..\common\rpcmem.cpp" />
     <ClCompile Include="..\common\SystemInformation.cpp" />
     <ClCompile Include="..\common\Win32Exception.cpp" />
-    <ClCompile Include="..\tmp\vm.service\x86\syscalls32_c.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4213</DisableSpecificWarnings>
-      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4213</DisableSpecificWarnings>
+    <ClCompile Include="..\tmp\vm.service\x64\syscalls64_c.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4213</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4213</DisableSpecificWarnings>
     </ClCompile>
-    <ClCompile Include="emulator.cpp" />
     <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="syscalls.cpp" />
-    <ClCompile Include="sys_clone.cpp" />
-    <ClCompile Include="sys_execve.cpp" />
-    <ClCompile Include="sys_exit.cpp" />
-    <ClCompile Include="sys_exit_group.cpp" />
-    <ClCompile Include="sys_fork.cpp" />
-    <ClCompile Include="sys_vfork.cpp" />
-    <ClCompile Include="trace.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\tmp\version\version.rc" />
-    <ResourceCompile Include="..\tmp\vm.messages\messages.rc" />
+    <ResourceCompile Include="..\tmp\messages\messages.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

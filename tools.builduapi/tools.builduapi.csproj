@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>zuki.vm.tools</RootNamespace>
-    <AssemblyName>zuki.vm.builduapi</AssemblyName>
+    <AssemblyName>zuki.vm.tools.builduapi</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -85,10 +85,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\tmp\version\version.cs">
+      <Link>version.cs</Link>
+    </Compile>
     <Compile Include="CommandLine.cs" />
     <Compile Include="main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="tmp\version.cs" />
     <Compile Include="UapiHeader.cs" />
     <Compile Include="UapiHeaderEpilogue.cs">
       <AutoGen>True</AutoGen>
@@ -106,7 +108,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="version.ini" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
@@ -142,7 +143,8 @@
     <Error Condition="!Exists('..\packages\zuki.tools.llvm.clang.1.1.381.6036\build\net45\zuki.tools.llvm.clang.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\zuki.tools.llvm.clang.1.1.381.6036\build\net45\zuki.tools.llvm.clang.targets'))" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>"$(SolutionDir)..\build\zuki.build.tools.mkversion.exe" "$(ProjectDir)tmp" "-ini:$(ProjectDir)version.ini" -format:cs</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
