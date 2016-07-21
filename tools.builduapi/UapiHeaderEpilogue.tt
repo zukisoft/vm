@@ -5,4 +5,4 @@
 <#@ import namespace="System.Collections.Generic" #>
 //---------------------------------------------------------------------------
 
-#endif	// __<#= HeaderName.ToUpper().Replace(".", "_") #>_
+#endif	// __<#= HeaderName.ToUpper().Replace(".", "_").Replace("-", "_") #>_

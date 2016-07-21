@@ -1,9 +1,4 @@
-﻿<#@ template language="C#" #>
-<#@ assembly name="System.Core" #>
-<#@ import namespace="System.Linq" #>
-<#@ import namespace="System.Text" #>
-<#@ import namespace="System.Collections.Generic" #>
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2016 Michael G. Brehm
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,15 +18,14 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-#ifndef __<#= HeaderName.ToUpper().Replace(".", "_").Replace("-", "_") #>_
-#define __<#= HeaderName.ToUpper().Replace(".", "_").Replace("-", "_") #>_
-#pragma once
-
-//
-// AUTO-GENERATED FILE - DO NOT EDIT MANUALY
-//
-// clang <#= String.Join(" ", ClangArguments) #>
-//
-
+[
+	explicit_handle,
+	strict_context_handle
+]
+interface syscall_x86 
+{
+	typedef [context_handle_serialize]		x86_context_exclusive_t;
+	typedef [context_handle_noserialize]	x86_context_t;
+}

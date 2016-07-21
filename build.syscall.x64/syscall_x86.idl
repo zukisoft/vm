@@ -1,0 +1,62 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2016 Michael G. Brehm
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//-----------------------------------------------------------------------------
+
+import "wtypes.idl";
+
+[local]
+interface uapi_x86
+{
+	#include "uapi-x86.h"
+}
+
+// Interface syscall_x86
+//
+// Provides the 32-bit system calls interface for the virtual kernel instance
+[
+	version(1.0),
+	uuid(a34c31bb-f2b9-4f1f-b6ba-f493d1fef1f0),
+	pointer_default(unique),
+]
+
+interface syscall_x86
+{
+	// x86_context_exclusive_t
+	//
+	// Exclusive (write) access context handle; use when the handle or the data that
+	// the handle points to needs to be changed by an interface method
+	typedef [context_handle] void* x86_context_exclusive_t;
+
+	// x86_context
+	//
+	// Shared (read) access context handle; use when the handle or the data that
+	// the handle points to does not need to be changed by an interface method
+	typedef [context_handle] x86_context_exclusive_t x86_context_t;
+
+	// x86_xxxxx
+	//
+	// Linux kernel system calls
+	// todo: should define which ones are non-standard or move/rename them (fork, clone, etc -- anything done in host)
+	// note: [out]-only pointers that might be NULL should be set to [in, out, unique]
+	// todo: get rid of all the linux_ declarations, typedef them to sys32_ declarations
+
+	/* 001 */ long x86_exit([in, out, ref] x86_context_exclusive_t* context, [in] int exitcode);
+}

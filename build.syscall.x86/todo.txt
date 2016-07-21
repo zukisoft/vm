@@ -1,0 +1,2 @@
+TODO: This is a stub makefile project; the intent is to move the syscall IDL generation out of the service and put it in here,
+sending the output to tmp\syscall from which it can be linked by the other projects

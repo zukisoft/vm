@@ -32,7 +32,7 @@ namespace zuki.vm.tools
                     "#endif\t// __");
             
             #line 8 "d:\code\builduapi\builduapi\UapiHeaderEpilogue.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_")));
+            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_").Replace("-", "_")));
             
             #line default
             #line hidden

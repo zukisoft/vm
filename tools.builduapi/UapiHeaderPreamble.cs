@@ -53,14 +53,14 @@ namespace zuki.vm.tools
 #ifndef __");
             
             #line 28 "d:\code\builduapi\builduapi\UapiHeaderPreamble.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_")));
+            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_").Replace("-", "_")));
             
             #line default
             #line hidden
             this.Write("_\r\n#define __");
             
             #line 29 "d:\code\builduapi\builduapi\UapiHeaderPreamble.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_")));
+            this.Write(this.ToStringHelper.ToStringWithCulture(HeaderName.ToUpper().Replace(".", "_").Replace("-", "_")));
             
             #line default
             #line hidden
